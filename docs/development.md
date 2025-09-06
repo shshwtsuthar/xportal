@@ -1831,3 +1831,84 @@ CREATE TABLE IF NOT EXISTS core.client_notes (
         ON DELETE SET NULL
 );
 
+Client and Contact Details
+Address - suburb, locality or town: The suburb, locality, or town of a physical or postal address.
+Address building/property name: The official or common name for an address site (e.g., building name, homestead).
+Address flat/unit details: Details identifying an address within a building or sub-complex (e.g., Unit 5, Apartment 10B).
+Address first line: The first line of a physical or postal address, typically street number and name or PO box.
+Address postal delivery box: Postal address details for mail delivered to a box, bag, or rural mail box.
+Address second line: The second line of an address, used if the first line is insufficient.
+Address street name: The name and type of the street for an address.
+Address street number: The number of the address in the street.
+At school flag: Indicates if a client is currently enrolled in secondary school.
+Client family name: The client's official family name (surname).
+Client first given name: The client's given name.
+Client identifier: A unique code assigned by the training organization to distinguish an individual.
+Client identifier - apprenticeships: A unique identifier for a client with an apprenticeship/traineeship training contract.
+Client title: The client's formal title for correspondence (e.g., Mr, Ms, Dr).
+Contact name: The full name of the person responsible for communication regarding the data submission.
+Country identifier: A code that uniquely identifies a country, used for country of birth.
+Date of birth: The date the client was born.
+Disability flag: Indicates whether a client considers themselves to have a disability, impairment, or long-term condition.
+Disability type identifier: A code that identifies the specific type(s) of disability, impairment, or long-term condition.
+Email address: An address for sending and receiving electronic mail.
+Email address [alternative]: An alternative email address for the client.
+Facsimile number: A number used to send a facsimile.
+Gender: Identifies whether the client identifies as male, female, or other.
+Highest school level completed identifier: Identifies the highest level of school a client has successfully completed.
+Indigenous status identifier: Indicates if a client self-identifies as being of Aboriginal or Torres Strait Islander descent.
+Labour force status identifier: Describes the client's employment status.
+Language identifier: Identifies the main language other than English spoken at home by the client.
+Name for encryption: The client's full name in a specific format for encryption purposes.
+Postcode: The Australia Post postcode of a physical or postal address.
+Prior educational achievement flag: Indicates if a client has successfully completed any post-secondary education.
+Prior educational achievement identifier: A code that identifies the level of prior educational achievement successfully completed.
+State identifier: Uniquely identifies the state or territory of a physical or postal address.
+Statistical area level 1 identifier: A geographic-based population group identifier for statistical purposes.
+Statistical area level 2 identifier: A higher-level geographic-based population group identifier for statistical purposes.
+Survey contact status: Identifies reasons to exclude clients from the Student Outcomes Survey.
+Telephone number: The contact telephone number. This single field covers home, work, and mobile numbers.
+Unique student identifier (USI): The unique identifier for an individual who accesses nationally recognized vocational education and training.
+Training Activity and Program Details
+Activity end date: The actual date that training activity and assessment ends for a client in a unit of competency or module.
+Activity start date: The actual date that the training activity starts for a client in a unit of competency or module.
+ANZSCO identifier: A code that identifies the type of occupation related to a program of study.
+Associated course identifier: Uniquely identifies a qualification or course associated with a skill set for funding purposes (state/territory specific).
+Client tuition fee: The amount of tuition and/or administration fee charged to a client for a unit of competency or module (state/territory specific).
+Commencing program identifier: Indicates if a client is undertaking training towards a qualification for the first time with the organization (state/territory specific).
+Date program completed: The date the qualification, course, or skill set was completed.
+Delivery mode identifier: A three-character code that identifies if a subject comprises internal, external, or workplace-based delivery, or a combination.
+Fee exemption/concession type identifier: Indicates the type of fee exemption or concession a client has used (state/territory specific).
+Funding source - national: Identifies the predominant source of funding for the training activity.
+Funding source - state training authority: Uniquely identifies the internal funding source used to fund the training activity (state/territory specific).
+Hours attended: The hours attended by a client who withdraws from a unit without completing it (state/territory specific).
+Issued flag: Indicates whether a client has been issued with a certificate or statement of attainment.
+Nominal hours: The anticipated hours of supervised training for a program or subject.
+Outcome identifier - national: Identifies the result or outcome of a client's participation in a unit of competency or module.
+Outcome identifier - training organisation: An internal code that uniquely identifies the result a client is granted for a training activity (state/territory specific).
+Parchment issue date: The date a certificate is issued to a student upon completion (state/territory specific).
+Parchment number: The recorded number on a certificate issued to a student upon completion (state/territory specific).
+Predominant delivery mode: Identifies the largest component of delivery for a subject (state/territory specific).
+Program field of education identifier: A code that identifies the subject matter of a qualification, course, or skill set.
+Program identifier: A unique code that identifies a qualification, course, or skill set.
+Program level of education identifier: Identifies the complexity of the program of study.
+Program name: The full name of the program of study.
+Program recognition identifier: Distinguishes a qualification, course, or skill set by its level of recognition in the VET sector.
+Purchasing contract identifier: Uniquely identifies the funding contract between a state/territory training authority and the RTO (state/territory specific).
+Purchasing contract schedule identifier: Identifies a specific program of study under a purchasing contract (state/territory specific).
+Scheduled hours: The number of supervised hours the training organization allocates for the delivery of a unit (state/territory specific).
+School type identifier: Classifies the educational institution at which a VET in Schools client is enrolled for their secondary education.
+Specific funding identifier: Uniquely identifies training in a program funded or initiated by the Australian Government.
+Study reason identifier: Identifies the client's main reason for study.
+Subject field of education identifier: A code that identifies the detailed subject matter of a unit of competency or module.
+Subject identifier: A unique code used to identify a specific unit of competency or module.
+Subject name: The title of a unit of competency or module.
+Training contract identifier: Uniquely identifies an apprentice or trainee training contract registered with a training authority.
+VET flag: Indicates whether the intention of the program or subject is vocational.
+VET in schools flag: Indicates whether a unit of competency/module is part of a VET in Schools program.
+Training Organisation Details
+Training organisation delivery location identifier: A unique code that identifies a training organisation's delivery location.
+Training organisation delivery location name: The name assigned by the training organisation for a delivery location.
+Training organisation identifier: A unique code used to identify a training organisation.
+Training organisation name: The registered name of a training organisation.
+Training organisation type identifier: Classifies the training provider (e.g., TAFE, private provider, school).
