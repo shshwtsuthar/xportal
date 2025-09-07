@@ -163,6 +163,27 @@ export default function Step5FinancialArrangements() {
     setInstallmentCount(count);
     setValue('financialArrangements.installmentCount', count);
   };
+
+  const formatCurrency = (value: number) => {
+    if (isNaN(value)) return '';
+    return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 2 }).format(value);
+  };
+
+  const handleTuitionBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const num = Number(e.target.value);
+    if (!isNaN(num)) {
+      setValue('financialArrangements.tuitionFeeSnapshot', Number(num.toFixed(2)));
+      e.currentTarget.value = String(Number(num.toFixed(2)));
+    }
+  };
+
+  const handleCommissionBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const num = Number(e.target.value);
+    if (!isNaN(num)) {
+      setValue('financialArrangements.agentCommissionRateSnapshot', Number(num.toFixed(2)));
+      e.currentTarget.value = String(Number(num.toFixed(2)));
+    }
+  };
   
   return (
     <div className="min-h-screen bg-background">
@@ -199,6 +220,7 @@ export default function Step5FinancialArrangements() {
                     placeholder="e.g., 10000"
                     {...register('financialArrangements.tuitionFeeSnapshot', { valueAsNumber: true })}
                     className={`mt-2 ${errors.financialArrangements?.tuitionFeeSnapshot ? 'border-red-500' : ''}`}
+                    onBlur={handleTuitionBlur}
                   />
                   {errors.financialArrangements?.tuitionFeeSnapshot && (
                     <p className="text-red-500 text-sm mt-1">
@@ -230,6 +252,7 @@ export default function Step5FinancialArrangements() {
                     placeholder="e.g., 10"
                     {...register('financialArrangements.agentCommissionRateSnapshot', { valueAsNumber: true })}
                     className={`mt-2 ${errors.financialArrangements?.agentCommissionRateSnapshot ? 'border-red-500' : ''}`}
+                    onBlur={handleCommissionBlur}
                   />
                   {errors.financialArrangements?.agentCommissionRateSnapshot && (
                     <p className="text-red-500 text-sm mt-1">
@@ -436,7 +459,7 @@ export default function Step5FinancialArrangements() {
                 <div className="flex justify-between">
                   <span className="font-medium">Total Tuition Fee:</span>
                   <span className="text-muted-foreground">
-                    ${watchedValues.financialArrangements?.tuitionFeeSnapshot?.toFixed(2) || '0.00'} AUD
+                    {formatCurrency(Number(watchedValues.financialArrangements?.tuitionFeeSnapshot ?? 0))}
                   </span>
                 </div>
                 

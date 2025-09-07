@@ -42,3 +42,21 @@ export const getFunctionHeaders = () => {
   }
   return headers;
 };
+
+// Clears all persisted New Application Wizard data across drafts
+export const clearApplicationWizardStorage = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i) as string;
+      if (!key) continue;
+      if (key === 'application-wizard-storage') keysToRemove.push(key);
+      if (key.startsWith('app-etag:')) keysToRemove.push(key);
+      if (key.startsWith('autosave-queue:')) keysToRemove.push(key);
+    }
+    keysToRemove.forEach((k) => window.localStorage.removeItem(k));
+  } catch {
+    // no-op
+  }
+};

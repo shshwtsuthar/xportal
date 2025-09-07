@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { WizardProgress } from './components/wizard-progress';
 import { useApplicationWizard } from '@/stores/application-wizard';
+import { clearApplicationWizardStorage } from '@/lib/utils';
 
 // =============================================================================
 // NEW APPLICATION WIZARD CONTAINER
@@ -21,6 +22,11 @@ export default function NewApplicationWizard() {
       createDraft().catch(console.error);
     }
   }, [draftId, createDraft]);
+
+  // If user navigates to New Application afresh via sidebar, clear any old wizard storage first
+  useEffect(() => {
+    clearApplicationWizardStorage();
+  }, []);
   
   // Redirect to current step only after we have a valid draftId
   useEffect(() => {

@@ -1,7 +1,6 @@
 'use client';
 
-import { useApplicationWizard } from '@/stores/application-wizard';
-import { cn } from '@/lib/utils';
+import { usePathname } from 'next/navigation';
 
 // =============================================================================
 // WIZARD PROGRESS COMPONENT
@@ -18,10 +17,12 @@ const steps = [
 ];
 
 export const WizardProgress = () => {
-  const { currentStep, totalSteps } = useApplicationWizard();
-  const progress = Math.max(0, Math.min(100, ((currentStep - 1) / (totalSteps - 1)) * 100));
+  const pathname = usePathname();
+  const index = steps.findIndex(s => pathname.startsWith(s.path));
+  const currentIndex = index >= 0 ? index : 0;
+  const progress = Math.max(0, Math.min(100, (currentIndex / (steps.length - 1)) * 100));
   return (
-    <div className="fixed top-0 left-0 right-0 h-1 bg-transparent z-50">
+    <div className="sticky top-0 h-1 bg-transparent z-10">
       <div
         className="h-1 bg-black dark:bg-white transition-all duration-300 ease-in-out"
         style={{ width: `${progress}%` }}

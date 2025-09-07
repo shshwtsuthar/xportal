@@ -238,9 +238,20 @@ export default function ReviewApplication() {
               </CardHeader>
               <CardContent>
                 <ul className="list-disc pl-6 text-sm text-muted-foreground">
-                  {missingFields.map((m) => (
-                    <li key={m}>{m}</li>
-                  ))}
+                  {missingFields.map((m) => {
+                    const href = m === 'Personal details' || m === 'Address'
+                      ? '/students/new/step-1'
+                      : (m === 'USI or exemption' || m === 'CRICOS details')
+                        ? '/students/new/step-2'
+                        : '/students/new/step-3';
+                    return (
+                      <li key={m}>
+                        <a href={href} className="underline hover:no-underline">
+                          {m}
+                        </a>
+                      </li>
+                    );
+                  })}
                 </ul>
               </CardContent>
             </Card>

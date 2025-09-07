@@ -13,6 +13,13 @@ body {
   overflow-x: hidden;
 }
 
+/* Keep vertical scrollbar space reserved to avoid layout shift */
+html { overflow-y: scroll; scrollbar-gutter: stable; }
+
+/* Prevent jump when Radix locks scroll for portals (Select/Dialog/Sheet) */
+html[data-scroll-locked] { overflow: hidden; }
+html[data-scroll-locked] body { padding-right: 0 !important; margin-right: 0 !important; }
+
 a {
   color: inherit;
   text-decoration: none;
@@ -141,4 +148,8 @@ a {
     @apply bg-background text-foreground font-sans;
   }
 }
+
+/* Hide scrollbars utility */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 

@@ -4,6 +4,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
+import React from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,7 +42,17 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset>
+                <main className="min-h-screen bg-background" aria-live="polite">
+                  <div className="p-2">
+                    <SidebarTrigger aria-label="Toggle sidebar" />
+                  </div>
+                  {children}
+                </main>
+              </SidebarInset>
+            </SidebarProvider>
             <Toaster position="bottom-right" richColors />
           </ThemeProvider>
         </QueryProvider>
