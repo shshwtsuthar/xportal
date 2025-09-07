@@ -119,6 +119,18 @@ const courseOfferingsRouter = async (req: Request, ctx: ApiContext, body: unknow
     return await listOfferingsByProgramLogic(req, ctx, pathSegments[1]);
   }
 
+  // Route: GET /course-offerings/programs/{programId}/offerings
+  // When this function is invoked at /functions/v1/course-offerings/... the pathname includes the function name.
+  if (
+    method === 'GET' &&
+    pathSegments.length === 4 &&
+    pathSegments[0] === 'course-offerings' &&
+    pathSegments[1] === 'programs' &&
+    pathSegments[3] === 'offerings'
+  ) {
+    return await listOfferingsByProgramLogic(req, ctx, pathSegments[2]);
+  }
+
   // Route: POST /course-offerings
   if (method === 'POST' && pathSegments.length === 1 && pathSegments[0] === 'course-offerings') {
     return await createOfferingLogic(req, ctx, body);

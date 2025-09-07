@@ -46,16 +46,68 @@ BEGIN
   VALUES (v_location_id, v_org_id, 'MELB-CAMPUS-01', 'Melbourne Campus', v_location_address_id)
   ON CONFLICT (id) DO NOTHING;
 
-  -- 3. Program (Qualification)
+  -- 3. Programs (Qualifications) - Australian VET Programs
   INSERT INTO core.programs (id, program_identifier, program_name, status)
-  VALUES (v_program_id, 'BDE101', 'Certificate III in Backend Engineering', 'Current')
+  VALUES 
+    (v_program_id, 'ICT30120', 'Certificate III in Information, Digital Media and Technology', 'Current'),
+    ('a2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7', 'ICT40120', 'Certificate IV in Information Technology', 'Current'),
+    ('b3c4d5e6-f7a8-b9c0-d1e2-f3a4b5c6d7e8', 'ICT50220', 'Diploma of Information Technology', 'Current'),
+    ('c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9', 'BSB30120', 'Certificate III in Business', 'Current'),
+    ('d5e6f7a8-b9c0-d1e2-f3a4-b5c6d7e8f9a0', 'BSB40120', 'Certificate IV in Business', 'Current'),
+    ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', 'CHC30121', 'Certificate III in Early Childhood Education and Care', 'Current'),
+    ('f7a8b9c0-d1e2-f3a4-b5c6-d7e8f9a0b1c2', 'CHC50121', 'Diploma of Early Childhood Education and Care', 'Current'),
+    ('a8b9c0d1-e2f3-a4b5-c6d7-e8f9a0b1c2d3', 'SIT30116', 'Certificate III in Tourism', 'Current'),
+    ('b9c0d1e2-f3a4-b5c6-d7e8-f9a0b1c2d3e4', 'SIT40116', 'Certificate IV in Travel and Tourism', 'Current'),
+    ('c0d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5', 'CPC30220', 'Certificate III in Carpentry', 'Current')
   ON CONFLICT (id) DO NOTHING;
 
-  -- 4. Subjects (Units of Competency)
+  -- 4. Subjects (Units of Competency) - Focused VET Units
   INSERT INTO core.subjects (id, subject_identifier, subject_name, status)
   VALUES
-    (v_subject_core_id, 'SQL-101', 'SQL Fundamentals', 'Current'),
-    (v_subject_elective_id, 'API-201', 'RESTful API Design', 'Current')
+    -- ICT30120 Core Units
+    (v_subject_core_id, 'BSBWHS311', 'Contribute to workplace health and safety', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c7', 'ICTICT313', 'Use IP technology for business', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c8', 'ICTICT314', 'Identify IP, ethics and privacy policies in ICT environments', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c9', 'ICTSAS305', 'Provide ICT advice to clients', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d0', 'ICTSAS306', 'Maintain equipment and software', 'Current'),
+    
+    -- ICT30120 Elective Units
+    (v_subject_elective_id, 'ICTWEB301', 'Create a simple markup language document', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d1', 'ICTWEB302', 'Build simple web pages', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d2', 'ICTWEB303', 'Produce digital images for the web', 'Current'),
+    
+    -- ICT40120 Core Units
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d3', 'ICTICT418', 'Contribute to copyright, ethics and privacy in an ICT environment', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d4', 'ICTICT419', 'Work effectively in the digital media industry', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d5', 'ICTICT420', 'Develop client user interface', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d6', 'ICTICT421', 'Connect, maintain and configure hardware components', 'Current'),
+    
+    -- ICT40120 Elective Units
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d7', 'ICTWEB431', 'Create and style simple markup language documents', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d8', 'ICTWEB432', 'Design simple web page layouts', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d9', 'ICTWEB433', 'Confirm accessibility of websites', 'Current'),
+    
+    -- BSB30120 Core Units
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e0', 'BSBCRT311', 'Apply critical thinking skills in a team environment', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e1', 'BSBPEF201', 'Support personal wellbeing in the workplace', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e2', 'BSBSUS211', 'Participate in sustainable work practices', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e3', 'BSBTWK301', 'Use inclusive work practices', 'Current'),
+    
+    -- BSB30120 Elective Units
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e4', 'BSBOPS301', 'Maintain business resources', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e5', 'BSBOPS302', 'Organise personal work priorities and development', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e6', 'BSBOPS303', 'Organise workplace information', 'Current'),
+    
+    -- CHC30121 Core Units
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e7', 'CHCECE030', 'Support inclusion and diversity', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e8', 'CHCECE031', 'Support children''s health, safety and wellbeing', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e9', 'CHCECE032', 'Nurture babies and toddlers', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5f0', 'CHCECE033', 'Develop positive and respectful relationships with children', 'Current'),
+    
+    -- CHC30121 Elective Units
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5f1', 'CHCECE034', 'Use an approved learning framework to guide practice', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5f2', 'CHCECE035', 'Support the holistic learning and development of children', 'Current'),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5f3', 'CHCECE036', 'Provide experiences to support children''s play and learning', 'Current')
   ON CONFLICT (id) DO NOTHING;
 
   -- 5. Agents (Educational Agents)
@@ -66,19 +118,75 @@ BEGIN
     ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c9', 'Student Recruitment Co', 'ORGANISATION', 'Michael Chen', 'michael@studentrecruit.com', '+61 7 5555 1234', 'Active', 18.0)
   ON CONFLICT (id) DO NOTHING;
 
-  -- 5. Program Structure (links subjects to the program)
+  -- 5. Program Structure (links subjects to the programs)
   INSERT INTO core.program_subjects (program_id, subject_id, unit_type)
   VALUES
+    -- ICT30120 Core Units
     (v_program_id, v_subject_core_id, 'Core'),
-    (v_program_id, v_subject_elective_id, 'Elective')
+    (v_program_id, 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c7', 'Core'),
+    (v_program_id, 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c8', 'Core'),
+    (v_program_id, 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c9', 'Core'),
+    (v_program_id, 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d0', 'Core'),
+    
+    -- ICT30120 Elective Units
+    (v_program_id, v_subject_elective_id, 'Elective'),
+    (v_program_id, 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d1', 'Elective'),
+    (v_program_id, 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d2', 'Elective'),
+    
+    -- ICT40120 Core Units
+    ('a2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d3', 'Core'),
+    ('a2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d4', 'Core'),
+    ('a2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d5', 'Core'),
+    ('a2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d6', 'Core'),
+    
+    -- ICT40120 Elective Units
+    ('a2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d7', 'Elective'),
+    ('a2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d8', 'Elective'),
+    ('a2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d9', 'Elective'),
+    
+    -- BSB30120 Core Units
+    ('c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e0', 'Core'),
+    ('c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e1', 'Core'),
+    ('c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e2', 'Core'),
+    ('c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e3', 'Core'),
+    
+    -- BSB30120 Elective Units
+    ('c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e4', 'Elective'),
+    ('c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e5', 'Elective'),
+    ('c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e6', 'Elective'),
+    
+    -- CHC30121 Core Units
+    ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e7', 'Core'),
+    ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e8', 'Core'),
+    ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5e9', 'Core'),
+    ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5f0', 'Core'),
+    
+    -- CHC30121 Elective Units
+    ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5f1', 'Elective'),
+    ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5f2', 'Elective'),
+    ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', 'f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5f3', 'Elective')
   ON CONFLICT (program_id, subject_id) DO NOTHING;
 
   -- === SEED OPERATIONAL ENTITIES ===
 
-  -- 6. Course Offering (Intake) (depends on Program and Location)
-  INSERT INTO sms_op.course_offerings (id, program_id, start_date, end_date, status, delivery_location_id)
-  VALUES (v_offering_id, v_program_id, '2026-02-01', '2026-11-30', 'Scheduled', v_location_id)
-  ON CONFLICT (id) DO NOTHING;
+  -- 6. Course Offerings (Intakes) for different programs
+  INSERT INTO sms_op.course_offerings (program_id, start_date, end_date, status, delivery_location_id)
+  VALUES 
+    -- ICT30120 Offerings
+    (v_program_id, '2026-02-01', '2026-11-30', 'Scheduled', v_location_id),
+    (v_program_id, '2026-07-01', '2027-04-30', 'Scheduled', v_location_id),
+    
+    -- ICT40120 Offerings
+    ('a2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7', '2026-02-01', '2026-12-31', 'Scheduled', v_location_id),
+    ('a2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7', '2026-07-01', '2027-05-31', 'Scheduled', v_location_id),
+    
+    -- BSB30120 Offerings
+    ('c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9', '2026-02-01', '2026-11-30', 'Scheduled', v_location_id),
+    ('c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9', '2026-07-01', '2027-04-30', 'Scheduled', v_location_id),
+    
+    -- CHC30121 Offerings
+    ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', '2026-02-01', '2026-11-30', 'Scheduled', v_location_id),
+    ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', '2026-07-01', '2027-04-30', 'Scheduled', v_location_id);
 
   -- === SEED CLIENT DATA (for existing tests) ===
 

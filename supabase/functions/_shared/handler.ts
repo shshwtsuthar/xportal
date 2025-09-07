@@ -9,7 +9,8 @@ export const createApiRoute = (logic: ApiLogicHandler) => {
       return new Response('ok', { 
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, if-match, idempotency-key',
+          'Access-Control-Allow-Methods': 'GET,POST,PATCH,OPTIONS',
         }
       }); 
     }
@@ -38,13 +39,13 @@ export const createApiRoute = (logic: ApiLogicHandler) => {
       if (err instanceof ApiError) {
         return new Response(
           JSON.stringify({ message: err.message, ...(err instanceof ValidationError && err.details ? { details: err.details } : {}) }),
-          { status: err.status, headers: { 'Content-Type': 'application/json' } }
+          { status: err.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       return new Response(
         JSON.stringify({ message: 'An internal server error occurred.' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
   };
@@ -52,6 +53,7 @@ export const createApiRoute = (logic: ApiLogicHandler) => {
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, if-match',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, if-match, idempotency-key',
+  'Access-Control-Allow-Methods': 'GET,POST,PATCH,OPTIONS',
   'Access-Control-Expose-Headers': 'etag',
 };
