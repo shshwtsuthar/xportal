@@ -34,8 +34,37 @@ const CreateOfferingSchema = z.object({
   }
 });
 
+// --- Logic: GET /course-offerings (list all) ---
+const listAllOfferingsLogic = async (req: Request, _ctx: ApiContext) => {
+  const offerings = await db.selectFrom('sms_op.course_offerings')
+    .selectAll()
+    .where('status', 'in', ['Scheduled', 'Active']) // Only show intakes that are open for enrolment
+    .orderBy('start_date', 'asc')
+    .execute();
+  
+  return new Response(JSON.stringify(offerings), {
+    status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+};
+
+// --- Logic: GET /course-offerings/{id} ---
+const getOfferingByIdLogic = async (req: Request, _ctx: ApiContext, offeringId: string) => {
+  const offering = await db.selectFrom('sms_op.course_offerings')
+    .selectAll()
+    .where('id', '=', offeringId)
+    .executeTakeFirst();
+  
+  if (!offering) {
+    throw new NotFoundError('Course offering not found');
+  }
+  
+  return new Response(JSON.stringify(offering), {
+    status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+};
+
 // --- Logic: GET /programs/{programId}/offerings ---
-const listOfferingsLogic = async (req: Request, _ctx: ApiContext, programId: string) => {
+const listOfferingsByProgramLogic = async (req: Request, _ctx: ApiContext, programId: string) => {
   const offerings = await db.selectFrom('sms_op.course_offerings')
     .selectAll()
     .where('program_id', '=', programId)
@@ -75,9 +104,19 @@ const courseOfferingsRouter = async (req: Request, ctx: ApiContext, body: unknow
   const pathSegments = url.pathname.split('/').filter(Boolean);
   const method = req.method;
 
+  // Route: GET /course-offerings (list all)
+  if (method === 'GET' && pathSegments.length === 1 && pathSegments[0] === 'course-offerings') {
+    return await listAllOfferingsLogic(req, ctx);
+  }
+
+  // Route: GET /course-offerings/{id}
+  if (method === 'GET' && pathSegments.length === 2 && pathSegments[0] === 'course-offerings') {
+    return await getOfferingByIdLogic(req, ctx, pathSegments[1]);
+  }
+
   // Route: GET /programs/{programId}/offerings
   if (method === 'GET' && pathSegments.length === 3 && pathSegments[0] === 'programs' && pathSegments[2] === 'offerings') {
-    return await listOfferingsLogic(req, ctx, pathSegments[1]);
+    return await listOfferingsByProgramLogic(req, ctx, pathSegments[1]);
   }
 
   // Route: POST /course-offerings

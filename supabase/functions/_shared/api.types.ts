@@ -1032,6 +1032,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/programs/{programId}/offerings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Course Offerings for a Program
+         * @description Returns available course offerings/intakes for a specific program that are open for enrolment.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    programId: components["parameters"]["ProgramId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A list of course offerings for the program. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CourseOffering"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Active Educational Agents
+         * @description Returns a list of active educational agents available for student referrals.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A list of active agents. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Agent"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reference-data/{codeType}": {
         parameters: {
             query?: never;
@@ -1104,6 +1184,11 @@ export interface components {
         EnrolmentDetails: {
             /** Format: uuid */
             programId?: string;
+            /**
+             * Format: uuid
+             * @description The specific course offering/intake the student is enrolling in
+             */
+            courseOfferingId?: string;
             /** @description The snapshot of the program structure for this enrolment. */
             subjectStructure?: {
                 coreSubjectIds?: string[];
@@ -1453,6 +1538,45 @@ export interface components {
             code?: string;
             /** @example Australia */
             description?: string;
+        };
+        Agent: {
+            /** Format: uuid */
+            id?: string;
+            /** @example Global Education Services */
+            agent_name?: string;
+            /** @example International */
+            agent_type?: string;
+            /** @example John Smith */
+            primary_contact_name?: string | null;
+            /**
+             * Format: email
+             * @example john@globaledu.com
+             */
+            primary_contact_email?: string;
+            /** @example +61 2 1234 5678 */
+            primary_contact_phone?: string | null;
+            /** @example Active */
+            status?: string;
+            /**
+             * Format: double
+             * @example 15
+             */
+            commission_rate?: number | null;
+        };
+        CourseOffering: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            program_id?: string;
+            /** Format: date */
+            start_date?: string;
+            /** Format: date */
+            end_date?: string;
+            /** Format: uuid */
+            delivery_location_id?: string | null;
+            max_students?: number | null;
+            /** @enum {string} */
+            status?: "Scheduled" | "Active" | "Completed" | "Cancelled";
         };
     };
     responses: never;

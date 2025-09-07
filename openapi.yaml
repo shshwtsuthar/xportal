@@ -594,6 +594,42 @@ paths:
                 items:
                   $ref: '#/components/schemas/ProgramSubject'
 
+  /programs/{programId}/offerings:
+    get:
+      summary: List Course Offerings for a Program
+      description: Returns available course offerings/intakes for a specific program that are open for enrolment.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, agent, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: A list of course offerings for the program.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CourseOffering'
+
+  /agents:
+    get:
+      summary: List Active Educational Agents
+      description: Returns a list of active educational agents available for student referrals.
+      tags: [Agents]
+      security:
+        - bearerAuth: [admin, agent]
+      responses:
+        '200':
+          description: A list of active agents.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Agent'
+
   /reference-data/{codeType}:
     get:
       summary: Get AVETMISS Reference Codes
@@ -749,6 +785,10 @@ components:
         programId:
           type: string
           format: uuid
+        courseOfferingId:
+          type: string
+          format: uuid
+          description: The specific course offering/intake the student is enrolling in
         subjectStructure:
           type: object
           description: The snapshot of the program structure for this enrolment.
@@ -1329,3 +1369,62 @@ components:
         description:
           type: string
           example: "Australia"
+
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        agent_name:
+          type: string
+          example: "Global Education Services"
+        agent_type:
+          type: string
+          example: "International"
+        primary_contact_name:
+          type: string
+          nullable: true
+          example: "John Smith"
+        primary_contact_email:
+          type: string
+          format: email
+          example: "john@globaledu.com"
+        primary_contact_phone:
+          type: string
+          nullable: true
+          example: "+61 2 1234 5678"
+        status:
+          type: string
+          example: "Active"
+        commission_rate:
+          type: number
+          format: double
+          nullable: true
+          example: 15.0
+
+    CourseOffering:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        program_id:
+          type: string
+          format: uuid
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        delivery_location_id:
+          type: string
+          format: uuid
+          nullable: true
+        max_students:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [Scheduled, Active, Completed, Cancelled]

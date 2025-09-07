@@ -58,6 +58,14 @@ BEGIN
     (v_subject_elective_id, 'API-201', 'RESTful API Design', 'Current')
   ON CONFLICT (id) DO NOTHING;
 
+  -- 5. Agents (Educational Agents)
+  INSERT INTO core.agents (id, agent_name, agent_type, primary_contact_name, primary_contact_email, primary_contact_phone, status, commission_rate)
+  VALUES 
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c7', 'Global Education Services', 'ORGANISATION', 'John Smith', 'john@globaledu.com', '+61 2 1234 5678', 'Active', 15.0),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c8', 'Local Education Partners', 'ORGANISATION', 'Sarah Johnson', 'sarah@localedu.com.au', '+61 3 9876 5432', 'Active', 12.5),
+    ('f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c9', 'Student Recruitment Co', 'ORGANISATION', 'Michael Chen', 'michael@studentrecruit.com', '+61 7 5555 1234', 'Active', 18.0)
+  ON CONFLICT (id) DO NOTHING;
+
   -- 5. Program Structure (links subjects to the program)
   INSERT INTO core.program_subjects (program_id, subject_id, unit_type)
   VALUES
@@ -90,5 +98,95 @@ BEGIN
   INSERT INTO avetmiss.client_avetmiss_details (client_id, highest_school_level_completed_identifier, language_identifier, indigenous_status_identifier, labour_force_status_identifier, at_school_flag, disability_flag, prior_educational_achievement_flag)
   VALUES (v_client_id, '12', '1201', '4', '03', 'N', 'N', 'N')
   ON CONFLICT (client_id) DO NOTHING;
+
+  -- === SEED REFERENCE DATA ===
+  
+  -- Countries
+  INSERT INTO avetmiss.codes (code_type, code_value, code_description, is_active, sort_order)
+  VALUES 
+    ('COUNTRY', '1101', 'Australia', true, 1),
+    ('COUNTRY', '1102', 'New Zealand', true, 2),
+    ('COUNTRY', '1103', 'United Kingdom', true, 3),
+    ('COUNTRY', '1104', 'United States of America', true, 4),
+    ('COUNTRY', '1105', 'Canada', true, 5),
+    ('COUNTRY', '1106', 'India', true, 6),
+    ('COUNTRY', '1107', 'China', true, 7),
+    ('COUNTRY', '1108', 'Japan', true, 8),
+    ('COUNTRY', '1109', 'South Korea', true, 9),
+    ('COUNTRY', '1110', 'Thailand', true, 10)
+  ON CONFLICT (code_type, code_value) DO NOTHING;
+
+  -- Languages
+  INSERT INTO avetmiss.codes (code_type, code_value, code_description, is_active, sort_order)
+  VALUES 
+    ('LANGUAGE', '1201', 'English', true, 1),
+    ('LANGUAGE', '1202', 'Mandarin', true, 2),
+    ('LANGUAGE', '1203', 'Arabic', true, 3),
+    ('LANGUAGE', '1204', 'Cantonese', true, 4),
+    ('LANGUAGE', '1205', 'Vietnamese', true, 5),
+    ('LANGUAGE', '1206', 'Italian', true, 6),
+    ('LANGUAGE', '1207', 'Greek', true, 7),
+    ('LANGUAGE', '1208', 'Croatian', true, 8),
+    ('LANGUAGE', '1209', 'Polish', true, 9),
+    ('LANGUAGE', '1210', 'Macedonian', true, 10)
+  ON CONFLICT (code_type, code_value) DO NOTHING;
+
+  -- Disability Types
+  INSERT INTO avetmiss.codes (code_type, code_value, code_description, is_active, sort_order)
+  VALUES 
+    ('DisabilityType', '1', 'Hearing/deaf', true, 1),
+    ('DisabilityType', '2', 'Physical', true, 2),
+    ('DisabilityType', '3', 'Intellectual', true, 3),
+    ('DisabilityType', '4', 'Learning', true, 4),
+    ('DisabilityType', '5', 'Mental illness', true, 5),
+    ('DisabilityType', '6', 'Acquired brain impairment', true, 6),
+    ('DisabilityType', '7', 'Vision', true, 7),
+    ('DisabilityType', '8', 'Medical condition', true, 8),
+    ('DisabilityType', '9', 'Other', true, 9)
+  ON CONFLICT (code_type, code_value) DO NOTHING;
+
+  -- Prior Educational Achievement
+  INSERT INTO avetmiss.codes (code_type, code_value, code_description, is_active, sort_order)
+  VALUES 
+    ('PriorEducationalAchievement', '01', 'Year 12 or equivalent', true, 1),
+    ('PriorEducationalAchievement', '02', 'Year 11 or equivalent', true, 2),
+    ('PriorEducationalAchievement', '03', 'Year 10 or equivalent', true, 3),
+    ('PriorEducationalAchievement', '04', 'Year 9 or equivalent', true, 4),
+    ('PriorEducationalAchievement', '05', 'Year 8 or below', true, 5),
+    ('PriorEducationalAchievement', '06', 'Certificate I', true, 6),
+    ('PriorEducationalAchievement', '07', 'Certificate II', true, 7),
+    ('PriorEducationalAchievement', '08', 'Certificate III', true, 8),
+    ('PriorEducationalAchievement', '09', 'Certificate IV', true, 9),
+    ('PriorEducationalAchievement', '10', 'Diploma', true, 10),
+    ('PriorEducationalAchievement', '11', 'Advanced Diploma', true, 11),
+    ('PriorEducationalAchievement', '12', 'Bachelor Degree', true, 12),
+    ('PriorEducationalAchievement', '13', 'Graduate Certificate', true, 13),
+    ('PriorEducationalAchievement', '14', 'Graduate Diploma', true, 14),
+    ('PriorEducationalAchievement', '15', 'Masters Degree', true, 15),
+    ('PriorEducationalAchievement', '16', 'Doctoral Degree', true, 16)
+  ON CONFLICT (code_type, code_value) DO NOTHING;
+
+  -- Funding Source National
+  INSERT INTO avetmiss.codes (code_type, code_value, code_description, is_active, sort_order)
+  VALUES 
+    ('FundingSourceNational', '01', 'Commonwealth and state funding', true, 1),
+    ('FundingSourceNational', '02', 'State funding only', true, 2),
+    ('FundingSourceNational', '03', 'Fee for service', true, 3),
+    ('FundingSourceNational', '04', 'Commonwealth funding only', true, 4),
+    ('FundingSourceNational', '05', 'No funding', true, 5)
+  ON CONFLICT (code_type, code_value) DO NOTHING;
+
+  -- Study Reason
+  INSERT INTO avetmiss.codes (code_type, code_value, code_description, is_active, sort_order)
+  VALUES 
+    ('StudyReason', '01', 'To get a job', true, 1),
+    ('StudyReason', '02', 'To develop or start my own business', true, 2),
+    ('StudyReason', '03', 'To try for a different career', true, 3),
+    ('StudyReason', '04', 'To increase my job opportunities', true, 4),
+    ('StudyReason', '05', 'To improve my general educational skills', true, 5),
+    ('StudyReason', '06', 'To get skills for community/voluntary work', true, 6),
+    ('StudyReason', '07', 'To increase my personal confidence', true, 7),
+    ('StudyReason', '08', 'Other reasons', true, 8)
+  ON CONFLICT (code_type, code_value) DO NOTHING;
 
 END $$;

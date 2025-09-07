@@ -1,57 +1,51 @@
-// =============================================================================
-// FILE:        handler.ts (v2 - Hardened Error Handling)
-// PROJECT:     XPortal Student Management System (SMS)
-// AUTHOR:      Lead Backend Engineer
-//
-// DESCRIPTION:
-// This is the master API route handler for all Edge Functions.
-//
-// This version is hardened to specifically handle Zod validation errors.
-// It catches raw ZodError exceptions and transforms them into our standard
-// ValidationError, ensuring that the client always receives a structured,
-// actionable 400 Bad Request instead of a generic 500 Internal Server Error.
-// =============================================================================
-
 import { ApiError, ValidationError } from './errors.ts';
-import type { User } from 'https://esm.sh/@supabase/supabase-js@2';
-import { ZodError } from 'https://deno.land/x/zod@v3.23.8/mod.ts';
 
-export interface ApiContext { user?: Partial<User>; userRoles?: string[]; }
+export interface ApiContext { user?: any; userRoles?: string[]; }
 export type ApiLogicHandler = (req: Request, ctx: ApiContext, body: unknown) => Promise<Response>;
 
 export const createApiRoute = (logic: ApiLogicHandler) => {
   return async (req: Request): Promise<Response> => {
-    if (req.method === 'OPTIONS') { return new Response('ok', { headers: corsHeaders }); }
+    if (req.method === 'OPTIONS') { 
+      return new Response('ok', { 
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        }
+      }); 
+    }
+    
     try {
-      // In a real scenario, this context would be populated by an auth middleware
       const apiContext: ApiContext = {};
-      console.warn("WARNING: Authentication is currently bypassed for development.");
+      let body = null;
       
-      const body = req.headers.get('content-type')?.includes('application/json') ? await req.json() : null;
+      // Only try to parse JSON if there's a content-type header and it's JSON
+      const contentType = req.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          body = await req.json();
+        } catch (jsonErr) {
+          // If JSON parsing fails, continue with null body
+          console.warn('[API_WARNING] Failed to parse JSON body:', jsonErr);
+          body = null;
+        }
+      }
+      
       return await logic(req, apiContext, body);
     } catch (err) {
       console.error(`[API_ERROR]`, err);
-
-      // CRITICAL FIX: Add specific handling for ZodError
-      if (err instanceof ZodError) {
-        const validationError = new ValidationError(
-          "Payload validation failed. Please review the highlighted fields.",
-          err.flatten().fieldErrors
-        );
+      
+      // Handle specific error types
+      if (err instanceof ApiError) {
         return new Response(
-          JSON.stringify({ message: validationError.message, errors: validationError.details }),
-          { status: validationError.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ message: err.message, ...(err instanceof ValidationError && err.details ? { details: err.details } : {}) }),
+          { status: err.status, headers: { 'Content-Type': 'application/json' } }
         );
       }
-
-      const status = err instanceof ApiError ? err.status : 500;
-      const message = err instanceof ApiError ? err.message : 'An internal server error occurred.';
       
-      const responseBody = err instanceof ValidationError
-        ? JSON.stringify({ message, errors: err.details })
-        : JSON.stringify({ message });
-
-      return new Response(responseBody, { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(
+        JSON.stringify({ message: 'An internal server error occurred.' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
     }
   };
 };

@@ -1,15 +1,21 @@
-// supabase/functions/smoke-test/index.ts (Updated)
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createApiRoute, corsHeaders } from '../_shared/handler.ts';
 
-// deno-lint-ignore require-await
-const smokeTestLogic = async (_req: Request, _body: unknown) => {
-  const data = { message: "Phase 1 successful. The API handler is working." };
-  return new Response(JSON.stringify(data), {
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      },
+    });
+  }
+
+  return new Response(JSON.stringify({ message: "Phase 1 successful. The API handler is working." }), {
     status: 200,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Content-Type': 'application/json',
+    },
   });
-};
-
-const handler = createApiRoute(smokeTestLogic);
-serve(handler);
+});

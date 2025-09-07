@@ -1,0 +1,1283 @@
+{
+	"id": "4a685d2c-f1b0-48f0-9e50-a3061629acc1",
+	"name": "XPortal SMS API - Battle Testing (Updated)",
+	"timestamp": "2025-09-07T08:21:51.450Z",
+	"collection_id": "46571965-2c38fe35-25af-4d29-9fbe-4bbcae77785b",
+	"folder_id": 0,
+	"environment_id": "46571965-32d6ff3d-aa34-45bb-8e0b-1aee4fa532e5",
+	"totalPass": 103,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2025-09-07T08:21:47.495Z",
+	"totalFail": 3,
+	"results": [
+		{
+			"id": "c7ecc515-66c0-4292-a104-201653b01fdd",
+			"name": "Smoke Test",
+			"url": "http://127.0.0.1:54321/functions/v1/smoke-test",
+			"time": 110,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response contains success message": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response contains success message": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				110
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response contains success message": true
+				}
+			]
+		},
+		{
+			"id": "b2bb2369-4c8b-4eac-b347-b0ffb9567ce3",
+			"name": "List All Programs",
+			"url": "http://127.0.0.1:54321/functions/v1/programs",
+			"time": 189,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true,
+				"Programs have required fields": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Programs have required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				189
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true,
+					"Programs have required fields": true
+				}
+			]
+		},
+		{
+			"id": "f4ffd13b-11fb-4e36-9cd5-8fc00bfc2a51",
+			"name": "Get Program by ID",
+			"url": "http://127.0.0.1:54321/functions/v1/programs/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6",
+			"time": 7,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Program has required fields": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Program has required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Program has required fields": true
+				}
+			]
+		},
+		{
+			"id": "226a38c7-5cea-473f-ae14-8bea6be39be2",
+			"name": "List Program Subjects",
+			"url": "http://127.0.0.1:54321/functions/v1/programs/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6/subjects",
+			"time": 9,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true,
+				"Subjects have required fields": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Subjects have required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				9
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true,
+					"Subjects have required fields": true
+				}
+			]
+		},
+		{
+			"id": "ad000c9d-22e8-4b33-a20b-2f0c3daf9715",
+			"name": "List Course Offerings",
+			"url": "http://127.0.0.1:54321/functions/v1/course-offerings",
+			"time": 177,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true,
+				"Course offerings have required fields": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Course offerings have required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				177
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true,
+					"Course offerings have required fields": true
+				}
+			]
+		},
+		{
+			"id": "19217ecc-8ad4-47ca-a6e8-285efc4c89c0",
+			"name": "Get Course Offering by ID",
+			"url": "http://127.0.0.1:54321/functions/v1/course-offerings/d1e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6",
+			"time": 7,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Course offering has required fields": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Course offering has required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Course offering has required fields": true
+				}
+			]
+		},
+		{
+			"id": "567a87cf-8bf3-4878-9c6a-c49eba425200",
+			"name": "List Active Agents",
+			"url": "http://127.0.0.1:54321/functions/v1/agents",
+			"time": 158,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true,
+				"Agents have required fields": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Agents have required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				158
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true,
+					"Agents have required fields": true
+				}
+			]
+		},
+		{
+			"id": "5761e84d-bf7d-47f7-91a9-b04d5cf0a1ce",
+			"name": "Get Countries",
+			"url": "http://127.0.0.1:54321/functions/v1/reference-data/countries",
+			"time": 164,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				164
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true
+				}
+			]
+		},
+		{
+			"id": "742086a3-627e-419c-990f-c67100401774",
+			"name": "Get Languages",
+			"url": "http://127.0.0.1:54321/functions/v1/reference-data/languages",
+			"time": 7,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true
+				}
+			]
+		},
+		{
+			"id": "767d0c3c-be14-4e94-a0d7-8ca63b7d51ec",
+			"name": "Get Disability Types",
+			"url": "http://127.0.0.1:54321/functions/v1/reference-data/disability_types",
+			"time": 7,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true
+				}
+			]
+		},
+		{
+			"id": "05c0d1c5-455e-485b-b879-d11a773cba79",
+			"name": "Get Prior Education",
+			"url": "http://127.0.0.1:54321/functions/v1/reference-data/prior_education",
+			"time": 6,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				6
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true
+				}
+			]
+		},
+		{
+			"id": "c5c7e939-d74f-4576-8431-3cbd39e77ceb",
+			"name": "Get Funding Sources",
+			"url": "http://127.0.0.1:54321/functions/v1/reference-data/funding_sources",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true
+				}
+			]
+		},
+		{
+			"id": "c4eea691-a567-479a-9a6e-f86e981b5913",
+			"name": "Get Study Reasons",
+			"url": "http://127.0.0.1:54321/functions/v1/reference-data/study_reasons",
+			"time": 6,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				6
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true
+				}
+			]
+		},
+		{
+			"id": "35320e95-763a-4712-ab98-ab3168e409e7",
+			"name": "List Clients",
+			"url": "http://127.0.0.1:54321/functions/v1/clients",
+			"time": 196,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true,
+				"Clients have required fields": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Clients have required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				196
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true,
+					"Clients have required fields": true
+				}
+			]
+		},
+		{
+			"id": "e6ff990a-90aa-47d0-8c32-f729aa9013ef",
+			"name": "Get Client by ID",
+			"url": "http://127.0.0.1:54321/functions/v1/clients/2d1fb0d9-3575-442d-8a5e-5025658281e5",
+			"time": 15,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Client has required fields": false
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Client has required fields": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				15
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Client has required fields": false
+				}
+			]
+		},
+		{
+			"id": "fb6384e9-d922-4ffd-95b9-2a8a6eac5227",
+			"name": "Update Client",
+			"url": "http://127.0.0.1:54321/functions/v1/clients/2d1fb0d9-3575-442d-8a5e-5025658281e5",
+			"time": 22,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Client updated successfully": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Client updated successfully": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				22
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Client updated successfully": true
+				}
+			]
+		},
+		{
+			"id": "e61009f7-07d7-44a9-9161-b1e1c0304fd3",
+			"name": "Create New Application",
+			"url": "http://127.0.0.1:54321/functions/v1/applications",
+			"time": 276,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 201": true,
+				"Response contains application ID": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 201": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response contains application ID": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				276
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 201": true,
+					"Response contains application ID": true
+				}
+			]
+		},
+		{
+			"id": "7bab56cb-d57b-4113-8fa2-e3e66621fbac",
+			"name": "List Applications",
+			"url": "http://127.0.0.1:54321/functions/v1/applications",
+			"time": 10,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Response is an array": true,
+				"Applications have required fields": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Applications have required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				10
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Response is an array": true,
+					"Applications have required fields": true
+				}
+			]
+		},
+		{
+			"id": "0575b1be-4c9a-4a5e-8fdb-9db7d85d2358",
+			"name": "Get Application by ID",
+			"url": "http://127.0.0.1:54321/functions/v1/applications/b578a267-ea19-4155-8e7a-4930bef41931",
+			"time": 7,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Application has required fields": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Application has required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Application has required fields": true
+				}
+			]
+		},
+		{
+			"id": "8360bb33-c969-4cbb-a09e-8fe6435c9178",
+			"name": "Update Application",
+			"url": "http://127.0.0.1:54321/functions/v1/applications/b578a267-ea19-4155-8e7a-4930bef41931",
+			"time": 13,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Application updated successfully": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Application updated successfully": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				13
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Application updated successfully": true
+				}
+			]
+		},
+		{
+			"id": "4567108c-3aa1-498b-aa9c-696e8a5b63d8",
+			"name": "Submit Application",
+			"url": "http://127.0.0.1:54321/functions/v1/applications/b578a267-ea19-4155-8e7a-4930bef41931/submit",
+			"time": 16,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": true,
+				"Application submitted successfully": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Application submitted successfully": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				16
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": true,
+					"Application submitted successfully": true
+				}
+			]
+		},
+		{
+			"id": "6bb3700c-a5a6-4b21-8b41-6da561f85515",
+			"name": "Approve Application",
+			"url": "http://127.0.0.1:54321/functions/v1/applications/b578a267-ea19-4155-8e7a-4930bef41931/approve",
+			"time": 9,
+			"responseCode": {
+				"code": 400,
+				"name": "Bad Request"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 200": false,
+				"Application approved successfully": false
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 200": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Application approved successfully": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				9
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 200": false,
+					"Application approved successfully": false
+				}
+			]
+		},
+		{
+			"id": "1c759496-ad23-4596-9740-83d1b39bff6f",
+			"name": "Invalid UUID Format",
+			"url": "http://127.0.0.1:54321/functions/v1/clients/invalid-uuid-format",
+			"time": 4,
+			"responseCode": {
+				"code": 400,
+				"name": "Bad Request"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 400": true,
+				"Response contains error message": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 400": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response contains error message": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 400": true,
+					"Response contains error message": true
+				}
+			]
+		},
+		{
+			"id": "cf23245a-dbcc-418d-af6f-2a3fd03e813e",
+			"name": "Non-existent Resource",
+			"url": "http://127.0.0.1:54321/functions/v1/clients/00000000-0000-0000-0000-000000000000",
+			"time": 7,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 404": true,
+				"Response contains error message": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 404": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response contains error message": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 404": true,
+					"Response contains error message": true
+				}
+			]
+		},
+		{
+			"id": "7bc7d6dd-10e9-4e0b-8f82-6dc6a66e3384",
+			"name": "Invalid Reference Type",
+			"url": "http://127.0.0.1:54321/functions/v1/reference-data/invalid_type",
+			"time": 5,
+			"responseCode": {
+				"code": 400,
+				"name": "Bad Request"
+			},
+			"tests": {
+				"Response time is less than 5000ms": true,
+				"Response has valid JSON": true,
+				"Status code is 400": true,
+				"Response contains error message": true
+			},
+			"testPassFailCounts": {
+				"Response time is less than 5000ms": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has valid JSON": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Status code is 400": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response contains error message": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"Response time is less than 5000ms": true,
+					"Response has valid JSON": true,
+					"Status code is 400": true,
+					"Response contains error message": true
+				}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 1432,
+	"collection": {
+		"requests": [
+			{
+				"id": "c7ecc515-66c0-4292-a104-201653b01fdd",
+				"method": "GET"
+			},
+			{
+				"id": "b2bb2369-4c8b-4eac-b347-b0ffb9567ce3",
+				"method": "GET"
+			},
+			{
+				"id": "f4ffd13b-11fb-4e36-9cd5-8fc00bfc2a51",
+				"method": "GET"
+			},
+			{
+				"id": "226a38c7-5cea-473f-ae14-8bea6be39be2",
+				"method": "GET"
+			},
+			{
+				"id": "ad000c9d-22e8-4b33-a20b-2f0c3daf9715",
+				"method": "GET"
+			},
+			{
+				"id": "19217ecc-8ad4-47ca-a6e8-285efc4c89c0",
+				"method": "GET"
+			},
+			{
+				"id": "567a87cf-8bf3-4878-9c6a-c49eba425200",
+				"method": "GET"
+			},
+			{
+				"id": "5761e84d-bf7d-47f7-91a9-b04d5cf0a1ce",
+				"method": "GET"
+			},
+			{
+				"id": "742086a3-627e-419c-990f-c67100401774",
+				"method": "GET"
+			},
+			{
+				"id": "767d0c3c-be14-4e94-a0d7-8ca63b7d51ec",
+				"method": "GET"
+			},
+			{
+				"id": "05c0d1c5-455e-485b-b879-d11a773cba79",
+				"method": "GET"
+			},
+			{
+				"id": "c5c7e939-d74f-4576-8431-3cbd39e77ceb",
+				"method": "GET"
+			},
+			{
+				"id": "c4eea691-a567-479a-9a6e-f86e981b5913",
+				"method": "GET"
+			},
+			{
+				"id": "35320e95-763a-4712-ab98-ab3168e409e7",
+				"method": "GET"
+			},
+			{
+				"id": "e6ff990a-90aa-47d0-8c32-f729aa9013ef",
+				"method": "GET"
+			},
+			{
+				"id": "fb6384e9-d922-4ffd-95b9-2a8a6eac5227",
+				"method": "PATCH"
+			},
+			{
+				"id": "e61009f7-07d7-44a9-9161-b1e1c0304fd3",
+				"method": "POST"
+			},
+			{
+				"id": "7bab56cb-d57b-4113-8fa2-e3e66621fbac",
+				"method": "GET"
+			},
+			{
+				"id": "0575b1be-4c9a-4a5e-8fdb-9db7d85d2358",
+				"method": "GET"
+			},
+			{
+				"id": "8360bb33-c969-4cbb-a09e-8fe6435c9178",
+				"method": "PATCH"
+			},
+			{
+				"id": "4567108c-3aa1-498b-aa9c-696e8a5b63d8",
+				"method": "POST"
+			},
+			{
+				"id": "6bb3700c-a5a6-4b21-8b41-6da561f85515",
+				"method": "POST"
+			},
+			{
+				"id": "1c759496-ad23-4596-9740-83d1b39bff6f",
+				"method": "GET"
+			},
+			{
+				"id": "cf23245a-dbcc-418d-af6f-2a3fd03e813e",
+				"method": "GET"
+			},
+			{
+				"id": "7bc7d6dd-10e9-4e0b-8f82-6dc6a66e3384",
+				"method": "GET"
+			}
+		]
+	}
+}
