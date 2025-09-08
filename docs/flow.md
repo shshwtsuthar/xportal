@@ -311,6 +311,20 @@ deno check supabase/functions/applications/index.ts
 deno check supabase/functions/*/index.ts
 ```
 
+### Database Types Regeneration & Type Checking
+```bash
+# Regenerate Kysely DB types from local Supabase (use DB URL from `supabase status`)
+npx kysely-codegen --dialect=postgres --url "postgresql://postgres:postgres@127.0.0.1:54322/postgres" --out-file "supabase/functions/_shared/database.types.ts"
+
+# After regeneration, run type checks to catch compile-time errors introduced by schema changes
+deno check supabase/functions/course-plans/index.ts
+deno check supabase/functions/payment-plan-templates/index.ts
+deno check supabase/functions/course-offerings/index.ts
+
+# Or check all functions
+deno check supabase/functions/*/index.ts
+```
+
 ### Database Management
 ```bash
 # Reset database with seed data

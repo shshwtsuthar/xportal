@@ -820,12 +820,236 @@ paths:
       responses:
         '200':
           description: A list of subjects for the program.
+  /programs/{programId}/course-plans:
+    get:
+      summary: List course plans for a program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: A list of course plans
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ProgramSubject'
+                  $ref: '#/components/schemas/CoursePlan'
+    post:
+      summary: Create a course plan for a program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoursePlanCreate'
+      responses:
+        '201':
+          description: Course plan created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoursePlan'
+
+  /programs/{programId}/course-plans/{planId}/subjects:
+    get:
+      summary: Get subjects for a course plan
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subjects in the plan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CoursePlanSubject'
+    put:
+      summary: Replace subjects for a course plan
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CoursePlanSubjectInput'
+      responses:
+        '200':
+          description: Plan subjects updated
+
+  /course-offerings/{id}:
+    put:
+      summary: Update a course offering
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseOfferingUpdate'
+      responses:
+        '200':
+          description: Offering updated
+    delete:
+      summary: Delete a course offering
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Offering deleted
+
+  /programs/{programId}/payment-plan-templates:
+    get:
+      summary: List payment plan templates for a program
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin, finance]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: A list of payment plan templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentPlanTemplate'
+    post:
+      summary: Create a payment plan template for a program
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin, finance]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentPlanTemplateCreate'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentPlanTemplate'
+
+  /payment-plan-templates/{templateId}/instalments:
+    get:
+      summary: List instalments in a template
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin, finance]
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Instalments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentPlanInstalment'
+    put:
+      summary: Replace instalments list for a template
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin, finance]
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/PaymentPlanInstalmentInput'
+      responses:
+        '200':
+          description: Instalments updated
+
+  /applications/{applicationId}/derive-payment-plan:
+    post:
+      summary: Derive a concrete payment schedule for an application from a template
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin, finance]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentPlanDeriveInput'
+      responses:
+        '200':
+          description: Derived schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentPlanDerivedSchedule'
 
   /programs/{programId}/offerings:
     get:
@@ -970,6 +1194,109 @@ components:
         format: uuid
 
   schemas:
+    CoursePlan:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        program_id: { type: string, format: uuid }
+        name: { type: string }
+        version: { type: integer }
+        is_active: { type: boolean }
+        created_at: { type: string, format: 'date-time' }
+
+    CoursePlanCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        version: { type: integer, default: 1 }
+        is_active: { type: boolean, default: false }
+
+    CoursePlanSubject:
+      type: object
+      properties:
+        subject_id: { type: string, format: uuid }
+        subject_identifier: { type: string }
+        subject_name: { type: string }
+        unit_type: { type: string, enum: [Core, Elective] }
+        sort_order: { type: integer }
+
+    CoursePlanSubjectInput:
+      type: object
+      required: [subject_id, unit_type]
+      properties:
+        subject_id: { type: string, format: uuid }
+        unit_type: { type: string, enum: [Core, Elective] }
+        sort_order: { type: integer, default: 0 }
+
+    CourseOfferingUpdate:
+      type: object
+      properties:
+        programId: { type: string, format: uuid }
+        startDate: { type: string, format: date, nullable: true }
+        endDate: { type: string, format: date, nullable: true }
+        deliveryLocationId: { type: string, format: uuid, nullable: true }
+        maxStudents: { type: integer, nullable: true }
+        status: { type: string, enum: [Scheduled, Active, Completed, Cancelled] }
+        isRolling: { type: boolean }
+        defaultPlanId: { type: string, format: uuid, nullable: true }
+
+    PaymentPlanTemplate:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        program_id: { type: string, format: uuid }
+        name: { type: string }
+        is_default: { type: boolean }
+        created_at: { type: string, format: 'date-time' }
+
+    PaymentPlanTemplateCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        is_default: { type: boolean, default: false }
+
+    PaymentPlanInstalment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        template_id: { type: string, format: uuid }
+        description: { type: string }
+        amount: { type: number, format: double }
+        offset_days: { type: integer }
+        sort_order: { type: integer }
+
+    PaymentPlanInstalmentInput:
+      type: object
+      required: [description, amount]
+      properties:
+        description: { type: string }
+        amount: { type: number, format: double }
+        offset_days: { type: integer, default: 0 }
+        sort_order: { type: integer, default: 0 }
+
+    PaymentPlanDeriveInput:
+      type: object
+      required: [templateId, startDate]
+      properties:
+        templateId: { type: string, format: uuid }
+        startDate: { type: string, format: date }
+        enrolmentId: { type: string, format: uuid, nullable: true }
+
+    PaymentPlanDerivedInstalment:
+      type: object
+      properties:
+        description: { type: string }
+        amount: { type: number, format: double }
+        dueDate: { type: string, format: date }
+
+    PaymentPlanDerivedSchedule:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/PaymentPlanDerivedInstalment' }
     # --- CORE WORKFLOW PAYLOADS & RESPONSES ---
     FullEnrolmentPayload:
       type: object

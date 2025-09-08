@@ -1,0 +1,352 @@
+{
+	"id": "35c0695a-6fe6-48a9-bf0b-42e810866ee3",
+	"name": "XPortal - Catalog & Finance",
+	"timestamp": "2025-09-08T11:01:11.995Z",
+	"collection_id": "46571965-e7fdd022-aef9-4585-9a81-f23d5476e3d4",
+	"folder_id": 0,
+	"environment_id": "46571965-ce6719e7-2a1a-4d99-b37f-ff6c9ce1ac32",
+	"totalPass": 0,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2025-09-08T11:01:10.327Z",
+	"totalFail": 0,
+	"results": [
+		{
+			"id": "f159addf-d196-428a-98e9-33f0ebe7fc1f",
+			"name": "GET /programs",
+			"url": "http://127.0.0.1:54321/functions/v1/programs",
+			"time": 17,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				17
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "297201c1-0c50-4b78-9a86-6ca3200bffd8",
+			"name": "GET /programs/:programId/subjects",
+			"url": "http://127.0.0.1:54321/functions/v1/programs/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6/subjects",
+			"time": 6,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				6
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "df22cef2-3caa-46eb-9234-332c24c97783",
+			"name": "GET /course-plans/programs/:programId/course-plans",
+			"url": "http://127.0.0.1:54321/functions/v1/course-plans/programs/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6/course-plans",
+			"time": 17,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				17
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "5c94a04b-5e28-4511-b070-148c8bd4e718",
+			"name": "POST /course-plans/programs/:programId/course-plans",
+			"url": "http://127.0.0.1:54321/functions/v1/course-plans/programs/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6/course-plans",
+			"time": 11,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				11
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "f5899496-1e02-4467-8621-474c73de6e43",
+			"name": "GET /course-plans/programs/:programId/course-plans/:planId/subjects",
+			"url": "http://127.0.0.1:54321/functions/v1/course-plans/programs/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6/course-plans/39a4643a-61ad-4861-8fa7-e7e2f3c72da2/subjects",
+			"time": 6,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				6
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "faf2d135-69a0-4280-a3d4-f8f47bfc7397",
+			"name": "PUT /course-plans/programs/:programId/course-plans/:planId/subjects",
+			"url": "http://127.0.0.1:54321/functions/v1/course-plans/programs/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6/course-plans/39a4643a-61ad-4861-8fa7-e7e2f3c72da2/subjects",
+			"time": 7,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				7
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "16b9b18a-b503-4445-8c80-74081ac6273c",
+			"name": "GET /course-offerings/programs/:programId/offerings",
+			"url": "http://127.0.0.1:54321/functions/v1/course-offerings/programs/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6/offerings",
+			"time": 19,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				19
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "b6d8dad7-42d5-4406-9053-7a5d28f3fe68",
+			"name": "POST /course-offerings (rolling)",
+			"url": "http://127.0.0.1:54321/functions/v1/course-offerings",
+			"time": 13,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				13
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "7eb7bd3f-83fa-4276-bc97-bf2b50ead892",
+			"name": "PUT /course-offerings/:offeringId",
+			"url": "http://127.0.0.1:54321/functions/v1/course-offerings/989509e6-d3da-4635-b022-1061001766ad",
+			"time": 10,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				10
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "54d1deb8-f7f1-4492-876f-aa38f26f35da",
+			"name": "DELETE /course-offerings/:offeringId",
+			"url": "http://127.0.0.1:54321/functions/v1/course-offerings/989509e6-d3da-4635-b022-1061001766ad",
+			"time": 8,
+			"responseCode": {
+				"code": 204,
+				"name": "No Content"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				8
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "a01b81d9-b85b-4c7a-9838-af75c58481a0",
+			"name": "GET /payment-plan-templates/programs/:programId/payment-plan-templates",
+			"url": "http://127.0.0.1:54321/functions/v1/payment-plan-templates/programs/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6/payment-plan-templates",
+			"time": 16,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				16
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "557ec808-272a-42ec-9adc-d45f2e7b21e5",
+			"name": "POST /payment-plan-templates/programs/:programId/payment-plan-templates",
+			"url": "http://127.0.0.1:54321/functions/v1/payment-plan-templates/programs/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6/payment-plan-templates",
+			"time": 10,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				10
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "ce4e5858-7e32-4c48-8c7b-e4e145113f2f",
+			"name": "GET /payment-plan-templates/:templateId/instalments",
+			"url": "http://127.0.0.1:54321/functions/v1/payment-plan-templates/6851794e-9a30-4eb0-89c1-acad88826471/instalments",
+			"time": 6,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				6
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "27c86ce2-2c29-4600-b1ef-fb7c7576f4fe",
+			"name": "PUT /payment-plan-templates/:templateId/instalments",
+			"url": "http://127.0.0.1:54321/functions/v1/payment-plan-templates/6851794e-9a30-4eb0-89c1-acad88826471/instalments",
+			"time": 8,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				8
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "dd25745b-6bad-4d40-a55d-721c0290efbe",
+			"name": "POST /payment-plan-templates/applications/:applicationId/derive-payment-plan",
+			"url": "http://127.0.0.1:54321/functions/v1/payment-plan-templates/applications/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d3/derive-payment-plan",
+			"time": 6,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				6
+			],
+			"allTests": [
+				{}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 160,
+	"collection": {
+		"requests": [
+			{
+				"id": "f159addf-d196-428a-98e9-33f0ebe7fc1f",
+				"method": "GET"
+			},
+			{
+				"id": "297201c1-0c50-4b78-9a86-6ca3200bffd8",
+				"method": "GET"
+			},
+			{
+				"id": "df22cef2-3caa-46eb-9234-332c24c97783",
+				"method": "GET"
+			},
+			{
+				"id": "5c94a04b-5e28-4511-b070-148c8bd4e718",
+				"method": "POST"
+			},
+			{
+				"id": "f5899496-1e02-4467-8621-474c73de6e43",
+				"method": "GET"
+			},
+			{
+				"id": "faf2d135-69a0-4280-a3d4-f8f47bfc7397",
+				"method": "PUT"
+			},
+			{
+				"id": "16b9b18a-b503-4445-8c80-74081ac6273c",
+				"method": "GET"
+			},
+			{
+				"id": "b6d8dad7-42d5-4406-9053-7a5d28f3fe68",
+				"method": "POST"
+			},
+			{
+				"id": "7eb7bd3f-83fa-4276-bc97-bf2b50ead892",
+				"method": "PUT"
+			},
+			{
+				"id": "54d1deb8-f7f1-4492-876f-aa38f26f35da",
+				"method": "DELETE"
+			},
+			{
+				"id": "a01b81d9-b85b-4c7a-9838-af75c58481a0",
+				"method": "GET"
+			},
+			{
+				"id": "557ec808-272a-42ec-9adc-d45f2e7b21e5",
+				"method": "POST"
+			},
+			{
+				"id": "ce4e5858-7e32-4c48-8c7b-e4e145113f2f",
+				"method": "GET"
+			},
+			{
+				"id": "27c86ce2-2c29-4600-b1ef-fb7c7576f4fe",
+				"method": "PUT"
+			},
+			{
+				"id": "dd25745b-6bad-4d40-a55d-721c0290efbe",
+				"method": "POST"
+			}
+		]
+	}
+}

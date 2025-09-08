@@ -1298,14 +1298,369 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["ProgramSubject"][];
-                    };
+                    content?: never;
                 };
             };
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List course plans for a program */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    programId: components["parameters"]["ProgramId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A list of course plans */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CoursePlan"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create a course plan for a program */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    programId: components["parameters"]["ProgramId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CoursePlanCreate"];
+                };
+            };
+            responses: {
+                /** @description Course plan created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CoursePlan"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans/{planId}/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get subjects for a course plan */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    programId: components["parameters"]["ProgramId"];
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Subjects in the plan */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CoursePlanSubject"][];
+                    };
+                };
+            };
+        };
+        /** Replace subjects for a course plan */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    programId: components["parameters"]["ProgramId"];
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CoursePlanSubjectInput"][];
+                };
+            };
+            responses: {
+                /** @description Plan subjects updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/course-offerings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a course offering */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    programId: components["parameters"]["ProgramId"];
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CourseOfferingUpdate"];
+                };
+            };
+            responses: {
+                /** @description Offering updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        /** Delete a course offering */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Offering deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/payment-plan-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List payment plan templates for a program */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    programId: components["parameters"]["ProgramId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A list of payment plan templates */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaymentPlanTemplate"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create a payment plan template for a program */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    programId: components["parameters"]["ProgramId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanTemplateCreate"];
+                };
+            };
+            responses: {
+                /** @description Template created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaymentPlanTemplate"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payment-plan-templates/{templateId}/instalments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List instalments in a template */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    templateId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Instalments */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaymentPlanInstalment"][];
+                    };
+                };
+            };
+        };
+        /** Replace instalments list for a template */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    templateId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanInstalmentInput"][];
+                };
+            };
+            responses: {
+                /** @description Instalments updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/derive-payment-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Derive a concrete payment schedule for an application from a template */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    applicationId: components["parameters"]["ApplicationId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanDeriveInput"];
+                };
+            };
+            responses: {
+                /** @description Derived schedule */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaymentPlanDerivedSchedule"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -1434,6 +1789,110 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CoursePlan: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            program_id?: string;
+            name?: string;
+            version?: number;
+            is_active?: boolean;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        CoursePlanCreate: {
+            name: string;
+            /** @default 1 */
+            version: number;
+            /** @default false */
+            is_active: boolean;
+        };
+        CoursePlanSubject: {
+            /** Format: uuid */
+            subject_id?: string;
+            subject_identifier?: string;
+            subject_name?: string;
+            /** @enum {string} */
+            unit_type?: "Core" | "Elective";
+            sort_order?: number;
+        };
+        CoursePlanSubjectInput: {
+            /** Format: uuid */
+            subject_id: string;
+            /** @enum {string} */
+            unit_type: "Core" | "Elective";
+            /** @default 0 */
+            sort_order: number;
+        };
+        CourseOfferingUpdate: {
+            /** Format: uuid */
+            programId?: string;
+            /** Format: date */
+            startDate?: string | null;
+            /** Format: date */
+            endDate?: string | null;
+            /** Format: uuid */
+            deliveryLocationId?: string | null;
+            maxStudents?: number | null;
+            /** @enum {string} */
+            status?: "Scheduled" | "Active" | "Completed" | "Cancelled";
+            isRolling?: boolean;
+            /** Format: uuid */
+            defaultPlanId?: string | null;
+        };
+        PaymentPlanTemplate: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            program_id?: string;
+            name?: string;
+            is_default?: boolean;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        PaymentPlanTemplateCreate: {
+            name: string;
+            /** @default false */
+            is_default: boolean;
+        };
+        PaymentPlanInstalment: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            template_id?: string;
+            description?: string;
+            /** Format: double */
+            amount?: number;
+            offset_days?: number;
+            sort_order?: number;
+        };
+        PaymentPlanInstalmentInput: {
+            description: string;
+            /** Format: double */
+            amount: number;
+            /** @default 0 */
+            offset_days: number;
+            /** @default 0 */
+            sort_order: number;
+        };
+        PaymentPlanDeriveInput: {
+            /** Format: uuid */
+            templateId: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: uuid */
+            enrolmentId?: string | null;
+        };
+        PaymentPlanDerivedInstalment: {
+            description?: string;
+            /** Format: double */
+            amount?: number;
+            /** Format: date */
+            dueDate?: string;
+        };
+        PaymentPlanDerivedSchedule: {
+            items?: components["schemas"]["PaymentPlanDerivedInstalment"][];
+        };
         /** @description The complete data object for an application. */
         FullEnrolmentPayload: {
             /** Format: uuid */

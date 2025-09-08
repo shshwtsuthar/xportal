@@ -3,7 +3,9 @@
  * Please do not edit it manually.
  */
 
-import { type ColumnType } from "npm:kysely";
+import type { ColumnType } from "npm:kysely";
+// Deno shim for Node Buffer type in generated definitions
+type Buffer = Uint8Array;
 
 export type AuthAalLevel = "aal1" | "aal2" | "aal3";
 
@@ -535,6 +537,22 @@ export interface CoreOrganisations {
   updated_at: Generated<Timestamp | null>;
 }
 
+export interface CoreProgramCoursePlans {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  is_active: Generated<boolean>;
+  name: string;
+  program_id: string;
+  version: Generated<number>;
+}
+
+export interface CoreProgramCoursePlanSubjects {
+  plan_id: string;
+  sort_order: Generated<number>;
+  subject_id: string;
+  unit_type: string;
+}
+
 export interface CorePrograms {
   created_at: Generated<Timestamp | null>;
   id: Generated<string>;
@@ -656,8 +674,8 @@ export interface ExtensionsPgStatStatementsInfo {
 }
 
 export interface NetHttpRequestQueue {
-  body: Uint8Array | null;
-  headers: Json | null;
+  body: Buffer | null;
+  headers: Json;
   id: Generated<Int8>;
   method: string;
   timeout_milliseconds: number;
@@ -764,9 +782,11 @@ export interface SmsOpAssessmentTasks {
 
 export interface SmsOpCourseOfferings {
   created_at: Generated<Timestamp | null>;
+  default_plan_id: string | null;
   delivery_location_id: string | null;
   end_date: Timestamp;
   id: Generated<string>;
+  is_rolling: Generated<boolean>;
   max_students: number | null;
   program_id: string;
   start_date: Timestamp;
@@ -781,17 +801,22 @@ export interface SmsOpEnrolments {
   agent_commission_rate_snapshot: Numeric | null;
   agent_id: string | null;
   client_id: string;
+  client_identifier_apprenticeships: string | null;
   course_offering_id: string;
   created_at: Generated<Timestamp | null>;
   deferral_end_date: Timestamp | null;
   deferral_start_date: Timestamp | null;
   enrolment_date: Generated<Timestamp>;
   id: Generated<string>;
+  school_type_identifier: string | null;
+  specific_funding_identifier: string | null;
   status: Generated<string>;
+  training_contract_identifier: string | null;
   /**
    * The total tuition fee for this enrolment at the moment it was created, frozen in time.
    */
   tuition_fee_snapshot: Numeric | null;
+  vet_in_schools_flag: Generated<boolean>;
   withdrawal_reason: string | null;
 }
 
@@ -867,6 +892,23 @@ export interface SmsOpPaymentPlans {
   start_date: Timestamp;
   status: Generated<string>;
   total_amount: Numeric;
+}
+
+export interface SmsOpPaymentPlanTemplateInstalments {
+  amount: Numeric;
+  description: string;
+  id: Generated<string>;
+  offset_days: Generated<number>;
+  sort_order: Generated<number>;
+  template_id: string;
+}
+
+export interface SmsOpPaymentPlanTemplates {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  is_default: Generated<boolean>;
+  name: string;
+  program_id: string;
 }
 
 export interface SmsOpPayments {
@@ -1049,6 +1091,11 @@ export interface SupabaseMigrationsSchemaMigrations {
   version: string;
 }
 
+export interface SupabaseMigrationsSeedFiles {
+  hash: string;
+  path: string;
+}
+
 export interface VaultDecryptedSecrets {
   created_at: Timestamp | null;
   decrypted_secret: string | null;
@@ -1056,7 +1103,7 @@ export interface VaultDecryptedSecrets {
   id: string | null;
   key_id: string | null;
   name: string | null;
-  nonce: Uint8Array | null;
+  nonce: Buffer | null;
   secret: string | null;
   updated_at: Timestamp | null;
 }
@@ -1067,7 +1114,7 @@ export interface VaultSecrets {
   id: Generated<string>;
   key_id: string | null;
   name: string | null;
-  nonce: Generated<Uint8Array | null>;
+  nonce: Generated<Buffer | null>;
   secret: string;
   updated_at: Generated<Timestamp>;
 }
@@ -1113,6 +1160,8 @@ export interface DB {
   "core.clients_audit": CoreClientsAudit;
   "core.locations": CoreLocations;
   "core.organisations": CoreOrganisations;
+  "core.program_course_plan_subjects": CoreProgramCoursePlanSubjects;
+  "core.program_course_plans": CoreProgramCoursePlans;
   "core.program_subjects": CoreProgramSubjects;
   "core.programs": CorePrograms;
   "core.subjects": CoreSubjects;
@@ -1140,6 +1189,8 @@ export interface DB {
   "sms_op.invoices": SmsOpInvoices;
   "sms_op.outcomes_audit": SmsOpOutcomesAudit;
   "sms_op.payment_plan_instalments": SmsOpPaymentPlanInstalments;
+  "sms_op.payment_plan_template_instalments": SmsOpPaymentPlanTemplateInstalments;
+  "sms_op.payment_plan_templates": SmsOpPaymentPlanTemplates;
   "sms_op.payment_plans": SmsOpPaymentPlans;
   "sms_op.payments": SmsOpPayments;
   "sms_op.refunds": SmsOpRefunds;
@@ -1159,6 +1210,7 @@ export interface DB {
   "supabase_functions.hooks": SupabaseFunctionsHooks;
   "supabase_functions.migrations": SupabaseFunctionsMigrations;
   "supabase_migrations.schema_migrations": SupabaseMigrationsSchemaMigrations;
+  "supabase_migrations.seed_files": SupabaseMigrationsSeedFiles;
   "vault.decrypted_secrets": VaultDecryptedSecrets;
   "vault.secrets": VaultSecrets;
 }

@@ -58,6 +58,37 @@ tags:
 # API PATHS (The Endpoints)
 # =============================================================================
 paths:
+  /payment-plan-templates/{templateId}:
+    patch:
+      summary: Update a Payment Plan Template
+      description: Set or unset the default template for a program. When setting a template as default, all other templates in the same program are unset.
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                is_default:
+                  type: boolean
+              required: [is_default]
+      responses:
+        '200':
+          description: Template updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentPlanTemplate'
   # ---------------------------------------------------------------------------
   # == APPLICATIONS & ENROLMENTS ==
   # ---------------------------------------------------------------------------
@@ -1228,6 +1259,22 @@ components:
 
     Payment:
       type: object
+    PaymentPlanTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        program_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        is_default:
+          type: boolean
+        created_at:
+          type: string
+          format: 'date-time'
       properties:
         id:
           type: string

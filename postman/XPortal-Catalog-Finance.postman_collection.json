@@ -1,0 +1,272 @@
+{
+  "info": {
+    "name": "XPortal - Catalog & Finance",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Smoke tests for Programs, Course Plans, Offerings, and Payment Plan Templates"
+  },
+  "item": [
+    {
+      "name": "Programs",
+      "item": [
+        {
+          "name": "GET /programs",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/programs",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs"]
+            }
+          }
+        },
+        {
+          "name": "GET /programs/:programId/subjects",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}/subjects",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}", "subjects"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Course Plans",
+      "item": [
+        {
+          "name": "GET /course-plans/programs/:programId/course-plans",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/course-plans/programs/{{programId}}/course-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["course-plans", "programs", "{{programId}}", "course-plans"]
+            }
+          }
+        },
+        {
+          "name": "POST /course-plans/programs/:programId/course-plans",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API Plan\",\n  \"version\": 1,\n  \"isActive\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/course-plans/programs/{{programId}}/course-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["course-plans", "programs", "{{programId}}", "course-plans"]
+            }
+          }
+        },
+        {
+          "name": "GET /course-plans/programs/:programId/course-plans/:planId/subjects",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/course-plans/programs/{{programId}}/course-plans/{{planId}}/subjects",
+              "host": ["{{baseUrl}}"],
+              "path": ["course-plans", "programs", "{{programId}}", "course-plans", "{{planId}}", "subjects"]
+            }
+          }
+        },
+        {
+          "name": "PUT /course-plans/programs/:programId/course-plans/:planId/subjects",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"subject_id\": \"{{subjectId1}}\", \"unit_type\": \"Core\", \"sort_order\": 1 },\n  { \"subject_id\": \"{{subjectId2}}\", \"unit_type\": \"Elective\", \"sort_order\": 2 }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/course-plans/programs/{{programId}}/course-plans/{{planId}}/subjects",
+              "host": ["{{baseUrl}}"],
+              "path": ["course-plans", "programs", "{{programId}}", "course-plans", "{{planId}}", "subjects"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Offerings",
+      "item": [
+        {
+          "name": "GET /course-offerings/programs/:programId/offerings",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/course-offerings/programs/{{programId}}/offerings",
+              "host": ["{{baseUrl}}"],
+              "path": ["course-offerings", "programs", "{{programId}}", "offerings"]
+            }
+          }
+        },
+        {
+          "name": "POST /course-offerings (rolling)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"programId\": \"{{programId}}\",\n  \"isRolling\": true,\n  \"status\": \"Scheduled\",\n  \"startDate\": \"{{offeringStartDate}}\",\n  \"endDate\": \"{{offeringEndDate}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/course-offerings",
+              "host": ["{{baseUrl}}"],
+              "path": ["course-offerings"]
+            }
+          }
+        },
+        {
+          "name": "PUT /course-offerings/:offeringId",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/course-offerings/{{offeringId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["course-offerings", "{{offeringId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /course-offerings/:offeringId",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/course-offerings/{{offeringId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["course-offerings", "{{offeringId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment Plan Templates",
+      "item": [
+        {
+          "name": "GET /payment-plan-templates/programs/:programId/payment-plan-templates",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/payment-plan-templates/programs/{{programId}}/payment-plan-templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment-plan-templates", "programs", "{{programId}}", "payment-plan-templates"]
+            }
+          }
+        },
+        {
+          "name": "POST /payment-plan-templates/programs/:programId/payment-plan-templates",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API Template\",\n  \"is_default\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment-plan-templates/programs/{{programId}}/payment-plan-templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment-plan-templates", "programs", "{{programId}}", "payment-plan-templates"]
+            }
+          }
+        },
+        {
+          "name": "GET /payment-plan-templates/:templateId/instalments",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/payment-plan-templates/{{templateId}}/instalments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment-plan-templates", "{{templateId}}", "instalments"]
+            }
+          }
+        },
+        {
+          "name": "PUT /payment-plan-templates/:templateId/instalments",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"description\": \"Instalment 1\", \"amount\": 500, \"offset_days\": 0, \"sort_order\": 1 },\n  { \"description\": \"Instalment 2\", \"amount\": 700, \"offset_days\": 7, \"sort_order\": 2 }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment-plan-templates/{{templateId}}/instalments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment-plan-templates", "{{templateId}}", "instalments"]
+            }
+          }
+        },
+        {
+          "name": "POST /payment-plan-templates/applications/:applicationId/derive-payment-plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{serviceRoleKey}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templateId\": \"{{templateId}}\",\n  \"startDate\": \"{{startDate}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment-plan-templates/applications/{{applicationId}}/derive-payment-plan",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment-plan-templates", "applications", "{{applicationId}}", "derive-payment-plan"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:54321/functions/v1" },
+    { "key": "serviceRoleKey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU" },
+    { "key": "programId", "value": "" },
+    { "key": "planId", "value": "" },
+    { "key": "subjectId1", "value": "" },
+    { "key": "subjectId2", "value": "" },
+    { "key": "offeringId", "value": "" },
+    { "key": "templateId", "value": "" },
+    { "key": "applicationId", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "startDate", "value": "2025-01-01" }
+  ]
+}
+
+

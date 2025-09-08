@@ -51,11 +51,7 @@ const students: NavItem[] = [
 ];
 
 const programs: NavItem[] = [
-  { title: "Catalog", href: "/programs", icon: BookOpenText },
-];
-
-const offerings: NavItem[] = [
-  { title: "Offerings", href: "/course-offerings", icon: CalendarDays },
+  { title: "Programs & Courses", href: "/programs", icon: BookOpenText },
 ];
 
 const staff: NavItem[] = [
@@ -163,7 +159,6 @@ export function AppSidebar() {
           <Group label="Dashboard" items={dashboard} defaultOpen />
           <Group label="Students" items={students} defaultOpen />
           <Group label="Programs" items={programs} />
-          <Group label="Course Offerings" items={offerings} />
           <Group label="Staff" items={staff} />
           <Group label="Agents" items={agents} />
           <Group label="Finance" items={finance} />
