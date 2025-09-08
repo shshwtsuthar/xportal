@@ -11,7 +11,40 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List All Applications
+         * @description Returns a paginated list of all applications with their current status and metadata. Supports filtering by status and pagination for large datasets.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number for pagination (1-based) */
+                    page?: number;
+                    /** @description Number of applications per page */
+                    limit?: number;
+                    /** @description Filter applications by status */
+                    status?: "Draft" | "Submitted" | "Approved" | "Rejected";
+                    /** @description Search applications by client name or email */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A paginated list of applications. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationListResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
         /**
          * Start a New Enrolment Application
@@ -173,6 +206,253 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a Submitted Application
+         * @description Rejects a submitted application with a reason. This transitions the application status to 'Rejected' and prevents further processing.
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    applicationId: components["parameters"]["ApplicationId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description Reason for rejection */
+                        reason: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Application rejected successfully. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Application"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Draft Applications
+         * @description Returns a paginated list of all draft applications. This endpoint is optimized for the draft management interface.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number for pagination (1-based) */
+                    page?: number;
+                    /** @description Number of applications per page */
+                    limit?: number;
+                    /** @description Search applications by client name or email */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A paginated list of draft applications. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/submitted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Submitted Applications
+         * @description Returns a paginated list of all submitted applications awaiting approval. This endpoint is optimized for the approval workflow interface.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number for pagination (1-based) */
+                    page?: number;
+                    /** @description Number of applications per page */
+                    limit?: number;
+                    /** @description Search applications by client name or email */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A paginated list of submitted applications. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/approved": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Approved Applications
+         * @description Returns a paginated list of all approved applications. These applications have been processed and converted to enrolments.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number for pagination (1-based) */
+                    page?: number;
+                    /** @description Number of applications per page */
+                    limit?: number;
+                    /** @description Search applications by client name or email */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A paginated list of approved applications. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Application Statistics
+         * @description Returns aggregated statistics about applications including counts by status, recent activity, and performance metrics.
+         *
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Application statistics. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Total number of applications */
+                            totalApplications?: number;
+                            /** @description Number of draft applications */
+                            draftCount?: number;
+                            /** @description Number of submitted applications */
+                            submittedCount?: number;
+                            /** @description Number of approved applications */
+                            approvedCount?: number;
+                            /** @description Number of rejected applications */
+                            rejectedCount?: number;
+                            /** @description Applications submitted in the last 7 days */
+                            recentSubmissions?: number;
+                            /** @description Average time from submission to approval in hours */
+                            averageProcessingTime?: number;
+                            /** @description Percentage of applications that reach approved status */
+                            completionRate?: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1032,6 +1312,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/programs/{programId}/offerings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Course Offerings for a Program
+         * @description Returns available course offerings/intakes for a specific program that are open for enrolment.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    programId: components["parameters"]["ProgramId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A list of course offerings for the program. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CourseOffering"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Active Educational Agents
+         * @description Returns a list of active educational agents available for student referrals.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A list of active agents. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Agent"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reference-data/{codeType}": {
         parameters: {
             query?: never;
@@ -1104,6 +1464,11 @@ export interface components {
         EnrolmentDetails: {
             /** Format: uuid */
             programId?: string;
+            /**
+             * Format: uuid
+             * @description The specific course offering/intake the student is enrolling in
+             */
+            courseOfferingId?: string;
             /** @description The snapshot of the program structure for this enrolment. */
             subjectStructure?: {
                 coreSubjectIds?: string[];
@@ -1139,6 +1504,96 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string;
+        };
+        /** @description A lightweight representation of an application for list views */
+        ApplicationSummary: {
+            /**
+             * Format: uuid
+             * @description Unique identifier for the application
+             */
+            id?: string;
+            /**
+             * @description Current status of the application
+             * @enum {string}
+             */
+            status?: "Draft" | "Submitted" | "Approved" | "Rejected";
+            /**
+             * @description Full name of the applicant (from personalDetails)
+             * @example John Citizen
+             */
+            clientName?: string;
+            /**
+             * Format: email
+             * @description Primary email of the applicant
+             * @example john.citizen@example.com
+             */
+            clientEmail?: string;
+            /**
+             * @description Name of the program being applied for
+             * @example Certificate III in Business
+             */
+            programName?: string | null;
+            /**
+             * @description Name of the educational agent (if applicable)
+             * @example Global Education Services
+             */
+            agentName?: string | null;
+            /**
+             * Format: date-time
+             * @description When the application was first created
+             */
+            createdAt?: string;
+            /**
+             * Format: date-time
+             * @description When the application was last modified
+             */
+            updatedAt?: string;
+            /**
+             * Format: uuid
+             * @description ID of the client created when application was approved
+             */
+            createdClientId?: string | null;
+            /**
+             * Format: uuid
+             * @description ID of the enrolment created when application was approved
+             */
+            createdEnrolmentId?: string | null;
+        };
+        /** @description Paginated response for application listings */
+        ApplicationListResponse: {
+            data?: components["schemas"]["ApplicationSummary"][];
+            pagination?: {
+                /**
+                 * @description Current page number (1-based)
+                 * @example 1
+                 */
+                page?: number;
+                /**
+                 * @description Number of items per page
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description Total number of applications matching the query
+                 * @example 150
+                 */
+                total?: number;
+                /**
+                 * @description Total number of pages
+                 * @example 8
+                 */
+                totalPages?: number;
+                /**
+                 * @description Whether there are more pages available
+                 * @example true
+                 */
+                hasNext?: boolean;
+                /**
+                 * @description Whether there are previous pages available
+                 * @example false
+                 */
+                hasPrevious?: boolean;
+            };
         };
         EnrolmentStateChangePayload: {
             /** @enum {string} */
@@ -1453,6 +1908,45 @@ export interface components {
             code?: string;
             /** @example Australia */
             description?: string;
+        };
+        Agent: {
+            /** Format: uuid */
+            id?: string;
+            /** @example Global Education Services */
+            agent_name?: string;
+            /** @example International */
+            agent_type?: string;
+            /** @example John Smith */
+            primary_contact_name?: string | null;
+            /**
+             * Format: email
+             * @example john@globaledu.com
+             */
+            primary_contact_email?: string;
+            /** @example +61 2 1234 5678 */
+            primary_contact_phone?: string | null;
+            /** @example Active */
+            status?: string;
+            /**
+             * Format: double
+             * @example 15
+             */
+            commission_rate?: number | null;
+        };
+        CourseOffering: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            program_id?: string;
+            /** Format: date */
+            start_date?: string;
+            /** Format: date */
+            end_date?: string;
+            /** Format: uuid */
+            delivery_location_id?: string | null;
+            max_students?: number | null;
+            /** @enum {string} */
+            status?: "Scheduled" | "Active" | "Completed" | "Cancelled";
         };
     };
     responses: never;

@@ -46,6 +46,7 @@ const dashboard: NavItem[] = [
 
 const students: NavItem[] = [
   { title: "Students", href: "/students", icon: Users },
+  { title: "Applications", href: "/students/applications", icon: FileText },
   { title: "New Application", href: "/students/new", icon: GraduationCap },
 ];
 

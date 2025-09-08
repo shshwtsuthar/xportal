@@ -70,20 +70,27 @@ paths:
 
 ### 3. **Type Generation Phase** 🔄
 
-**Objective**: Generate TypeScript types from OpenAPI specification to ensure type safety.
+**Objective**: Generate TypeScript types from OpenAPI specification to ensure type safety across both frontend and backend.
 
-**Command**:
+**Commands**:
 ```bash
+# Generate types for backend (Supabase Edge Functions)
 npx openapi-typescript ./openapi.yaml --output ./supabase/functions/_shared/api.types.ts
+
+# Generate types for frontend (React components and hooks)
+npx openapi-typescript ./openapi.yaml --output ./src/types/api.ts
 ```
 
 **Activities**:
 - Run type generation after OpenAPI changes
+- Generate types for both backend and frontend
 - Verify generated types are correct
-- Update imports in backend functions
+- Update imports in backend functions and frontend hooks
 - Ensure type consistency across frontend and backend
 
-**Key File**: `supabase/functions/_shared/api.types.ts`
+**Key Files**: 
+- `supabase/functions/_shared/api.types.ts` - Backend types
+- `src/types/api.ts` - Frontend types
 
 **Benefits**:
 - Automatic type generation from API spec
@@ -288,8 +295,11 @@ export const useApplications = () => {
 
 ### Type Generation
 ```bash
-# Generate types from OpenAPI spec
+# Generate types for backend (Supabase Edge Functions)
 npx openapi-typescript ./openapi.yaml --output ./supabase/functions/_shared/api.types.ts
+
+# Generate types for frontend (React components and hooks)
+npx openapi-typescript ./openapi.yaml --output ./src/types/api.ts
 ```
 
 ### Backend Validation
