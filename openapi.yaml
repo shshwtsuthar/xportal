@@ -62,6 +62,48 @@ paths:
   # == APPLICATIONS & ENROLMENTS ==
   # ---------------------------------------------------------------------------
   /applications:
+    get:
+      summary: List All Applications
+      description: >
+        Returns a paginated list of all applications with their current status and metadata.
+        Supports filtering by status and pagination for large datasets.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of applications per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          description: Filter applications by status
+          schema:
+            type: string
+            enum: [Draft, Submitted, Approved, Rejected]
+        - name: search
+          in: query
+          description: Search applications by client name or email
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A paginated list of applications.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationListResponse'
     post:
       summary: Start a New Enrolment Application
       description: >
@@ -852,6 +894,92 @@ components:
         updatedAt:
           type: string
           format: 'date-time'
+
+    ApplicationSummary:
+      type: object
+      description: A lightweight representation of an application for list views
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the application
+        status:
+          type: string
+          enum: [Draft, Submitted, Approved, Rejected]
+          description: Current status of the application
+        clientName:
+          type: string
+          description: Full name of the applicant (from personalDetails)
+          example: "John Citizen"
+        clientEmail:
+          type: string
+          format: email
+          description: Primary email of the applicant
+          example: "john.citizen@example.com"
+        programName:
+          type: string
+          nullable: true
+          description: Name of the program being applied for
+          example: "Certificate III in Business"
+        agentName:
+          type: string
+          nullable: true
+          description: Name of the educational agent (if applicable)
+          example: "Global Education Services"
+        createdAt:
+          type: string
+          format: 'date-time'
+          description: When the application was first created
+        updatedAt:
+          type: string
+          format: 'date-time'
+          description: When the application was last modified
+        createdClientId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the client created when application was approved
+        createdEnrolmentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the enrolment created when application was approved
+
+    ApplicationListResponse:
+      type: object
+      description: Paginated response for application listings
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplicationSummary'
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+              description: Current page number (1-based)
+              example: 1
+            limit:
+              type: integer
+              description: Number of items per page
+              example: 20
+            total:
+              type: integer
+              description: Total number of applications matching the query
+              example: 150
+            totalPages:
+              type: integer
+              description: Total number of pages
+              example: 8
+            hasNext:
+              type: boolean
+              description: Whether there are more pages available
+              example: true
+            hasPrevious:
+              type: boolean
+              description: Whether there are previous pages available
+              example: false
 
     EnrolmentStateChangePayload:
       type: object

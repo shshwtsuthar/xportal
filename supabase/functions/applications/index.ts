@@ -19,21 +19,137 @@ import { deepMerge } from '../_shared/utils.ts';
 import { validateFullEnrolmentPayload } from '../_shared/validators.ts';
 import type { components } from '../_shared/api.types.ts';
 import { z } from 'https://deno.land/x/zod@v3.23.8/mod.ts';
+import type { ExpressionBuilder } from 'npm:kysely';
+import type { DB } from '../_shared/database.types.ts';
+import { sql, type SqlBool } from 'npm:kysely';
 
 type FullEnrolmentPayload = components['schemas']['FullEnrolmentPayload'];
 type ApprovalPayload = components['schemas']['ApprovalPayload'];
 
+// Database row types
+interface ApplicationRow {
+  id: string;
+  status: string;
+  application_payload: Record<string, unknown>;
+  created_client_id: string | null;
+  created_enrolment_id: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// Transaction type for database operations - Kysely transaction type is complex, using any for pragmatic reasons
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DatabaseTransaction = any;
+
 // --- Logic: List Applications ---
 const listApplicationsLogic = async (req: Request, _ctx: ApiContext) => {
   try {
-    const applications = await db.selectFrom('sms_op.applications')
-      .select(['id', 'status', 'created_at', 'updated_at'])
-      .limit(10)
+    const url = new URL(req.url);
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20')));
+    const status = url.searchParams.get('status');
+    const search = url.searchParams.get('search');
+    
+    const offset = (page - 1) * limit;
+    
+    // Build the base query
+    let query = db.selectFrom('sms_op.applications')
+      .select([
+        'id',
+        'status', 
+        'application_payload',
+        'created_client_id',
+        'created_enrolment_id',
+        'created_at',
+        'updated_at'
+      ]);
+    
+    // Apply status filter if provided
+    if (status && ['Draft', 'Submitted', 'Approved', 'Rejected'].includes(status)) {
+      query = query.where('status', '=', status);
+    }
+    
+    // Apply search filter if provided (search in personalDetails name or email)
+    if (search) {
+      // Use raw SQL for JSONB operations to bypass Kysely type limitations
+      const searchPattern = `%${search}%`;
+      query = query.where(sql<SqlBool>`(
+        jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${searchPattern} OR
+        jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${searchPattern} OR
+        jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${searchPattern}
+      )`);
+    }
+    
+    // Get total count for pagination (separate query to avoid GROUP BY issues)
+    let countQuery = db.selectFrom('sms_op.applications')
+      .select((eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('total'));
+    
+    // Apply the same filters to count query
+    if (status && ['Draft', 'Submitted', 'Approved', 'Rejected'].includes(status)) {
+      countQuery = countQuery.where('status', '=', status);
+    }
+    
+    if (search) {
+      const searchPattern = `%${search}%`;
+      countQuery = countQuery.where(sql<SqlBool>`(
+        jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${searchPattern} OR
+        jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${searchPattern} OR
+        jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${searchPattern}
+      )`);
+    }
+    
+    const totalResult = await countQuery.executeTakeFirst();
+    const total = Number(totalResult?.total || 0);
+    
+    // Get paginated results
+    const applications = await query
       .orderBy('created_at', 'desc')
+      .limit(limit)
+      .offset(offset)
       .execute();
     
-    return new Response(JSON.stringify(applications), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Transform to ApplicationSummary format
+    const applicationSummaries = applications.map((app) => {
+      const payload = app.application_payload as Record<string, unknown>;
+      const personalDetails = (payload?.personalDetails as Record<string, unknown>) || {};
+      const _enrolmentDetails = (payload?.enrolmentDetails as Record<string, unknown>) || {};
+      
+      return {
+        id: app.id,
+        status: app.status,
+        clientName: personalDetails.firstName && personalDetails.lastName 
+          ? `${personalDetails.firstName} ${personalDetails.lastName}`.trim()
+          : '',
+        clientEmail: (personalDetails.primaryEmail as string) || '',
+        programName: null, // Will be populated when we have program lookup
+        agentName: null, // Will be populated when we have agent lookup
+        createdAt: app.created_at,
+        updatedAt: app.updated_at,
+        createdClientId: app.created_client_id,
+        createdEnrolmentId: app.created_enrolment_id
+      };
+    });
+    
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+    
+    const response = {
+      data: applicationSummaries,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrevious
+      }
+    };
+    
+    return new Response(JSON.stringify(response), {
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('[APPLICATIONS_ERROR]', error);
@@ -44,7 +160,7 @@ const listApplicationsLogic = async (req: Request, _ctx: ApiContext) => {
 };
 
 // --- Logic: Get Application by ID ---
-const getApplicationLogic = async (req: Request, _ctx: ApiContext, applicationId: string) => {
+const getApplicationLogic = async (_req: Request, _ctx: ApiContext, applicationId: string) => {
   try {
     const application = await db.selectFrom('sms_op.applications')
       .select(['id', 'status', 'application_payload', 'created_client_id', 'created_enrolment_id', 'created_by_staff_id', 'created_at', 'updated_at'])
@@ -82,7 +198,7 @@ const createApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
 // --- Logic: Update a Draft Application ---
 const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unknown, applicationId: string) => {
   const payload = body as Partial<FullEnrolmentPayload> & { status?: string };
-  const updatedApplication = await db.transaction().execute(async (trx) => {
+  const updatedApplication = await db.transaction().execute(async (trx: DatabaseTransaction) => {
     const existingApplication = await trx.selectFrom('sms_op.applications')
       .selectAll().where('id', '=', applicationId).forUpdate().executeTakeFirst();
     if (!existingApplication) throw new NotFoundError('Application not found.');
@@ -90,7 +206,7 @@ const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
       throw new ValidationError(`Cannot update an application with status '${existingApplication.status}'.`);
     }
     
-    const updateData: any = { updated_at: new Date() };
+    const updateData: Record<string, unknown> = { updated_at: new Date() };
     
     // Handle status updates
     if (payload.status) {
@@ -98,7 +214,7 @@ const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
     }
     
     // Handle payload updates (exclude status from payload merge)
-    const { status, ...payloadData } = payload;
+    const { status: _status, ...payloadData } = payload;
     if (payloadData && Object.keys(payloadData).length > 0) {
       const mergedPayload = deepMerge(existingApplication.application_payload as FullEnrolmentPayload, payloadData);
       updateData.application_payload = mergedPayload;
@@ -115,7 +231,7 @@ const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
 
 // --- Logic: Submit a Draft for Approval ---
 const submitApplicationLogic = async (_req: Request, _ctx: ApiContext, _body: unknown, applicationId: string) => {
-  const submittedApplication = await db.transaction().execute(async (trx) => {
+  const submittedApplication = await db.transaction().execute(async (trx: DatabaseTransaction) => {
     const application = await trx.selectFrom('sms_op.applications')
       .selectAll().where('id', '=', applicationId).forUpdate().executeTakeFirst();
 
@@ -137,6 +253,8 @@ const submitApplicationLogic = async (_req: Request, _ctx: ApiContext, _body: un
 };
 
 const ApprovalPayloadSchema = z.object({
+  tuitionFeeSnapshot: z.number(),
+  agentCommissionRateSnapshot: z.number(),
   action: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -145,7 +263,7 @@ const approveApplicationLogic = async (_req: Request, _ctx: ApiContext, body: un
   // 1. Validate the incoming approval payload.
   const approvalPayload = ApprovalPayloadSchema.parse(body);
 
-  const { clientId, enrolmentId } = await db.transaction().execute(async (trx) => {
+  const { clientId, enrolmentId } = await db.transaction().execute(async (trx: DatabaseTransaction) => {
     // 2. Lock the application row and validate its state.
     const application = await trx.selectFrom('sms_op.applications')
       .selectAll().where('id', '=', applicationId).forUpdate().executeTakeFirst();
@@ -180,10 +298,10 @@ const approveApplicationLogic = async (_req: Request, _ctx: ApiContext, body: un
         state_identifier: payload.address.residential.state,
         postcode: payload.address.residential.postcode,
         country_identifier: '1101', // Default to Australia for now
-        street_number: payload.address.residential.streetNumber,
-        street_name: payload.address.residential.streetName,
-        flat_unit_details: payload.address.residential.unitDetails,
-        building_property_name: payload.address.residential.buildingName
+        street_number: payload.address.residential.street_number,
+        street_name: payload.address.residential.street_name,
+        flat_unit_details: payload.address.residential.flat_unit_details,
+        building_property_name: payload.address.residential.building_property_name
       }).returning('id').executeTakeFirstOrThrow();
     await trx.insertInto('core.client_addresses')
       .values({ client_id: newClientId, address_id: addressId, address_type: 'HOME' }).execute();
@@ -300,3 +418,4 @@ const applicationsRouter = async (req: Request, ctx: ApiContext, body: unknown):
 const handler = createApiRoute(applicationsRouter);
 
 serve(handler);
+

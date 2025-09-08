@@ -11,7 +11,40 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List All Applications
+         * @description Returns a paginated list of all applications with their current status and metadata. Supports filtering by status and pagination for large datasets.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number for pagination (1-based) */
+                    page?: number;
+                    /** @description Number of applications per page */
+                    limit?: number;
+                    /** @description Filter applications by status */
+                    status?: "Draft" | "Submitted" | "Approved" | "Rejected";
+                    /** @description Search applications by client name or email */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A paginated list of applications. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationListResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
         /**
          * Start a New Enrolment Application
@@ -1224,6 +1257,96 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string;
+        };
+        /** @description A lightweight representation of an application for list views */
+        ApplicationSummary: {
+            /**
+             * Format: uuid
+             * @description Unique identifier for the application
+             */
+            id?: string;
+            /**
+             * @description Current status of the application
+             * @enum {string}
+             */
+            status?: "Draft" | "Submitted" | "Approved" | "Rejected";
+            /**
+             * @description Full name of the applicant (from personalDetails)
+             * @example John Citizen
+             */
+            clientName?: string;
+            /**
+             * Format: email
+             * @description Primary email of the applicant
+             * @example john.citizen@example.com
+             */
+            clientEmail?: string;
+            /**
+             * @description Name of the program being applied for
+             * @example Certificate III in Business
+             */
+            programName?: string | null;
+            /**
+             * @description Name of the educational agent (if applicable)
+             * @example Global Education Services
+             */
+            agentName?: string | null;
+            /**
+             * Format: date-time
+             * @description When the application was first created
+             */
+            createdAt?: string;
+            /**
+             * Format: date-time
+             * @description When the application was last modified
+             */
+            updatedAt?: string;
+            /**
+             * Format: uuid
+             * @description ID of the client created when application was approved
+             */
+            createdClientId?: string | null;
+            /**
+             * Format: uuid
+             * @description ID of the enrolment created when application was approved
+             */
+            createdEnrolmentId?: string | null;
+        };
+        /** @description Paginated response for application listings */
+        ApplicationListResponse: {
+            data?: components["schemas"]["ApplicationSummary"][];
+            pagination?: {
+                /**
+                 * @description Current page number (1-based)
+                 * @example 1
+                 */
+                page?: number;
+                /**
+                 * @description Number of items per page
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description Total number of applications matching the query
+                 * @example 150
+                 */
+                total?: number;
+                /**
+                 * @description Total number of pages
+                 * @example 8
+                 */
+                totalPages?: number;
+                /**
+                 * @description Whether there are more pages available
+                 * @example true
+                 */
+                hasNext?: boolean;
+                /**
+                 * @description Whether there are previous pages available
+                 * @example false
+                 */
+                hasPrevious?: boolean;
+            };
         };
         EnrolmentStateChangePayload: {
             /** @enum {string} */

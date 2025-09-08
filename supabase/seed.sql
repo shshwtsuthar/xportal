@@ -207,6 +207,242 @@ BEGIN
   VALUES (v_client_id, '12', '1201', '4', '03', 'N', 'N', 'N')
   ON CONFLICT (client_id) DO NOTHING;
 
+  -- === SEED TEST APPLICATIONS ===
+  
+  -- Test Applications with different statuses
+  INSERT INTO sms_op.applications (id, status, application_payload, created_client_id, created_enrolment_id, created_by_staff_id, created_at, updated_at)
+  VALUES 
+    -- Draft Application 1 - John Smith
+    ('a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d1', 'Draft', 
+     '{
+       "personalDetails": {
+         "firstName": "John",
+         "lastName": "Smith",
+         "dateOfBirth": "1990-05-15",
+         "gender": "M",
+         "primaryEmail": "john.smith@example.com",
+         "primaryPhone": "+61 2 1234 5678"
+       },
+       "address": {
+         "residential": {
+           "street_number": "123",
+           "street_name": "Main Street",
+           "suburb": "Sydney",
+           "state": "NSW",
+           "postcode": "2000",
+           "flat_unit_details": "Unit 5",
+           "building_property_name": "Sydney Towers"
+         }
+       },
+       "avetmissDetails": {
+         "countryOfBirthId": "1101",
+         "highestSchoolLevelId": "12",
+         "languageAtHomeId": "1201",
+         "indigenousStatusId": "4",
+         "labourForceId": "03",
+         "hasDisability": false,
+         "hasPriorEducation": true,
+         "isAtSchool": false
+       },
+       "usi": {
+         "usi": "USI123456789"
+       },
+       "enrolmentDetails": {
+         "courseOfferingId": "d1e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6",
+         "subjectStructure": {
+           "coreSubjectIds": ["b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6"],
+           "electiveSubjectIds": ["c1d2e3f4-a5b6-c7d8-e9f0-a1b2c3d4e5f6"]
+         }
+       },
+       "agentId": "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c7"
+     }'::jsonb, 
+     NULL, NULL, NULL, NOW() - INTERVAL '5 days', NOW() - INTERVAL '2 days'),
+    
+    -- Draft Application 2 - Sarah Johnson
+    ('a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d2', 'Draft',
+     '{
+       "personalDetails": {
+         "firstName": "Sarah",
+         "lastName": "Johnson",
+         "dateOfBirth": "1988-12-03",
+         "gender": "F",
+         "primaryEmail": "sarah.johnson@example.com",
+         "primaryPhone": "+61 3 9876 5432"
+       },
+       "address": {
+         "residential": {
+           "street_number": "456",
+           "street_name": "Collins Street",
+           "suburb": "Melbourne",
+           "state": "VIC",
+           "postcode": "3000",
+           "flat_unit_details": null,
+           "building_property_name": null
+         }
+       },
+       "avetmissDetails": {
+         "countryOfBirthId": "1101",
+         "highestSchoolLevelId": "11",
+         "languageAtHomeId": "1201",
+         "indigenousStatusId": "4",
+         "labourForceId": "01",
+         "hasDisability": false,
+         "hasPriorEducation": false,
+         "isAtSchool": false
+       },
+       "usi": {
+         "usi": "USI987654321"
+       },
+       "enrolmentDetails": {
+         "courseOfferingId": "d1e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6",
+         "subjectStructure": {
+           "coreSubjectIds": ["b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6"],
+           "electiveSubjectIds": ["c1d2e3f4-a5b6-c7d8-e9f0-a1b2c3d4e5f6"]
+         }
+       },
+       "agentId": "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c8"
+     }'::jsonb,
+     NULL, NULL, NULL, NOW() - INTERVAL '3 days', NOW() - INTERVAL '1 day'),
+    
+    -- Submitted Application 1 - Michael Chen
+    ('a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d3', 'Submitted',
+     '{
+       "personalDetails": {
+         "firstName": "Michael",
+         "lastName": "Chen",
+         "dateOfBirth": "1992-08-20",
+         "gender": "M",
+         "primaryEmail": "michael.chen@example.com",
+         "primaryPhone": "+61 7 5555 1234"
+       },
+       "address": {
+         "residential": {
+           "street_number": "789",
+           "street_name": "Queen Street",
+           "suburb": "Brisbane",
+           "state": "QLD",
+           "postcode": "4000",
+           "flat_unit_details": "Apt 12",
+           "building_property_name": "Brisbane Central"
+         }
+       },
+       "avetmissDetails": {
+         "countryOfBirthId": "1107",
+         "highestSchoolLevelId": "12",
+         "languageAtHomeId": "1202",
+         "indigenousStatusId": "4",
+         "labourForceId": "02",
+         "hasDisability": false,
+         "hasPriorEducation": true,
+         "isAtSchool": false
+       },
+       "usi": {
+         "usi": "USI456789123"
+       },
+       "enrolmentDetails": {
+         "courseOfferingId": "d1e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6",
+         "subjectStructure": {
+           "coreSubjectIds": ["b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6"],
+           "electiveSubjectIds": ["c1d2e3f4-a5b6-c7d8-e9f0-a1b2c3d4e5f6"]
+         }
+       },
+       "agentId": "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c9"
+     }'::jsonb,
+     NULL, NULL, NULL, NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day'),
+    
+    -- Submitted Application 2 - Emma Wilson
+    ('a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d4', 'Submitted',
+     '{
+       "personalDetails": {
+         "firstName": "Emma",
+         "lastName": "Wilson",
+         "dateOfBirth": "1995-03-10",
+         "gender": "F",
+         "primaryEmail": "emma.wilson@example.com",
+         "primaryPhone": "+61 8 1234 5678"
+       },
+       "address": {
+         "residential": {
+           "street_number": "321",
+           "street_name": "St Georges Terrace",
+           "suburb": "Perth",
+           "state": "WA",
+           "postcode": "6000",
+           "flat_unit_details": null,
+           "building_property_name": null
+         }
+       },
+       "avetmissDetails": {
+         "countryOfBirthId": "1103",
+         "highestSchoolLevelId": "10",
+         "languageAtHomeId": "1201",
+         "indigenousStatusId": "4",
+         "labourForceId": "03",
+         "hasDisability": true,
+         "hasPriorEducation": false,
+         "isAtSchool": false
+       },
+       "usi": {
+         "usi": "USI789123456"
+       },
+       "enrolmentDetails": {
+         "courseOfferingId": "d1e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6",
+         "subjectStructure": {
+           "coreSubjectIds": ["b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6"],
+           "electiveSubjectIds": ["c1d2e3f4-a5b6-c7d8-e9f0-a1b2c3d4e5f6"]
+         }
+       },
+       "agentId": "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c7"
+     }'::jsonb,
+     NULL, NULL, NULL, NOW() - INTERVAL '10 days', NOW() - INTERVAL '2 days'),
+    
+    -- Approved Application (already processed)
+    ('a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d5', 'Approved',
+     '{
+       "personalDetails": {
+         "firstName": "David",
+         "lastName": "Brown",
+         "dateOfBirth": "1987-11-25",
+         "gender": "M",
+         "primaryEmail": "david.brown@example.com",
+         "primaryPhone": "+61 2 9876 5432"
+       },
+       "address": {
+         "residential": {
+           "street_number": "654",
+           "street_name": "Pitt Street",
+           "suburb": "Sydney",
+           "state": "NSW",
+           "postcode": "2000",
+           "flat_unit_details": "Level 15",
+           "building_property_name": "Sydney Plaza"
+         }
+       },
+       "avetmissDetails": {
+         "countryOfBirthId": "1101",
+         "highestSchoolLevelId": "12",
+         "languageAtHomeId": "1201",
+         "indigenousStatusId": "4",
+         "labourForceId": "01",
+         "hasDisability": false,
+         "hasPriorEducation": true,
+         "isAtSchool": false
+       },
+       "usi": {
+         "usi": "USI321654987"
+       },
+       "enrolmentDetails": {
+         "courseOfferingId": "d1e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6",
+         "subjectStructure": {
+           "coreSubjectIds": ["b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6"],
+           "electiveSubjectIds": ["c1d2e3f4-a5b6-c7d8-e9f0-a1b2c3d4e5f6"]
+         }
+       },
+       "agentId": "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c8"
+     }'::jsonb,
+     v_client_id, NULL, NULL, NOW() - INTERVAL '15 days', NOW() - INTERVAL '5 days')
+  ON CONFLICT (id) DO NOTHING;
+
   -- === SEED REFERENCE DATA ===
   
   -- Countries
