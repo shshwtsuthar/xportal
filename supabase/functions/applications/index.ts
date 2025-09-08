@@ -25,6 +25,8 @@ import { sql, type SqlBool } from 'npm:kysely';
 
 type FullEnrolmentPayload = components['schemas']['FullEnrolmentPayload'];
 type ApprovalPayload = components['schemas']['ApprovalPayload'];
+type ApplicationSummary = components['schemas']['ApplicationSummary'];
+type ApplicationListResponse = components['schemas']['ApplicationListResponse'];
 
 // Database row types
 interface ApplicationRow {
@@ -38,7 +40,7 @@ interface ApplicationRow {
 }
 
 // Transaction type for database operations - Kysely transaction type is complex, using any for pragmatic reasons
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// deno-lint-ignore no-explicit-any
 type DatabaseTransaction = any;
 
 // --- Logic: List Applications ---
@@ -365,6 +367,388 @@ const approveApplicationLogic = async (_req: Request, _ctx: ApiContext, body: un
   }), { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 };
 
+// --- Reject Application Logic ---
+const rejectApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unknown, applicationId: string): Promise<Response> => {
+  
+  // Parse request body
+  const requestBody = body as { reason?: string };
+  if (!requestBody?.reason) {
+    return new Response(JSON.stringify({ message: 'Rejection reason is required' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Check if application exists and is in Submitted status
+  const application = await db.selectFrom('sms_op.applications')
+    .selectAll()
+    .where('id', '=', applicationId)
+    .executeTakeFirst();
+
+  if (!application) {
+    return new Response(JSON.stringify({ message: 'Application not found' }), {
+      status: 404,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  if (application.status !== 'Submitted') {
+    return new Response(JSON.stringify({ message: 'Only submitted applications can be rejected' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Update application status to Rejected
+  await db.updateTable('sms_op.applications')
+    .set({ 
+      status: 'Rejected', 
+      updated_at: new Date()
+    })
+    .where('id', '=', applicationId)
+    .execute();
+
+  return new Response(JSON.stringify({
+    message: "Application rejected successfully.",
+    applicationId,
+    reason: requestBody.reason
+  }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- List Draft Applications Logic ---
+const listDraftApplicationsLogic = async (req: Request, _ctx: ApiContext): Promise<Response> => {
+  const url = new URL(req.url);
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+  const search = url.searchParams.get('search') || undefined;
+  const offset = (page - 1) * limit;
+
+  // Get total count for pagination
+  let countQuery = db.selectFrom('sms_op.applications')
+    .select((eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('total'))
+    .where('status', '=', 'Draft');
+
+  // Apply search filter to count query
+  if (search) {
+    const searchPattern = `%${search}%`;
+    countQuery = countQuery.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${searchPattern}
+    )`);
+  }
+
+  const totalResult = await countQuery.executeTakeFirst();
+  const total = Number(totalResult?.total || 0);
+
+  // Get paginated results
+  let query = db.selectFrom('sms_op.applications')
+    .selectAll()
+    .where('status', '=', 'Draft');
+
+  // Apply search filter to main query
+  if (search) {
+    const searchPattern = `%${search}%`;
+    query = query.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${searchPattern}
+    )`);
+  }
+
+  const applications = await query
+    .orderBy('created_at', 'desc')
+    .limit(limit)
+    .offset(offset)
+    .execute();
+
+  // Transform to ApplicationSummary format
+  const applicationSummaries: ApplicationSummary[] = applications.map(app => {
+    const payload = app.application_payload as Record<string, unknown>;
+    const personalDetails = payload.personalDetails as Record<string, unknown>;
+    const enrolmentDetails = payload.enrolmentDetails as Record<string, unknown>;
+    
+    const firstName = personalDetails?.firstName as string || '';
+    const lastName = personalDetails?.lastName as string || '';
+    const clientName = `${firstName} ${lastName}`.trim() || 'Unknown';
+    
+    return {
+      id: app.id,
+      status: app.status as "Draft" | "Submitted" | "Approved" | "Rejected",
+      clientName,
+      clientEmail: personalDetails?.primaryEmail as string || '',
+      programName: enrolmentDetails?.programName as string || null,
+      agentName: null, // Not available in current schema
+      createdAt: app.created_at.toISOString(),
+      updatedAt: app.updated_at.toISOString(),
+      createdClientId: app.created_client_id,
+      createdEnrolmentId: app.created_enrolment_id
+    };
+  });
+
+  const totalPages = Math.ceil(total / limit);
+  const response: ApplicationListResponse = {
+    data: applicationSummaries,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrevious: page > 1
+    }
+  };
+
+  return new Response(JSON.stringify(response), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+};
+
+// --- List Submitted Applications Logic ---
+const listSubmittedApplicationsLogic = async (req: Request, _ctx: ApiContext): Promise<Response> => {
+  const url = new URL(req.url);
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+  const search = url.searchParams.get('search') || undefined;
+  const offset = (page - 1) * limit;
+
+  // Get total count for pagination
+  let countQuery = db.selectFrom('sms_op.applications')
+    .select((eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('total'))
+    .where('status', '=', 'Submitted');
+
+  // Apply search filter to count query
+  if (search) {
+    const searchPattern = `%${search}%`;
+    countQuery = countQuery.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${searchPattern}
+    )`);
+  }
+
+  const totalResult = await countQuery.executeTakeFirst();
+  const total = Number(totalResult?.total || 0);
+
+  // Get paginated results
+  let query = db.selectFrom('sms_op.applications')
+    .selectAll()
+    .where('status', '=', 'Submitted');
+
+  // Apply search filter to main query
+  if (search) {
+    const searchPattern = `%${search}%`;
+    query = query.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${searchPattern}
+    )`);
+  }
+
+  const applications = await query
+    .orderBy('created_at', 'desc')
+    .limit(limit)
+    .offset(offset)
+    .execute();
+
+  // Transform to ApplicationSummary format
+  const applicationSummaries: ApplicationSummary[] = applications.map(app => {
+    const payload = app.application_payload as Record<string, unknown>;
+    const personalDetails = payload.personalDetails as Record<string, unknown>;
+    const enrolmentDetails = payload.enrolmentDetails as Record<string, unknown>;
+    
+    const firstName = personalDetails?.firstName as string || '';
+    const lastName = personalDetails?.lastName as string || '';
+    const clientName = `${firstName} ${lastName}`.trim() || 'Unknown';
+    
+    return {
+      id: app.id,
+      status: app.status as "Draft" | "Submitted" | "Approved" | "Rejected",
+      clientName,
+      clientEmail: personalDetails?.primaryEmail as string || '',
+      programName: enrolmentDetails?.programName as string || null,
+      agentName: null, // Not available in current schema
+      createdAt: app.created_at.toISOString(),
+      updatedAt: app.updated_at.toISOString(),
+      createdClientId: app.created_client_id,
+      createdEnrolmentId: app.created_enrolment_id
+    };
+  });
+
+  const totalPages = Math.ceil(total / limit);
+  const response: ApplicationListResponse = {
+    data: applicationSummaries,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrevious: page > 1
+    }
+  };
+
+  return new Response(JSON.stringify(response), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+};
+
+// --- List Approved Applications Logic ---
+const listApprovedApplicationsLogic = async (req: Request, _ctx: ApiContext): Promise<Response> => {
+  const url = new URL(req.url);
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+  const search = url.searchParams.get('search') || undefined;
+  const offset = (page - 1) * limit;
+
+  // Get total count for pagination
+  let countQuery = db.selectFrom('sms_op.applications')
+    .select((eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('total'))
+    .where('status', '=', 'Approved');
+
+  // Apply search filter to count query
+  if (search) {
+    const searchPattern = `%${search}%`;
+    countQuery = countQuery.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${searchPattern}
+    )`);
+  }
+
+  const totalResult = await countQuery.executeTakeFirst();
+  const total = Number(totalResult?.total || 0);
+
+  // Get paginated results
+  let query = db.selectFrom('sms_op.applications')
+    .selectAll()
+    .where('status', '=', 'Approved');
+
+  // Apply search filter to main query
+  if (search) {
+    const searchPattern = `%${search}%`;
+    query = query.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${searchPattern}
+    )`);
+  }
+
+  const applications = await query
+    .orderBy('created_at', 'desc')
+    .limit(limit)
+    .offset(offset)
+    .execute();
+
+  // Transform to ApplicationSummary format
+  const applicationSummaries: ApplicationSummary[] = applications.map(app => {
+    const payload = app.application_payload as Record<string, unknown>;
+    const personalDetails = payload.personalDetails as Record<string, unknown>;
+    const enrolmentDetails = payload.enrolmentDetails as Record<string, unknown>;
+    
+    const firstName = personalDetails?.firstName as string || '';
+    const lastName = personalDetails?.lastName as string || '';
+    const clientName = `${firstName} ${lastName}`.trim() || 'Unknown';
+    
+    return {
+      id: app.id,
+      status: app.status as "Draft" | "Submitted" | "Approved" | "Rejected",
+      clientName,
+      clientEmail: personalDetails?.primaryEmail as string || '',
+      programName: enrolmentDetails?.programName as string || null,
+      agentName: null, // Not available in current schema
+      createdAt: app.created_at.toISOString(),
+      updatedAt: app.updated_at.toISOString(),
+      createdClientId: app.created_client_id,
+      createdEnrolmentId: app.created_enrolment_id
+    };
+  });
+
+  const totalPages = Math.ceil(total / limit);
+  const response: ApplicationListResponse = {
+    data: applicationSummaries,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrevious: page > 1
+    }
+  };
+
+  return new Response(JSON.stringify(response), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+};
+
+// --- Get Application Statistics Logic ---
+const getApplicationStatsLogic = async (_req: Request, _ctx: ApiContext): Promise<Response> => {
+  // Get counts by status
+  const statusCounts = await db.selectFrom('sms_op.applications')
+    .select([
+      'status',
+      (eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('count')
+    ])
+    .groupBy('status')
+    .execute();
+
+  // Get total count
+  const totalResult = await db.selectFrom('sms_op.applications')
+    .select((eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('total'))
+    .executeTakeFirst();
+
+  const total = Number(totalResult?.total || 0);
+
+  // Get recent submissions (last 7 days) - using created_at as proxy
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const recentSubmissionsResult = await db.selectFrom('sms_op.applications')
+    .select((eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('count'))
+    .where('status', '=', 'Submitted')
+    .where('created_at', '>=', sevenDaysAgo)
+    .executeTakeFirst();
+
+  const recentSubmissions = Number(recentSubmissionsResult?.count || 0);
+
+  // Calculate average processing time - simplified since we don't have submission/approval timestamps
+  // Using created_at to updated_at as a proxy for processing time
+  const processingTimeResult = await db.selectFrom('sms_op.applications')
+    .select([
+      sql<number>`AVG(EXTRACT(EPOCH FROM (updated_at - created_at)))`.as('avg_seconds')
+    ])
+    .where('status', '=', 'Approved')
+    .executeTakeFirst();
+
+  const avgProcessingTimeSeconds = Number(processingTimeResult?.avg_seconds || 0);
+  const averageProcessingTime = avgProcessingTimeSeconds / 3600; // Convert to hours
+
+  // Calculate completion rate
+  const approvedCount = statusCounts.find(s => s.status === 'Approved')?.count || 0;
+  const completionRate = total > 0 ? (Number(approvedCount) / total) * 100 : 0;
+
+  // Build response
+  const stats = {
+    totalApplications: total,
+    draftCount: Number(statusCounts.find(s => s.status === 'Draft')?.count || 0),
+    submittedCount: Number(statusCounts.find(s => s.status === 'Submitted')?.count || 0),
+    approvedCount: Number(statusCounts.find(s => s.status === 'Approved')?.count || 0),
+    rejectedCount: Number(statusCounts.find(s => s.status === 'Rejected')?.count || 0),
+    recentSubmissions,
+    averageProcessingTime: Math.round(averageProcessingTime * 100) / 100, // Round to 2 decimal places
+    completionRate: Math.round(completionRate * 100) / 100 // Round to 2 decimal places
+  };
+
+  return new Response(JSON.stringify(stats), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+};
+
 // --- Helper function for UUID validation ---
 const validateApplicationId = (applicationId: string): Response | null => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -390,6 +774,20 @@ const applicationsRouter = async (req: Request, ctx: ApiContext, body: unknown):
     if (pathSegments.length === 1 && method === 'POST') {
       return await createApplicationLogic(req, ctx, body);
     }
+    // Check specific status routes BEFORE generic ID route
+    if (pathSegments.length === 2 && pathSegments[1] === 'drafts' && method === 'GET') {
+      return await listDraftApplicationsLogic(req, ctx);
+    }
+    if (pathSegments.length === 2 && pathSegments[1] === 'submitted' && method === 'GET') {
+      return await listSubmittedApplicationsLogic(req, ctx);
+    }
+    if (pathSegments.length === 2 && pathSegments[1] === 'approved' && method === 'GET') {
+      return await listApprovedApplicationsLogic(req, ctx);
+    }
+    if (pathSegments.length === 2 && pathSegments[1] === 'stats' && method === 'GET') {
+      return await getApplicationStatsLogic(req, ctx);
+    }
+    // Generic ID route - must come AFTER specific routes
     if (pathSegments.length === 2 && method === 'GET') {
       const validationError = validateApplicationId(pathSegments[1]);
       if (validationError) return validationError;
@@ -409,6 +807,11 @@ const applicationsRouter = async (req: Request, ctx: ApiContext, body: unknown):
       const validationError = validateApplicationId(pathSegments[1]);
       if (validationError) return validationError;
       return await approveApplicationLogic(req, ctx, body, pathSegments[1]);
+    }
+    if (pathSegments.length === 3 && pathSegments[2] === 'reject' && method === 'POST') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await rejectApplicationLogic(req, ctx, body, pathSegments[1]);
     }
   }
 

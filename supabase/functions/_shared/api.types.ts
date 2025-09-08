@@ -212,6 +212,253 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/{applicationId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a Submitted Application
+         * @description Rejects a submitted application with a reason. This transitions the application status to 'Rejected' and prevents further processing.
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    applicationId: components["parameters"]["ApplicationId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description Reason for rejection */
+                        reason: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Application rejected successfully. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Application"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Draft Applications
+         * @description Returns a paginated list of all draft applications. This endpoint is optimized for the draft management interface.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number for pagination (1-based) */
+                    page?: number;
+                    /** @description Number of applications per page */
+                    limit?: number;
+                    /** @description Search applications by client name or email */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A paginated list of draft applications. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/submitted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Submitted Applications
+         * @description Returns a paginated list of all submitted applications awaiting approval. This endpoint is optimized for the approval workflow interface.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number for pagination (1-based) */
+                    page?: number;
+                    /** @description Number of applications per page */
+                    limit?: number;
+                    /** @description Search applications by client name or email */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A paginated list of submitted applications. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/approved": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Approved Applications
+         * @description Returns a paginated list of all approved applications. These applications have been processed and converted to enrolments.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number for pagination (1-based) */
+                    page?: number;
+                    /** @description Number of applications per page */
+                    limit?: number;
+                    /** @description Search applications by client name or email */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A paginated list of approved applications. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Application Statistics
+         * @description Returns aggregated statistics about applications including counts by status, recent activity, and performance metrics.
+         *
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Application statistics. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Total number of applications */
+                            totalApplications?: number;
+                            /** @description Number of draft applications */
+                            draftCount?: number;
+                            /** @description Number of submitted applications */
+                            submittedCount?: number;
+                            /** @description Number of approved applications */
+                            approvedCount?: number;
+                            /** @description Number of rejected applications */
+                            rejectedCount?: number;
+                            /** @description Applications submitted in the last 7 days */
+                            recentSubmissions?: number;
+                            /** @description Average time from submission to approval in hours */
+                            averageProcessingTime?: number;
+                            /** @description Percentage of applications that reach approved status */
+                            completionRate?: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/enrolments/{enrolmentId}/state": {
         parameters: {
             query?: never;

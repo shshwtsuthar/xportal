@@ -187,6 +187,197 @@ paths:
               schema:
                 $ref: '#/components/schemas/FullEnrolmentResponse'
 
+  /applications/{applicationId}/reject:
+    post:
+      summary: Reject a Submitted Application
+      description: >
+        Rejects a submitted application with a reason. This transitions the application
+        status to 'Rejected' and prevents further processing.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  description: Reason for rejection
+                  minLength: 1
+                  maxLength: 500
+      responses:
+        '200':
+          description: Application rejected successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+
+  /applications/drafts:
+    get:
+      summary: List Draft Applications
+      description: >
+        Returns a paginated list of all draft applications. This endpoint is optimized
+        for the draft management interface.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of applications per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          description: Search applications by client name or email
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A paginated list of draft applications.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationListResponse'
+
+  /applications/submitted:
+    get:
+      summary: List Submitted Applications
+      description: >
+        Returns a paginated list of all submitted applications awaiting approval.
+        This endpoint is optimized for the approval workflow interface.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of applications per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          description: Search applications by client name or email
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A paginated list of submitted applications.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationListResponse'
+
+  /applications/approved:
+    get:
+      summary: List Approved Applications
+      description: >
+        Returns a paginated list of all approved applications. These applications
+        have been processed and converted to enrolments.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of applications per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          description: Search applications by client name or email
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A paginated list of approved applications.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationListResponse'
+
+  /applications/stats:
+    get:
+      summary: Get Application Statistics
+      description: >
+        Returns aggregated statistics about applications including counts by status,
+        recent activity, and performance metrics.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin]
+      responses:
+        '200':
+          description: Application statistics.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalApplications:
+                    type: integer
+                    description: Total number of applications
+                  draftCount:
+                    type: integer
+                    description: Number of draft applications
+                  submittedCount:
+                    type: integer
+                    description: Number of submitted applications
+                  approvedCount:
+                    type: integer
+                    description: Number of approved applications
+                  rejectedCount:
+                    type: integer
+                    description: Number of rejected applications
+                  recentSubmissions:
+                    type: integer
+                    description: Applications submitted in the last 7 days
+                  averageProcessingTime:
+                    type: number
+                    description: Average time from submission to approval in hours
+                  completionRate:
+                    type: number
+                    description: Percentage of applications that reach approved status
+                    minimum: 0
+                    maximum: 100
+
   /enrolments/{enrolmentId}/state:
     put:
       summary: Change Enrolment State

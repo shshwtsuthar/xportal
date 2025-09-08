@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 // supabase/functions/_shared/db.ts
 import { Kysely, PostgresDialect } from "npm:kysely";
 import { Pool } from "npm:pg";
