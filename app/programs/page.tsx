@@ -77,7 +77,7 @@ export default function ProgramsPage() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Error loading programs: {String(programsError) || 'Unknown error'}
+            Error loading programs: {typeof programsError === 'object' && programsError && 'message' in (programsError as any) ? (programsError as any).message : 'Unknown error'}
           </AlertDescription>
         </Alert>
       </div>

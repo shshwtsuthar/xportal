@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createApiRoute, corsHeaders, type ApiContext } from '../_shared/handler.ts';
 import { Kysely, PostgresDialect } from "npm:kysely";
 import { Pool } from "npm:pg";
 import type { DB as Database } from "../_shared/database.types.ts";
@@ -9,26 +10,9 @@ const dialect = new PostgresDialect({
 
 const db = new Kysely<Database>({ dialect });
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      },
-    });
-  }
-
-  if (req.method !== 'GET') {
-    return new Response(JSON.stringify({ message: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  try {
-    const url = new URL(req.url);
-    const pathSegments = url.pathname.split('/').filter(Boolean);
+const programsRouter = async (req: Request, _ctx: ApiContext, _body: unknown): Promise<Response> => {
+  const url = new URL(req.url);
+  const pathSegments = url.pathname.split('/').filter(Boolean);
     
     // Route: GET /programs (list all)
     if (pathSegments.length === 1 && pathSegments[0] === 'programs') {
@@ -38,14 +22,7 @@ serve(async (req) => {
         .orderBy('program_name', 'asc')
         .execute();
 
-      return new Response(JSON.stringify(programs), {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-          'Content-Type': 'application/json',
-        },
-      });
+      return new Response(JSON.stringify(programs), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     
     // Route: GET /programs/{id}/subjects (get program subjects)
@@ -55,13 +32,7 @@ serve(async (req) => {
       // Validate UUID format
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(programId)) {
-        return new Response(JSON.stringify({ message: 'Invalid program ID format' }), {
-          status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json',
-          },
-        });
+        return new Response(JSON.stringify({ message: 'Invalid program ID format' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       
       const subjects = await db.selectFrom('core.program_subjects as ps')
@@ -77,14 +48,7 @@ serve(async (req) => {
         .orderBy('s.subject_name', 'asc')
         .execute();
 
-      return new Response(JSON.stringify(subjects), {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-          'Content-Type': 'application/json',
-        },
-      });
+      return new Response(JSON.stringify(subjects), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     
     // Route: GET /programs/{id} (get specific program)
@@ -94,13 +58,7 @@ serve(async (req) => {
       // Validate UUID format
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(programId)) {
-        return new Response(JSON.stringify({ message: 'Invalid program ID format' }), {
-          status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json',
-          },
-        });
+        return new Response(JSON.stringify({ message: 'Invalid program ID format' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       
       const program = await db.selectFrom('core.programs')
@@ -108,39 +66,13 @@ serve(async (req) => {
         .where('id', '=', programId)
         .executeTakeFirst();
 
-      if (!program) {
-        return new Response(JSON.stringify({ message: 'Program not found' }), {
-          status: 404,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json',
-          },
-        });
-      }
+      if (!program) return new Response(JSON.stringify({ message: 'Program not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-      return new Response(JSON.stringify(program), {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-          'Content-Type': 'application/json',
-        },
-      });
+      return new Response(JSON.stringify(program), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Route not found
-    return new Response(JSON.stringify({ message: 'Not found' }), {
-      status: 404,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
-      },
-    });
-  } catch (error) {
-    console.error('Programs error:', error);
-    return new Response(JSON.stringify({ message: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-});
+  // Route not found
+  return new Response(JSON.stringify({ message: 'Not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+serve(createApiRoute(programsRouter));

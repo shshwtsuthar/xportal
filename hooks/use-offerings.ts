@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getFunctionHeaders } from '@/lib/utils';
-
-const BASE_URL = 'http://127.0.0.1:54321/functions/v1';
+import { getFunctionHeaders, FUNCTIONS_URL } from '@/lib/functions';
 
 export interface OfferingInput {
   programId: string;
@@ -17,7 +15,7 @@ export const useOfferings = (programId: string | undefined) => {
     queryKey: ['offerings', programId],
     enabled: !!programId,
     queryFn: async () => {
-      const res = await fetch(`${BASE_URL}/course-offerings/programs/${programId}/offerings`, {
+      const res = await fetch(`${FUNCTIONS_URL}/programs/${programId}/offerings`, {
         headers: getFunctionHeaders(),
       });
       if (!res.ok) throw new Error('Failed to load offerings');
@@ -30,7 +28,7 @@ export const useCreateOffering = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: OfferingInput) => {
-      const res = await fetch(`${BASE_URL}/course-offerings`, {
+      const res = await fetch(`${FUNCTIONS_URL}/course-offerings`, {
         method: 'POST',
         headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -46,7 +44,7 @@ export const useUpdateOffering = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { offeringId: string; programId: string; data: Partial<OfferingInput> }) => {
-      const res = await fetch(`${BASE_URL}/course-offerings/${payload.offeringId}`, {
+      const res = await fetch(`${FUNCTIONS_URL}/course-offerings/${payload.offeringId}`, {
         method: 'PUT',
         headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(payload.data),
@@ -62,7 +60,7 @@ export const useDeleteOffering = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { offeringId: string; programId: string }) => {
-      const res = await fetch(`${BASE_URL}/course-offerings/${payload.offeringId}`, {
+      const res = await fetch(`${FUNCTIONS_URL}/course-offerings/${payload.offeringId}`, {
         method: 'DELETE',
         headers: getFunctionHeaders(),
       });

@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getFunctionHeaders } from '@/lib/utils';
-
-const BASE_URL = 'http://127.0.0.1:54321/functions/v1';
+import { getFunctionHeaders, FUNCTIONS_URL } from '@/lib/functions';
 
 export interface CoursePlan {
   id: string;
@@ -23,7 +21,7 @@ export const useCoursePlans = (programId: string | undefined) => {
     queryKey: ['course-plans', programId],
     enabled: !!programId,
     queryFn: async () => {
-      const res = await fetch(`${BASE_URL}/course-plans/programs/${programId}/course-plans`, {
+      const res = await fetch(`${FUNCTIONS_URL}/programs/${programId}/course-plans`, {
         headers: getFunctionHeaders(),
       });
       if (!res.ok) throw new Error('Failed to load course plans');
@@ -36,7 +34,7 @@ export const useCreateCoursePlan = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { programId: string; name: string; version?: number; isActive?: boolean }) => {
-      const res = await fetch(`${BASE_URL}/course-plans/programs/${payload.programId}/course-plans`, {
+      const res = await fetch(`${FUNCTIONS_URL}/programs/${payload.programId}/course-plans`, {
         method: 'POST',
         headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: payload.name, version: payload.version ?? 1, isActive: payload.isActive ?? false }),
@@ -55,7 +53,7 @@ export const usePlanSubjects = (programId: string | undefined, planId: string | 
     queryKey: ['course-plan-subjects', programId, planId],
     enabled: !!programId && !!planId,
     queryFn: async () => {
-      const res = await fetch(`${BASE_URL}/course-plans/programs/${programId}/course-plans/${planId}/subjects`, {
+      const res = await fetch(`${FUNCTIONS_URL}/programs/${programId}/course-plans/${planId}/subjects`, {
         headers: getFunctionHeaders(),
       });
       if (!res.ok) throw new Error('Failed to load plan subjects');
@@ -68,7 +66,7 @@ export const useReplacePlanSubjects = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { programId: string; planId: string; items: PlanSubjectItem[] }) => {
-      const res = await fetch(`${BASE_URL}/course-plans/programs/${payload.programId}/course-plans/${payload.planId}/subjects`, {
+      const res = await fetch(`${FUNCTIONS_URL}/programs/${payload.programId}/course-plans/${payload.planId}/subjects`, {
         method: 'PUT',
         headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(payload.items),

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 
 // =============================================================================
 // PROGRAMS AND COURSE OFFERINGS HOOKS
@@ -46,15 +47,14 @@ interface ProgramSubjectsResponse {
   data: Subject[];
 }
 
-// Base URL for our Supabase functions
-const BASE_URL = 'http://127.0.0.1:54321/functions/v1';
+// Base URL and headers centralized in lib/functions
 
 // Hook for fetching all programs
 export const usePrograms = () => {
   return useQuery<ProgramsResponse>({
     queryKey: ['programs'],
     queryFn: async () => {
-      const response = await fetch(`${BASE_URL}/programs`);
+      const response = await fetch(`${FUNCTIONS_URL}/programs`, { headers: getFunctionHeaders() });
       if (!response.ok) {
         throw new Error('Failed to fetch programs');
       }
@@ -83,7 +83,7 @@ export const useProgram = (programId: string) => {
   return useQuery<Program>({
     queryKey: ['program', programId],
     queryFn: async () => {
-      const response = await fetch(`${BASE_URL}/programs/${programId}`);
+      const response = await fetch(`${FUNCTIONS_URL}/programs/${programId}`, { headers: getFunctionHeaders() });
       if (!response.ok) {
         throw new Error('Failed to fetch program');
       }
@@ -100,8 +100,8 @@ export const useCourseOfferings = (programId: string) => {
   return useQuery<CourseOfferingsResponse>({
     queryKey: ['course-offerings', programId],
     queryFn: async () => {
-      // Call the course-offerings function; router handles /programs/{id}/offerings internally
-      const response = await fetch(`${BASE_URL}/course-offerings/programs/${programId}/offerings`);
+      // Canonical path per OpenAPI: /programs/{programId}/offerings
+      const response = await fetch(`${FUNCTIONS_URL}/programs/${programId}/offerings`, { headers: getFunctionHeaders() });
       if (!response.ok) {
         throw new Error('Failed to fetch course offerings');
       }
@@ -132,7 +132,7 @@ export const useProgramSubjects = (programId: string) => {
   return useQuery<ProgramSubjectsResponse>({
     queryKey: ['program-subjects', programId],
     queryFn: async () => {
-      const response = await fetch(`${BASE_URL}/programs/${programId}/subjects`);
+      const response = await fetch(`${FUNCTIONS_URL}/programs/${programId}/subjects`, { headers: getFunctionHeaders() });
       if (!response.ok) {
         throw new Error('Failed to fetch program subjects');
       }

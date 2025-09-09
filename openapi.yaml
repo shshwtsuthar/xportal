@@ -17,6 +17,9 @@ info:
   title: XPortal SMS API
   description: The complete API for managing students, enrolments, academic delivery, finance, and compliance for Australian RTOs.
   version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 
 # -----------------------------------------------------------------------------
 # SERVER DEFINITION
@@ -24,6 +27,10 @@ info:
 servers:
   - url: https://{your-supabase-project-ref}.supabase.co/functions/v1
     description: Supabase Edge Functions Production Server
+    variables:
+      your-supabase-project-ref:
+        default: change-me
+        description: Supabase project ref slug
 
 # -----------------------------------------------------------------------------
 # SECURITY DEFINITIONS
@@ -63,6 +70,7 @@ paths:
   # ---------------------------------------------------------------------------
   /applications:
     get:
+      operationId: listApplications
       summary: List All Applications
       description: >
         Returns a paginated list of all applications with their current status and metadata.
@@ -104,7 +112,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApplicationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     post:
+      operationId: createApplication
       summary: Start a New Enrolment Application
       description: >
         Creates a new application in a 'Draft' state. This is the new entry point for the enrolment wizard.
@@ -125,9 +138,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Application'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /applications/{applicationId}:
     patch:
+      operationId: updateApplication
       summary: Update a Draft Application
       description: Incrementally saves data to a draft application.
       tags: [Applications & Enrolments]
@@ -147,9 +165,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Application'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /applications/{applicationId}/submit:
     post:
+      operationId: submitApplication
       summary: Submit an Application for Approval
       description: Transitions the application status to 'Submitted' after validating all required data is present.
       tags: [Applications & Enrolments]
@@ -160,9 +185,16 @@ paths:
       responses:
         '200':
           description: Application submitted for review.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /applications/{applicationId}/approve:
     post:
+      operationId: approveApplication
       summary: Approve an Application and Create Enrolment
       description: >
         A protected, administrative endpoint. Takes a 'Submitted' application and executes the
@@ -186,9 +218,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FullEnrolmentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /applications/{applicationId}/reject:
     post:
+      operationId: rejectApplication
       summary: Reject a Submitted Application
       description: >
         Rejects a submitted application with a reason. This transitions the application
@@ -215,6 +254,12 @@ paths:
       responses:
         '200':
           description: Application rejected successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
           content:
             application/json:
               schema:
@@ -222,6 +267,7 @@ paths:
 
   /applications/drafts:
     get:
+      operationId: listDraftApplications
       summary: List Draft Applications
       description: >
         Returns a paginated list of all draft applications. This endpoint is optimized
@@ -253,6 +299,10 @@ paths:
       responses:
         '200':
           description: A paginated list of draft applications.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
           content:
             application/json:
               schema:
@@ -260,6 +310,7 @@ paths:
 
   /applications/submitted:
     get:
+      operationId: listSubmittedApplications
       summary: List Submitted Applications
       description: >
         Returns a paginated list of all submitted applications awaiting approval.
@@ -291,6 +342,10 @@ paths:
       responses:
         '200':
           description: A paginated list of submitted applications.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
           content:
             application/json:
               schema:
@@ -298,6 +353,7 @@ paths:
 
   /applications/approved:
     get:
+      operationId: listApprovedApplications
       summary: List Approved Applications
       description: >
         Returns a paginated list of all approved applications. These applications
@@ -329,6 +385,10 @@ paths:
       responses:
         '200':
           description: A paginated list of approved applications.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
           content:
             application/json:
               schema:
@@ -336,6 +396,7 @@ paths:
 
   /applications/stats:
     get:
+      operationId: getApplicationStats
       summary: Get Application Statistics
       description: >
         Returns aggregated statistics about applications including counts by status,
@@ -346,6 +407,10 @@ paths:
       responses:
         '200':
           description: Application statistics.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
           content:
             application/json:
               schema:
@@ -380,6 +445,7 @@ paths:
 
   /enrolments/{enrolmentId}/state:
     put:
+      operationId: changeEnrolmentState
       summary: Change Enrolment State
       description: >
         Manages the lifecycle of an enrolment (Withdraw, Defer, Suspend). This is a critical,
@@ -398,14 +464,19 @@ paths:
       responses:
         '200':
           description: Enrolment state successfully changed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Enrolment not found.
+          $ref: '#/components/responses/NotFound'
 
   # ---------------------------------------------------------------------------
   # == CLIENTS ==
   # ---------------------------------------------------------------------------
   /clients:
     get:
+      operationId: listClients
       summary: List and Search Clients
       tags: [Clients]
       security:
@@ -434,9 +505,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ClientSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /clients/{clientId}:
     get:
+      operationId: getClient
       summary: Get a Single Client's Full Details
       description: >
         Retrieves the complete, aggregated record for a single client. The response MUST include
@@ -461,6 +537,7 @@ paths:
         '404':
           description: Client not found.
     patch:
+      operationId: updateClient
       summary: Update Client Details
       description: >
         Updates a subset of a client's details. Must include the If-Match header with the latest
@@ -496,6 +573,7 @@ paths:
 
   /clients/merge:
     post:
+      operationId: mergeClients
       summary: Merge Two Duplicate Client Records
       description: A protected, administrative endpoint to merge a duplicate client record into a surviving record. This is a delicate, irreversible transaction.
       tags: [Clients]
@@ -517,9 +595,14 @@ paths:
       responses:
         '200':
           description: Merge successful.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /clients/{clientId}/health-check:
     get:
+      operationId: getClientHealth
       summary: Check Client Data Completeness
       tags: [Clients]
       security:
@@ -535,9 +618,14 @@ paths:
                 $ref: '#/components/schemas/ClientHealthStatus'
         '404':
           description: Client not found.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /clients/{clientId}/notes:
     get:
+      operationId: listClientNotes
       summary: Get Notes for a Client
       tags: [Clients]
       security:
@@ -547,7 +635,12 @@ paths:
       responses:
         '200':
           description: A list of notes.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     post:
+      operationId: createClientNote
       summary: Add a Note to a Client Record
       tags: [Clients]
       security:
@@ -563,12 +656,17 @@ paths:
       responses:
         '201':
           description: Note created.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   # ---------------------------------------------------------------------------
   # == CRICOS ==
   # ---------------------------------------------------------------------------
   /cricos/coes:
     post:
+      operationId: createCoE
       summary: Create a Confirmation of Enrolment (CoE)
       description: Creates a new CoE record against an enrolment, typically in a 'Draft' state before submission to PRISMS.
       tags: [CRICOS]
@@ -583,9 +681,14 @@ paths:
       responses:
         '201':
           description: CoE created.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /cricos/coes/{coeId}/cancel:
     post:
+      operationId: cancelCoE
       summary: Cancel a Confirmation of Enrolment (CoE)
       description: A dedicated, auditable event to cancel a CoE, with a reason code for compliance.
       tags: [CRICOS]
@@ -602,12 +705,19 @@ paths:
       responses:
         '200':
           description: CoE cancelled.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   # ---------------------------------------------------------------------------
   # == ACADEMIC DELIVERY ==
   # ---------------------------------------------------------------------------
   /enrolments/{enrolmentId}/credit-transfer:
     post:
+      operationId: createCreditTransfer
       summary: Grant Credit Transfer or RPL
       description: Formally records the granting of a credit transfer or RPL for a specific unit within an enrolment.
       tags: [Academic Delivery]
@@ -624,9 +734,16 @@ paths:
       responses:
         '201':
           description: Credit transfer successfully granted and recorded.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /enrolments/{enrolmentId}/subjects/{subjectId}/outcome:
     put:
+      operationId: setEnrolmentSubjectOutcome
       summary: Record a Final Subject Outcome
       description: >
         A critical compliance endpoint. Records the final, aggregate academic outcome for a
@@ -642,17 +759,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EnrolmentSubjectOutcomePayload'
+              oneOf:
+                - $ref: '#/components/schemas/EnrolmentSubjectOutcomePayload'
+                - $ref: '#/components/schemas/GradePayload'
       responses:
         '200':
           description: Outcome successfully recorded.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '400':
-          description: Bad Request (e.g., invalid outcome code).
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Enrolment or Subject not found.
+          $ref: '#/components/responses/NotFound'
 
   /sessions/{sessionId}/roster:
     get:
+      operationId: getSessionRoster
       summary: Get Session Roster
       description: A user-centric endpoint that provides a simple, one-call way for a trainer to get a list of all students enrolled in their upcoming class.
       tags: [Academic Delivery]
@@ -663,9 +785,41 @@ paths:
       responses:
         '200':
           description: The class roster.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/attendance:
+    post:
+      operationId: createAttendanceSubmission
+      summary: Submit session attendance
+      tags: [Academic Delivery]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceSubmission'
+      responses:
+        '201':
+          description: Attendance recorded.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /staff/{staffId}/schedule:
     get:
+      operationId: getStaffSchedule
       summary: Get Staff Member's Schedule
       description: A user-centric endpoint that returns a clean, aggregated list of all sessions a trainer is assigned to in a given period.
       tags: [Academic Delivery]
@@ -693,12 +847,19 @@ paths:
       responses:
         '200':
           description: The staff member's schedule.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   # ---------------------------------------------------------------------------
   # == FINANCE ==
   # ---------------------------------------------------------------------------
   /invoices/{invoiceId}/void:
     post:
+      operationId: voidInvoice
       summary: Void an Unpaid Invoice
       description: Transitions an 'Issued' but unpaid invoice to a 'Void' state. This is for correcting errors and is illegal if a payment has been made.
       tags: [Finance]
@@ -709,11 +870,16 @@ paths:
       responses:
         '200':
           description: Invoice successfully voided.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '400':
-          description: Bad Request. Invoice has payments and cannot be voided.
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /payments/{paymentId}/refund:
     post:
+      operationId: refundPayment
       summary: Issue a Refund Against a Payment
       description: Creates a refund record, ensuring a closed-loop accounting trail.
       tags: [Finance]
@@ -726,16 +892,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RefundPayload'
+              anyOf:
+                - $ref: '#/components/schemas/RefundPayload'
+                - $ref: '#/components/schemas/PaymentPayload'
       responses:
         '201':
           description: Refund processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   # ---------------------------------------------------------------------------
   # == REPORTS ==
   # ---------------------------------------------------------------------------
   /reports/attendance-at-risk:
     get:
+      operationId: getAttendanceAtRisk
       summary: At-Risk Attendance Report
       description: Returns a list of students whose attendance has fallen below a specified threshold in a given period.
       tags: [Reports]
@@ -761,9 +938,14 @@ paths:
       responses:
         '200':
           description: A list of at-risk students.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /reports/financial-summary:
     get:
+      operationId: getFinancialSummary
       summary: Financial Summary Report
       description: Returns an aggregated financial summary for a given period.
       tags: [Reports]
@@ -789,12 +971,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FinancialSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   # ---------------------------------------------------------------------------
   # == REFERENCE DATA & CATALOG MANAGEMENT ==
   # ---------------------------------------------------------------------------
   /programs:
     get:
+      operationId: getPrograms
       summary: List all Programs
       tags: [Program & Subject Management]
       security:
@@ -808,9 +995,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Program'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /programs/{programId}/subjects:
     get:
+      operationId: getProgramSubjects
       summary: List Subjects for a Program
       tags: [Program & Subject Management]
       security:
@@ -820,8 +1012,21 @@ paths:
       responses:
         '200':
           description: A list of subjects for the program.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProgramSubject'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /programs/{programId}/course-plans:
     get:
+      operationId: listProgramCoursePlans
       summary: List course plans for a program
       tags: [Program & Subject Management]
       security:
@@ -837,7 +1042,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CoursePlan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
     post:
+      operationId: createProgramCoursePlan
       summary: Create a course plan for a program
       tags: [Program & Subject Management]
       security:
@@ -857,9 +1069,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CoursePlan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /programs/{programId}/course-plans/{planId}/subjects:
     get:
+      operationId: getCoursePlanSubjects
       summary: Get subjects for a course plan
       tags: [Program & Subject Management]
       security:
@@ -881,7 +1100,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CoursePlanSubject'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
+      operationId: replaceCoursePlanSubjects
       summary: Replace subjects for a course plan
       tags: [Program & Subject Management]
       security:
@@ -905,15 +1131,21 @@ paths:
       responses:
         '200':
           description: Plan subjects updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /course-offerings/{id}:
     put:
+      operationId: updateCourseOffering
       summary: Update a course offering
       tags: [Program & Subject Management]
       security:
         - bearerAuth: [admin]
       parameters:
-        - $ref: '#/components/parameters/ProgramId'
         - name: id
           in: path
           required: true
@@ -929,7 +1161,14 @@ paths:
       responses:
         '200':
           description: Offering updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
     delete:
+      operationId: deleteCourseOffering
       summary: Delete a course offering
       tags: [Program & Subject Management]
       security:
@@ -944,9 +1183,14 @@ paths:
       responses:
         '204':
           description: Offering deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /programs/{programId}/payment-plan-templates:
     get:
+      operationId: listPaymentPlanTemplates
       summary: List payment plan templates for a program
       tags: [Finance]
       security:
@@ -962,7 +1206,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PaymentPlanTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     post:
+      operationId: createPaymentPlanTemplate
       summary: Create a payment plan template for a program
       tags: [Finance]
       security:
@@ -982,9 +1231,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaymentPlanTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /payment-plan-templates/{templateId}/instalments:
     get:
+      operationId: getPaymentPlanInstalments
       summary: List instalments in a template
       tags: [Finance]
       security:
@@ -1005,7 +1259,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PaymentPlanInstalment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     put:
+      operationId: replacePaymentPlanInstalments
       summary: Replace instalments list for a template
       tags: [Finance]
       security:
@@ -1028,9 +1287,16 @@ paths:
       responses:
         '200':
           description: Instalments updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /applications/{applicationId}/derive-payment-plan:
     post:
+      operationId: derivePaymentPlanForApplication
       summary: Derive a concrete payment schedule for an application from a template
       tags: [Finance]
       security:
@@ -1050,9 +1316,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaymentPlanDerivedSchedule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /programs/{programId}/offerings:
     get:
+      operationId: listProgramOfferings
       summary: List Course Offerings for a Program
       description: Returns available course offerings/intakes for a specific program that are open for enrolment.
       tags: [Program & Subject Management]
@@ -1069,9 +1342,16 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CourseOffering'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /agents:
     get:
+      operationId: listAgents
       summary: List Active Educational Agents
       description: Returns a list of active educational agents available for student referrals.
       tags: [Agents]
@@ -1086,9 +1366,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Agent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /reference-data/{codeType}:
     get:
+      operationId: getReferenceData
       summary: Get AVETMISS Reference Codes
       tags: [Reference Data]
       security:
@@ -1109,6 +1394,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ReferenceCode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
 # =============================================================================
 # REUSABLE COMPONENTS
@@ -1120,6 +1409,22 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: "Supabase-issued JSON Web Token (JWT)"
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
 
   parameters:
     ApplicationId:
