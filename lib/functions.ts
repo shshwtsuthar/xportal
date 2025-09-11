@@ -10,7 +10,6 @@ type HeadersRecord = Record<string, string>;
 
 export const getFunctionHeaders = (overrides?: HeadersRecord): HeadersRecord => {
   const headers: HeadersRecord = {
-    'Content-Type': 'application/json',
   };
 
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

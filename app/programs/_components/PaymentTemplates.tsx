@@ -189,14 +189,16 @@ export const PaymentTemplates = ({ programId }: Props) => {
       </div>
       {/* Editor Modal */}
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Edit payment plan template</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
+        <DialogContent className="w-[95vw] sm:max-w-3xl p-0">
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4">
+            <DialogHeader>
+              <DialogTitle>Edit payment plan template</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 p-4 max-h-[80vh] overflow-y-auto"> 
+            <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
               <div className="text-sm text-muted-foreground">Total amount: <span className="font-medium text-foreground">{Intl.NumberFormat(undefined, { style: 'currency', currency: 'AUD' }).format(totalAmount || 0)}</span></div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">Presets</Button>
@@ -253,13 +255,13 @@ export const PaymentTemplates = ({ programId }: Props) => {
                 </Button>
               </div>
             </div>
-            <div className="space-y-2 max-h-[420px] overflow-auto pr-1">
+            <div className="space-y-2 pr-1">
               {rows.length === 0 && (
                 <p className="text-sm text-muted-foreground">No instalments yet. Click “Add instalment”.</p>
               )}
               {rows.map((r, idx) => (
-                <div key={idx} className="grid grid-cols-12 gap-3 items-start border rounded-md p-3">
-                  <div className="col-span-12 md:col-span-5">
+                <div key={idx} className="grid grid-cols-12 gap-3 items-center border rounded-md p-3">
+                  <div className="col-span-12 md:col-span-5 min-w-0">
                     <label className="text-xs text-muted-foreground">Description</label>
                     <Input value={r.description} onChange={(e) => setRows(prev => prev.map((row, i) => i===idx?{...row, description: e.target.value}:row))} placeholder="e.g., Deposit" />
                   </div>
@@ -305,30 +307,33 @@ export const PaymentTemplates = ({ programId }: Props) => {
                   <div className="text-muted-foreground">Instalments: <span className="text-foreground font-medium">{preview.items.length}</span></div>
                   <div className="text-muted-foreground">Range: <span className="text-foreground font-medium">{preview.first} → {preview.last}</span></div>
                 </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Due date</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {preview.items.map((it, i) => (
-                      <TableRow key={i}>
-                        <TableCell>{it.description || '—'}</TableCell>
-                        <TableCell>{it.dueLabel}</TableCell>
-                        <TableCell className="text-right">{Intl.NumberFormat(undefined, { style: 'currency', currency: 'AUD' }).format(it.amount)}</TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Due date</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {preview.items.map((it, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="min-w-0">{it.description || '—'}</TableCell>
+                          <TableCell>{it.dueLabel}</TableCell>
+                          <TableCell className="text-right">{Intl.NumberFormat(undefined, { style: 'currency', currency: 'AUD' }).format(it.amount)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditorOpen(false)}>Discard</Button>
-            <Button onClick={() => {
+          <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t p-4">
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setEditorOpen(false)}>Discard</Button>
+              <Button onClick={() => {
               if (!templateId) return; if (rows.length===0) { toast.error('Add at least one instalment'); return; }
               for (const r of rows) { if (!r.description.trim()) { toast.error('Each instalment needs a description'); return; } if (!(Number(r.amount)>0)) { toast.error('Amounts must be greater than 0'); return; } if (!Number.isFinite(Number(r.offset_days))) { toast.error('Offset days must be a number'); return; } }
               const payload = rows.map((r,i)=>({ description: r.description.trim(), amount: Number(r.amount), offset_days: Number(r.offset_days), sort_order: i+1 }));
@@ -337,7 +342,8 @@ export const PaymentTemplates = ({ programId }: Props) => {
                 { onSuccess: () => { toast.success('Instalments saved'); setEditorOpen(false); }, onError: () => toast.error('Failed to save instalments') }
               );
             }}>Save</Button>
-          </DialogFooter>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

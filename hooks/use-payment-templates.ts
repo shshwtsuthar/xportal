@@ -9,7 +9,7 @@ export const usePaymentPlanTemplates = (programId: string | undefined) => {
     queryKey: ['payment-templates', programId],
     enabled: !!programId,
     queryFn: async () => {
-      const res = await fetch(`${FUNCTIONS_URL}/programs/${programId}/payment-plan-templates`, {
+      const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/programs/${programId}/payment-plan-templates`, {
         headers: getFunctionHeaders(),
       });
       if (!res.ok) throw new Error('Failed to load templates');
@@ -22,7 +22,7 @@ export const useCreatePaymentPlanTemplate = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { programId: string; name: string; is_default?: boolean }) => {
-      const res = await fetch(`${FUNCTIONS_URL}/programs/${payload.programId}/payment-plan-templates`, {
+      const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/programs/${payload.programId}/payment-plan-templates`, {
         method: 'POST',
         headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: payload.name, is_default: payload.is_default ?? false }),
@@ -39,7 +39,7 @@ export const useTemplateInstalments = (templateId: string | undefined) => {
     queryKey: ['template-instalments', templateId],
     enabled: !!templateId,
     queryFn: async () => {
-      const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/${templateId}/instalments`, {
+      const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/payment-plan-templates/${templateId}/instalments`, {
         headers: getFunctionHeaders(),
       });
       if (!res.ok) throw new Error('Failed to load instalments');
@@ -52,7 +52,7 @@ export const useReplaceInstalments = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { templateId: string; items: PaymentPlanInstalment[] }) => {
-      const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/${payload.templateId}/instalments`, {
+      const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/payment-plan-templates/${payload.templateId}/instalments`, {
         method: 'PUT',
         headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(payload.items),
@@ -68,7 +68,7 @@ export const useSetTemplateDefault = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { templateId: string; programId: string; is_default: boolean }) => {
-      const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/${payload.templateId}`, {
+      const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/payment-plan-templates/${payload.templateId}`, {
         method: 'PATCH',
         headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_default: payload.is_default }),
