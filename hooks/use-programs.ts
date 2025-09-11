@@ -100,8 +100,8 @@ export const useCourseOfferings = (programId: string) => {
   return useQuery<CourseOfferingsResponse>({
     queryKey: ['course-offerings', programId],
     queryFn: async () => {
-      // Canonical path per OpenAPI: /programs/{programId}/offerings
-      const response = await fetch(`${FUNCTIONS_URL}/programs/${programId}/offerings`, { headers: getFunctionHeaders() });
+      // Use function-prefixed path through the gateway
+      const response = await fetch(`${FUNCTIONS_URL}/course-offerings/programs/${programId}/offerings`, { headers: getFunctionHeaders() });
       if (!response.ok) {
         throw new Error('Failed to fetch course offerings');
       }

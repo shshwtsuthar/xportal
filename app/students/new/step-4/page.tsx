@@ -27,7 +27,7 @@ import { useEffect } from 'react';
 
 export default function Step4AgentReferral() {
   const router = useRouter();
-  const { updateStep4Data, nextStep, previousStep, draftId } = useApplicationWizard();
+  const { updateStep4Data, nextStep, previousStep, draftId, formData } = useApplicationWizard();
   
   // Agents query
   const { data: agentsData, isLoading: agentsLoading } = useAgents();
@@ -47,10 +47,10 @@ export default function Step4AgentReferral() {
     // resolver: zodResolver(Step4AgentReferralSchema) as any,
     defaultValues: {
       agentReferral: {
-        agentId: null,
-        referralSource: '', // optional now
-        marketingAttribution: '',
-        referralNotes: '',
+        agentId: (formData as any)?.agentId ?? null,
+        referralSource: (formData as any)?.referralSource ?? '',
+        marketingAttribution: (formData as any)?.marketingAttribution ?? '',
+        referralNotes: (formData as any)?.referralNotes ?? '',
       },
     },
   });
@@ -70,6 +70,15 @@ export default function Step4AgentReferral() {
   useEffect(() => {
     schedule();
   }, [watchedValues.agentReferral?.agentId]);
+
+  // Hydrate when formData changes
+  useEffect(() => {
+    setValue('agentReferral.agentId', (formData as any)?.agentId ?? null);
+    setValue('agentReferral.referralSource', (formData as any)?.referralSource ?? '');
+    setValue('agentReferral.marketingAttribution', (formData as any)?.marketingAttribution ?? '');
+    setValue('agentReferral.referralNotes', (formData as any)?.referralNotes ?? '');
+    setHasAgent(Boolean((formData as any)?.agentId));
+  }, [formData, setValue]);
   
   const onSubmit: SubmitHandler<Step4AgentReferral> = async (data) => {
     try {

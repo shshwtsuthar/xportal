@@ -135,15 +135,26 @@ const FullEnrolmentPayloadBaseSchema = z.object({
   personalDetails: ClientPersonalDetailsSchema,
   address: ClientAddressBlockSchema,
   avetmissDetails: ClientAvetmissDetailsSchema,
-  cricosDetails: ClientCricosDetailsSchema.optional(),
+  // NOTE: Validate CRICOS only when isInternationalStudent === true
+  cricosDetails: z.any().optional(),
   usi: ClientUSISchema,
   enrolmentDetails: EnrolmentDetailsSchema,
 });
 // CORRECTED PATTERN: Stage 2
 export const FullEnrolmentPayloadSchema = FullEnrolmentPayloadBaseSchema.superRefine((data, ctx) => {
-  if (data.isInternationalStudent && !data.cricosDetails) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['cricosDetails'], message: 'CRICOS details are mandatory for international students.' });
+  if (data.isInternationalStudent) {
+    if (!data.cricosDetails) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['cricosDetails'], message: 'CRICOS details are mandatory for international students.' });
+      return;
+    }
+    const parsed = ClientCricosDetailsSchema.safeParse(data.cricosDetails);
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        ctx.addIssue({ ...issue, path: ['cricosDetails', ...(issue.path || [])] });
+      }
+    }
   }
+  // If not international, we ignore any provided cricosDetails without validating
 });
 
 // --- Exported Type and Validation Function ---

@@ -101,6 +101,96 @@ export const useSubmitApplication = () => {
   });
 };
 
+// Hook for accepting applications
+export const useAcceptApplication = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (applicationId: string) => {
+      const response = await fetch(`${BASE_URL}/applications/${applicationId}/accept`, {
+        method: 'POST',
+        headers: getFunctionHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to accept application: ${response.statusText}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: (_, applicationId) => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['application', applicationId] });
+    },
+  });
+};
+
+// Hook for sending offer (Resend) and marking AwaitingPayment on success
+export const useSendOffer = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (applicationId: string) => {
+      const response = await fetch(`${BASE_URL}/applications/${applicationId}/send-offer`, {
+        method: 'POST',
+        headers: getFunctionHeaders(),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to send offer: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    onSuccess: (_, applicationId) => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['application', applicationId] });
+    },
+  });
+};
+
+// Hook for marking AwaitingPayment without sending email
+export const useMarkAwaitingPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (applicationId: string) => {
+      const response = await fetch(`${BASE_URL}/applications/${applicationId}/mark-awaiting`, {
+        method: 'POST',
+        headers: getFunctionHeaders(),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to mark awaiting payment: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    onSuccess: (_, applicationId) => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['application', applicationId] });
+    },
+  });
+};
+
+// Helper to download latest offer artifact
+export const downloadLatestOffer = async (applicationId: string) => {
+  const res = await fetch(`${BASE_URL}/applications/${applicationId}/offer-latest`, {
+    method: 'GET',
+    headers: getFunctionHeaders(),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to download offer letter');
+  }
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'offer';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 // Hook for bulk operations
 export const useBulkApplicationActions = () => {
   const queryClient = useQueryClient();

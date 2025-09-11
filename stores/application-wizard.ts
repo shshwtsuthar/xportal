@@ -1,6 +1,7 @@
 import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 import { Step1PersonalInfo, Step2AcademicInfo, Step3ProgramSelection, Step4AgentReferral, Step5FinancialArrangements, FullEnrolmentPayload } from '@/lib/schemas/application-schemas';
 
 // =============================================================================
@@ -122,6 +123,11 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
           formData: {
             ...state.formData,
             avetmissDetails: data.avetmissDetails,
+            // Persist USI and CRICOS alongside AVETMISS so hydration works across navigation
+            // @ts-ignore
+            usi: (data as any).usi,
+            // @ts-ignore
+            cricosDetails: (data as any).cricosDetails,
           },
           isDirty: true,
         }));
@@ -183,10 +189,8 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
       createDraft: async (): Promise<string> => {
         set({ isLoading: true });
         try {
-          const BASE_URL = 'http://127.0.0.1:54321/functions/v1';
-          const { getFunctionHeaders } = await import('@/lib/utils');
           const idempotencyKey = crypto.randomUUID();
-          const res = await fetch(`${BASE_URL}/applications`, {
+          const res = await fetch(`${FUNCTIONS_URL}/applications`, {
             method: 'POST',
             headers: { ...getFunctionHeaders(), 'Idempotency-Key': idempotencyKey },
             body: JSON.stringify({}),
@@ -241,15 +245,15 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
       loadDraft: async (draftId: string): Promise<void> => {
         set({ isLoading: true });
         try {
-          // TODO: Implement API call to load draft
-          // const response = await api.get(`/applications/${draftId}`);
-          // const draftData = response.data.application_payload;
-          
-          // Mock implementation for now
-          console.log('Loading draft:', draftId);
-          
+          const res = await fetch(`${FUNCTIONS_URL}/applications/${draftId}`, {
+            headers: getFunctionHeaders(),
+          });
+          if (!res.ok) throw new Error('Failed to load draft');
+          const data = await res.json();
+          const payload = (data?.application_payload ?? {}) as Partial<FullEnrolmentPayload>;
           set({ 
             draftId,
+            formData: { ...(payload as any) },
             isLoading: false 
           });
         } catch (error) {

@@ -22,7 +22,10 @@ const InstalmentsReplaceSchema = z.array(z.object({
 
 const DeriveSchema = z.object({
   templateId: z.string().uuid(),
-  startDate: z.coerce.date(),
+  // Deprecated: startDate retained for backward compatibility
+  startDate: z.coerce.date().optional(),
+  anchor: z.enum(['OFFER_LETTER','COMMENCEMENT','CUSTOM']).optional(),
+  anchorDate: z.coerce.date().optional(),
 });
 
 const listTemplates = async (_req: Request, _ctx: ApiContext, programId: string) => {
@@ -93,18 +96,40 @@ const updateTemplate = async (_req: Request, _ctx: ApiContext, templateId: strin
   return new Response(JSON.stringify(updated), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 };
 
-const deriveSchedule = async (_req: Request, _ctx: ApiContext, applicationId: string, body: unknown) => {
-  const { templateId, startDate } = DeriveSchema.parse(body);
+const deriveSchedule = async (_req: Request, _ctx: ApiContext, _applicationId: string, body: unknown) => {
+  const { templateId, startDate, anchor, anchorDate } = DeriveSchema.parse(body);
   const instalments = await db.selectFrom('sms_op.payment_plan_template_instalments')
     .select(['description','amount','offset_days','sort_order'])
     .where('template_id','=',templateId)
     .orderBy('sort_order','asc')
     .execute();
-  const start = new Date(startDate);
+
+  // Resolve effective start date
+  let effectiveStart: Date | null = null;
+  if (anchor === 'OFFER_LETTER') {
+    effectiveStart = new Date();
+  } else if (anchor === 'COMMENCEMENT') {
+    // For now, require anchorDate until offering integration is wired
+    if (!anchorDate) {
+      throw new _ValidationError('anchorDate is required when anchor=COMMENCEMENT until offering dates are provided.');
+    }
+    effectiveStart = new Date(anchorDate);
+  } else if (anchor === 'CUSTOM') {
+    if (!anchorDate) {
+      throw new _ValidationError('anchorDate is required when anchor=CUSTOM');
+    }
+    effectiveStart = new Date(anchorDate);
+  } else if (startDate) {
+    effectiveStart = new Date(startDate);
+  } else {
+    // Default fallback: today
+    effectiveStart = new Date();
+  }
+
   const items = instalments.map((i: { description: string; amount: string; offset_days: number; sort_order: number; }) => ({
     description: i.description,
     amount: Number(i.amount),
-    dueDate: new Date(start.getTime() + i.offset_days * 86400000).toISOString().slice(0,10),
+    dueDate: new Date(effectiveStart!.getTime() + i.offset_days * 86400000).toISOString().slice(0,10),
   }));
   return new Response(JSON.stringify({ items }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 };

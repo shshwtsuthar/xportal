@@ -3,6 +3,9 @@ import {
   useDraftApplications, 
   useSubmittedApplications, 
   useApprovedApplications, 
+  useAwaitingPaymentApplications,
+  useAcceptedApplications,
+  useRejectedApplications,
   useApplicationStats,
   useAllApplications,
   useInvalidateApplications,
@@ -15,6 +18,9 @@ import {
   useRejectApplication, 
   useApproveApplication, 
   useSubmitApplication,
+  useAcceptApplication,
+  useSendOffer,
+  useMarkAwaitingPayment,
   useBulkApplicationActions,
   type RejectApplicationPayload,
   type ApproveApplicationPayload,
@@ -23,7 +29,7 @@ import {
 // Main hook that combines all application management functionality
 export const useApplicationsManagement = () => {
   // State for current view and filters
-  const [currentView, setCurrentView] = useState<'drafts' | 'submitted' | 'approved' | 'all'>('drafts');
+  const [currentView, setCurrentView] = useState<'drafts' | 'submitted' | 'awaiting' | 'accepted' | 'approved' | 'rejected' | 'all'>('drafts');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -38,7 +44,10 @@ export const useApplicationsManagement = () => {
   // Fetch data based on current view
   const draftsQuery = useDraftApplications(queryParams);
   const submittedQuery = useSubmittedApplications(queryParams);
+  const awaitingQuery = useAwaitingPaymentApplications(queryParams);
+  const acceptedQuery = useAcceptedApplications(queryParams);
   const approvedQuery = useApprovedApplications(queryParams);
+  const rejectedQuery = useRejectedApplications(queryParams);
   const allQuery = useAllApplications(queryParams);
   const statsQuery = useApplicationStats();
 
@@ -47,11 +56,14 @@ export const useApplicationsManagement = () => {
     switch (currentView) {
       case 'drafts': return draftsQuery;
       case 'submitted': return submittedQuery;
+      case 'awaiting': return awaitingQuery;
+      case 'accepted': return acceptedQuery;
       case 'approved': return approvedQuery;
+      case 'rejected': return rejectedQuery;
       case 'all': return allQuery;
       default: return draftsQuery;
     }
-  }, [currentView, draftsQuery, submittedQuery, approvedQuery, allQuery]);
+  }, [currentView, draftsQuery, submittedQuery, awaitingQuery, acceptedQuery, approvedQuery, rejectedQuery, allQuery]);
 
   // Pagination utilities
   const pagination = useApplicationPagination(currentQuery.data);
@@ -66,6 +78,9 @@ export const useApplicationsManagement = () => {
   const rejectMutation = useRejectApplication();
   const approveMutation = useApproveApplication();
   const submitMutation = useSubmitApplication();
+  const acceptMutation = useAcceptApplication();
+  const sendOfferMutation = useSendOffer();
+  const markAwaitingMutation = useMarkAwaitingPayment();
   const { bulkReject, bulkApprove } = useBulkApplicationActions();
 
   // Helper functions
@@ -88,7 +103,7 @@ export const useApplicationsManagement = () => {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  const handleViewChange = (view: 'drafts' | 'submitted' | 'approved' | 'all') => {
+  const handleViewChange = (view: 'drafts' | 'submitted' | 'awaiting' | 'accepted' | 'approved' | 'rejected' | 'all') => {
     setCurrentView(view);
     setCurrentPage(1); // Reset to first page when changing view
   };
@@ -130,6 +145,37 @@ export const useApplicationsManagement = () => {
         success: false, 
         error: error instanceof Error ? error.message : 'Failed to submit application' 
       };
+    }
+  };
+
+  const handleAcceptApplication = async (applicationId: string) => {
+    try {
+      await acceptMutation.mutateAsync(applicationId);
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to accept application' 
+      };
+    }
+  };
+
+  const handleSendOfferAndAwaiting = async (applicationId: string) => {
+    try {
+      await sendOfferMutation.mutateAsync(applicationId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to send offer' };
+    }
+  };
+
+  const handleDownloadOfferAndAwaiting = async (applicationId: string) => {
+    try {
+      // download is handled by UI helper; here only mark awaiting
+      await markAwaitingMutation.mutateAsync(applicationId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to mark awaiting payment' };
     }
   };
 
@@ -226,6 +272,9 @@ export const useApplicationsManagement = () => {
     handleRejectApplication,
     handleApproveApplication,
     handleSubmitApplication,
+    handleAcceptApplication,
+    handleSendOfferAndAwaiting,
+    handleDownloadOfferAndAwaiting,
     handleBulkReject,
     handleBulkApprove,
     refreshData,

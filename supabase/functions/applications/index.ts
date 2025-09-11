@@ -18,6 +18,7 @@ import { NotFoundError, ValidationError } from '../_shared/errors.ts';
 import { deepMerge } from '../_shared/utils.ts';
 import { validateFullEnrolmentPayload } from '../_shared/validators.ts';
 import type { components } from '../_shared/api.types.ts';
+import { join } from 'https://deno.land/std@0.177.0/path/mod.ts';
 import { z } from 'https://deno.land/x/zod@v3.23.8/mod.ts';
 import type { ExpressionBuilder } from 'npm:kysely';
 import type { DB } from '../_shared/database.types.ts';
@@ -42,6 +43,37 @@ interface ApplicationRow {
 // Transaction type for database operations - Kysely transaction type is complex, using any for pragmatic reasons
 // deno-lint-ignore no-explicit-any
 type DatabaseTransaction = any;
+// --- Payment Plan Snapshot Validation ---
+const PaymentPlanAnchorEnum = z.enum(['OFFER_LETTER','COMMENCEMENT','CUSTOM']);
+const PaymentPlanInstalmentSchema = z.object({
+  description: z.string().min(1),
+  amount: z.number().positive(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+const PaymentPlanSnapshotSchema = z.object({
+  selectedTemplateId: z.string().uuid(),
+  anchor: PaymentPlanAnchorEnum,
+  anchorDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  schedule: z.array(PaymentPlanInstalmentSchema).min(1).max(24),
+  tuitionFeeSnapshot: z.number().positive(),
+});
+
+function validatePaymentPlanSnapshotOrThrow(appPayload: Record<string, unknown>): void {
+  const paymentPlan = (appPayload as any)?.paymentPlan;
+  if (!paymentPlan) {
+    throw new ValidationError('Payment plan selection and snapshot are required before submit.');
+  }
+  const parsedResult = PaymentPlanSnapshotSchema.safeParse(paymentPlan);
+  if (!parsedResult.success) {
+    throw new ValidationError('Invalid payment plan snapshot.', { issues: parsedResult.error.issues });
+  }
+  const parsed = parsedResult.data;
+  const sum = parsed.schedule.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  if (Math.round(parsed.tuitionFeeSnapshot * 100) !== Math.round(sum * 100)) {
+    throw new ValidationError('Payment plan tuitionFeeSnapshot must equal the sum of instalment amounts.');
+  }
+}
+
 
 // --- Logic: List Applications ---
 const listApplicationsLogic = async (req: Request, _ctx: ApiContext) => {
@@ -67,7 +99,7 @@ const listApplicationsLogic = async (req: Request, _ctx: ApiContext) => {
       ]);
     
     // Apply status filter if provided
-    if (status && ['Draft', 'Submitted', 'Approved', 'Rejected'].includes(status)) {
+    if (status && ['Draft', 'Submitted', 'AwaitingPayment', 'Accepted', 'Approved', 'Rejected'].includes(status)) {
       query = query.where('status', '=', status);
     }
     
@@ -87,7 +119,7 @@ const listApplicationsLogic = async (req: Request, _ctx: ApiContext) => {
       .select((eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('total'));
     
     // Apply the same filters to count query
-    if (status && ['Draft', 'Submitted', 'Approved', 'Rejected'].includes(status)) {
+    if (status && ['Draft', 'Submitted', 'AwaitingPayment', 'Accepted', 'Approved', 'Rejected'].includes(status)) {
       countQuery = countQuery.where('status', '=', status);
     }
     
@@ -218,6 +250,22 @@ const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
     // Handle payload updates (exclude status from payload merge)
     const { status: _status, ...payloadData } = payload;
     if (payloadData && Object.keys(payloadData).length > 0) {
+      // If paymentPlan provided, normalize tuition; validate only when schedule has items
+      if ((payloadData as any).paymentPlan) {
+        const candidate = (payloadData as any).paymentPlan as Record<string, unknown>;
+        const scheduleArr = Array.isArray((candidate as any).schedule) ? ((candidate as any).schedule as any[]) : [];
+        if (scheduleArr.length > 0 && (candidate as any).tuitionFeeSnapshot == null) {
+          const sum = scheduleArr.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+          (candidate as any).tuitionFeeSnapshot = Number(sum.toFixed(2));
+        }
+        // Soft validation during PATCH: only enforce when schedule has items to avoid blocking autosave
+        if (scheduleArr.length > 0) {
+          const r = PaymentPlanSnapshotSchema.safeParse(candidate);
+          if (!r.success) {
+            throw new ValidationError('Invalid payment plan snapshot.', { issues: r.error.issues });
+          }
+        }
+      }
       const mergedPayload = deepMerge(existingApplication.application_payload as FullEnrolmentPayload, payloadData);
       updateData.application_payload = mergedPayload;
     }
@@ -244,6 +292,8 @@ const submitApplicationLogic = async (_req: Request, _ctx: ApiContext, _body: un
     }
 
     validateFullEnrolmentPayload(application.application_payload);
+    // Enforce payment plan presence and correctness at submit time
+    validatePaymentPlanSnapshotOrThrow(application.application_payload as Record<string, unknown>);
 
     return await trx.updateTable('sms_op.applications')
       .set({ status: 'Submitted', updated_at: new Date() })
@@ -255,15 +305,15 @@ const submitApplicationLogic = async (_req: Request, _ctx: ApiContext, _body: un
 };
 
 const ApprovalPayloadSchema = z.object({
-  tuitionFeeSnapshot: z.number(),
-  agentCommissionRateSnapshot: z.number(),
+  tuitionFeeSnapshot: z.number().optional(),
+  agentCommissionRateSnapshot: z.number().optional(),
   action: z.string().optional(),
   notes: z.string().optional(),
-});
+}).optional();
 // --- Logic: Approve a Submitted Application (The Master Transaction) ---
 const approveApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unknown, applicationId: string) => {
-  // 1. Validate the incoming approval payload.
-  const approvalPayload = ApprovalPayloadSchema.parse(body);
+  // 1. Validate the incoming approval payload (optional per new flow).
+  const approvalPayload = ApprovalPayloadSchema.parse(body) ?? {};
 
   const { clientId, enrolmentId } = await db.transaction().execute(async (trx: DatabaseTransaction) => {
     // 2. Lock the application row and validate its state.
@@ -273,8 +323,8 @@ const approveApplicationLogic = async (_req: Request, _ctx: ApiContext, body: un
     if (!application) {
       throw new NotFoundError('Application not found.');
     }
-    if (application.status !== 'Submitted') {
-      throw new ValidationError(`Only applications in 'Submitted' status can be approved.`);
+    if (application.status !== 'Accepted') {
+      throw new ValidationError(`Only applications in 'Accepted' status can be approved.`);
     }
 
     // 3. Validate the entire application payload against our master validator.
@@ -339,8 +389,8 @@ const approveApplicationLogic = async (_req: Request, _ctx: ApiContext, body: un
         course_offering_id: payload.enrolmentDetails.courseOfferingId,
         status: 'Active',
         agent_id: payload.agentId,
-        tuition_fee_snapshot: approvalPayload.tuitionFeeSnapshot,
-        agent_commission_rate_snapshot: approvalPayload.agentCommissionRateSnapshot,
+        tuition_fee_snapshot: (approvalPayload as any).tuitionFeeSnapshot ?? (application.application_payload as any)?.tuitionFeeSnapshot ?? null,
+        agent_commission_rate_snapshot: (approvalPayload as any).agentCommissionRateSnapshot ?? (application.application_payload as any)?.agentCommissionRateSnapshot ?? null,
       }).returning('id').executeTakeFirstOrThrow();
 
     // 8. Create the versioned "Academic Contract".
@@ -685,6 +735,130 @@ const listApprovedApplicationsLogic = async (req: Request, _ctx: ApiContext): Pr
   });
 };
 
+// --- List Awaiting Payment Applications Logic ---
+const listAwaitingPaymentApplicationsLogic = async (req: Request, _ctx: ApiContext): Promise<Response> => {
+  const url = new URL(req.url);
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+  const search = url.searchParams.get('search') || undefined;
+  const offset = (page - 1) * limit;
+
+  let countQuery = db.selectFrom('sms_op.applications')
+    .select((eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('total'))
+    .where('status', '=', 'AwaitingPayment');
+  if (search) {
+    const searchPattern = `%${search}%`;
+    countQuery = countQuery.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${searchPattern}
+    )`);
+  }
+  const totalResult = await countQuery.executeTakeFirst();
+  const total = Number(totalResult?.total || 0);
+
+  let query = db.selectFrom('sms_op.applications').selectAll().where('status', '=', 'AwaitingPayment');
+  if (search) {
+    const searchPattern = `%${search}%`;
+    query = query.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${searchPattern} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${searchPattern}
+    )`);
+  }
+  const applications = await query.orderBy('created_at', 'desc').limit(limit).offset(offset).execute();
+  const data = applications.map((row: any) => ({
+    id: row.id,
+    status: row.status,
+    clientName: `${row.application_payload?.personalDetails?.firstName ?? ''} ${row.application_payload?.personalDetails?.lastName ?? ''}`.trim(),
+    clientEmail: row.application_payload?.personalDetails?.primaryEmail ?? '',
+    programName: row.application_payload?.enrolmentDetails?.programName ?? undefined,
+    createdAt: row.created_at,
+  }));
+  return new Response(JSON.stringify({ data, pagination: { page, limit, total, totalPages: Math.ceil(total / limit), hasNext: offset + limit < total, hasPrevious: page > 1 } }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- List Accepted Applications Logic ---
+const listAcceptedApplicationsLogic = async (req: Request, _ctx: ApiContext): Promise<Response> => {
+  const url = new URL(req.url);
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+  const search = url.searchParams.get('search') || undefined;
+  const offset = (page - 1) * limit;
+  let countQuery = db.selectFrom('sms_op.applications')
+    .select((eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('total'))
+    .where('status', '=', 'Accepted');
+  if (search) {
+    const sp = `%${search}%`;
+    countQuery = countQuery.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${sp} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${sp} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${sp}
+    )`);
+  }
+  const totalResult = await countQuery.executeTakeFirst();
+  const total = Number(totalResult?.total || 0);
+  let query = db.selectFrom('sms_op.applications').selectAll().where('status', '=', 'Accepted');
+  if (search) {
+    const sp = `%${search}%`;
+    query = query.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${sp} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${sp} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${sp}
+    )`);
+  }
+  const applications = await query.orderBy('created_at', 'desc').limit(limit).offset(offset).execute();
+  const data = applications.map((row: any) => ({
+    id: row.id,
+    status: row.status,
+    clientName: `${row.application_payload?.personalDetails?.firstName ?? ''} ${row.application_payload?.personalDetails?.lastName ?? ''}`.trim(),
+    clientEmail: row.application_payload?.personalDetails?.primaryEmail ?? '',
+    programName: row.application_payload?.enrolmentDetails?.programName ?? undefined,
+    createdAt: row.created_at,
+  }));
+  return new Response(JSON.stringify({ data, pagination: { page, limit, total, totalPages: Math.ceil(total / limit), hasNext: offset + limit < total, hasPrevious: page > 1 } }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- List Rejected Applications Logic ---
+const listRejectedApplicationsLogic = async (req: Request, _ctx: ApiContext): Promise<Response> => {
+  const url = new URL(req.url);
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+  const search = url.searchParams.get('search') || undefined;
+  const offset = (page - 1) * limit;
+  let countQuery = db.selectFrom('sms_op.applications')
+    .select((eb: ExpressionBuilder<DB, 'sms_op.applications'>) => eb.fn.count('id').as('total'))
+    .where('status', '=', 'Rejected');
+  if (search) {
+    const sp = `%${search}%`;
+    countQuery = countQuery.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${sp} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${sp} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${sp}
+    )`);
+  }
+  const totalResult = await countQuery.executeTakeFirst();
+  const total = Number(totalResult?.total || 0);
+  let query = db.selectFrom('sms_op.applications').selectAll().where('status', '=', 'Rejected');
+  if (search) {
+    const sp = `%${search}%`;
+    query = query.where(sql<SqlBool>`(
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'firstName') ILIKE ${sp} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'lastName') ILIKE ${sp} OR
+      jsonb_extract_path_text(application_payload, 'personalDetails', 'primaryEmail') ILIKE ${sp}
+    )`);
+  }
+  const applications = await query.orderBy('created_at', 'desc').limit(limit).offset(offset).execute();
+  const data = applications.map((row: any) => ({
+    id: row.id,
+    status: row.status,
+    clientName: `${row.application_payload?.personalDetails?.firstName ?? ''} ${row.application_payload?.personalDetails?.lastName ?? ''}`.trim(),
+    clientEmail: row.application_payload?.personalDetails?.primaryEmail ?? '',
+    programName: row.application_payload?.enrolmentDetails?.programName ?? undefined,
+    createdAt: row.created_at,
+  }));
+  return new Response(JSON.stringify({ data, pagination: { page, limit, total, totalPages: Math.ceil(total / limit), hasNext: offset + limit < total, hasPrevious: page > 1 } }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
 // --- Get Application Statistics Logic ---
 const getApplicationStatsLogic = async (_req: Request, _ctx: ApiContext): Promise<Response> => {
   // Get counts by status
@@ -749,6 +923,403 @@ const getApplicationStatsLogic = async (_req: Request, _ctx: ApiContext): Promis
   });
 };
 
+// --- Offer Letter Generation ---
+const generateOfferLetterLogic = async (_req: Request, _ctx: ApiContext, applicationId: string): Promise<Response> => {
+  // Fetch application
+  const app = await db.selectFrom('sms_op.applications')
+    .selectAll()
+    .where('id', '=', applicationId)
+    .executeTakeFirst();
+  if (!app) throw new NotFoundError('Application not found.');
+
+  // Render HTML from template and upload HTML + placeholder PDF
+  const bucket = 'student-docs';
+  const version = `v${new Date().toISOString().slice(0,10)}`;
+  const htmlObjectPath = `applications/${applicationId}/offer-letter/${version}/offer.html`;
+  const pdfObjectPath = `applications/${applicationId}/offer-letter/${version}/offer.pdf`;
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  // Build HTML by loading the template robustly (support different bundle layouts)
+  let tpl = '';
+  const candidateUrls = [
+    new URL('./templates/offer_letter.html', import.meta.url),
+    new URL('../_shared/templates/offer_letter.html', import.meta.url),
+  ];
+  for (const url of candidateUrls) {
+    try {
+      tpl = await Deno.readTextFile(url);
+      if (tpl) break;
+    } catch (_) {
+      // try next location
+    }
+  }
+  if (!tpl) {
+    // Fallback minimal template to avoid runtime failure
+    tpl = `<!doctype html><html><head><meta charset="utf-8"><title>Offer Letter</title></head><body><h1>Offer Letter</h1><p>{student.fullName}</p><p>Program: {program.name}</p><p>Generated on {generatedAt}</p></body></html>`;
+  }
+  const payload = app.application_payload as any;
+  const personal = payload?.personalDetails ?? {};
+  const enrol = payload?.enrolmentDetails ?? {};
+  const paymentPlan = payload?.paymentPlan ?? {};
+  const schedule = Array.isArray(paymentPlan?.schedule) ? paymentPlan.schedule : [];
+
+  const replacements: Record<string, string> = {
+    '{{offer_letter_id}}': crypto.randomUUID(),
+    '{{date}}': new Date().toISOString().slice(0,10),
+    '{{student_full_name}}': `${personal.firstName ?? ''} ${personal.lastName ?? ''}`.trim(),
+    '{{student_first_name}}': personal.firstName ?? '',
+    '{{student_address_line_1}}': `${payload?.address?.residential?.street_number ?? ''} ${payload?.address?.residential?.street_name ?? ''}`.trim(),
+    '{{student_address_line_2}}': `${payload?.address?.residential?.suburb ?? ''} ${payload?.address?.residential?.state ?? ''} ${payload?.address?.residential?.postcode ?? ''}`.trim(),
+    '{{agency_name}}': payload?.agentName ?? '',
+    '{{course_cricos_code}}': enrol?.courseCricosCode ?? '',
+    '{{course_code}}': enrol?.courseCode ?? '',
+    '{{course_name}}': enrol?.courseName ?? '',
+    '{{course_start_date}}': enrol?.startDate ?? '',
+    '{{course_end_date}}': enrol?.expectedCompletionDate ?? enrol?.endDate ?? '',
+    '{{course_location}}': payload?.enrolmentDetails?.locationName ?? '',
+    '{{total_course_fees}}': String(paymentPlan?.tuitionFeeSnapshot ?? 0),
+  };
+  let html = tpl;
+  for (const [k, v] of Object.entries(replacements)) {
+    html = html.split(k).join(v);
+  }
+  // Simple schedule loop replacement
+  const rowTpl = '<tr>\n                    <td>{{dueDate}}</td>\n                    <td>{{description}}</td>\n                    <td class="amount">${{amount}}</td>\n                </tr>';
+  const rows = schedule.map((it: any) => rowTpl.replace('{{dueDate}}', it.dueDate).replace('{{description}}', it.description).replace('{{amount}}', String(it.amount))).join('\n');
+  html = html.replace('{{#each schedule}}\n                <tr>\n                    <td>{{dueDate}}</td>\n                    <td>{{description}}</td>\n                    <td class="amount">${{amount}}</td>\n                </tr>\n                {{/each}}', rows);
+  const placeholderPdf = new Uint8Array([
+    0x25,0x50,0x44,0x46,0x2D,0x31,0x2E,0x34,0x0A, // %PDF-1.4\n
+    0x25,0xE2,0xE3,0xCF,0xD3,0x0A,
+    0x31,0x20,0x30,0x20,0x6F,0x62,0x6A,0x0A, // 1 0 obj
+    0x3C,0x3C,0x2F,0x54,0x79,0x70,0x65,0x2F,0x43,0x61,0x74,0x61,0x6C,0x6F,0x67,0x3E,0x3E,0x0A,
+    0x65,0x6E,0x64,0x6F,0x62,0x6A,0x0A, // endobj
+    0x78,0x72,0x65,0x66,0x0A,0x30,0x20,0x30,0x20,0x6F,0x62,0x6A,0x0A, // xref 0 0 obj
+    0x65,0x6E,0x64,0x78,0x72,0x65,0x66,0x0A, // endxref
+    0x74,0x72,0x61,0x69,0x6C,0x65,0x72,0x0A, // trailer
+    0x25,0x25,0x45,0x4F,0x46,0x0A // %%EOF
+  ]);
+
+  let uploadedHtml = false;
+  let uploadedPdf = false;
+  if (supabaseUrl && serviceKey) {
+    try {
+      const uploadHtmlUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${htmlObjectPath}`;
+      const respHtml = await fetch(uploadHtmlUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${serviceKey}`,
+          'Content-Type': 'text/html; charset=utf-8',
+          'x-upsert': 'true',
+        },
+        body: new TextEncoder().encode(html),
+      });
+      if (!respHtml.ok) {
+        console.warn('[OFFER_UPLOAD_WARNING_HTML]', respHtml.status, await respHtml.text());
+      } else {
+        uploadedHtml = true;
+      }
+
+      const uploadPdfUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${pdfObjectPath}`;
+      const respPdf = await fetch(uploadPdfUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${serviceKey}`,
+          'Content-Type': 'application/pdf',
+          'x-upsert': 'true',
+        },
+        body: placeholderPdf,
+      });
+      if (!respPdf.ok) {
+        const errText = await respPdf.text();
+        console.warn('[OFFER_UPLOAD_WARNING_PDF]', respPdf.status, errText);
+      } else {
+        uploadedPdf = true;
+      }
+    } catch (e) {
+      console.warn('[OFFER_UPLOAD_WARNING] exception uploading to storage', e);
+    }
+  } else {
+    console.warn('[OFFER_UPLOAD_WARNING] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set; skipping upload');
+  }
+
+  // Record HTML artifact
+  if (uploadedHtml) {
+    await db
+      .insertInto('sms_op.application_documents')
+      .values({
+        // @ts-ignore
+        application_id: applicationId,
+        path: `${bucket}/${htmlObjectPath}`,
+        doc_type: 'OFFER_LETTER',
+        version: `${version}-html`,
+        mime_type: 'text/html',
+        size_bytes: String(new TextEncoder().encode(html).byteLength) as unknown as number,
+      })
+      .execute();
+  }
+
+  // Insert metadata row
+  await db
+    .insertInto('sms_op.application_documents')
+    .values({
+      // @ts-ignore: fields are inferred from DB types
+      application_id: applicationId,
+      path: `${bucket}/${pdfObjectPath}`,
+      doc_type: 'OFFER_LETTER',
+      version,
+      mime_type: 'application/pdf',
+      size_bytes: String(uploadedPdf ? placeholderPdf.byteLength : 0) as unknown as number,
+    })
+    .execute();
+
+  const result = { pathHtml: `${bucket}/${htmlObjectPath}`, pathPdf: `${bucket}/${pdfObjectPath}`, version, createdAt: new Date().toISOString() };
+  return new Response(JSON.stringify(result), { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- Structured transition log helper ---
+function logTransition(event: string, data: Record<string, unknown>) {
+  try {
+    console.log(JSON.stringify({ event, timestamp: new Date().toISOString(), ...data }));
+  } catch {}
+}
+
+// --- Send Offer Letter ---
+const sendOfferLetterLogic = async (req: Request, _ctx: ApiContext, applicationId: string): Promise<Response> => {
+  // Ensure there is an offer letter document
+  const doc = await db.selectFrom('sms_op.application_documents')
+    .selectAll()
+    .where('application_id', '=', applicationId)
+    .where('doc_type', '=', 'OFFER_LETTER')
+    .orderBy('created_at', 'desc')
+    .executeTakeFirst();
+  if (!doc) {
+    throw new ValidationError('Offer letter has not been generated for this application.');
+  }
+
+  // Resolve recipient email from application payload
+  const appRow = await db.selectFrom('sms_op.applications')
+    .select(['application_payload'])
+    .where('id', '=', applicationId)
+    .executeTakeFirst();
+  const payload = (appRow?.application_payload ?? {}) as any;
+  const toEmail = payload?.personalDetails?.primaryEmail;
+  if (!toEmail) {
+    throw new ValidationError('Recipient email is missing in application personal details.');
+  }
+
+  // Fetch attachment (prefer PDF)
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceKey) {
+    throw new ValidationError('Storage credentials are not configured on the server.');
+  }
+
+  const attachmentUrl = `${supabaseUrl}/storage/v1/object/${doc.path}`;
+  const attResp = await fetch(attachmentUrl, { headers: { Authorization: `Bearer ${serviceKey}` } });
+  if (!attResp.ok) {
+    throw new ValidationError('Failed to fetch offer letter from storage for emailing.');
+  }
+  const attBuf = new Uint8Array(await attResp.arrayBuffer());
+  const b64 = btoa(String.fromCharCode(...attBuf));
+  const fileName = doc.path.split('/').pop() || 'offer.pdf';
+  const mimeType = doc.mime_type || 'application/pdf';
+
+  // Prepare email via Resend
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  const emailFrom = Deno.env.get('EMAIL_FROM') || 'no-reply@example.com';
+  const replyTo = Deno.env.get('EMAIL_REPLY_TO') || undefined;
+  const bccDefault = Deno.env.get('EMAIL_BCC_DEFAULT') || undefined;
+  if (!resendKey) {
+    throw new ValidationError('RESEND_API_KEY is not configured.');
+  }
+
+  // Build a simple HTML body
+  const subject = `Offer Letter`;
+  const htmlBody = `<p>Please find attached your offer letter.</p>`;
+
+  const idempotencyKey = req.headers.get('Idempotency-Key') || undefined;
+  const emailResp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendKey}`,
+      'Content-Type': 'application/json',
+      ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+    },
+    body: JSON.stringify({
+      from: emailFrom,
+      to: [toEmail],
+      ...(bccDefault ? { bcc: [bccDefault] } : {}),
+      ...(replyTo ? { reply_to: replyTo } : {}),
+      subject,
+      html: htmlBody,
+      attachments: [
+        {
+          filename: fileName,
+          content: b64,
+          path: undefined,
+          type: mimeType,
+        },
+      ],
+    }),
+  });
+
+  if (!emailResp.ok) {
+    const errText = await emailResp.text();
+    return new Response(JSON.stringify({ message: 'Email provider error', details: errText }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // Transition to AwaitingPayment on success
+  await db.updateTable('sms_op.applications')
+    .set({ status: 'AwaitingPayment', updated_at: new Date() })
+    .where('id', '=', applicationId)
+    .execute();
+
+  const providerResult = await emailResp.json();
+  logTransition('APPLICATION_STATUS_CHANGED', { applicationId, from: 'Submitted', to: 'AwaitingPayment', via: 'send-offer', idempotencyKey });
+  return new Response(JSON.stringify({ message: 'Offer letter sent. Status transitioned to AwaitingPayment.', providerResult, transition: { from: 'Submitted', to: 'AwaitingPayment' } }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- Accept Application ---
+const acceptApplicationLogic = async (_req: Request, _ctx: ApiContext, applicationId: string): Promise<Response> => {
+  const app = await db.selectFrom('sms_op.applications')
+    .select(['id','status'])
+    .where('id', '=', applicationId)
+    .executeTakeFirst();
+  if (!app) throw new NotFoundError('Application not found.');
+
+  // Idempotent: if already Accepted, return success
+  if (app.status === 'Accepted') {
+    return new Response(JSON.stringify({ message: 'Application already accepted.', transition: { from: 'Accepted', to: 'Accepted' } }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // Allow Accept from Submitted or AwaitingPayment for now
+  if (!['Submitted','AwaitingPayment'].includes(app.status)) {
+    throw new ValidationError(`Cannot accept application from status '${app.status}'.`);
+  }
+
+  await db.updateTable('sms_op.applications')
+    .set({ status: 'Accepted', updated_at: new Date() })
+    .where('id', '=', applicationId)
+    .execute();
+
+  logTransition('APPLICATION_STATUS_CHANGED', { applicationId, from: app.status, to: 'Accepted' });
+  return new Response(JSON.stringify({ message: 'Application accepted.', transition: { from: app.status, to: 'Accepted' } }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- Mark Awaiting Payment without sending email ---
+const markAwaitingPaymentLogic = async (_req: Request, _ctx: ApiContext, applicationId: string): Promise<Response> => {
+  // Ensure there is an offer letter document
+  const doc = await db.selectFrom('sms_op.application_documents')
+    .selectAll()
+    .where('application_id', '=', applicationId)
+    .where('doc_type', '=', 'OFFER_LETTER')
+    .orderBy('created_at', 'desc')
+    .executeTakeFirst();
+  if (!doc) {
+    throw new ValidationError('Offer letter has not been generated for this application.');
+  }
+  await db.updateTable('sms_op.applications')
+    .set({ status: 'AwaitingPayment', updated_at: new Date() })
+    .where('id', '=', applicationId)
+    .execute();
+  logTransition('APPLICATION_STATUS_CHANGED', { applicationId, to: 'AwaitingPayment', via: 'manual' });
+  return new Response(JSON.stringify({ message: 'Application marked as AwaitingPayment.', transition: { to: 'AwaitingPayment' } }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- List Application Documents ---
+const listApplicationDocumentsLogic = async (_req: Request, _ctx: ApiContext, applicationId: string): Promise<Response> => {
+  const rows = await db.selectFrom('sms_op.application_documents')
+    .selectAll()
+    .where('application_id', '=', applicationId)
+    .orderBy('created_at', 'desc')
+    .execute();
+  return new Response(JSON.stringify({ data: rows }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- Upload CoE (PDF) and record metadata ---
+const uploadCoeLogic = async (req: Request, _ctx: ApiContext, applicationId: string): Promise<Response> => {
+  // Validate application exists (avoid FK 23503)
+  const app = await db.selectFrom('sms_op.applications')
+    .select(['id','status'])
+    .where('id', '=', applicationId)
+    .executeTakeFirst();
+  if (!app) {
+    return new Response(JSON.stringify({ message: 'Application not found.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+  // Optional: enforce only on Accepted
+  if (app.status !== 'Accepted') {
+    return new Response(JSON.stringify({ message: `CoE upload allowed only when status is 'Accepted'. Current: '${app.status}'.` }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceKey) {
+    return new Response(JSON.stringify({ message: 'Storage not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+  const contentType = req.headers.get('Content-Type') || '';
+  if (!contentType.startsWith('application/pdf')) {
+    return new Response(JSON.stringify({ message: 'Only PDF is accepted for CoE.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+  const raw = new Uint8Array(await req.arrayBuffer());
+
+  // Compute next version
+  const existing = await db.selectFrom('sms_op.application_documents')
+    .selectAll()
+    .where('application_id', '=', applicationId)
+    .where('doc_type', '=', 'COE')
+    .execute();
+  const nextVersion = `v${new Date().toISOString().slice(0,10)}`;
+  const bucket = 'student-docs';
+  const objectPath = `applications/${applicationId}/coe/${nextVersion}/coe.pdf`;
+
+  const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${objectPath}`;
+  const uploadResp = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/pdf',
+      'x-upsert': 'true',
+    },
+    body: raw,
+  });
+  if (!uploadResp.ok) {
+    const errText = await uploadResp.text().catch(()=>'');
+    return new Response(JSON.stringify({ message: 'Failed to upload CoE.', details: errText }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  await db.insertInto('sms_op.application_documents').values({
+    // @ts-ignore
+    application_id: applicationId,
+    path: `${bucket}/${objectPath}`,
+    doc_type: 'COE',
+    version: nextVersion,
+    mime_type: 'application/pdf',
+    size_bytes: String(raw.byteLength) as unknown as number,
+  }).execute();
+
+  logTransition('APPLICATION_DOC_UPLOADED', { applicationId, docType: 'COE', version: nextVersion });
+  return new Response(JSON.stringify({ message: 'CoE uploaded.', path: `${bucket}/${objectPath}`, version: nextVersion }), { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- Stream latest offer document (PDF preferred) ---
+const streamLatestOfferDocumentLogic = async (_req: Request, _ctx: ApiContext, applicationId: string): Promise<Response> => {
+  const doc = await db.selectFrom('sms_op.application_documents')
+    .selectAll()
+    .where('application_id', '=', applicationId)
+    .where('doc_type', '=', 'OFFER_LETTER')
+    .orderBy('created_at', 'desc')
+    .executeTakeFirst();
+  if (!doc) return new Response(JSON.stringify({ message: 'No offer letter found.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceKey) return new Response(JSON.stringify({ message: 'Storage not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  const objUrl = `${supabaseUrl}/storage/v1/object/${doc.path}`;
+  const resp = await fetch(objUrl, { headers: { Authorization: `Bearer ${serviceKey}` } });
+  if (!resp.ok) return new Response(JSON.stringify({ message: 'Failed to fetch document.' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  const buf = await resp.arrayBuffer();
+  return new Response(buf, { status: 200, headers: { ...corsHeaders, 'Content-Type': doc.mime_type || 'application/octet-stream', 'Content-Disposition': `attachment; filename=${doc.path.split('/').pop()}` } });
+};
+
 // --- Helper function for UUID validation ---
 const validateApplicationId = (applicationId: string): Response | null => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -781,8 +1352,17 @@ const applicationsRouter = async (req: Request, ctx: ApiContext, body: unknown):
     if (pathSegments.length === 2 && pathSegments[1] === 'submitted' && method === 'GET') {
       return await listSubmittedApplicationsLogic(req, ctx);
     }
+    if (pathSegments.length === 2 && pathSegments[1] === 'awaiting' && method === 'GET') {
+      return await listAwaitingPaymentApplicationsLogic(req, ctx);
+    }
+    if (pathSegments.length === 2 && pathSegments[1] === 'accepted' && method === 'GET') {
+      return await listAcceptedApplicationsLogic(req, ctx);
+    }
     if (pathSegments.length === 2 && pathSegments[1] === 'approved' && method === 'GET') {
       return await listApprovedApplicationsLogic(req, ctx);
+    }
+    if (pathSegments.length === 2 && pathSegments[1] === 'rejected' && method === 'GET') {
+      return await listRejectedApplicationsLogic(req, ctx);
     }
     if (pathSegments.length === 2 && pathSegments[1] === 'stats' && method === 'GET') {
       return await getApplicationStatsLogic(req, ctx);
@@ -812,6 +1392,41 @@ const applicationsRouter = async (req: Request, ctx: ApiContext, body: unknown):
       const validationError = validateApplicationId(pathSegments[1]);
       if (validationError) return validationError;
       return await rejectApplicationLogic(req, ctx, body, pathSegments[1]);
+    }
+    if (pathSegments.length === 3 && pathSegments[2] === 'offer-letter' && method === 'POST') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await generateOfferLetterLogic(req, ctx, pathSegments[1]);
+    }
+    if (pathSegments.length === 3 && pathSegments[2] === 'send-offer' && method === 'POST') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await sendOfferLetterLogic(req, ctx, pathSegments[1]);
+    }
+    if (pathSegments.length === 3 && pathSegments[2] === 'accept' && method === 'POST') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await acceptApplicationLogic(req, ctx, pathSegments[1]);
+    }
+    if (pathSegments.length === 3 && pathSegments[2] === 'mark-awaiting' && method === 'POST') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await markAwaitingPaymentLogic(req, ctx, pathSegments[1]);
+    }
+    if (pathSegments.length === 3 && pathSegments[2] === 'documents' && method === 'GET') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await listApplicationDocumentsLogic(req, ctx, pathSegments[1]);
+    }
+    if (pathSegments.length === 3 && pathSegments[2] === 'coe' && method === 'POST') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await uploadCoeLogic(req, ctx, pathSegments[1]);
+    }
+    if (pathSegments.length === 3 && pathSegments[2] === 'offer-latest' && method === 'GET') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await streamLatestOfferDocumentLogic(req, ctx, pathSegments[1]);
     }
   }
 

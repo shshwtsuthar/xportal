@@ -20,6 +20,9 @@ export default function NewApplicationWizard() {
     const isUuidLike = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/;
     if (!draftId || !isUuidLike.test(draftId)) {
       createDraft().catch(console.error);
+    } else {
+      // Hydrate formData from server on app mount
+      useApplicationWizard.getState().loadDraft(draftId).catch(console.error);
     }
   }, [draftId, createDraft]);
 

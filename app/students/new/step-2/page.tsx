@@ -48,6 +48,7 @@ export default function Step2AcademicInformation() {
   // Form state
   const [selectedDisabilityTypes, setSelectedDisabilityTypes] = useState<string[]>([]);
   const [selectedPriorEducation, setSelectedPriorEducation] = useState<string[]>([]);
+  const [usiMode, setUsiMode] = useState<'chooser' | 'usi' | 'exemption'>('chooser');
   
   const {
     register,
@@ -58,24 +59,59 @@ export default function Step2AcademicInformation() {
   } = useForm<Step2AcademicInfo>({
     defaultValues: {
       avetmissDetails: {
-        countryOfBirthId: '',
-        languageAtHomeId: '',
-        indigenousStatusId: '',
-        highestSchoolLevelId: '',
-        isAtSchool: false,
-        hasDisability: false,
-        disabilityTypeIds: [],
-        hasPriorEducation: false,
-        priorEducationCodes: [],
-        labourForceId: '',
-        surveyContactStatus: null,
+        countryOfBirthId: (formData as any)?.avetmissDetails?.countryOfBirthId ?? '',
+        languageAtHomeId: (formData as any)?.avetmissDetails?.languageAtHomeId ?? '',
+        indigenousStatusId: (formData as any)?.avetmissDetails?.indigenousStatusId ?? '',
+        highestSchoolLevelId: (formData as any)?.avetmissDetails?.highestSchoolLevelId ?? '',
+        isAtSchool: (formData as any)?.avetmissDetails?.isAtSchool ?? false,
+        hasDisability: (formData as any)?.avetmissDetails?.hasDisability ?? false,
+        disabilityTypeIds: (formData as any)?.avetmissDetails?.disabilityTypeIds ?? [],
+        hasPriorEducation: (formData as any)?.avetmissDetails?.hasPriorEducation ?? false,
+        priorEducationCodes: (formData as any)?.avetmissDetails?.priorEducationCodes ?? [],
+        labourForceId: (formData as any)?.avetmissDetails?.labourForceId ?? '',
+        surveyContactStatus: (formData as any)?.avetmissDetails?.surveyContactStatus ?? null,
       },
       // @ts-ignore keep USI and CRICOS containers present
-      usi: {},
+      usi: (formData as any)?.usi ?? {},
       // @ts-ignore CRICOS details required when international student
-      cricosDetails: {},
+      cricosDetails: (formData as any)?.cricosDetails ?? {},
     },
   });
+
+  // Hydrate when formData changes
+  useEffect(() => {
+    const a = (formData as any)?.avetmissDetails ?? {};
+    setValue('avetmissDetails.countryOfBirthId', a.countryOfBirthId ?? '');
+    setValue('avetmissDetails.languageAtHomeId', a.languageAtHomeId ?? '');
+    setValue('avetmissDetails.indigenousStatusId', a.indigenousStatusId ?? '');
+    setValue('avetmissDetails.highestSchoolLevelId', a.highestSchoolLevelId ?? '');
+    setValue('avetmissDetails.isAtSchool', a.isAtSchool ?? false);
+    setValue('avetmissDetails.hasDisability', a.hasDisability ?? false);
+    setValue('avetmissDetails.disabilityTypeIds', a.disabilityTypeIds ?? []);
+    setValue('avetmissDetails.hasPriorEducation', a.hasPriorEducation ?? false);
+    setValue('avetmissDetails.priorEducationCodes', a.priorEducationCodes ?? []);
+    setValue('avetmissDetails.labourForceId', a.labourForceId ?? '');
+    setValue('avetmissDetails.surveyContactStatus', a.surveyContactStatus ?? null);
+    // USI / CRICOS
+    const usiVal = (formData as any)?.usi ?? {};
+    // @ts-ignore
+    setValue('usi' as any, usiVal);
+    const cricos = (formData as any)?.cricosDetails ?? {};
+    // @ts-ignore
+    setValue('cricosDetails', cricos);
+    // Reflect array-driven checkboxes
+    setSelectedDisabilityTypes(a.disabilityTypeIds ?? []);
+    setSelectedPriorEducation(a.priorEducationCodes ?? []);
+    // Initialize USI mode from payload
+    const usi2 = (formData as any)?.usi ?? {};
+    if (usi2?.exemptionCode) {
+      setUsiMode('exemption');
+    } else if (usi2?.usi != null) {
+      setUsiMode('usi');
+    } else {
+      setUsiMode('chooser');
+    }
+  }, [formData, setValue]);
   
   const watchedValues = watch();
 
@@ -90,11 +126,20 @@ export default function Step2AcademicInformation() {
         usi: rawUsi.usi ?? rawUsi.value ?? undefined,
         exemptionCode: rawUsi.exemptionCode ?? rawUsi.exemption ?? undefined,
       };
+      // Enforce mutual exclusivity at source
+      if (normalizedUsi.usi && normalizedUsi.exemptionCode) {
+        // Use null to ensure backend merge clears previous value
+        normalizedUsi.exemptionCode = null as any;
+      }
+      // Only include CRICOS when international
+      const isIntl = Boolean((formData as any)?.isInternationalStudent);
+      const rawCricos = (watchedValues as any)?.cricosDetails || undefined;
+      const includeCricos = isIntl && rawCricos && Object.values(rawCricos).some((v) => v != null && String(v).trim() !== '');
       return {
         avetmissDetails: watchedValues.avetmissDetails,
         usi: normalizedUsi,
-        // @ts-ignore only relevant for international students
-        cricosDetails: (watchedValues as any)?.cricosDetails,
+        // @ts-ignore only relevant for international students; omit when not set
+        cricosDetails: includeCricos ? (watchedValues as any)?.cricosDetails : undefined,
       };
     },
   });
@@ -103,6 +148,11 @@ export default function Step2AcademicInformation() {
     schedule();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(watchedValues.avetmissDetails)]);
+  // Also autosave when USI/CRICOS change
+  useEffect(() => {
+    schedule();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify((watchedValues as any)?.usi), JSON.stringify((watchedValues as any)?.cricosDetails)]);
   
   const onSubmit: SubmitHandler<any> = async (data) => {
     try {
@@ -177,7 +227,7 @@ export default function Step2AcademicInformation() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="countryOfBirth">Country of Birth</Label>
-                    <Select onValueChange={(value) => setValue('avetmissDetails.countryOfBirthId', value)}>
+                    <Select value={watchedValues.avetmissDetails?.countryOfBirthId || undefined} onValueChange={(value) => setValue('avetmissDetails.countryOfBirthId', value)}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Select country" />
                       </SelectTrigger>
@@ -202,7 +252,7 @@ export default function Step2AcademicInformation() {
                   
                   <div>
                     <Label htmlFor="languageAtHome">Language at Home</Label>
-                    <Select onValueChange={(value) => setValue('avetmissDetails.languageAtHomeId', value)}>
+                    <Select value={watchedValues.avetmissDetails?.languageAtHomeId || undefined} onValueChange={(value) => setValue('avetmissDetails.languageAtHomeId', value)}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Select language" />
                       </SelectTrigger>
@@ -239,7 +289,7 @@ export default function Step2AcademicInformation() {
               <CardContent>
                 <div>
                   <Label htmlFor="indigenousStatus">Indigenous Status</Label>
-                  <Select onValueChange={(value) => setValue('avetmissDetails.indigenousStatusId', value)}>
+                  <Select value={watchedValues.avetmissDetails?.indigenousStatusId || undefined} onValueChange={(value) => setValue('avetmissDetails.indigenousStatusId', value)}>
                     <SelectTrigger className="mt-2">
                       <SelectValue placeholder="Select indigenous status" />
                     </SelectTrigger>
@@ -271,7 +321,7 @@ export default function Step2AcademicInformation() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="highestSchoolLevel">Highest School Level</Label>
-                    <Select onValueChange={(value) => setValue('avetmissDetails.highestSchoolLevelId', value)}>
+                    <Select value={watchedValues.avetmissDetails?.highestSchoolLevelId || undefined} onValueChange={(value) => setValue('avetmissDetails.highestSchoolLevelId', value)}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Select school level" />
                       </SelectTrigger>
@@ -303,7 +353,7 @@ export default function Step2AcademicInformation() {
                   
                   <div>
                     <Label htmlFor="labourForce">Labour Force Status</Label>
-                    <Select onValueChange={(value) => setValue('avetmissDetails.labourForceId', value)}>
+                    <Select value={watchedValues.avetmissDetails?.labourForceId || undefined} onValueChange={(value) => setValue('avetmissDetails.labourForceId', value)}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Select labour force status" />
                       </SelectTrigger>
@@ -531,7 +581,7 @@ export default function Step2AcademicInformation() {
               </Card>
             )}
 
-            {/* USI or Exemption */}
+            {/* USI or Exemption (mutually exclusive) */}
             <Card>
               <CardHeader>
                 <CardTitle>Unique Student Identifier (USI)</CardTitle>
@@ -540,34 +590,92 @@ export default function Step2AcademicInformation() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="usi">USI</Label>
-                    {/* @ts-ignore */}
-                    <Input id="usi" {...register('usi.usi' as any)} placeholder="e.g., 3AW88WHM8G" className="mt-2" />
-                  </div>
-                  <div>
-                    <Label htmlFor="usiExemption">USI Exemption</Label>
-                    <Select onValueChange={(v) => {
-                      if (v === 'none') {
+                {(() => {
+                  const currentUsi = (watchedValues as any)?.usi?.usi as string | undefined;
+                  const currentEx = (watchedValues as any)?.usi?.exemptionCode as string | undefined;
+                  if (usiMode === 'chooser') {
+                    return (
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" variant="secondary" onClick={() => {
+                          setUsiMode('usi');
+                          // @ts-ignore
+                          setValue('usi.exemptionCode' as any, undefined);
+                          // @ts-ignore
+                          setValue('usi.usi' as any, '');
+                          setTimeout(() => document.getElementById('usi')?.focus(), 0);
+                        }}>Enter USI</Button>
+                        <Button type="button" variant="secondary" onClick={() => {
+                          setUsiMode('exemption');
+                          // @ts-ignore
+                          setValue('usi.usi' as any, undefined);
+                          // @ts-ignore
+                          setValue('usi.exemptionCode' as any, currentEx || 'IND');
+                        }}>Use exemption</Button>
+                      </div>
+                    );
+                  }
+                  if (usiMode === 'usi') {
+                    return (
+                      <div>
+                        <Label htmlFor="usi">USI</Label>
+                        {/* @ts-ignore */}
+                        <Input id="usi" {...register('usi.usi' as any)} placeholder="e.g., 3AW88WHM8G" className="mt-2" onChange={() => {
+                          // typing USI clears exemption
+                          // @ts-ignore
+                          setValue('usi.exemptionCode' as any, undefined);
+                          if (usiMode !== 'usi') setUsiMode('usi');
+                        }} />
+                        <div className="mt-2">
+                          <Button type="button" variant="ghost" onClick={() => {
+                            // switch to exemption
+                            setUsiMode('exemption');
+                            // @ts-ignore
+                            setValue('usi.usi' as any, undefined);
+                            // @ts-ignore
+                            setValue('usi.exemptionCode' as any, 'IND');
+                          }}>Use exemption instead</Button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div>
+                      <Label htmlFor="usiExemption">USI Exemption</Label>
+                      <Select value={(currentEx as any) || undefined} onValueChange={(v) => {
+                        if (v === 'none') {
+                          setUsiMode('chooser');
+                          // @ts-ignore
+                          setValue('usi.exemptionCode' as any, undefined);
+                          return;
+                        }
+                        setUsiMode('exemption');
                         // @ts-ignore
-                        setValue('usi.exemptionCode' as any, undefined);
-                        return;
-                      }
-                      // @ts-ignore
-                      setValue('usi.exemptionCode' as any, v as any);
-                    }}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select exemption (if applicable)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="IND">Individual Exemption</SelectItem>
-                        <SelectItem value="AGR">Agency-Reported Exemption</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                        setValue('usi.usi' as any, undefined);
+                        // @ts-ignore
+                        setValue('usi.exemptionCode' as any, v as any);
+                      }}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select exemption (if applicable)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="IND">Individual Exemption</SelectItem>
+                          <SelectItem value="AGR">Agency-Reported Exemption</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="mt-2">
+                        <Button type="button" variant="ghost" onClick={() => {
+                          // switch to USI
+                          setUsiMode('usi');
+                          // @ts-ignore
+                          setValue('usi.exemptionCode' as any, undefined);
+                          // @ts-ignore
+                          setValue('usi.usi' as any, '');
+                        }}>Enter USI instead</Button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
             

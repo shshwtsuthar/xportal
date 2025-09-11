@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { ApplicationSummary } from '@/hooks/use-applications-status';
+import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 
 interface ApplicationsTableProps {
   applications: ApplicationSummary[];
@@ -31,6 +32,9 @@ interface ApplicationsTableProps {
   onReject?: (applicationId: string, reason: string) => Promise<{ success: boolean; error?: string }>;
   onApprove?: (applicationId: string, payload: any) => Promise<{ success: boolean; error?: string }>;
   onSubmit?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onAccept?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onSendOfferAndAwaiting?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onDownloadOfferAndAwaiting?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
   onView?: (applicationId: string) => void;
 }
 
@@ -66,6 +70,9 @@ export function ApplicationsTable({
   onReject,
   onApprove,
   onSubmit,
+  onAccept,
+  onSendOfferAndAwaiting,
+  onDownloadOfferAndAwaiting,
   onView,
 }: ApplicationsTableProps) {
   const [rejectReason, setRejectReason] = useState('');
@@ -136,6 +143,33 @@ export function ApplicationsTable({
 
   const getStatusConfig = (status: string) => {
     return statusConfig[status as keyof typeof statusConfig] || statusConfig.Draft;
+  };
+
+  const openCoeFilePickerAndUpload = (applicationId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf';
+    input.onchange = async () => {
+      const file = (input.files && input.files[0]) || null;
+      if (!file) return;
+      try {
+        const buf = new Uint8Array(await file.arrayBuffer());
+        const res = await fetch(`${FUNCTIONS_URL}/applications/${applicationId}/coe`, {
+          method: 'POST',
+          headers: { ...getFunctionHeaders(), 'Content-Type': 'application/pdf' },
+          body: buf,
+        });
+        if (!res.ok) {
+          const err = await res.text();
+          alert(`Failed to upload CoE: ${err || res.statusText}`);
+          return;
+        }
+        alert('CoE uploaded successfully.');
+      } catch (e: any) {
+        alert(`Failed to upload CoE: ${e?.message || 'Unknown error'}`);
+      }
+    };
+    input.click();
   };
 
   if (isLoading) {
@@ -240,6 +274,43 @@ export function ApplicationsTable({
                         </DropdownMenuItem>
                       )}
                       
+                      {(app.status || 'Draft') === 'Submitted' && (
+                        <>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onDownloadOfferAndAwaiting) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                const { downloadLatestOffer } = await import('@/hooks/use-application-actions');
+                                await downloadLatestOffer(app.id || '');
+                                await onDownloadOfferAndAwaiting(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Download Offer Letter & mark as Awaiting Payment
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onSendOfferAndAwaiting) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                await onSendOfferAndAwaiting(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Send Offer Letter & mark as Awaiting Payment
+                          </DropdownMenuItem>
+                        </>
+                      )}
+
                       {(app.status || 'Draft') === 'Submitted' && onReject && (
                         <DropdownMenuItem 
                           onClick={() => setShowRejectDialog(app.id || '')}
@@ -250,14 +321,65 @@ export function ApplicationsTable({
                         </DropdownMenuItem>
                       )}
                       
-                      {(app.status || 'Draft') === 'Submitted' && onApprove && (
-                        <DropdownMenuItem 
-                          onClick={() => setShowApproveDialog(app.id || '')}
-                          disabled={isProcessing}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Approve
-                        </DropdownMenuItem>
+                      {/* No Approve on Submitted per flow */}
+
+                      {String(app.status || '') === 'AwaitingPayment' && (
+                        <>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onAccept) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                await onAccept(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Accept
+                          </DropdownMenuItem>
+                          {onReject && (
+                            <DropdownMenuItem 
+                              onClick={() => setShowRejectDialog(app.id || '')}
+                              disabled={isProcessing}
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Reject
+                            </DropdownMenuItem>
+                          )}
+                        </>
+                      )}
+
+                      {String(app.status || '') === 'Accepted' && (
+                        <>
+                          {onApprove && (
+                            <DropdownMenuItem 
+                              onClick={() => setShowApproveDialog(app.id || '')}
+                              disabled={isProcessing}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Approve
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem 
+                            onClick={() => openCoeFilePickerAndUpload(app.id || '')}
+                            disabled={isProcessing}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Upload CoE (PDF)
+                          </DropdownMenuItem>
+                          {onReject && (
+                            <DropdownMenuItem 
+                              onClick={() => setShowRejectDialog(app.id || '')}
+                              disabled={isProcessing}
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Reject
+                            </DropdownMenuItem>
+                          )}
+                        </>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>

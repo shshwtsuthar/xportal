@@ -16,6 +16,9 @@ import { useApplicationWizard } from '@/stores/application-wizard';
 import type { Step5FinancialArrangements } from '@/lib/schemas/application-schemas';
 import { Step5FinancialArrangementsSchema } from '@/lib/schemas/application-schemas';
 import { useAutosave } from '@/hooks/use-autosave';
+import { usePaymentPlanTemplates } from '@/hooks/use-payment-templates';
+import { useApplication } from '@/hooks/use-application';
+import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 
 // =============================================================================
 // STEP 5: FINANCIAL ARRANGEMENTS
@@ -25,11 +28,19 @@ import { useAutosave } from '@/hooks/use-autosave';
 export default function Step5FinancialArrangements() {
   const router = useRouter();
   const { updateStep5Data, nextStep, previousStep, draftId } = useApplicationWizard();
+  const { programId } = useApplication(draftId || '');
   
   // Form state
   const [paymentPlan, setPaymentPlan] = useState<string>('');
   const [installmentCount, setInstallmentCount] = useState<number>(1);
   const [installmentAmount, setInstallmentAmount] = useState<number>(0);
+
+  // New payment template + anchor state
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [anchor, setAnchor] = useState<'OFFER_LETTER' | 'COMMENCEMENT' | 'CUSTOM'>('OFFER_LETTER');
+  const [anchorDate, setAnchorDate] = useState<string>('');
+  const [derivedSchedule, setDerivedSchedule] = useState<Array<{ description: string; amount: number; dueDate: string }>>([]);
+  const { data: templates } = usePaymentPlanTemplates(programId || undefined);
   
   const {
     register,
@@ -61,14 +72,50 @@ export default function Step5FinancialArrangements() {
     enabled: Boolean(draftId),
     debounceMs: 1500,
     getPayload: () => ({
+      // Legacy payload retained
       financialArrangements: watchedValues.financialArrangements,
+      // New payment plan snapshot persisted alongside legacy
+      paymentPlan: {
+        selectedTemplateId: selectedTemplateId || undefined,
+        anchor,
+        anchorDate: anchor === 'CUSTOM' ? (anchorDate || undefined) : (anchor === 'COMMENCEMENT' ? (anchorDate || undefined) : undefined),
+        schedule: derivedSchedule,
+        tuitionFeeSnapshot: Number(derivedSchedule.reduce((s, i) => s + (Number(i.amount) || 0), 0).toFixed(2)),
+      },
     }),
   });
 
   useEffect(() => {
     schedule();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(watchedValues.financialArrangements)]);
+  }, [JSON.stringify(watchedValues.financialArrangements), selectedTemplateId, anchor, anchorDate, JSON.stringify(derivedSchedule)]);
+
+  // Derive schedule from backend based on selection
+  const derive = async () => {
+    if (!draftId || !selectedTemplateId) return;
+    const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/applications/${draftId}/derive-payment-plan`, {
+      method: 'POST',
+      headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        templateId: selectedTemplateId,
+        anchor,
+        ...(anchor === 'CUSTOM' || anchor === 'COMMENCEMENT' ? { anchorDate } : {}),
+      }),
+    });
+    if (!res.ok) {
+      console.error('Failed to derive schedule', await res.text());
+      setDerivedSchedule([]);
+      return;
+    }
+    const data = await res.json();
+    const items = (data?.items ?? []) as Array<{ description: string; amount: number; dueDate: string }>;
+    setDerivedSchedule(items);
+  };
+
+  useEffect(() => {
+    if (selectedTemplateId) derive();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTemplateId, anchor, anchorDate]);
   
   // Calculate installment amount when payment plan or tuition fee changes
   useEffect(() => {
@@ -200,33 +247,79 @@ export default function Step5FinancialArrangements() {
           </div>
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            {/* Tuition Fee */}
+            {/* Payment Template & Anchor (new flow) */}
             <Card>
               <CardHeader>
-                <CardTitle>Tuition Fee</CardTitle>
+                <CardTitle>Payment Plan Template</CardTitle>
                 <CardDescription>
-                  Enter the total tuition fee agreed for this enrolment
+                  Select a program-scoped template and anchor to derive the schedule. Tuition total is derived from instalments.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div>
-                  <Label htmlFor="tuitionFee">Total Tuition Fee (AUD) *</Label>
-                  <Input
-                    id="tuitionFee"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    aria-label="Total tuition fee in AUD"
-                    placeholder="e.g., 10000"
-                    {...register('financialArrangements.tuitionFeeSnapshot', { valueAsNumber: true })}
-                    className={`mt-2 ${errors.financialArrangements?.tuitionFeeSnapshot ? 'border-red-500' : ''}`}
-                    onBlur={handleTuitionBlur}
-                  />
-                  {errors.financialArrangements?.tuitionFeeSnapshot && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.tuitionFeeSnapshot.message}
-                    </p>
-                  )}
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Template</Label>
+                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                      <SelectTrigger aria-label="Select payment plan template" role="combobox" className="mt-2">
+                        <SelectValue placeholder={programId ? 'Select a template' : 'Select a program first'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(templates ?? []).map(t => (
+                          <SelectItem key={t.id} value={t.id}>{t.name}{t.is_default ? ' (default)' : ''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Anchor</Label>
+                    <Select value={anchor} onValueChange={(v) => setAnchor(v as any)}>
+                      <SelectTrigger aria-label="Select anchor" role="combobox" className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OFFER_LETTER">Offer letter date</SelectItem>
+                        <SelectItem value="COMMENCEMENT">Commencement date</SelectItem>
+                        <SelectItem value="CUSTOM">Custom date</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Anchor date</Label>
+                    <Input type="date" value={anchorDate} onChange={(e) => setAnchorDate(e.target.value)} disabled={anchor === 'OFFER_LETTER'} aria-label="Anchor date" className="mt-2" />
+                    {anchor === 'COMMENCEMENT' && !anchorDate && (
+                      <p className="text-xs text-muted-foreground mt-1">Provide commencement date or switch to Offer letter anchor.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">Derived schedule</div>
+                    <div className="text-sm">Total: {new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(derivedSchedule.reduce((s, i) => s + (Number(i.amount) || 0), 0))}</div>
+                  </div>
+                  <div className="overflow-x-auto border rounded">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="h-9 text-left">
+                          <th className="px-3">Description</th>
+                          <th className="px-3">Due date</th>
+                          <th className="px-3 text-right">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {derivedSchedule.length === 0 && (
+                          <tr><td className="px-3 py-3 text-muted-foreground" colSpan={3}>Select a template and anchor to derive a schedule.</td></tr>
+                        )}
+                        {derivedSchedule.map((it, i) => (
+                          <tr key={i} className="border-t">
+                            <td className="px-3 py-2">{it.description}</td>
+                            <td className="px-3 py-2">{it.dueDate}</td>
+                            <td className="px-3 py-2 text-right">{new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(it.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -263,105 +356,9 @@ export default function Step5FinancialArrangements() {
               </CardContent>
             </Card>
             
-            {/* Payment Plan */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Plan</CardTitle>
-                <CardDescription>
-                  Select how the tuition fees will be paid
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="paymentPlan">Payment Plan</Label>
-                  <Select onValueChange={handlePaymentPlanChange}>
-                    <SelectTrigger aria-label="Payment Plan" role="combobox" className="mt-2">
-                      <SelectValue placeholder="Select payment plan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="full-upfront">Full Upfront Payment</SelectItem>
-                      <SelectItem value="installments">Installment Payments</SelectItem>
-                      <SelectItem value="deferred">Deferred Payment</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.financialArrangements?.paymentPlan && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.paymentPlan.message}
-                    </p>
-                  )}
-                </div>
-                
-                {paymentPlan === 'installments' && (
-                  <div>
-                    <Label htmlFor="installmentCount">Number of Installments</Label>
-                    <Select onValueChange={(value) => handleInstallmentCountChange(parseInt(value))}>
-                      <SelectTrigger aria-label="Installment Count" role="combobox" className="mt-2">
-                        <SelectValue placeholder="Select number of installments" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="2">2 Installments</SelectItem>
-                        <SelectItem value="3">3 Installments</SelectItem>
-                        <SelectItem value="4">4 Installments</SelectItem>
-                        <SelectItem value="6">6 Installments</SelectItem>
-                        <SelectItem value="12">12 Installments</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.financialArrangements?.installmentCount && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.financialArrangements.installmentCount.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-                
-                {installmentAmount > 0 && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Payment Amount:</span>
-                      <span className="text-lg font-bold text-foreground">
-                        ${installmentAmount.toFixed(2)} AUD
-                      </span>
-                    </div>
-                    {paymentPlan === 'installments' && installmentCount > 1 && (
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        {installmentCount} payments of ${installmentAmount.toFixed(2)} AUD each
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Legacy Payment Plan card removed per new template-driven flow */}
             
-            {/* Payment Method */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Method</CardTitle>
-                <CardDescription>
-                  Select the payment method
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label htmlFor="paymentMethod">Payment Method</Label>
-                  <Select onValueChange={(value) => setValue('financialArrangements.paymentMethod', value as any)}>
-                    <SelectTrigger aria-label="Payment Method" role="combobox" className="mt-2">
-                      <SelectValue placeholder="Select payment method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="credit-card">Credit Card</SelectItem>
-                      <SelectItem value="bank-transfer">Bank Transfer</SelectItem>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.financialArrangements?.paymentMethod && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.paymentMethod.message}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            {/* Legacy Payment Method card removed per new template-driven flow */}
             
             {/* Payment Schedule */}
             {watchedValues.financialArrangements?.paymentSchedule && 

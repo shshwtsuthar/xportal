@@ -188,9 +188,35 @@ BEGIN
     ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', '2026-02-01', '2026-11-30', 'Scheduled', v_location_id),
     ('e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1', '2026-07-01', '2027-04-30', 'Scheduled', v_location_id);
 
+  -- 7. Payment Plan Templates (Program-scoped)
+  -- Ensure each active program has a default "Full upfront" template and at least one instalment plan
+  INSERT INTO sms_op.payment_plan_templates (id, program_id, name, is_default, created_at)
+  VALUES
+    ('11111111-1111-1111-1111-111111111111', v_program_id, 'Full upfront', true, now()),
+    ('22222222-2222-2222-2222-222222222222', v_program_id, 'Monthly x6', false, now())
+  ON CONFLICT (id) DO NOTHING;
+
+  -- Full upfront: single instalment at day 0 for AUD 10000.00
+  INSERT INTO sms_op.payment_plan_template_instalments (id, template_id, description, amount, offset_days, sort_order)
+  VALUES
+    ('11111111-aaaa-1111-aaaa-111111111111', '11111111-1111-1111-1111-111111111111', 'Tuition (Full Upfront)', 10000.00, 0, 1)
+  ON CONFLICT (id) DO NOTHING;
+
+  -- Monthly x6: distribute AUD 10000 over 6 months (remainder on first)
+  -- 1st: 1666.70, next 5: 1666.66 each → total 10000.00
+  INSERT INTO sms_op.payment_plan_template_instalments (id, template_id, description, amount, offset_days, sort_order)
+  VALUES
+    ('22222222-aaaa-2222-aaaa-222222222221', '22222222-2222-2222-2222-222222222222', 'Instalment 1', 1666.70, 0, 1),
+    ('22222222-aaaa-2222-aaaa-222222222222', '22222222-2222-2222-2222-222222222222', 'Instalment 2', 1666.66, 30, 2),
+    ('22222222-aaaa-2222-aaaa-222222222223', '22222222-2222-2222-2222-222222222222', 'Instalment 3', 1666.66, 60, 3),
+    ('22222222-aaaa-2222-aaaa-222222222224', '22222222-2222-2222-2222-222222222222', 'Instalment 4', 1666.66, 90, 4),
+    ('22222222-aaaa-2222-aaaa-222222222225', '22222222-2222-2222-2222-222222222222', 'Instalment 5', 1666.66, 120, 5),
+    ('22222222-aaaa-2222-aaaa-222222222226', '22222222-2222-2222-2222-222222222222', 'Instalment 6', 1666.66, 150, 6)
+  ON CONFLICT (id) DO NOTHING;
+
   -- === SEED CLIENT DATA (for existing tests) ===
 
-  -- 7. Client and related records
+  -- 8. Client and related records
   INSERT INTO core.addresses (id, street_name, suburb, state_identifier, postcode)
   VALUES (v_client_address_id, 'Example St', 'Sydney', 'NSW', '2000')
   ON CONFLICT (id) DO NOTHING;

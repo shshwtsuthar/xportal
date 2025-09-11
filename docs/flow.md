@@ -34,6 +34,11 @@ This document outlines the recommended development workflow for the XPortal Stud
 - Document parameters, validation rules, and examples
 - Specify error responses and status codes
 - Add detailed descriptions and documentation
+- Perform a contract-delta checklist before implementation:
+  - Enumerate new/changed paths, verbs, and schemas
+  - Define validation/error matrix (currency precision, max instalments, program-template match, anchor semantics)
+  - Note deprecations (e.g., startDate → anchor/anchorDate) and backward-compat behavior
+  - Identify backend migrations/types and frontend hooks affected
 
 **Key File**: `openapi.yaml`
 

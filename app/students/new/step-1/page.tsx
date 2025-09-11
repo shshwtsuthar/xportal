@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -14,7 +14,7 @@ import { WizardProgress } from '../components/wizard-progress';
 import { useApplicationWizard } from '@/stores/application-wizard';
 import { Step1PersonalInfoSchema, Step1PersonalInfo } from '@/lib/schemas/application-schemas';
 import { useAutosave } from '@/hooks/use-autosave';
-import { useEffect } from 'react';
+ 
 // =============================================================================
 // STEP 1: PERSONAL INFORMATION
 // Matches backend ClientPersonalDetails and ClientAddress schemas exactly
@@ -22,9 +22,11 @@ import { useEffect } from 'react';
 
 export default function Step1PersonalInformation() {
   const router = useRouter();
-  const { updateStep1Data, updateFormData, nextStep, markDirty, draftId } = useApplicationWizard();
-  const [isInternationalStudent, setIsInternationalStudent] = useState(false);
-  const [isPostalSameAsResidential, setIsPostalSameAsResidential] = useState(true);
+  const { updateStep1Data, updateFormData, nextStep, markDirty, draftId, formData } = useApplicationWizard();
+  const [isInternationalStudent, setIsInternationalStudent] = useState<boolean>(Boolean(formData?.isInternationalStudent));
+  const [isPostalSameAsResidential, setIsPostalSameAsResidential] = useState<boolean>(
+    formData?.address?.isPostalSameAsResidential ?? true
+  );
   
   const {
     register,
@@ -35,27 +37,28 @@ export default function Step1PersonalInformation() {
   } = useForm<Step1PersonalInfo>({
     defaultValues: {
       personalDetails: {
-        title: '',
-        firstName: '',
-        lastName: '',
-        dateOfBirth: '',
-        gender: undefined as unknown as 'Male' | 'Female' | 'Other' | undefined,
-        primaryEmail: '',
-        primaryPhone: '',
+        title: (formData?.personalDetails as any)?.title ?? '',
+        firstName: (formData?.personalDetails as any)?.firstName ?? '',
+        lastName: (formData?.personalDetails as any)?.lastName ?? '',
+        dateOfBirth: (formData?.personalDetails as any)?.dateOfBirth ?? '',
+        gender: (formData?.personalDetails as any)?.gender ?? (undefined as unknown as 'Male' | 'Female' | 'Other' | undefined),
+        primaryEmail: (formData?.personalDetails as any)?.primaryEmail ?? '',
+        primaryPhone: (formData?.personalDetails as any)?.primaryPhone ?? '',
       },
       address: {
         residential: {
-          streetNumber: '',
-          streetName: '',
-          unitDetails: '',
-          buildingName: '',
-          suburb: '',
-          state: undefined as unknown as 'SA' | 'VIC' | 'NSW' | 'QLD' | 'WA' | 'TAS' | 'NT' | 'ACT' | undefined,
-          postcode: '',
+          streetNumber: (formData?.address as any)?.residential?.streetNumber ?? '',
+          streetName: (formData?.address as any)?.residential?.streetName ?? '',
+          unitDetails: (formData?.address as any)?.residential?.unitDetails ?? '',
+          buildingName: (formData?.address as any)?.residential?.buildingName ?? '',
+          suburb: (formData?.address as any)?.residential?.suburb ?? '',
+          state: (formData?.address as any)?.residential?.state ?? (undefined as unknown as 'SA' | 'VIC' | 'NSW' | 'QLD' | 'WA' | 'TAS' | 'NT' | 'ACT' | undefined),
+          postcode: (formData?.address as any)?.residential?.postcode ?? '',
         },
-        isPostalSameAsResidential: true,
+        isPostalSameAsResidential: (formData?.address as any)?.isPostalSameAsResidential ?? true,
+        postal: (formData?.address as any)?.postal ?? undefined,
       },
-      emergencyContact: {
+      emergencyContact: (formData as any)?.emergencyContact ?? {
         name: '',
         relationship: '',
         phone: '',
@@ -63,6 +66,38 @@ export default function Step1PersonalInformation() {
       },
     },
   });
+
+  // Hydrate form when formData changes (e.g., after loadDraft)
+  useEffect(() => {
+    const pd = (formData?.personalDetails as any) ?? {};
+    const addr = (formData?.address as any) ?? {};
+    const resi = addr.residential ?? {};
+    const emc = (formData as any)?.emergencyContact ?? {};
+    setIsInternationalStudent(Boolean(formData?.isInternationalStudent));
+    setIsPostalSameAsResidential(addr.isPostalSameAsResidential ?? true);
+    setValue('personalDetails.title', pd.title ?? '');
+    setValue('personalDetails.firstName', pd.firstName ?? '');
+    setValue('personalDetails.lastName', pd.lastName ?? '');
+    setValue('personalDetails.dateOfBirth', pd.dateOfBirth ?? '');
+    setValue('personalDetails.gender', (pd.gender as any) ?? undefined);
+    setValue('personalDetails.primaryEmail', pd.primaryEmail ?? '');
+    setValue('personalDetails.primaryPhone', pd.primaryPhone ?? '');
+    setValue('address.residential.streetNumber', resi.streetNumber ?? '');
+    setValue('address.residential.streetName', resi.streetName ?? '');
+    setValue('address.residential.unitDetails', resi.unitDetails ?? '');
+    setValue('address.residential.buildingName', resi.buildingName ?? '');
+    setValue('address.residential.suburb', resi.suburb ?? '');
+    setValue('address.residential.state', resi.state ?? undefined);
+    setValue('address.residential.postcode', resi.postcode ?? '');
+    setValue('address.isPostalSameAsResidential', addr.isPostalSameAsResidential ?? true);
+    if (addr.postal) {
+      setValue('address.postal', addr.postal);
+    }
+    setValue('emergencyContact.name', emc.name ?? '');
+    setValue('emergencyContact.relationship', emc.relationship ?? '');
+    setValue('emergencyContact.phone', emc.phone ?? '');
+    setValue('emergencyContact.email', emc.email ?? '');
+  }, [formData, setValue]);
   
   // Watch for changes to mark form as dirty
   const watchedValues = watch();
@@ -139,7 +174,7 @@ export default function Step1PersonalInformation() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="title">Title</Label>
-                    <Select onValueChange={(value) => setValue('personalDetails.title', value)}>
+                    <Select value={watch('personalDetails.title') || undefined} onValueChange={(value) => setValue('personalDetails.title', value)}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Select title" />
                       </SelectTrigger>
@@ -202,7 +237,7 @@ export default function Step1PersonalInformation() {
                   
                   <div>
                     <Label htmlFor="gender">Gender</Label>
-                    <Select onValueChange={(value) => setValue('personalDetails.gender', value as 'Male' | 'Female' | 'Other')}>
+                    <Select value={watch('personalDetails.gender') || undefined} onValueChange={(value) => setValue('personalDetails.gender', value as 'Male' | 'Female' | 'Other')}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
@@ -351,7 +386,7 @@ export default function Step1PersonalInformation() {
                   
                   <div>
                     <Label htmlFor="state">State</Label>
-                    <Select onValueChange={(value) => setValue('address.residential.state', value as any)}>
+                    <Select value={watch('address.residential.state') || undefined} onValueChange={(value) => setValue('address.residential.state', value as any)}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>

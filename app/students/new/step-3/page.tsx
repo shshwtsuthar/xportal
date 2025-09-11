@@ -34,7 +34,7 @@ import { useLocations, transformLocationsForSelect } from '@/hooks/use-locations
 
 export default function Step3ProgramSelection() {
   const router = useRouter();
-  const { updateStep3Data, nextStep, previousStep, draftId } = useApplicationWizard();
+  const { updateStep3Data, nextStep, previousStep, draftId, formData } = useApplicationWizard();
   
   // Form state
   const [selectedProgramId, setSelectedProgramId] = useState<string>('');
@@ -67,22 +67,42 @@ export default function Step3ProgramSelection() {
   } = useForm<Step3ProgramSelection>({
     defaultValues: {
       enrolmentDetails: {
-        programId: '',
-        courseOfferingId: '',
+        programId: (formData as any)?.enrolmentDetails?.programId ?? '',
+        courseOfferingId: (formData as any)?.enrolmentDetails?.courseOfferingId ?? '',
         subjectStructure: {
-          coreSubjectIds: [],
-          electiveSubjectIds: [],
+          coreSubjectIds: (formData as any)?.enrolmentDetails?.subjectStructure?.coreSubjectIds ?? [],
+          electiveSubjectIds: (formData as any)?.enrolmentDetails?.subjectStructure?.electiveSubjectIds ?? [],
         },
-        startDate: '',
-        expectedCompletionDate: '',
-        deliveryLocationId: '',
-        deliveryModeId: '',
-        fundingSourceId: '',
-        studyReasonId: '',
-        isVetInSchools: false,
+        startDate: (formData as any)?.enrolmentDetails?.startDate ?? '',
+        expectedCompletionDate: (formData as any)?.enrolmentDetails?.expectedCompletionDate ?? '',
+        deliveryLocationId: (formData as any)?.enrolmentDetails?.deliveryLocationId ?? '',
+        deliveryModeId: (formData as any)?.enrolmentDetails?.deliveryModeId ?? '',
+        fundingSourceId: (formData as any)?.enrolmentDetails?.fundingSourceId ?? '',
+        studyReasonId: (formData as any)?.enrolmentDetails?.studyReasonId ?? '',
+        isVetInSchools: (formData as any)?.enrolmentDetails?.isVetInSchools ?? false,
       },
     },
   });
+
+  // Hydrate when formData changes
+  useEffect(() => {
+    const e = (formData as any)?.enrolmentDetails ?? {};
+    setSelectedProgramId(e.programId ?? '');
+    setSelectedCourseOfferingId(e.courseOfferingId ?? '');
+    setSelectedCoreSubjects(e?.subjectStructure?.coreSubjectIds ?? []);
+    setSelectedElectiveSubjects(e?.subjectStructure?.electiveSubjectIds ?? []);
+    setValue('enrolmentDetails.programId', e.programId ?? '');
+    setValue('enrolmentDetails.courseOfferingId', e.courseOfferingId ?? '');
+    setValue('enrolmentDetails.subjectStructure.coreSubjectIds', e?.subjectStructure?.coreSubjectIds ?? []);
+    setValue('enrolmentDetails.subjectStructure.electiveSubjectIds', e?.subjectStructure?.electiveSubjectIds ?? []);
+    setValue('enrolmentDetails.startDate', e.startDate ?? '');
+    setValue('enrolmentDetails.expectedCompletionDate', e.expectedCompletionDate ?? '');
+    setValue('enrolmentDetails.deliveryLocationId', e.deliveryLocationId ?? '');
+    setValue('enrolmentDetails.deliveryModeId', e.deliveryModeId ?? '');
+    setValue('enrolmentDetails.fundingSourceId', e.fundingSourceId ?? '');
+    setValue('enrolmentDetails.studyReasonId', e.studyReasonId ?? '');
+    setValue('enrolmentDetails.isVetInSchools', e.isVetInSchools ?? false);
+  }, [formData, setValue]);
   
   const watchedValues = watch();
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,12 +11,14 @@ import { toast } from 'sonner';
 import { usePrograms, useCourseOfferings, useProgramSubjects } from '@/hooks/use-programs';
 import { useLocations } from '@/hooks/use-locations';
 import { useFundingSources, useStudyReasons } from '@/hooks/use-reference-data';
+import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 
 export default function ReviewApplication() {
   const router = useRouter();
   const { draftId, formData, previousStep, resetWizard } = useApplicationWizard();
   const { mutateAsync: submit, isPending } = useSubmitApplication(draftId || '');
   const { mutateAsync: patch } = usePatchApplication(draftId || '');
+  const [documents, setDocuments] = useState<Array<{ id: string; path: string; doc_type: string; version: string | null; created_at: string }>>([]);
 
   // Fetch labels to map IDs
   const programId = formData.enrolmentDetails?.programId || '';
@@ -39,6 +41,19 @@ export default function ReviewApplication() {
     const end = (o.end_date ?? o.endDate) as string;
     return `${new Date(start).toLocaleDateString()} – ${new Date(end).toLocaleDateString()}`;
   };
+
+  useEffect(() => {
+    const loadDocs = async () => {
+      if (!draftId) return;
+      try {
+        const res = await fetch(`${FUNCTIONS_URL}/applications/${draftId}/documents`, { headers: getFunctionHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        setDocuments(Array.isArray(data?.data) ? data.data : []);
+      } catch {}
+    };
+    loadDocs();
+  }, [draftId]);
   const findLocationName = () => locationsRes?.find(l => l.id === locationId)?.name || locationId;
   const findFundingLabel = () => (fundingRes as any)?.data?.find((f: any) => f.code === formData.enrolmentDetails?.fundingSourceId)?.description || formData.enrolmentDetails?.fundingSourceId || '';
   const findReasonLabel = () => (reasonsRes as any)?.data?.find((r: any) => r.code === formData.enrolmentDetails?.studyReasonId)?.description || formData.enrolmentDetails?.studyReasonId || '';
@@ -102,6 +117,10 @@ export default function ReviewApplication() {
         usi: rawUsi.usi ?? rawUsi.value ?? undefined,
         exemptionCode: rawUsi.exemptionCode ?? rawUsi.exemption ?? undefined,
       };
+      if (normalizedUsi.usi && normalizedUsi.exemptionCode) {
+        // Prefer USI, clear exemption to avoid server validator conflict
+        normalizedUsi.exemptionCode = null as any;
+      }
       await patch({
         isInternationalStudent: Boolean((formData as any)?.isInternationalStudent ?? false),
         personalDetails: normalizedPersonal,
@@ -125,7 +144,10 @@ export default function ReviewApplication() {
       } catch {}
       resetWizard();
       toast.success('Application submitted', { id: 'submit' });
-      router.replace('/students/new');
+      try {
+        await fetch(`${FUNCTIONS_URL}/applications/${draftId}/offer-letter`, { method: 'POST', headers: getFunctionHeaders() });
+      } catch {}
+      router.replace('/students/applications');
     } catch (err: any) {
       toast.error('Submission failed — please complete all required details and try again.', { id: 'submit' });
     }
@@ -134,6 +156,39 @@ export default function ReviewApplication() {
   const handleBack = () => {
     previousStep();
     router.push('/students/new/step-5');
+  };
+
+  const handleGenerateOffer = async () => {
+    if (!draftId) return;
+    try {
+      const res = await fetch(`${FUNCTIONS_URL}/applications/${draftId}/offer-letter`, { method: 'POST', headers: getFunctionHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      toast.success('Offer letter generated');
+    } catch (e: any) {
+      toast.error(`Failed to generate offer letter: ${e?.message ?? 'Unknown error'}`);
+    }
+  };
+
+  const handleSendOffer = async () => {
+    if (!draftId) return;
+    try {
+      const res = await fetch(`${FUNCTIONS_URL}/applications/${draftId}/send-offer`, { method: 'POST', headers: getFunctionHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      toast.success('Offer letter sent. Status moved to Awaiting Payment');
+    } catch (e: any) {
+      toast.error(`Failed to send offer letter: ${e?.message ?? 'Unknown error'}`);
+    }
+  };
+
+  const handleAccept = async () => {
+    if (!draftId) return;
+    try {
+      const res = await fetch(`${FUNCTIONS_URL}/applications/${draftId}/accept`, { method: 'POST', headers: getFunctionHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      toast.success('Application accepted');
+    } catch (e: any) {
+      toast.error(`Failed to accept application: ${e?.message ?? 'Unknown error'}`);
+    }
   };
 
   return (
@@ -159,6 +214,31 @@ export default function ReviewApplication() {
               <SummaryRow label="Email" value={formData.personalDetails?.primaryEmail} />
               <SummaryRow label="Phone" value={formData.personalDetails?.primaryPhone} />
               <SummaryRow label="Gender" value={formData.personalDetails?.gender} />
+            </CardContent>
+          </Card>
+
+          {/* Documents */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Application Documents</CardTitle>
+              <CardDescription>Generated artifacts and uploads</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {documents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No documents yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {documents.map((d) => (
+                    <div key={d.id} className="flex items-center justify-between border rounded px-3 py-2 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{d.doc_type}{d.version ? ` - ${d.version}` : ''}</div>
+                        <div className="text-muted-foreground truncate">{d.path}</div>
+                      </div>
+                      <div className="ml-3 text-xs text-muted-foreground">{new Date(d.created_at).toLocaleString()}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -226,7 +306,7 @@ export default function ReviewApplication() {
                   Go to first incomplete
                 </Button>
               )}
-              <Button type="button" onClick={handleSubmit} disabled={isPending} aria-label="Submit application">Submit Application</Button>
+              <Button type="button" onClick={handleSubmit} disabled={isPending} aria-label="Submit application">Submit</Button>
             </div>
           </div>
 

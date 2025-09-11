@@ -15,7 +15,7 @@ export const useOfferings = (programId: string | undefined) => {
     queryKey: ['offerings', programId],
     enabled: !!programId,
     queryFn: async () => {
-      const res = await fetch(`${FUNCTIONS_URL}/programs/${programId}/offerings`, {
+      const res = await fetch(`${FUNCTIONS_URL}/course-offerings/programs/${programId}/offerings`, {
         headers: getFunctionHeaders(),
       });
       if (!res.ok) throw new Error('Failed to load offerings');
