@@ -3,9 +3,23 @@
  * Please do not edit it manually.
  */
 
-import type { ColumnType } from "npm:kysely";
-// Deno shim for Node Buffer type in generated definitions
-type Buffer = Uint8Array;
+import type { ColumnType } from "kysely";
+
+// Buffer type declaration for Deno compatibility
+declare global {
+  interface Buffer {
+    length: number;
+    toString(encoding?: string): string;
+    slice(start?: number, end?: number): Buffer;
+  }
+  const Buffer: {
+    new (data: any): Buffer;
+    isBuffer(obj: any): obj is Buffer;
+    from(data: any): Buffer;
+    alloc(size: number): Buffer;
+    concat(list: Buffer[]): Buffer;
+  };
+}
 
 export type AuthAalLevel = "aal1" | "aal2" | "aal3";
 
@@ -38,6 +52,8 @@ export type JsonPrimitive = boolean | number | string | null;
 export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Numeric = ColumnType<string, number | string, number | string>;
+
+export type SmsOpInstalmentAnchor = "commencement_date" | "custom_date" | "enrolment_date";
 
 export type StorageBuckettype = "ANALYTICS" | "STANDARD";
 
@@ -747,14 +763,31 @@ export interface SmsOpAgentCommissions {
   status: Generated<string>;
 }
 
+export interface SmsOpApplicationDocuments {
+  application_id: string;
+  created_at: Generated<Timestamp>;
+  doc_type: string;
+  id: Generated<string>;
+  mime_type: string | null;
+  path: string;
+  size_bytes: Int8 | null;
+  version: string | null;
+}
+
 export interface SmsOpApplications {
+  agent_commission_rate_snapshot: Numeric | null;
   application_payload: Json | null;
   created_at: Generated<Timestamp>;
   created_by_staff_id: string | null;
   created_client_id: string | null;
   created_enrolment_id: string | null;
   id: Generated<string>;
+  payment_anchor: string | null;
+  payment_anchor_date: Timestamp | null;
+  payment_snapshot: Json | null;
+  selected_payment_template_id: string | null;
   status: Generated<string>;
+  tuition_fee_snapshot: Numeric | null;
   updated_at: Generated<Timestamp>;
 }
 
@@ -784,12 +817,12 @@ export interface SmsOpCourseOfferings {
   created_at: Generated<Timestamp | null>;
   default_plan_id: string | null;
   delivery_location_id: string | null;
-  end_date: Timestamp;
+  end_date: Timestamp | null;
   id: Generated<string>;
   is_rolling: Generated<boolean>;
   max_students: number | null;
   program_id: string;
-  start_date: Timestamp;
+  start_date: Timestamp | null;
   status: Generated<string>;
   trainer_id: string | null;
 }
@@ -904,7 +937,15 @@ export interface SmsOpPaymentPlanTemplateInstalments {
 }
 
 export interface SmsOpPaymentPlanTemplates {
+  /**
+   * Defines what date the offset_days in instalments are calculated from
+   */
+  anchor_type: Generated<SmsOpInstalmentAnchor>;
   created_at: Generated<Timestamp>;
+  /**
+   * Custom date to use when anchor_type is custom_date
+   */
+  custom_anchor_date: Timestamp | null;
   id: Generated<string>;
   is_default: Generated<boolean>;
   name: string;
@@ -1178,6 +1219,7 @@ export interface DB {
   "security.user_roles": SecurityUserRoles;
   "security.users": SecurityUsers;
   "sms_op.agent_commissions": SmsOpAgentCommissions;
+  "sms_op.application_documents": SmsOpApplicationDocuments;
   "sms_op.applications": SmsOpApplications;
   "sms_op.assessment_submissions": SmsOpAssessmentSubmissions;
   "sms_op.assessment_tasks": SmsOpAssessmentTasks;

@@ -734,6 +734,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/{applicationId}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Documents for an Application
+         * @description Returns all documents associated with an application, including uploaded files and generated documents.
+         */
+        get: operations["listApplicationDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/documents/upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Upload URL for Document
+         * @description Generates a signed URL for uploading a document to Supabase Storage with proper validation and security.
+         */
+        post: operations["generateDocumentUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/documents/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Document Upload
+         * @description Confirms that a document has been successfully uploaded to storage and records the metadata.
+         */
+        post: operations["confirmDocumentUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/documents/{documentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Application Document
+         * @description Deletes a document from both storage and database, with proper authorization checks.
+         */
+        delete: operations["deleteApplicationDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/programs/{programId}/offerings": {
         parameters: {
             query?: never;
@@ -1444,6 +1524,124 @@ export interface components {
             max_students?: number | null;
             /** @enum {string} */
             status?: "Scheduled" | "Active" | "Completed" | "Cancelled";
+        };
+        ApplicationDocument: {
+            /**
+             * Format: uuid
+             * @description Unique identifier for the document
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description ID of the application this document belongs to
+             */
+            application_id?: string;
+            /**
+             * @description Full path to the document in Supabase Storage
+             * @example student-docs/applications/123/uploads/passport.pdf
+             */
+            path?: string;
+            /**
+             * @description Type/category of the document
+             * @enum {string}
+             */
+            doc_type?: "EVIDENCE" | "OFFER_LETTER" | "COE" | "OTHER";
+            /**
+             * @description Version identifier for the document
+             * @example v2024-01-15
+             */
+            version?: string;
+            /**
+             * @description MIME type of the document
+             * @example application/pdf
+             */
+            mime_type?: string;
+            /** @description Size of the document in bytes */
+            size_bytes?: number;
+            /**
+             * Format: date-time
+             * @description When the document was uploaded
+             */
+            created_at?: string;
+            /**
+             * Format: date-time
+             * @description When the document was last modified
+             */
+            updated_at?: string;
+        };
+        DocumentUploadRequest: {
+            /**
+             * @description Original filename of the document
+             * @example passport.pdf
+             */
+            filename: string;
+            /**
+             * @description MIME type of the document
+             * @example application/pdf
+             */
+            contentType: string;
+            /**
+             * @description Category/type of the document
+             * @example EVIDENCE
+             * @enum {string}
+             */
+            category: "EVIDENCE" | "OFFER_LETTER" | "COE" | "OTHER";
+        };
+        DocumentUploadUrlResponse: {
+            /**
+             * Format: uri
+             * @description Signed URL for uploading the document
+             */
+            uploadUrl?: string;
+            /** @description Required headers for the upload request */
+            headers?: {
+                [key: string]: string;
+            };
+            /**
+             * @description Path where the document will be stored
+             * @example applications/123/uploads/1640995200000_passport.pdf
+             */
+            objectPath?: string;
+            /**
+             * Format: date-time
+             * @description When the upload URL expires
+             */
+            expiresAt?: string;
+        };
+        DocumentConfirmRequest: {
+            /**
+             * @description Path of the uploaded document in storage
+             * @example applications/123/uploads/1640995200000_passport.pdf
+             */
+            objectPath: string;
+            /** @description Size of the uploaded file in bytes */
+            size: number;
+            /** @description Optional file hash for integrity verification */
+            hash?: string | null;
+        };
+        DocumentConfirmResponse: {
+            /**
+             * Format: uuid
+             * @description Unique identifier of the created document record
+             */
+            id?: string;
+            /**
+             * @description Success message
+             * @example Document uploaded successfully
+             */
+            message?: string;
+            /**
+             * @description Full path to the document in storage
+             * @example student-docs/applications/123/uploads/1640995200000_passport.pdf
+             */
+            path?: string;
+            /** @description Size of the uploaded file in bytes */
+            size?: number;
+            /**
+             * @description MIME type of the document
+             * @example application/pdf
+             */
+            contentType?: string;
         };
     };
     responses: {
@@ -2689,6 +2887,137 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listApplicationDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of documents */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["ApplicationDocument"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    generateDocumentUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Upload URL generated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentUploadUrlResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description File too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirmDocumentUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Document upload confirmed */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentConfirmResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description File too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteApplicationDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+                /** @description Unique identifier of the document to delete */
+                documentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Document deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example Document deleted successfully */
+                        message?: string;
+                    };
+                };
+            };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };

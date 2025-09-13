@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -10,31 +10,53 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { WizardProgress } from '../components/wizard-progress';
 import { useApplicationWizard } from '@/stores/application-wizard';
-import type { Step4AgentReferral } from '@/lib/schemas/application-schemas';
-import { Step4AgentReferralSchema } from '@/lib/schemas/application-schemas';
-import { useAgents, transformAgentsForSelect } from '@/hooks/use-agents';
 import { useAutosave } from '@/hooks/use-autosave';
-import { useEffect } from 'react';
+import type { Step3ProgramSelection } from '@/lib/schemas/application-schemas';
+import { Step3ProgramSelectionSchema } from '@/lib/schemas/application-schemas';
+import { 
+  usePrograms, 
+  useCourseOfferings, 
+  useProgramSubjects,
+  transformProgramsForSelect,
+  transformCourseOfferingsForSelect,
+  transformSubjectsForSelection
+} from '@/hooks/use-programs';
+import { useFundingSources, useStudyReasons, transformReferenceData } from '@/hooks/use-reference-data';
+import { useLocations, transformLocationsForSelect } from '@/hooks/use-locations';
 
 // =============================================================================
-// STEP 4: AGENT & REFERRAL
-// Handles agent selection and marketing attribution
+// STEP 3: PROGRAM SELECTION
+// Matches backend EnrolmentDetails schema exactly
 // =============================================================================
 
-export default function Step4AgentReferral() {
+export default function Step3ProgramSelection() {
   const router = useRouter();
-  const { updateStep4Data, nextStep, previousStep, draftId, formData } = useApplicationWizard();
-  
-  // Agents query
-  const { data: agentsData, isLoading: agentsLoading } = useAgents();
-  const agents = transformAgentsForSelect(agentsData);
+  const { updateStep3Data, nextStep, previousStep, draftId, formData } = useApplicationWizard();
   
   // Form state
-  const [hasAgent, setHasAgent] = useState(false);
+  const [selectedProgramId, setSelectedProgramId] = useState<string>('');
+  const [selectedCourseOfferingId, setSelectedCourseOfferingId] = useState<string>('');
+  const [selectedCoreSubjects, setSelectedCoreSubjects] = useState<string[]>([]);
+  const [selectedElectiveSubjects, setSelectedElectiveSubjects] = useState<string[]>([]);
+  
+  // Reference data queries
+  const { data: programsData, isLoading: programsLoading } = usePrograms();
+  const { data: courseOfferingsData, isLoading: courseOfferingsLoading } = useCourseOfferings(selectedProgramId);
+  const { data: subjectsData, isLoading: subjectsLoading } = useProgramSubjects(selectedProgramId);
+  const { data: fundingSourcesData, isLoading: fundingSourcesLoading } = useFundingSources();
+  const { data: studyReasonsData, isLoading: studyReasonsLoading } = useStudyReasons();
+  const { data: locationsData, isLoading: locationsLoading } = useLocations();
+  
+  // Transform data for select components
+  const programs = transformProgramsForSelect(programsData);
+  const courseOfferings = transformCourseOfferingsForSelect(courseOfferingsData);
+  const { core: coreSubjects, electives: electiveSubjects } = transformSubjectsForSelection(subjectsData);
+  const fundingSources = transformReferenceData(fundingSourcesData);
+  const studyReasons = transformReferenceData(studyReasonsData);
+  const locations = transformLocationsForSelect(locationsData);
   
   const {
     register,
@@ -42,56 +64,109 @@ export default function Step4AgentReferral() {
     formState: { errors },
     watch,
     setValue,
-  } = useForm<Step4AgentReferral>({
-    // Keep runtime field type checks, but do not block Next step
-    // resolver: zodResolver(Step4AgentReferralSchema) as any,
+  } = useForm<Step3ProgramSelection>({
     defaultValues: {
-      agentReferral: {
-        agentId: (formData as any)?.agentId ?? null,
-        referralSource: (formData as any)?.referralSource ?? '',
-        marketingAttribution: (formData as any)?.marketingAttribution ?? '',
-        referralNotes: (formData as any)?.referralNotes ?? '',
+      enrolmentDetails: {
+        programId: (formData as any)?.enrolmentDetails?.programId ?? '',
+        courseOfferingId: (formData as any)?.enrolmentDetails?.courseOfferingId ?? '',
+        subjectStructure: {
+          coreSubjectIds: (formData as any)?.enrolmentDetails?.subjectStructure?.coreSubjectIds ?? [],
+          electiveSubjectIds: (formData as any)?.enrolmentDetails?.subjectStructure?.electiveSubjectIds ?? [],
+        },
+        startDate: (formData as any)?.enrolmentDetails?.startDate ?? '',
+        expectedCompletionDate: (formData as any)?.enrolmentDetails?.expectedCompletionDate ?? '',
+        deliveryLocationId: (formData as any)?.enrolmentDetails?.deliveryLocationId ?? '',
+        deliveryModeId: (formData as any)?.enrolmentDetails?.deliveryModeId ?? '',
+        fundingSourceId: (formData as any)?.enrolmentDetails?.fundingSourceId ?? '',
+        studyReasonId: (formData as any)?.enrolmentDetails?.studyReasonId ?? '',
+        isVetInSchools: (formData as any)?.enrolmentDetails?.isVetInSchools ?? false,
       },
     },
   });
+
+  // Hydrate when formData changes
+  useEffect(() => {
+    const e = (formData as any)?.enrolmentDetails ?? {};
+    setSelectedProgramId(e.programId ?? '');
+    setSelectedCourseOfferingId(e.courseOfferingId ?? '');
+    setSelectedCoreSubjects(e?.subjectStructure?.coreSubjectIds ?? []);
+    setSelectedElectiveSubjects(e?.subjectStructure?.electiveSubjectIds ?? []);
+    setValue('enrolmentDetails.programId', e.programId ?? '');
+    setValue('enrolmentDetails.courseOfferingId', e.courseOfferingId ?? '');
+    setValue('enrolmentDetails.subjectStructure.coreSubjectIds', e?.subjectStructure?.coreSubjectIds ?? []);
+    setValue('enrolmentDetails.subjectStructure.electiveSubjectIds', e?.subjectStructure?.electiveSubjectIds ?? []);
+    setValue('enrolmentDetails.startDate', e.startDate ?? '');
+    setValue('enrolmentDetails.expectedCompletionDate', e.expectedCompletionDate ?? '');
+    setValue('enrolmentDetails.deliveryLocationId', e.deliveryLocationId ?? '');
+    setValue('enrolmentDetails.deliveryModeId', e.deliveryModeId ?? '');
+    setValue('enrolmentDetails.fundingSourceId', e.fundingSourceId ?? '');
+    setValue('enrolmentDetails.studyReasonId', e.studyReasonId ?? '');
+    setValue('enrolmentDetails.isVetInSchools', e.isVetInSchools ?? false);
+  }, [formData, setValue]);
   
   const watchedValues = watch();
 
-  // Autosave draft (Step 4)
+  // Autosave draft (backend-first) for Step 3
   const { schedule, saveNow } = useAutosave({
     applicationId: draftId || '',
     enabled: Boolean(draftId),
     debounceMs: 1500,
     getPayload: () => ({
-      agentId: watchedValues.agentReferral?.agentId ?? null,
+      enrolmentDetails: {
+        programId: watchedValues.enrolmentDetails?.programId,
+        courseOfferingId: watchedValues.enrolmentDetails?.courseOfferingId,
+        subjectStructure: watchedValues.enrolmentDetails?.subjectStructure,
+        startDate: watchedValues.enrolmentDetails?.startDate,
+        expectedCompletionDate: watchedValues.enrolmentDetails?.expectedCompletionDate,
+        deliveryLocationId: watchedValues.enrolmentDetails?.deliveryLocationId,
+        deliveryModeId: watchedValues.enrolmentDetails?.deliveryModeId,
+        fundingSourceId: watchedValues.enrolmentDetails?.fundingSourceId,
+        studyReasonId: watchedValues.enrolmentDetails?.studyReasonId,
+        isVetInSchools: Boolean(watchedValues.enrolmentDetails?.isVetInSchools),
+      },
     }),
   });
 
   useEffect(() => {
     schedule();
-  }, [watchedValues.agentReferral?.agentId]);
-
-  // Hydrate when formData changes
-  useEffect(() => {
-    setValue('agentReferral.agentId', (formData as any)?.agentId ?? null);
-    setValue('agentReferral.referralSource', (formData as any)?.referralSource ?? '');
-    setValue('agentReferral.marketingAttribution', (formData as any)?.marketingAttribution ?? '');
-    setValue('agentReferral.referralNotes', (formData as any)?.referralNotes ?? '');
-    setHasAgent(Boolean((formData as any)?.agentId));
-  }, [formData, setValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    watchedValues.enrolmentDetails?.programId,
+    watchedValues.enrolmentDetails?.courseOfferingId,
+    JSON.stringify(watchedValues.enrolmentDetails?.subjectStructure),
+    watchedValues.enrolmentDetails?.startDate,
+    watchedValues.enrolmentDetails?.expectedCompletionDate,
+    watchedValues.enrolmentDetails?.deliveryLocationId,
+    watchedValues.enrolmentDetails?.deliveryModeId,
+    watchedValues.enrolmentDetails?.fundingSourceId,
+    watchedValues.enrolmentDetails?.studyReasonId,
+    watchedValues.enrolmentDetails?.isVetInSchools,
+  ]);
   
-  const onSubmit: SubmitHandler<Step4AgentReferral> = async (data) => {
+  // Reset course offering when program changes
+  useEffect(() => {
+    if (selectedProgramId) {
+      setSelectedCourseOfferingId('');
+      setSelectedCoreSubjects([]);
+      setSelectedElectiveSubjects([]);
+      setValue('enrolmentDetails.courseOfferingId', '');
+      setValue('enrolmentDetails.subjectStructure.coreSubjectIds', []);
+      setValue('enrolmentDetails.subjectStructure.electiveSubjectIds', []);
+    }
+  }, [selectedProgramId, setValue]);
+  
+  const onSubmit: SubmitHandler<Step3ProgramSelection> = async (data) => {
     try {
       // Update wizard state
-      updateStep4Data(data);
+      updateStep3Data(data);
       
       // Move to next step
       nextStep();
       
-      // Navigate to step 5
+      // Navigate to step 4
       router.push('/students/new/step-5');
     } catch (error) {
-      console.error('Error submitting step 4:', error);
+      console.error('Error submitting step 3:', error);
     }
   };
   
@@ -106,14 +181,39 @@ export default function Step4AgentReferral() {
     router.push('/students/new/step-3');
   };
   
-  const handleAgentSelection = (agentId: string) => {
-    if (agentId === 'none') {
-      setHasAgent(false);
-      setValue('agentReferral.agentId', null);
-    } else {
-      setHasAgent(true);
-      setValue('agentReferral.agentId', agentId);
+  const handleProgramChange = (programId: string) => {
+    setSelectedProgramId(programId);
+    setValue('enrolmentDetails.programId', programId);
+  };
+  
+  const handleCourseOfferingChange = (offeringId: string) => {
+    setSelectedCourseOfferingId(offeringId);
+    setValue('enrolmentDetails.courseOfferingId', offeringId);
+    
+    // Set start and end dates from course offering
+    const offering = courseOfferings.find(o => o.value === offeringId);
+    if (offering) {
+      setValue('enrolmentDetails.startDate', offering.startDate);
+      setValue('enrolmentDetails.expectedCompletionDate', offering.endDate);
     }
+  };
+  
+  const handleCoreSubjectChange = (subjectId: string, checked: boolean) => {
+    const newSubjects = checked 
+      ? [...selectedCoreSubjects, subjectId]
+      : selectedCoreSubjects.filter(id => id !== subjectId);
+    
+    setSelectedCoreSubjects(newSubjects);
+    setValue('enrolmentDetails.subjectStructure.coreSubjectIds', newSubjects);
+  };
+  
+  const handleElectiveSubjectChange = (subjectId: string, checked: boolean) => {
+    const newSubjects = checked 
+      ? [...selectedElectiveSubjects, subjectId]
+      : selectedElectiveSubjects.filter(id => id !== subjectId);
+    
+    setSelectedElectiveSubjects(newSubjects);
+    setValue('enrolmentDetails.subjectStructure.electiveSubjectIds', newSubjects);
   };
   
   return (
@@ -126,167 +226,319 @@ export default function Step4AgentReferral() {
         <div className="space-y-8">
           {/* Page Header */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground">Agent & Referral</h1>
-            <p className="mt-2 text-muted-foreground">Staff: record agent representation and referral details if applicable.</p>
+            <h1 className="text-3xl font-bold text-foreground">Program & Intake</h1>
+            <p className="mt-2 text-muted-foreground">Staff: record the program, intake, and subjects.</p>
           </div>
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            {/* Agent Selection */}
+            {/* Program Selection */}
             <Card>
               <CardHeader>
-                <CardTitle>Agent Representation</CardTitle>
-                <CardDescription>
-                  Is the applicant represented by an educational agent?
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="hasAgent"
-                    checked={hasAgent}
-                    onCheckedChange={(checked) => {
-                      setHasAgent(checked as boolean);
-                      if (!checked) {
-                        setValue('agentReferral.agentId', null);
-                      }
-                    }}
-                  />
-                  <Label htmlFor="hasAgent">
-                    Applicant is represented by an educational agent
-                  </Label>
-                </div>
-                
-                {hasAgent && (
-                  <div>
-                    <Label htmlFor="agent">Select Agent</Label>
-                    <Select onValueChange={handleAgentSelection}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select an agent" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No agent selected</SelectItem>
-                        {agentsLoading ? (
-                          <SelectItem value="loading-agents" disabled>Loading agents...</SelectItem>
-                        ) : (
-                          agents.map((agent) => (
-                            <SelectItem key={agent.value} value={agent.value}>
-                              <div className="flex flex-col">
-                                <span>{agent.label}</span>
-                                {agent.description && (
-                                  <span className="text-sm text-muted-foreground">
-                                    {agent.description}
-                                  </span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {errors.agentReferral?.agentId && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.agentReferral.agentId.message}
-                      </p>
-                    )}
-                    
-                    {watchedValues.agentReferral?.agentId && (
-                      <div className="mt-3">
-                        <Label>Selected Agent:</Label>
-                        <div className="mt-1">
-                          {(() => {
-                            const selectedAgent = agents.find(a => a.value === watchedValues.agentReferral?.agentId);
-                            return selectedAgent ? (
-                              <Badge variant="default" className="text-sm">
-                                {selectedAgent.label}
-                                {selectedAgent.description && (
-                                  <span className="ml-2 text-muted-foreground">
-                                    - {selectedAgent.description}
-                                  </span>
-                                )}
-                              </Badge>
-                            ) : null;
-                          })()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            
-            
-            {/* Additional Notes */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Additional Information</CardTitle>
-                <CardDescription>
-                  Any additional notes about the referral or agent representation
-                </CardDescription>
+                <CardTitle>Program</CardTitle>
+                <CardDescription>Select the program being enrolled.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div>
-                  <Label htmlFor="referralNotes">Referral Notes</Label>
-                  <Textarea
-                    id="referralNotes"
-                    {...register('agentReferral.referralNotes')}
-                    placeholder="Provide any additional information about how the applicant heard about the institution or agent representation..."
-                    rows={4}
-                    className={(errors.agentReferral?.referralNotes ? 'border-red-500 ' : '') + 'mt-2'}
-                  />
-                  {errors.agentReferral?.referralNotes && (
+                  <Label htmlFor="program">Program</Label>
+                  <Select onValueChange={handleProgramChange}>
+                    <SelectTrigger aria-label="Program" role="combobox" className="mt-2" tabIndex={0}>
+                      <SelectValue placeholder="Select a program" />
+                    </SelectTrigger>
+                      <SelectContent>
+                        {programsLoading ? (
+                          <SelectItem value="loading-programs" disabled>Loading programs...</SelectItem>
+                        ) : programs.length === 0 ? (
+                          <SelectItem value="no-programs" disabled>No programs available</SelectItem>
+                        ) : (
+                        programs.map((program) => (
+                          <SelectItem key={program.value} value={program.value}>
+                            {program.label}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.enrolmentDetails?.programId && (
                     <p className="text-red-500 text-sm mt-1">
-                      {errors.agentReferral.referralNotes.message}
+                      {errors.enrolmentDetails.programId.message}
                     </p>
                   )}
                 </div>
               </CardContent>
             </Card>
             
-            {/* Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Summary</CardTitle>
-                <CardDescription>
-                  Review the agent and referral information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="font-medium">Agent Representation:</span>
-                  <span className="text-muted-foreground">
-                    {hasAgent ? 'Yes' : 'No'}
-                  </span>
-                </div>
-                
-                {hasAgent && watchedValues.agentReferral?.agentId && (
-                  <div className="flex justify-between">
-                    <span className="font-medium">Selected Agent:</span>
-                    <span className="text-muted-foreground">
-                      {agents.find(a => a.value === watchedValues.agentReferral?.agentId)?.label || 'Not selected'}
-                    </span>
+            {/* Course Offering Selection */}
+            {selectedProgramId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Course Offering</CardTitle>
+                  <CardDescription>
+                    Select the specific intake/offering for the program
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <Label htmlFor="courseOffering">Course Offering</Label>
+                    <Select onValueChange={handleCourseOfferingChange}>
+                      <SelectTrigger aria-label="Course Offering" role="combobox" className="mt-2" tabIndex={0}>
+                        <SelectValue placeholder="Select a course offering" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courseOfferingsLoading ? (
+                          <SelectItem value="loading-offerings" disabled>Loading course offerings...</SelectItem>
+                        ) : courseOfferings.length === 0 ? (
+                          <SelectItem value="no-offerings" disabled>No offerings available</SelectItem>
+                        ) : (
+                          courseOfferings.map((offering) => (
+                            <SelectItem key={offering.value} value={offering.value}>
+                              {offering.label}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {errors.enrolmentDetails?.courseOfferingId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.enrolmentDetails.courseOfferingId.message}
+                      </p>
+                    )}
                   </div>
-                )}
-                
-                {watchedValues.agentReferral?.referralSource && (
-                  <div className="flex justify-between">
-                    <span className="font-medium">Referral Source:</span>
-                    <span className="text-muted-foreground">
-                      {watchedValues.agentReferral.referralSource}
-                    </span>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Subject Selection */}
+            {selectedProgramId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Subjects</CardTitle>
+                  <CardDescription>
+                    Select the core and elective subjects
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Core Subjects */}
+                  <div>
+                    <Label>Core Subjects</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Select all core subjects (required for the program)
+                    </p>
+                    <div className="space-y-2">
+                      {subjectsLoading ? (
+                        <p className="text-muted-foreground">Loading subjects...</p>
+                      ) : coreSubjects.length === 0 ? (
+                        <p className="text-muted-foreground">No core subjects available</p>
+                      ) : (
+                        coreSubjects.map((subject) => (
+                          <div key={subject.value} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`core-${subject.value}`}
+                              checked={selectedCoreSubjects.includes(subject.value)}
+                              onCheckedChange={(checked) => 
+                                handleCoreSubjectChange(subject.value, checked as boolean)
+                              }
+                            />
+                            <Label htmlFor={`core-${subject.value}`}>
+                              {subject.label}
+                            </Label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    
+                    {selectedCoreSubjects.length > 0 && (
+                      <div className="mt-3">
+                        <Label>Selected Core Subjects:</Label>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {selectedCoreSubjects.map((subjectId) => {
+                            const subject = coreSubjects.find(s => s.value === subjectId);
+                            return (
+                              <Badge key={subjectId} variant="default">
+                                {subject?.label || subjectId}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {errors.enrolmentDetails?.subjectStructure?.coreSubjectIds && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.enrolmentDetails.subjectStructure.coreSubjectIds.message}
+                      </p>
+                    )}
                   </div>
-                )}
-                
-                {watchedValues.agentReferral?.marketingAttribution && (
-                  <div className="flex justify-between">
-                    <span className="font-medium">Marketing Attribution:</span>
-                    <span className="text-muted-foreground">
-                      {watchedValues.agentReferral.marketingAttribution}
-                    </span>
+                  
+                  {/* Elective Subjects */}
+                  <div>
+                    <Label>Elective Subjects</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Select elective subjects (optional)
+                    </p>
+                    <div className="space-y-2">
+                      {subjectsLoading ? (
+                        <p className="text-muted-foreground">Loading subjects...</p>
+                      ) : electiveSubjects.length === 0 ? (
+                        <p className="text-muted-foreground">No elective subjects available</p>
+                      ) : (
+                        electiveSubjects.map((subject) => (
+                          <div key={subject.value} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`elective-${subject.value}`}
+                              checked={selectedElectiveSubjects.includes(subject.value)}
+                              onCheckedChange={(checked) => 
+                                handleElectiveSubjectChange(subject.value, checked as boolean)
+                              }
+                            />
+                            <Label htmlFor={`elective-${subject.value}`}>
+                              {subject.label}
+                            </Label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    
+                    {selectedElectiveSubjects.length > 0 && (
+                      <div className="mt-3">
+                        <Label>Selected Elective Subjects:</Label>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {selectedElectiveSubjects.map((subjectId) => {
+                            const subject = electiveSubjects.find(s => s.value === subjectId);
+                            return (
+                              <Badge key={subjectId} variant="secondary">
+                                {subject?.label || subjectId}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Delivery and Funding Information */}
+            {selectedProgramId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Delivery and Funding</CardTitle>
+                  <CardDescription>
+                    Additional enrolment details
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="deliveryMode">Delivery Mode</Label>
+                      <Select onValueChange={(value) => setValue('enrolmentDetails.deliveryModeId', value)}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select delivery mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="face-to-face">Face-to-Face</SelectItem>
+                          <SelectItem value="online">Online</SelectItem>
+                          <SelectItem value="blended">Blended</SelectItem>
+                          <SelectItem value="workplace">Workplace</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.enrolmentDetails?.deliveryModeId && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.enrolmentDetails.deliveryModeId.message}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="fundingSource">Funding Source</Label>
+                      <Select onValueChange={(value) => setValue('enrolmentDetails.fundingSourceId', value)}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select funding source" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {fundingSourcesLoading ? (
+                            <SelectItem value="loading-funding" disabled>Loading funding sources...</SelectItem>
+                          ) : (
+                            fundingSources.map((source) => (
+                              <SelectItem key={source.value} value={source.value}>
+                                {source.label}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {errors.enrolmentDetails?.fundingSourceId && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.enrolmentDetails.fundingSourceId.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="studyReason">Study Reason</Label>
+                      <Select onValueChange={(value) => setValue('enrolmentDetails.studyReasonId', value)}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select study reason" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {studyReasonsLoading ? (
+                            <SelectItem value="loading-reasons" disabled>Loading study reasons...</SelectItem>
+                          ) : (
+                            studyReasons.map((reason) => (
+                              <SelectItem key={reason.value} value={reason.value}>
+                                {reason.label}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {errors.enrolmentDetails?.studyReasonId && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.enrolmentDetails.studyReasonId.message}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="deliveryLocation">Delivery Location</Label>
+                      <Select onValueChange={(value) => setValue('enrolmentDetails.deliveryLocationId', value)}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select delivery location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locationsLoading ? (
+                            <SelectItem value="loading-locations" disabled>Loading locations...</SelectItem>
+                          ) : (
+                            locations.map((loc) => (
+                              <SelectItem key={loc.value} value={loc.value}>
+                                {loc.label}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {errors.enrolmentDetails?.deliveryLocationId && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.enrolmentDetails.deliveryLocationId.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="isVetInSchools"
+                      {...register('enrolmentDetails.isVetInSchools')}
+                    />
+                    <Label htmlFor="isVetInSchools">
+                      VET in Schools program
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             
             {/* Navigation */}
             <div className="flex justify-between">

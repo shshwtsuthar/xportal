@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -10,192 +10,139 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { WizardProgress } from '../components/wizard-progress';
 import { useApplicationWizard } from '@/stores/application-wizard';
-import { Step2AcademicInfoSchema, Step2AcademicInfo } from '@/lib/schemas/application-schemas';
-import { 
-  useCountries, 
-  useLanguages, 
-  useDisabilityTypes, 
-  usePriorEducation,
-  transformReferenceData 
-} from '@/hooks/use-reference-data';
-import { useEffect } from 'react';
+import { Step1PersonalInfoSchema, Step1PersonalInfo } from '@/lib/schemas/application-schemas';
 import { useAutosave } from '@/hooks/use-autosave';
-
+ 
 // =============================================================================
-// STEP 2: ACADEMIC INFORMATION
-// Matches backend ClientAvetmissDetails schema exactly
+// STEP 1: PERSONAL INFORMATION
+// Matches backend ClientPersonalDetails and ClientAddress schemas exactly
 // =============================================================================
 
-export default function Step2AcademicInformation() {
+export default function Step1PersonalInformation() {
   const router = useRouter();
-  const { updateStep2Data, nextStep, previousStep, draftId, formData } = useApplicationWizard();
-  
-  // Reference data queries
-  const { data: countriesData, isLoading: countriesLoading } = useCountries();
-  const { data: languagesData, isLoading: languagesLoading } = useLanguages();
-  const { data: disabilityTypesData, isLoading: disabilityTypesLoading } = useDisabilityTypes();
-  const { data: priorEducationData, isLoading: priorEducationLoading } = usePriorEducation();
-  
-  // Transform reference data for select components
-  const countries = transformReferenceData(countriesData);
-  const languages = transformReferenceData(languagesData);
-  const disabilityTypes = transformReferenceData(disabilityTypesData);
-  const priorEducationOptions = transformReferenceData(priorEducationData);
-  
-  // Form state
-  const [selectedDisabilityTypes, setSelectedDisabilityTypes] = useState<string[]>([]);
-  const [selectedPriorEducation, setSelectedPriorEducation] = useState<string[]>([]);
-  const [usiMode, setUsiMode] = useState<'chooser' | 'usi' | 'exemption'>('chooser');
+  const { updateStep1Data, updateFormData, nextStep, markDirty, draftId, formData } = useApplicationWizard();
+  const [isInternationalStudent, setIsInternationalStudent] = useState<boolean>(Boolean(formData?.isInternationalStudent));
+  const [isPostalSameAsResidential, setIsPostalSameAsResidential] = useState<boolean>(
+    formData?.address?.isPostalSameAsResidential ?? true
+  );
   
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
     watch,
     setValue,
-  } = useForm<Step2AcademicInfo>({
+  } = useForm<Step1PersonalInfo>({
     defaultValues: {
-      avetmissDetails: {
-        countryOfBirthId: (formData as any)?.avetmissDetails?.countryOfBirthId ?? '',
-        languageAtHomeId: (formData as any)?.avetmissDetails?.languageAtHomeId ?? '',
-        indigenousStatusId: (formData as any)?.avetmissDetails?.indigenousStatusId ?? '',
-        highestSchoolLevelId: (formData as any)?.avetmissDetails?.highestSchoolLevelId ?? '',
-        isAtSchool: (formData as any)?.avetmissDetails?.isAtSchool ?? false,
-        hasDisability: (formData as any)?.avetmissDetails?.hasDisability ?? false,
-        disabilityTypeIds: (formData as any)?.avetmissDetails?.disabilityTypeIds ?? [],
-        hasPriorEducation: (formData as any)?.avetmissDetails?.hasPriorEducation ?? false,
-        priorEducationCodes: (formData as any)?.avetmissDetails?.priorEducationCodes ?? [],
-        labourForceId: (formData as any)?.avetmissDetails?.labourForceId ?? '',
-        surveyContactStatus: (formData as any)?.avetmissDetails?.surveyContactStatus ?? null,
+      personalDetails: {
+        title: (formData?.personalDetails as any)?.title ?? '',
+        firstName: (formData?.personalDetails as any)?.firstName ?? '',
+        lastName: (formData?.personalDetails as any)?.lastName ?? '',
+        dateOfBirth: (formData?.personalDetails as any)?.dateOfBirth ?? '',
+        gender: (formData?.personalDetails as any)?.gender ?? (undefined as unknown as 'Male' | 'Female' | 'Other' | undefined),
+        primaryEmail: (formData?.personalDetails as any)?.primaryEmail ?? '',
+        primaryPhone: (formData?.personalDetails as any)?.primaryPhone ?? '',
       },
-      // @ts-ignore keep USI and CRICOS containers present
-      usi: (formData as any)?.usi ?? {},
-      // @ts-ignore CRICOS details required when international student
-      cricosDetails: (formData as any)?.cricosDetails ?? {},
+      address: {
+        residential: {
+          streetNumber: (formData?.address as any)?.residential?.streetNumber ?? '',
+          streetName: (formData?.address as any)?.residential?.streetName ?? '',
+          unitDetails: (formData?.address as any)?.residential?.unitDetails ?? '',
+          buildingName: (formData?.address as any)?.residential?.buildingName ?? '',
+          suburb: (formData?.address as any)?.residential?.suburb ?? '',
+          state: (formData?.address as any)?.residential?.state ?? (undefined as unknown as 'SA' | 'VIC' | 'NSW' | 'QLD' | 'WA' | 'TAS' | 'NT' | 'ACT' | undefined),
+          postcode: (formData?.address as any)?.residential?.postcode ?? '',
+        },
+        isPostalSameAsResidential: (formData?.address as any)?.isPostalSameAsResidential ?? true,
+        postal: (formData?.address as any)?.postal ?? undefined,
+      },
+      emergencyContact: (formData as any)?.emergencyContact ?? {
+        name: '',
+        relationship: '',
+        phone: '',
+        email: '',
+      },
     },
   });
 
-  // Hydrate when formData changes
+  // Hydrate form when formData changes (e.g., after loadDraft)
   useEffect(() => {
-    const a = (formData as any)?.avetmissDetails ?? {};
-    setValue('avetmissDetails.countryOfBirthId', a.countryOfBirthId ?? '');
-    setValue('avetmissDetails.languageAtHomeId', a.languageAtHomeId ?? '');
-    setValue('avetmissDetails.indigenousStatusId', a.indigenousStatusId ?? '');
-    setValue('avetmissDetails.highestSchoolLevelId', a.highestSchoolLevelId ?? '');
-    setValue('avetmissDetails.isAtSchool', a.isAtSchool ?? false);
-    setValue('avetmissDetails.hasDisability', a.hasDisability ?? false);
-    setValue('avetmissDetails.disabilityTypeIds', a.disabilityTypeIds ?? []);
-    setValue('avetmissDetails.hasPriorEducation', a.hasPriorEducation ?? false);
-    setValue('avetmissDetails.priorEducationCodes', a.priorEducationCodes ?? []);
-    setValue('avetmissDetails.labourForceId', a.labourForceId ?? '');
-    setValue('avetmissDetails.surveyContactStatus', a.surveyContactStatus ?? null);
-    // USI / CRICOS
-    const usiVal = (formData as any)?.usi ?? {};
-    // @ts-ignore
-    setValue('usi' as any, usiVal);
-    const cricos = (formData as any)?.cricosDetails ?? {};
-    // @ts-ignore
-    setValue('cricosDetails', cricos);
-    // Reflect array-driven checkboxes
-    setSelectedDisabilityTypes(a.disabilityTypeIds ?? []);
-    setSelectedPriorEducation(a.priorEducationCodes ?? []);
-    // Initialize USI mode from payload
-    const usi2 = (formData as any)?.usi ?? {};
-    if (usi2?.exemptionCode) {
-      setUsiMode('exemption');
-    } else if (usi2?.usi != null) {
-      setUsiMode('usi');
-    } else {
-      setUsiMode('chooser');
+    const pd = (formData?.personalDetails as any) ?? {};
+    const addr = (formData?.address as any) ?? {};
+    const resi = addr.residential ?? {};
+    const emc = (formData as any)?.emergencyContact ?? {};
+    setIsInternationalStudent(Boolean(formData?.isInternationalStudent));
+    setIsPostalSameAsResidential(addr.isPostalSameAsResidential ?? true);
+    setValue('personalDetails.title', pd.title ?? '');
+    setValue('personalDetails.firstName', pd.firstName ?? '');
+    setValue('personalDetails.lastName', pd.lastName ?? '');
+    setValue('personalDetails.dateOfBirth', pd.dateOfBirth ?? '');
+    setValue('personalDetails.gender', (pd.gender as any) ?? undefined);
+    setValue('personalDetails.primaryEmail', pd.primaryEmail ?? '');
+    setValue('personalDetails.primaryPhone', pd.primaryPhone ?? '');
+    setValue('address.residential.streetNumber', resi.streetNumber ?? '');
+    setValue('address.residential.streetName', resi.streetName ?? '');
+    setValue('address.residential.unitDetails', resi.unitDetails ?? '');
+    setValue('address.residential.buildingName', resi.buildingName ?? '');
+    setValue('address.residential.suburb', resi.suburb ?? '');
+    setValue('address.residential.state', resi.state ?? undefined);
+    setValue('address.residential.postcode', resi.postcode ?? '');
+    setValue('address.isPostalSameAsResidential', addr.isPostalSameAsResidential ?? true);
+    if (addr.postal) {
+      setValue('address.postal', addr.postal);
     }
+    setValue('emergencyContact.name', emc.name ?? '');
+    setValue('emergencyContact.relationship', emc.relationship ?? '');
+    setValue('emergencyContact.phone', emc.phone ?? '');
+    setValue('emergencyContact.email', emc.email ?? '');
   }, [formData, setValue]);
   
+  // Watch for changes to mark form as dirty
   const watchedValues = watch();
 
-  // Autosave draft (Step 2)
+  // Autosave draft (Step 1)
   const { schedule, saveNow } = useAutosave({
     applicationId: draftId || '',
     enabled: Boolean(draftId),
     debounceMs: 1500,
-    getPayload: () => {
-      const rawUsi = (watchedValues as any).usi || {};
-      const normalizedUsi = {
-        usi: rawUsi.usi ?? rawUsi.value ?? undefined,
-        exemptionCode: rawUsi.exemptionCode ?? rawUsi.exemption ?? undefined,
-      };
-      // Enforce mutual exclusivity at source
-      if (normalizedUsi.usi && normalizedUsi.exemptionCode) {
-        // Use null to ensure backend merge clears previous value
-        normalizedUsi.exemptionCode = null as any;
-      }
-      // Only include CRICOS when international
-      const isIntl = Boolean((formData as any)?.isInternationalStudent);
-      const rawCricos = (watchedValues as any)?.cricosDetails || undefined;
-      const includeCricos = isIntl && rawCricos && Object.values(rawCricos).some((v) => v != null && String(v).trim() !== '');
-      return {
-        avetmissDetails: watchedValues.avetmissDetails,
-        usi: normalizedUsi,
-        // @ts-ignore only relevant for international students; omit when not set
-        cricosDetails: includeCricos ? (watchedValues as any)?.cricosDetails : undefined,
-      };
-    },
+    getPayload: () => ({
+      isInternationalStudent,
+      personalDetails: watchedValues.personalDetails,
+      address: watchedValues.address,
+      emergencyContact: watchedValues.emergencyContact,
+    }),
   });
 
   useEffect(() => {
     schedule();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(watchedValues.avetmissDetails)]);
-  // Also autosave when USI/CRICOS change
-  useEffect(() => {
-    schedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify((watchedValues as any)?.usi), JSON.stringify((watchedValues as any)?.cricosDetails)]);
+  }, [
+    JSON.stringify(watchedValues.personalDetails),
+    JSON.stringify(watchedValues.address),
+    JSON.stringify(watchedValues.emergencyContact),
+    isInternationalStudent,
+  ]);
   
-  const onSubmit: SubmitHandler<any> = async (data) => {
+  const onSubmit: SubmitHandler<Step1PersonalInfo> = async (data) => {
     try {
       // Update wizard state
-      updateStep2Data(data);
+      updateStep1Data(data);
       
       // Move to next step
       nextStep();
       
-      // Navigate to step 3
+      // Navigate to step 2
       router.push('/students/new/step-3');
     } catch (error) {
-      console.error('Error submitting step 2:', error);
+      console.error('Error submitting step 1:', error);
     }
   };
   
   const handleNext = async () => {
     await saveNow();
     handleSubmit(onSubmit)();
-  };
-  
-  const handlePrevious = async () => {
-    await saveNow();
-    previousStep();
-    router.push('/students/new/step-1');
-  };
-  
-  const handleDisabilityTypeChange = (typeId: string, checked: boolean) => {
-    const newTypes = checked 
-      ? [...selectedDisabilityTypes, typeId]
-      : selectedDisabilityTypes.filter(id => id !== typeId);
-    
-    setSelectedDisabilityTypes(newTypes);
-    setValue('avetmissDetails.disabilityTypeIds', newTypes);
-  };
-  
-  const handlePriorEducationChange = (code: string, checked: boolean) => {
-    const newCodes = checked 
-      ? [...selectedPriorEducation, code]
-      : selectedPriorEducation.filter(c => c !== code);
-    
-    setSelectedPriorEducation(newCodes);
-    setValue('avetmissDetails.priorEducationCodes', newCodes);
   };
   
   return (
@@ -208,483 +155,473 @@ export default function Step2AcademicInformation() {
         <div className="space-y-8">
           {/* Page Header */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground">Academic Information</h1>
+            <h1 className="text-3xl font-bold text-foreground">Personal Information</h1>
             <p className="mt-2 text-muted-foreground">
-              Please provide the client's academic background and AVETMISS compliance details.
+              Please provide the client's personal details and contact information.
             </p>
           </div>
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            {/* Country and Language Information */}
+            {/* Personal Details */}
             <Card>
               <CardHeader>
-                <CardTitle>Country and Language</CardTitle>
+                <CardTitle>Personal Details</CardTitle>
                 <CardDescription>
-                  Applicant's country of birth and language information
+                  Applicant's basic personal information
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="countryOfBirth">Country of Birth</Label>
-                    <Select value={watchedValues.avetmissDetails?.countryOfBirthId || undefined} onValueChange={(value) => setValue('avetmissDetails.countryOfBirthId', value)}>
+                    <Label htmlFor="title">Title</Label>
+                    <Select value={watch('personalDetails.title') || undefined} onValueChange={(value) => setValue('personalDetails.title', value)}>
                       <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select country" />
+                        <SelectValue placeholder="Select title" />
                       </SelectTrigger>
-                      <SelectContent className="max-h-64 overflow-auto">
-                        {countriesLoading ? (
-                          <SelectItem value="loading-countries" disabled>Loading countries...</SelectItem>
-                        ) : (
-                          countries.map((country) => (
-                            <SelectItem key={country.value} value={country.value}>
-                              {country.label}
-                            </SelectItem>
-                          ))
-                        )}
+                      <SelectContent>
+                        <SelectItem value="Mr">Mr</SelectItem>
+                        <SelectItem value="Ms">Ms</SelectItem>
+                        <SelectItem value="Mrs">Mrs</SelectItem>
+                        <SelectItem value="Dr">Dr</SelectItem>
+                        <SelectItem value="Prof">Prof</SelectItem>
                       </SelectContent>
                     </Select>
-                    {errors.avetmissDetails?.countryOfBirthId && (
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      {...register('personalDetails.firstName')}
+                      className={(errors.personalDetails?.firstName ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.personalDetails?.firstName && (
                       <p className="text-red-500 text-sm mt-1">
-                        {errors.avetmissDetails.countryOfBirthId.message}
+                        {errors.personalDetails.firstName.message}
                       </p>
                     )}
                   </div>
                   
                   <div>
-                    <Label htmlFor="languageAtHome">Language at Home</Label>
-                    <Select value={watchedValues.avetmissDetails?.languageAtHomeId || undefined} onValueChange={(value) => setValue('avetmissDetails.languageAtHomeId', value)}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select language" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-64 overflow-auto">
-                        {languagesLoading ? (
-                          <SelectItem value="loading-languages" disabled>Loading languages...</SelectItem>
-                        ) : (
-                          languages.map((language) => (
-                            <SelectItem key={language.value} value={language.value}>
-                              {language.label}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {errors.avetmissDetails?.languageAtHomeId && (
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      {...register('personalDetails.lastName')}
+                      className={(errors.personalDetails?.lastName ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.personalDetails?.lastName && (
                       <p className="text-red-500 text-sm mt-1">
-                        {errors.avetmissDetails.languageAtHomeId.message}
+                        {errors.personalDetails.lastName.message}
                       </p>
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            
-            {/* Indigenous Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Indigenous Status</CardTitle>
-                <CardDescription>
-                  Indicate the applicant's indigenous status
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label htmlFor="indigenousStatus">Indigenous Status</Label>
-                  <Select value={watchedValues.avetmissDetails?.indigenousStatusId || undefined} onValueChange={(value) => setValue('avetmissDetails.indigenousStatusId', value)}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select indigenous status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Aboriginal</SelectItem>
-                      <SelectItem value="2">Torres Strait Islander</SelectItem>
-                      <SelectItem value="3">Both Aboriginal and Torres Strait Islander</SelectItem>
-                      <SelectItem value="4">Neither Aboriginal nor Torres Strait Islander</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.avetmissDetails?.indigenousStatusId && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.avetmissDetails.indigenousStatusId.message}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Education Background */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Education Background</CardTitle>
-                <CardDescription>
-                  Highest school level and current education status for the applicant
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="highestSchoolLevel">Highest School Level</Label>
-                    <Select value={watchedValues.avetmissDetails?.highestSchoolLevelId || undefined} onValueChange={(value) => setValue('avetmissDetails.highestSchoolLevelId', value)}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select school level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="01">Year 8 or below</SelectItem>
-                        <SelectItem value="02">Year 9</SelectItem>
-                        <SelectItem value="03">Year 10</SelectItem>
-                        <SelectItem value="04">Year 11</SelectItem>
-                        <SelectItem value="05">Year 12</SelectItem>
-                        <SelectItem value="06">Certificate I</SelectItem>
-                        <SelectItem value="07">Certificate II</SelectItem>
-                        <SelectItem value="08">Certificate III</SelectItem>
-                        <SelectItem value="09">Certificate IV</SelectItem>
-                        <SelectItem value="10">Diploma</SelectItem>
-                        <SelectItem value="11">Advanced Diploma</SelectItem>
-                        <SelectItem value="12">Bachelor Degree</SelectItem>
-                        <SelectItem value="13">Graduate Certificate</SelectItem>
-                        <SelectItem value="14">Graduate Diploma</SelectItem>
-                        <SelectItem value="15">Masters Degree</SelectItem>
-                        <SelectItem value="16">Doctoral Degree</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.avetmissDetails?.highestSchoolLevelId && (
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      {...register('personalDetails.dateOfBirth')}
+                      placeholder="YYYY-MM-DD"
+                      aria-label="Date of birth"
+                      className={(errors.personalDetails?.dateOfBirth ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.personalDetails?.dateOfBirth && (
                       <p className="text-red-500 text-sm mt-1">
-                        {errors.avetmissDetails.highestSchoolLevelId.message}
+                        {errors.personalDetails.dateOfBirth.message}
                       </p>
                     )}
                   </div>
                   
                   <div>
-                    <Label htmlFor="labourForce">Labour Force Status</Label>
-                    <Select value={watchedValues.avetmissDetails?.labourForceId || undefined} onValueChange={(value) => setValue('avetmissDetails.labourForceId', value)}>
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select value={watch('personalDetails.gender') || undefined} onValueChange={(value) => setValue('personalDetails.gender', value as 'Male' | 'Female' | 'Other')}>
                       <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select labour force status" />
+                        <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="01">Employed full-time</SelectItem>
-                        <SelectItem value="02">Employed part-time</SelectItem>
-                        <SelectItem value="03">Unemployed seeking full-time work</SelectItem>
-                        <SelectItem value="04">Unemployed seeking part-time work</SelectItem>
-                        <SelectItem value="05">Not in the labour force</SelectItem>
-                        <SelectItem value="06">Not stated</SelectItem>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
-                    {errors.avetmissDetails?.labourForceId && (
+                    {errors.personalDetails?.gender && (
                       <p className="text-red-500 text-sm mt-1">
-                        {errors.avetmissDetails.labourForceId.message}
+                        {errors.personalDetails.gender.message}
                       </p>
                     )}
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="isAtSchool"
-                    {...register('avetmissDetails.isAtSchool')}
-                  />
-                  <Label htmlFor="isAtSchool">
-                    Currently attending school
-                  </Label>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Disability Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Disability Information</CardTitle>
-                <CardDescription>
-                  Indicate if the applicant has any disabilities
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="hasDisability"
-                    {...register('avetmissDetails.hasDisability')}
-                  />
-                  <Label htmlFor="hasDisability">
-                    I have a disability
-                  </Label>
-                </div>
-                
-                {watchedValues.avetmissDetails?.hasDisability && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Disability Types (select all that apply)</Label>
-                    <div className="mt-2 space-y-2">
-                      {disabilityTypesLoading ? (
-                        <p className="text-muted-foreground">Loading disability types...</p>
-                      ) : (
-                        disabilityTypes.map((type) => (
-                          <div key={type.value} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`disability-${type.value}`}
-                              checked={selectedDisabilityTypes.includes(type.value)}
-                              onCheckedChange={(checked) => 
-                                handleDisabilityTypeChange(type.value, checked as boolean)
-                              }
-                            />
-                            <Label htmlFor={`disability-${type.value}`}>
-                              {type.label}
-                            </Label>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    
-                    {selectedDisabilityTypes.length > 0 && (
-                      <div className="mt-2">
-                        <Label>Selected Disabilities:</Label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {selectedDisabilityTypes.map((typeId) => {
-                            const type = disabilityTypes.find(t => t.value === typeId);
-                            return (
-                              <Badge key={typeId} variant="secondary">
-                                {type?.description || typeId}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
+                    <Label htmlFor="primaryEmail">Email Address</Label>
+                    <Input
+                      id="primaryEmail"
+                      type="email"
+                      {...register('personalDetails.primaryEmail')}
+                      placeholder="name@example.com"
+                      aria-label="Email address"
+                      className={(errors.personalDetails?.primaryEmail ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.personalDetails?.primaryEmail && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.personalDetails.primaryEmail.message}
+                      </p>
                     )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Prior Education */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Prior Education</CardTitle>
-                <CardDescription>
-                  Indicate if the applicant has any prior education qualifications
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="hasPriorEducation"
-                    {...register('avetmissDetails.hasPriorEducation')}
-                  />
-                  <Label htmlFor="hasPriorEducation">
-                    I have prior education qualifications
-                  </Label>
-                </div>
-                
-                {watchedValues.avetmissDetails?.hasPriorEducation && (
+                  
                   <div>
-                    <Label>Prior Education Qualifications (select all that apply)</Label>
-                    <div className="mt-2 space-y-2">
-                      {priorEducationLoading ? (
-                        <p className="text-muted-foreground">Loading prior education options...</p>
-                      ) : (
-                        priorEducationOptions.map((option) => (
-                          <div key={option.value} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`prior-${option.value}`}
-                              checked={selectedPriorEducation.includes(option.value)}
-                              onCheckedChange={(checked) => 
-                                handlePriorEducationChange(option.value, checked as boolean)
-                              }
-                            />
-                            <Label htmlFor={`prior-${option.value}`}>
-                              {option.label}
-                            </Label>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    
-                    {selectedPriorEducation.length > 0 && (
-                      <div className="mt-2">
-                        <Label>Selected Qualifications:</Label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {selectedPriorEducation.map((code) => {
-                            const option = priorEducationOptions.find(o => o.value === code);
-                            return (
-                              <Badge key={code} variant="secondary">
-                                {option?.description || code}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
+                    <Label htmlFor="primaryPhone">Phone Number</Label>
+                    <Input
+                      id="primaryPhone"
+                      type="tel"
+                      {...register('personalDetails.primaryPhone')}
+                      placeholder="e.g., 0400 000 000"
+                      aria-label="Phone number"
+                      pattern="^0\\\d{9}$"
+                      title="Enter a 10-digit Australian number starting with 0"
+                      className={(errors.personalDetails?.primaryPhone ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.personalDetails?.primaryPhone && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.personalDetails.primaryPhone.message}
+                      </p>
                     )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* CRICOS Details (International only) */}
-            {formData.isInternationalStudent && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>CRICOS Details</CardTitle>
-                  <CardDescription>
-                    Required for international students
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="countryOfCitizenshipId">Country of Citizenship (ISO-3)</Label>
-                      {/* @ts-ignore */}
-                      <Input id="countryOfCitizenshipId" {...register('cricosDetails.countryOfCitizenshipId' as any)} placeholder="e.g., AUS" className="mt-2" />
-                    </div>
-                    <div>
-                      <Label htmlFor="passportNumber">Passport Number</Label>
-                      {/* @ts-ignore */}
-                      <Input id="passportNumber" {...register('cricosDetails.passportNumber' as any)} className="mt-2" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="passportExpiryDate">Passport Expiry Date</Label>
-                      {/* @ts-ignore */}
-                      <Input id="passportExpiryDate" type="date" {...register('cricosDetails.passportExpiryDate' as any)} className="mt-2" />
-                    </div>
-                    <div>
-                      <Label htmlFor="visaSubclass">Visa Subclass</Label>
-                      {/* @ts-ignore */}
-                      <Input id="visaSubclass" {...register('cricosDetails.visaSubclass' as any)} placeholder="e.g., 500" className="mt-2" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="visaGrantNumber">Visa Grant Number</Label>
-                      {/* @ts-ignore */}
-                      <Input id="visaGrantNumber" {...register('cricosDetails.visaGrantNumber' as any)} className="mt-2" />
-                    </div>
-                    <div>
-                      <Label htmlFor="visaExpiryDate">Visa Expiry Date</Label>
-                      {/* @ts-ignore */}
-                      <Input id="visaExpiryDate" type="date" {...register('cricosDetails.visaExpiryDate' as any)} className="mt-2" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="oshcProvider">OSHC Provider</Label>
-                      {/* @ts-ignore */}
-                      <Input id="oshcProvider" {...register('cricosDetails.oshcProvider' as any)} placeholder="e.g., Allianz" className="mt-2" />
-                    </div>
-                    <div>
-                      <Label htmlFor="oshcPolicyNumber">OSHC Policy Number</Label>
-                      {/* @ts-ignore */}
-                      <Input id="oshcPolicyNumber" {...register('cricosDetails.oshcPolicyNumber' as any)} className="mt-2" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="oshcPaidToDate">OSHC Paid To Date</Label>
-                      {/* @ts-ignore */}
-                      <Input id="oshcPaidToDate" type="date" {...register('cricosDetails.oshcPaidToDate' as any)} className="mt-2" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                </div>
 
-            {/* USI or Exemption (mutually exclusive) */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="isInternationalStudent"
+                    checked={isInternationalStudent}
+                    onCheckedChange={(checked) => {
+                      const value = Boolean(checked);
+                      setIsInternationalStudent(value);
+                      updateFormData({ isInternationalStudent: value });
+                    }}
+                  />
+                  <Label htmlFor="isInternationalStudent">International student</Label>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Residential Address */}
             <Card>
               <CardHeader>
-                <CardTitle>Unique Student Identifier (USI)</CardTitle>
+                <CardTitle>Residential Address</CardTitle>
                 <CardDescription>
-                  Provide the applicant's USI or select an exemption reason
+                  Applicant's primary residential address
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {(() => {
-                  const currentUsi = (watchedValues as any)?.usi?.usi as string | undefined;
-                  const currentEx = (watchedValues as any)?.usi?.exemptionCode as string | undefined;
-                  if (usiMode === 'chooser') {
-                    return (
-                      <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant="secondary" onClick={() => {
-                          setUsiMode('usi');
-                          // @ts-ignore
-                          setValue('usi.exemptionCode' as any, undefined);
-                          // @ts-ignore
-                          setValue('usi.usi' as any, '');
-                          setTimeout(() => document.getElementById('usi')?.focus(), 0);
-                        }}>Enter USI</Button>
-                        <Button type="button" variant="secondary" onClick={() => {
-                          setUsiMode('exemption');
-                          // @ts-ignore
-                          setValue('usi.usi' as any, undefined);
-                          // @ts-ignore
-                          setValue('usi.exemptionCode' as any, currentEx || 'IND');
-                        }}>Use exemption</Button>
-                      </div>
-                    );
-                  }
-                  if (usiMode === 'usi') {
-                    return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="streetNumber">Street Number</Label>
+                    <Input
+                      id="streetNumber"
+                      {...register('address.residential.streetNumber')}
+                      className={(errors.address?.residential?.streetNumber ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.address?.residential?.streetNumber && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.address.residential.streetNumber.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="streetName">Street Name</Label>
+                    <Input
+                      id="streetName"
+                      {...register('address.residential.streetName')}
+                      className={(errors.address?.residential?.streetName ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.address?.residential?.streetName && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.address.residential.streetName.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="unitDetails">Unit Details</Label>
+                    <Input
+                      id="unitDetails"
+                      {...register('address.residential.unitDetails')}
+                      placeholder="e.g., Unit 5, Apartment 10B"
+                      className="mt-2"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="buildingName">Building Name</Label>
+                    <Input
+                      id="buildingName"
+                      {...register('address.residential.buildingName')}
+                      placeholder="e.g., Building name, homestead"
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="suburb">Suburb</Label>
+                    <Input
+                      id="suburb"
+                      {...register('address.residential.suburb')}
+                      className={(errors.address?.residential?.suburb ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.address?.residential?.suburb && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.address.residential.suburb.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="state">State</Label>
+                    <Select value={watch('address.residential.state') || undefined} onValueChange={(value) => setValue('address.residential.state', value as any)}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="VIC">Victoria</SelectItem>
+                        <SelectItem value="NSW">New South Wales</SelectItem>
+                        <SelectItem value="QLD">Queensland</SelectItem>
+                        <SelectItem value="SA">South Australia</SelectItem>
+                        <SelectItem value="WA">Western Australia</SelectItem>
+                        <SelectItem value="TAS">Tasmania</SelectItem>
+                        <SelectItem value="NT">Northern Territory</SelectItem>
+                        <SelectItem value="ACT">Australian Capital Territory</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.address?.residential?.state && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.address.residential.state.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="postcode">Postcode</Label>
+                    <Input
+                      id="postcode"
+                      {...register('address.residential.postcode')}
+                      placeholder="e.g., 3000"
+                      aria-label="Residential postcode"
+                      pattern="^\\\d{4}$"
+                      title="Enter a 4-digit postcode"
+                      className={(errors.address?.residential?.postcode ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.address?.residential?.postcode && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.address.residential.postcode.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Postal Address */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Postal Address</CardTitle>
+                <CardDescription>
+                  Applicant's postal address (if different from residential)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="isPostalSameAsResidential"
+                    checked={isPostalSameAsResidential}
+                    onCheckedChange={(checked) => {
+                      setIsPostalSameAsResidential(checked as boolean);
+                      setValue('address.isPostalSameAsResidential', checked as boolean);
+                    }}
+                  />
+                  <Label htmlFor="isPostalSameAsResidential">
+                    Same as residential address
+                  </Label>
+                </div>
+                
+                {!isPostalSameAsResidential && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="usi">USI</Label>
-                        {/* @ts-ignore */}
-                        <Input id="usi" {...register('usi.usi' as any)} placeholder="e.g., 3AW88WHM8G" className="mt-2" onChange={() => {
-                          // typing USI clears exemption
-                          // @ts-ignore
-                          setValue('usi.exemptionCode' as any, undefined);
-                          if (usiMode !== 'usi') setUsiMode('usi');
-                        }} />
-                        <div className="mt-2">
-                          <Button type="button" variant="ghost" onClick={() => {
-                            // switch to exemption
-                            setUsiMode('exemption');
-                            // @ts-ignore
-                            setValue('usi.usi' as any, undefined);
-                            // @ts-ignore
-                            setValue('usi.exemptionCode' as any, 'IND');
-                          }}>Use exemption instead</Button>
-                        </div>
+                        <Label htmlFor="postalStreetNumber">Street Number *</Label>
+                        <Input
+                          id="postalStreetNumber"
+                          {...register('address.postal.streetNumber')}
+                          className={(errors.address?.postal?.streetNumber ? 'border-red-500' : '') + 'mt-2'}
+                        />
+                        {errors.address?.postal?.streetNumber && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.address.postal.streetNumber.message}
+                          </p>
+                        )}
                       </div>
-                    );
-                  }
-                  return (
-                    <div>
-                      <Label htmlFor="usiExemption">USI Exemption</Label>
-                      <Select value={(currentEx as any) || undefined} onValueChange={(v) => {
-                        if (v === 'none') {
-                          setUsiMode('chooser');
-                          // @ts-ignore
-                          setValue('usi.exemptionCode' as any, undefined);
-                          return;
-                        }
-                        setUsiMode('exemption');
-                        // @ts-ignore
-                        setValue('usi.usi' as any, undefined);
-                        // @ts-ignore
-                        setValue('usi.exemptionCode' as any, v as any);
-                      }}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Select exemption (if applicable)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="IND">Individual Exemption</SelectItem>
-                          <SelectItem value="AGR">Agency-Reported Exemption</SelectItem>
-                          <SelectItem value="none">None</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="mt-2">
-                        <Button type="button" variant="ghost" onClick={() => {
-                          // switch to USI
-                          setUsiMode('usi');
-                          // @ts-ignore
-                          setValue('usi.exemptionCode' as any, undefined);
-                          // @ts-ignore
-                          setValue('usi.usi' as any, '');
-                        }}>Enter USI instead</Button>
+                      
+                      <div>
+                        <Label htmlFor="postalStreetName">Street Name *</Label>
+                        <Input
+                          id="postalStreetName"
+                          {...register('address.postal.streetName')}
+                          className={(errors.address?.postal?.streetName ? 'border-red-500' : '') + 'mt-2'}
+                        />
+                        {errors.address?.postal?.streetName && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.address.postal.streetName.message}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  );
-                })()}
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="postalSuburb">Suburb *</Label>
+                        <Input
+                          id="postalSuburb"
+                          {...register('address.postal.suburb')}
+                          className={(errors.address?.postal?.suburb ? 'border-red-500' : '') + 'mt-2'}
+                        />
+                        {errors.address?.postal?.suburb && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.address.postal.suburb.message}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="postalState">State *</Label>
+                        <Select onValueChange={(value) => setValue('address.postal.state', value as any)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="VIC">Victoria</SelectItem>
+                            <SelectItem value="NSW">New South Wales</SelectItem>
+                            <SelectItem value="QLD">Queensland</SelectItem>
+                            <SelectItem value="SA">South Australia</SelectItem>
+                            <SelectItem value="WA">Western Australia</SelectItem>
+                            <SelectItem value="TAS">Tasmania</SelectItem>
+                            <SelectItem value="NT">Northern Territory</SelectItem>
+                            <SelectItem value="ACT">Australian Capital Territory</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {errors.address?.postal?.state && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.address.postal.state.message}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="postalPostcode">Postcode *</Label>
+                        <Input
+                          id="postalPostcode"
+                          {...register('address.postal.postcode')}
+                          placeholder="e.g., 3000"
+                          aria-label="Postal postcode"
+                          pattern="^\\\d{4}$"
+                          title="Enter a 4-digit postcode"
+                          className={(errors.address?.postal?.postcode ? 'border-red-500' : '') + 'mt-2'}
+                        />
+                        {errors.address?.postal?.postcode && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.address.postal.postcode.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Emergency Contact */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Emergency Contact</CardTitle>
+                <CardDescription>
+                  Someone we can contact in case of emergency
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="emergencyName">Contact Name</Label>
+                    <Input
+                      id="emergencyName"
+                      {...register('emergencyContact.name')}
+                      className={(errors.emergencyContact?.name ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.emergencyContact?.name && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.emergencyContact.name.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="emergencyRelationship">Relationship</Label>
+                    <Input
+                      id="emergencyRelationship"
+                      {...register('emergencyContact.relationship')}
+                      className={(errors.emergencyContact?.relationship ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.emergencyContact?.relationship && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.emergencyContact.relationship.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="emergencyPhone">Phone Number</Label>
+                    <Input
+                      id="emergencyPhone"
+                      type="tel"
+                      {...register('emergencyContact.phone')}
+                      className={(errors.emergencyContact?.phone ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.emergencyContact?.phone && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.emergencyContact.phone.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="emergencyEmail">Email Address</Label>
+                    <Input
+                      id="emergencyEmail"
+                      type="email"
+                      {...register('emergencyContact.email')}
+                      className={(errors.emergencyContact?.email ? 'border-red-500 ' : '') + 'mt-2'}
+                    />
+                    {errors.emergencyContact?.email && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.emergencyContact.email.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
             
             {/* Navigation */}
-            <div className="flex justify-between">
-              <Button type="button" variant="outline" onClick={handlePrevious}>
-                Previous Step
-              </Button>
-              <Button type="button" onClick={handleNext}>
+            <div className="flex justify-end">
+              <Button type="button" onClick={handleNext} className="px-8">
                 Next Step
               </Button>
             </div>

@@ -35,7 +35,7 @@ export default function NewApplicationWizard() {
   useEffect(() => {
     if (!draftId) return;
     const stepPath = `/students/new/step-${currentStep}`;
-    if (currentStep === 6) {
+    if (currentStep === 7) {
       router.replace('/students/new/review');
     } else {
       router.replace(stepPath);

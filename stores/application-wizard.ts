@@ -59,7 +59,7 @@ interface ApplicationWizardState {
 
 const initialState = {
   currentStep: 1,
-  totalSteps: 6,
+  totalSteps: 7,
   isDirty: false,
   isLoading: false,
   formData: {

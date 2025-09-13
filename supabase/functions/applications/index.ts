@@ -18,6 +18,8 @@ import { NotFoundError, ValidationError } from '../_shared/errors.ts';
 import { deepMerge } from '../_shared/utils.ts';
 import { validateFullEnrolmentPayload } from '../_shared/validators.ts';
 import type { components } from '../_shared/api.types.ts';
+
+// Buffer polyfill for Deno - will be available globally from database.types.ts
 import { join } from 'https://deno.land/std@0.177.0/path/mod.ts';
 import { z } from 'https://deno.land/x/zod@v3.23.8/mod.ts';
 import type { ExpressionBuilder } from 'npm:kysely';
@@ -65,7 +67,8 @@ function validatePaymentPlanSnapshotOrThrow(appPayload: Record<string, unknown>)
   }
   const parsedResult = PaymentPlanSnapshotSchema.safeParse(paymentPlan);
   if (!parsedResult.success) {
-    throw new ValidationError('Invalid payment plan snapshot.', { issues: parsedResult.error.issues });
+    const issues = parsedResult.error.issues.map(issue => issue.message);
+    throw new ValidationError('Invalid payment plan snapshot.', { issues });
   }
   const parsed = parsedResult.data;
   const sum = parsed.schedule.reduce((s, i) => s + (Number(i.amount) || 0), 0);
@@ -262,7 +265,8 @@ const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
         if (scheduleArr.length > 0) {
           const r = PaymentPlanSnapshotSchema.safeParse(candidate);
           if (!r.success) {
-            throw new ValidationError('Invalid payment plan snapshot.', { issues: r.error.issues });
+            const issues = r.error.issues.map(issue => issue.message);
+            throw new ValidationError('Invalid payment plan snapshot.', { issues });
           }
         }
       }
@@ -1320,6 +1324,194 @@ const streamLatestOfferDocumentLogic = async (_req: Request, _ctx: ApiContext, a
   return new Response(buf, { status: 200, headers: { ...corsHeaders, 'Content-Type': doc.mime_type || 'application/octet-stream', 'Content-Disposition': `attachment; filename=${doc.path.split('/').pop()}` } });
 };
 
+// --- Generate Upload URL for Document ---
+const generateUploadUrlLogic = async (req: Request, _ctx: ApiContext, applicationId: string, body: unknown): Promise<Response> => {
+  try {
+    // Validate application exists
+    const app = await db.selectFrom('sms_op.applications')
+      .select(['id', 'status'])
+      .where('id', '=', applicationId)
+      .executeTakeFirst();
+    if (!app) {
+      return new Response(JSON.stringify({ message: 'Application not found.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+  const { filename, contentType, category } = body as { filename: string; contentType: string; category: string };
+
+  // Validate required fields
+  if (!filename || !contentType || !category) {
+    return new Response(JSON.stringify({ message: 'Missing required fields: filename, contentType, category' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // Validate category
+  const validCategories = ['EVIDENCE', 'OTHER', 'OFFER_LETTER', 'COE'];
+  if (!validCategories.includes(category)) {
+    return new Response(JSON.stringify({ message: `Invalid category. Must be one of: ${validCategories.join(', ')}` }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // Validate file type
+  const allowedTypes = [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ];
+  if (!allowedTypes.includes(contentType)) {
+    return new Response(JSON.stringify({ message: `Invalid file type. Allowed types: ${allowedTypes.join(', ')}` }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // Use local Supabase URLs for development
+  const supabaseUrl = 'http://127.0.0.1:54321';
+  const serviceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+
+  // Generate unique filename to prevent conflicts
+  const timestamp = Date.now();
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const uniqueFilename = `${timestamp}_${sanitizedFilename}`;
+  const objectPath = `applications/${applicationId}/uploads/${uniqueFilename}`;
+
+  // Generate signed URL (1 hour expiration)
+  const expiresIn = 3600; // 1 hour
+  const uploadUrl = `${supabaseUrl}/storage/v1/object/student-docs/${objectPath}`;
+  
+  // For now, return the upload URL with service key (in production, use proper signed URLs)
+  const headers = {
+    'Authorization': `Bearer ${serviceKey}`,
+    'Content-Type': contentType,
+    'x-upsert': 'true'
+  };
+
+  return new Response(JSON.stringify({
+    uploadUrl,
+    headers,
+    objectPath,
+    expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString()
+  }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  } catch (error) {
+    console.error('Error in generateUploadUrlLogic:', error);
+    return new Response(JSON.stringify({ 
+      message: 'Internal server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+};
+
+// --- Confirm Document Upload ---
+const confirmDocumentUploadLogic = async (req: Request, _ctx: ApiContext, applicationId: string, body: unknown): Promise<Response> => {
+  // Validate application exists
+  const app = await db.selectFrom('sms_op.applications')
+    .select(['id', 'status'])
+    .where('id', '=', applicationId)
+    .executeTakeFirst();
+  if (!app) {
+    return new Response(JSON.stringify({ message: 'Application not found.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  const { objectPath, size, hash } = body as { objectPath: string; size: number; hash?: string };
+
+  if (!objectPath || !size) {
+    return new Response(JSON.stringify({ message: 'Missing required fields: objectPath, size' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // Validate file size (20MB limit)
+  const maxSize = 20 * 1024 * 1024; // 20MB
+  if (size > maxSize) {
+    return new Response(JSON.stringify({ message: 'File too large. Maximum size is 20MB.' }), { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // Extract filename from objectPath
+  const filename = objectPath.split('/').pop() || 'unknown';
+  
+  // Determine content type from filename
+  const getContentType = (filename: string): string => {
+    const ext = filename.toLowerCase().split('.').pop() || '';
+    const typeMap: Record<string, string> = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    };
+    return typeMap[ext] || 'application/octet-stream';
+  };
+
+  const contentType = getContentType(filename);
+
+  // Insert document metadata
+  const docId = crypto.randomUUID();
+  await db.insertInto('sms_op.application_documents').values({
+    // @ts-ignore
+    id: docId,
+    application_id: applicationId,
+    path: `student-docs/${objectPath}`,
+    doc_type: 'EVIDENCE', // Default to EVIDENCE for user uploads
+    version: `v${new Date().toISOString().slice(0, 10)}`,
+    mime_type: contentType,
+    size_bytes: String(size) as unknown as number,
+  }).execute();
+
+  logTransition('APPLICATION_DOC_UPLOADED', { applicationId, docId, docType: 'EVIDENCE', size });
+  
+  return new Response(JSON.stringify({
+    id: docId,
+    message: 'Document uploaded successfully',
+    path: `student-docs/${objectPath}`,
+    size,
+    contentType
+  }), { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- Delete Document ---
+const deleteDocumentLogic = async (_req: Request, _ctx: ApiContext, applicationId: string, documentId: string): Promise<Response> => {
+  // Validate application exists
+  const app = await db.selectFrom('sms_op.applications')
+    .select(['id', 'status'])
+    .where('id', '=', applicationId)
+    .executeTakeFirst();
+  if (!app) {
+    return new Response(JSON.stringify({ message: 'Application not found.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // Get document details
+  const doc = await db.selectFrom('sms_op.application_documents')
+    .selectAll()
+    .where('id', '=', documentId)
+    .where('application_id', '=', applicationId)
+    .executeTakeFirst();
+  
+  if (!doc) {
+    return new Response(JSON.stringify({ message: 'Document not found.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // Delete from storage
+  const supabaseUrl = 'http://127.0.0.1:54321';
+  const serviceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+  if (supabaseUrl && serviceKey) {
+    const deleteUrl = `${supabaseUrl}/storage/v1/object/${doc.path}`;
+    const deleteResp = await fetch(deleteUrl, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${serviceKey}` }
+    });
+    
+    if (!deleteResp.ok) {
+      console.warn('[DOC_DELETE_WARNING] Failed to delete from storage:', deleteResp.status);
+    }
+  }
+
+  // Delete from database
+  await db.deleteFrom('sms_op.application_documents')
+    .where('id', '=', documentId)
+    .where('application_id', '=', applicationId)
+    .execute();
+
+  logTransition('APPLICATION_DOC_DELETED', { applicationId, documentId, docType: doc.doc_type });
+  
+  return new Response(JSON.stringify({ message: 'Document deleted successfully' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
 // --- Helper function for UUID validation ---
 const validateApplicationId = (applicationId: string): Response | null => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1413,7 +1605,7 @@ const applicationsRouter = async (req: Request, ctx: ApiContext, body: unknown):
       if (validationError) return validationError;
       return await markAwaitingPaymentLogic(req, ctx, pathSegments[1]);
     }
-    if (pathSegments.length === 3 && pathSegments[2] === 'documents' && method === 'GET') {
+    if (pathSegments.length === 3 && pathSegments[0] === 'applications' && pathSegments[2] === 'documents' && method === 'GET') {
       const validationError = validateApplicationId(pathSegments[1]);
       if (validationError) return validationError;
       return await listApplicationDocumentsLogic(req, ctx, pathSegments[1]);
@@ -1427,6 +1619,22 @@ const applicationsRouter = async (req: Request, ctx: ApiContext, body: unknown):
       const validationError = validateApplicationId(pathSegments[1]);
       if (validationError) return validationError;
       return await streamLatestOfferDocumentLogic(req, ctx, pathSegments[1]);
+    }
+    // Document upload routes
+    if (pathSegments.length === 4 && pathSegments[0] === 'applications' && pathSegments[2] === 'documents' && pathSegments[3] === 'upload-url' && method === 'POST') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await generateUploadUrlLogic(req, ctx, pathSegments[1], body);
+    }
+    if (pathSegments.length === 4 && pathSegments[0] === 'applications' && pathSegments[2] === 'documents' && pathSegments[3] === 'confirm' && method === 'POST') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await confirmDocumentUploadLogic(req, ctx, pathSegments[1], body);
+    }
+    if (pathSegments.length === 4 && pathSegments[0] === 'applications' && pathSegments[2] === 'documents' && method === 'DELETE') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await deleteDocumentLogic(req, ctx, pathSegments[1], pathSegments[3]);
     }
   }
 

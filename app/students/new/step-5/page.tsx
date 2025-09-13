@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -9,38 +9,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { WizardProgress } from '../components/wizard-progress';
 import { useApplicationWizard } from '@/stores/application-wizard';
-import type { Step5FinancialArrangements } from '@/lib/schemas/application-schemas';
-import { Step5FinancialArrangementsSchema } from '@/lib/schemas/application-schemas';
+import type { Step4AgentReferral } from '@/lib/schemas/application-schemas';
+import { Step4AgentReferralSchema } from '@/lib/schemas/application-schemas';
+import { useAgents, transformAgentsForSelect } from '@/hooks/use-agents';
 import { useAutosave } from '@/hooks/use-autosave';
-import { usePaymentPlanTemplates } from '@/hooks/use-payment-templates';
-import { useApplication } from '@/hooks/use-application';
-import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
+import { useEffect } from 'react';
 
 // =============================================================================
-// STEP 5: FINANCIAL ARRANGEMENTS
-// Handles payment plans and fee calculation
+// STEP 4: AGENT & REFERRAL
+// Handles agent selection and marketing attribution
 // =============================================================================
 
-export default function Step5FinancialArrangements() {
+export default function Step4AgentReferral() {
   const router = useRouter();
-  const { updateStep5Data, nextStep, previousStep, draftId } = useApplicationWizard();
-  const { programId } = useApplication(draftId || '');
+  const { updateStep4Data, nextStep, previousStep, draftId, formData } = useApplicationWizard();
+  
+  // Agents query
+  const { data: agentsData, isLoading: agentsLoading } = useAgents();
+  const agents = transformAgentsForSelect(agentsData);
   
   // Form state
-  const [paymentPlan, setPaymentPlan] = useState<string>('');
-  const [installmentCount, setInstallmentCount] = useState<number>(1);
-  const [installmentAmount, setInstallmentAmount] = useState<number>(0);
-
-  // New payment template + anchor state
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-  const [anchor, setAnchor] = useState<'OFFER_LETTER' | 'COMMENCEMENT' | 'CUSTOM'>('OFFER_LETTER');
-  const [anchorDate, setAnchorDate] = useState<string>('');
-  const [derivedSchedule, setDerivedSchedule] = useState<Array<{ description: string; amount: number; dueDate: string }>>([]);
-  const { data: templates } = usePaymentPlanTemplates(programId || undefined);
+  const [hasAgent, setHasAgent] = useState(false);
   
   const {
     register,
@@ -48,140 +42,56 @@ export default function Step5FinancialArrangements() {
     formState: { errors },
     watch,
     setValue,
-  } = useForm<Step5FinancialArrangements>({
+  } = useForm<Step4AgentReferral>({
+    // Keep runtime field type checks, but do not block Next step
+    // resolver: zodResolver(Step4AgentReferralSchema) as any,
     defaultValues: {
-      financialArrangements: {
-        paymentPlan: 'full-upfront',
-        tuitionFeeSnapshot: 0,
-        agentCommissionRateSnapshot: 0,
-        paymentMethod: 'credit-card',
-        installmentCount: 1,
-        installmentAmount: 0,
-        paymentSchedule: [],
-        specialArrangements: '',
-        financialNotes: '',
+      agentReferral: {
+        agentId: (formData as any)?.agentId ?? null,
+        referralSource: (formData as any)?.referralSource ?? '',
+        marketingAttribution: (formData as any)?.marketingAttribution ?? '',
+        referralNotes: (formData as any)?.referralNotes ?? '',
       },
     },
   });
   
   const watchedValues = watch();
 
-  // Autosave draft (Step 5)
+  // Autosave draft (Step 4)
   const { schedule, saveNow } = useAutosave({
     applicationId: draftId || '',
     enabled: Boolean(draftId),
     debounceMs: 1500,
     getPayload: () => ({
-      // Legacy payload retained
-      financialArrangements: watchedValues.financialArrangements,
-      // New payment plan snapshot persisted alongside legacy
-      paymentPlan: {
-        selectedTemplateId: selectedTemplateId || undefined,
-        anchor,
-        anchorDate: anchor === 'CUSTOM' ? (anchorDate || undefined) : (anchor === 'COMMENCEMENT' ? (anchorDate || undefined) : undefined),
-        schedule: derivedSchedule,
-        tuitionFeeSnapshot: Number(derivedSchedule.reduce((s, i) => s + (Number(i.amount) || 0), 0).toFixed(2)),
-      },
+      agentId: watchedValues.agentReferral?.agentId ?? null,
     }),
   });
 
   useEffect(() => {
     schedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(watchedValues.financialArrangements), selectedTemplateId, anchor, anchorDate, JSON.stringify(derivedSchedule)]);
+  }, [watchedValues.agentReferral?.agentId]);
 
-  // Derive schedule from backend based on selection
-  const derive = async () => {
-    if (!draftId || !selectedTemplateId) return;
-    const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/applications/${draftId}/derive-payment-plan`, {
-      method: 'POST',
-      headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        templateId: selectedTemplateId,
-        anchor,
-        ...(anchor === 'CUSTOM' || anchor === 'COMMENCEMENT' ? { anchorDate } : {}),
-      }),
-    });
-    if (!res.ok) {
-      console.error('Failed to derive schedule', await res.text());
-      setDerivedSchedule([]);
-      return;
-    }
-    const data = await res.json();
-    const items = (data?.items ?? []) as Array<{ description: string; amount: number; dueDate: string }>;
-    setDerivedSchedule(items);
-  };
-
+  // Hydrate when formData changes
   useEffect(() => {
-    if (selectedTemplateId) derive();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTemplateId, anchor, anchorDate]);
+    setValue('agentReferral.agentId', (formData as any)?.agentId ?? null);
+    setValue('agentReferral.referralSource', (formData as any)?.referralSource ?? '');
+    setValue('agentReferral.marketingAttribution', (formData as any)?.marketingAttribution ?? '');
+    setValue('agentReferral.referralNotes', (formData as any)?.referralNotes ?? '');
+    setHasAgent(Boolean((formData as any)?.agentId));
+  }, [formData, setValue]);
   
-  // Calculate installment amount when payment plan or tuition fee changes
-  useEffect(() => {
-    const tuitionFee = watchedValues.financialArrangements?.tuitionFeeSnapshot || 0;
-    const plan = watchedValues.financialArrangements?.paymentPlan;
-    const count = watchedValues.financialArrangements?.installmentCount || 1;
-    
-    if (plan === 'installments' && count > 0) {
-      const amount = tuitionFee / count;
-      setInstallmentAmount(amount);
-      setValue('financialArrangements.installmentAmount', amount);
-    } else if (plan === 'full-upfront') {
-      setInstallmentAmount(tuitionFee);
-      setValue('financialArrangements.installmentAmount', tuitionFee);
-    }
-  }, [
-    watchedValues.financialArrangements?.paymentPlan,
-    watchedValues.financialArrangements?.tuitionFeeSnapshot,
-    watchedValues.financialArrangements?.installmentCount,
-    setValue
-  ]);
-  
-  // Generate payment schedule for installments
-  useEffect(() => {
-    const plan = watchedValues.financialArrangements?.paymentPlan;
-    const count = watchedValues.financialArrangements?.installmentCount || 1;
-    const amount = watchedValues.financialArrangements?.installmentAmount || 0;
-    
-    if (plan === 'installments' && count > 1) {
-      const schedule = [];
-      const today = new Date();
-      
-      for (let i = 0; i < count; i++) {
-        const dueDate = new Date(today);
-        dueDate.setMonth(dueDate.getMonth() + i);
-        
-        schedule.push({
-          dueDate: dueDate.toISOString().split('T')[0],
-          amount: amount,
-          status: 'pending' as const,
-        });
-      }
-      
-      setValue('financialArrangements.paymentSchedule', schedule);
-    } else {
-      setValue('financialArrangements.paymentSchedule', []);
-    }
-  }, [
-    watchedValues.financialArrangements?.paymentPlan,
-    watchedValues.financialArrangements?.installmentCount,
-    watchedValues.financialArrangements?.installmentAmount,
-    setValue
-  ]);
-  
-  const onSubmit: SubmitHandler<Step5FinancialArrangements> = async (data) => {
+  const onSubmit: SubmitHandler<Step4AgentReferral> = async (data) => {
     try {
       // Update wizard state
-      updateStep5Data(data);
+      updateStep4Data(data);
       
       // Move to next step
       nextStep();
       
-      // Navigate to review step
-      router.push('/students/new/review');
+      // Navigate to step 5
+      router.push('/students/new/step-6');
     } catch (error) {
-      console.error('Error submitting step 5:', error);
+      console.error('Error submitting step 4:', error);
     }
   };
   
@@ -196,39 +106,13 @@ export default function Step5FinancialArrangements() {
     router.push('/students/new/step-4');
   };
   
-  const handlePaymentPlanChange = (plan: string) => {
-    setPaymentPlan(plan);
-    setValue('financialArrangements.paymentPlan', plan as any);
-    
-    if (plan === 'full-upfront') {
-      setInstallmentCount(1);
-      setValue('financialArrangements.installmentCount', 1);
-    }
-  };
-  
-  const handleInstallmentCountChange = (count: number) => {
-    setInstallmentCount(count);
-    setValue('financialArrangements.installmentCount', count);
-  };
-
-  const formatCurrency = (value: number) => {
-    if (isNaN(value)) return '';
-    return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 2 }).format(value);
-  };
-
-  const handleTuitionBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const num = Number(e.target.value);
-    if (!isNaN(num)) {
-      setValue('financialArrangements.tuitionFeeSnapshot', Number(num.toFixed(2)));
-      e.currentTarget.value = String(Number(num.toFixed(2)));
-    }
-  };
-
-  const handleCommissionBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const num = Number(e.target.value);
-    if (!isNaN(num)) {
-      setValue('financialArrangements.agentCommissionRateSnapshot', Number(num.toFixed(2)));
-      e.currentTarget.value = String(Number(num.toFixed(2)));
+  const handleAgentSelection = (agentId: string) => {
+    if (agentId === 'none') {
+      setHasAgent(false);
+      setValue('agentReferral.agentId', null);
+    } else {
+      setHasAgent(true);
+      setValue('agentReferral.agentId', agentId);
     }
   };
   
@@ -242,202 +126,117 @@ export default function Step5FinancialArrangements() {
         <div className="space-y-8">
           {/* Page Header */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground">Financial Arrangements</h1>
-            <p className="mt-2 text-muted-foreground">Staff: record payment plan and financial arrangements discussed with the client.</p>
+            <h1 className="text-3xl font-bold text-foreground">Agent & Referral</h1>
+            <p className="mt-2 text-muted-foreground">Staff: record agent representation and referral details if applicable.</p>
           </div>
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            {/* Payment Template & Anchor (new flow) */}
+            {/* Agent Selection */}
             <Card>
               <CardHeader>
-                <CardTitle>Payment Plan Template</CardTitle>
+                <CardTitle>Agent Representation</CardTitle>
                 <CardDescription>
-                  Select a program-scoped template and anchor to derive the schedule. Tuition total is derived from instalments.
+                  Is the applicant represented by an educational agent?
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="hasAgent"
+                    checked={hasAgent}
+                    onCheckedChange={(checked) => {
+                      setHasAgent(checked as boolean);
+                      if (!checked) {
+                        setValue('agentReferral.agentId', null);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="hasAgent">
+                    Applicant is represented by an educational agent
+                  </Label>
+                </div>
+                
+                {hasAgent && (
                   <div>
-                    <Label>Template</Label>
-                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                      <SelectTrigger aria-label="Select payment plan template" role="combobox" className="mt-2">
-                        <SelectValue placeholder={programId ? 'Select a template' : 'Select a program first'} />
+                    <Label htmlFor="agent">Select Agent</Label>
+                    <Select onValueChange={handleAgentSelection}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select an agent" />
                       </SelectTrigger>
                       <SelectContent>
-                        {(templates ?? []).map(t => (
-                          <SelectItem key={t.id} value={t.id}>{t.name}{t.is_default ? ' (default)' : ''}</SelectItem>
-                        ))}
+                        <SelectItem value="none">No agent selected</SelectItem>
+                        {agentsLoading ? (
+                          <SelectItem value="loading-agents" disabled>Loading agents...</SelectItem>
+                        ) : (
+                          agents.map((agent) => (
+                            <SelectItem key={agent.value} value={agent.value}>
+                              <div className="flex flex-col">
+                                <span>{agent.label}</span>
+                                {agent.description && (
+                                  <span className="text-sm text-muted-foreground">
+                                    {agent.description}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div>
-                    <Label>Anchor</Label>
-                    <Select value={anchor} onValueChange={(v) => setAnchor(v as any)}>
-                      <SelectTrigger aria-label="Select anchor" role="combobox" className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="OFFER_LETTER">Offer letter date</SelectItem>
-                        <SelectItem value="COMMENCEMENT">Commencement date</SelectItem>
-                        <SelectItem value="CUSTOM">Custom date</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Anchor date</Label>
-                    <Input type="date" value={anchorDate} onChange={(e) => setAnchorDate(e.target.value)} disabled={anchor === 'OFFER_LETTER'} aria-label="Anchor date" className="mt-2" />
-                    {anchor === 'COMMENCEMENT' && !anchorDate && (
-                      <p className="text-xs text-muted-foreground mt-1">Provide commencement date or switch to Offer letter anchor.</p>
+                    {errors.agentReferral?.agentId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.agentReferral.agentId.message}
+                      </p>
+                    )}
+                    
+                    {watchedValues.agentReferral?.agentId && (
+                      <div className="mt-3">
+                        <Label>Selected Agent:</Label>
+                        <div className="mt-1">
+                          {(() => {
+                            const selectedAgent = agents.find(a => a.value === watchedValues.agentReferral?.agentId);
+                            return selectedAgent ? (
+                              <Badge variant="default" className="text-sm">
+                                {selectedAgent.label}
+                                {selectedAgent.description && (
+                                  <span className="ml-2 text-muted-foreground">
+                                    - {selectedAgent.description}
+                                  </span>
+                                )}
+                              </Badge>
+                            ) : null;
+                          })()}
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">Derived schedule</div>
-                    <div className="text-sm">Total: {new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(derivedSchedule.reduce((s, i) => s + (Number(i.amount) || 0), 0))}</div>
-                  </div>
-                  <div className="overflow-x-auto border rounded">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="h-9 text-left">
-                          <th className="px-3">Description</th>
-                          <th className="px-3">Due date</th>
-                          <th className="px-3 text-right">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {derivedSchedule.length === 0 && (
-                          <tr><td className="px-3 py-3 text-muted-foreground" colSpan={3}>Select a template and anchor to derive a schedule.</td></tr>
-                        )}
-                        {derivedSchedule.map((it, i) => (
-                          <tr key={i} className="border-t">
-                            <td className="px-3 py-2">{it.description}</td>
-                            <td className="px-3 py-2">{it.dueDate}</td>
-                            <td className="px-3 py-2 text-right">{new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(it.amount)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
             
-            {/* Agent Commission */}
+            
+            
+            {/* Additional Notes */}
             <Card>
               <CardHeader>
-                <CardTitle>Agent Commission</CardTitle>
+                <CardTitle>Additional Information</CardTitle>
                 <CardDescription>
-                  Commission rate for the agent (if applicable)
+                  Any additional notes about the referral or agent representation
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div>
-                  <Label htmlFor="agentCommission">Agent Commission Rate (%)</Label>
-                  <Input
-                    id="agentCommission"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    aria-label="Agent commission rate in percent"
-                    placeholder="e.g., 10"
-                    {...register('financialArrangements.agentCommissionRateSnapshot', { valueAsNumber: true })}
-                    className={`mt-2 ${errors.financialArrangements?.agentCommissionRateSnapshot ? 'border-red-500' : ''}`}
-                    onBlur={handleCommissionBlur}
-                  />
-                  {errors.financialArrangements?.agentCommissionRateSnapshot && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.agentCommissionRateSnapshot.message}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Legacy Payment Plan card removed per new template-driven flow */}
-            
-            {/* Legacy Payment Method card removed per new template-driven flow */}
-            
-            {/* Payment Schedule */}
-            {watchedValues.financialArrangements?.paymentSchedule && 
-             watchedValues.financialArrangements.paymentSchedule.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Schedule</CardTitle>
-                  <CardDescription>
-                    Payment schedule breakdown
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {watchedValues.financialArrangements.paymentSchedule.map((payment, index) => (
-                      <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                        <div>
-                          <span className="font-medium">Payment {index + 1}</span>
-                          <div className="text-sm text-muted-foreground">
-                            Due: {new Date(payment.dueDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <Badge variant="outline">
-                          ${payment.amount.toFixed(2)} AUD
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* Special Arrangements */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Special Arrangements</CardTitle>
-                <CardDescription>
-                  Any special financial arrangements or considerations
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label htmlFor="specialArrangements">Special Arrangements</Label>
+                  <Label htmlFor="referralNotes">Referral Notes</Label>
                   <Textarea
-                    id="specialArrangements"
-                    {...register('financialArrangements.specialArrangements')}
-                    placeholder="Please describe any special financial arrangements..."
-                    rows={3}
-                    className={`mt-2 ${errors.financialArrangements?.specialArrangements ? 'border-red-500' : ''}`}
+                    id="referralNotes"
+                    {...register('agentReferral.referralNotes')}
+                    placeholder="Provide any additional information about how the applicant heard about the institution or agent representation..."
+                    rows={4}
+                    className={(errors.agentReferral?.referralNotes ? 'border-red-500 ' : '') + 'mt-2'}
                   />
-                  {errors.financialArrangements?.specialArrangements && (
+                  {errors.agentReferral?.referralNotes && (
                     <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.specialArrangements.message}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Financial Notes */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Additional Notes</CardTitle>
-                <CardDescription>
-                  Any additional financial notes or comments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label htmlFor="financialNotes">Financial Notes</Label>
-                  <Textarea
-                    id="financialNotes"
-                    {...register('financialArrangements.financialNotes')}
-                    placeholder="Please provide any additional financial notes..."
-                    rows={3}
-                    className={`mt-2 ${errors.financialArrangements?.financialNotes ? 'border-red-500' : ''}`}
-                  />
-                  {errors.financialArrangements?.financialNotes && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.financialNotes.message}
+                      {errors.agentReferral.referralNotes.message}
                     </p>
                   )}
                 </div>
@@ -447,47 +246,42 @@ export default function Step5FinancialArrangements() {
             {/* Summary */}
             <Card>
               <CardHeader>
-                <CardTitle>Financial Summary</CardTitle>
+                <CardTitle>Summary</CardTitle>
                 <CardDescription>
-                  Review financial arrangements
+                  Review the agent and referral information
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="font-medium">Total Tuition Fee:</span>
+                  <span className="font-medium">Agent Representation:</span>
                   <span className="text-muted-foreground">
-                    {formatCurrency(Number(watchedValues.financialArrangements?.tuitionFeeSnapshot ?? 0))}
+                    {hasAgent ? 'Yes' : 'No'}
                   </span>
                 </div>
                 
-                <div className="flex justify-between">
-                  <span className="font-medium">Payment Plan:</span>
-                  <span className="text-muted-foreground">
-                    {watchedValues.financialArrangements?.paymentPlan?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not selected'}
-                  </span>
-                </div>
-                
-                {watchedValues.financialArrangements?.paymentPlan === 'installments' && (
+                {hasAgent && watchedValues.agentReferral?.agentId && (
                   <div className="flex justify-between">
-                    <span className="font-medium">Installments:</span>
+                    <span className="font-medium">Selected Agent:</span>
                     <span className="text-muted-foreground">
-                      {watchedValues.financialArrangements?.installmentCount} payments
+                      {agents.find(a => a.value === watchedValues.agentReferral?.agentId)?.label || 'Not selected'}
                     </span>
                   </div>
                 )}
                 
-                <div className="flex justify-between">
-                  <span className="font-medium">Payment Method:</span>
-                  <span className="text-muted-foreground">
-                    {watchedValues.financialArrangements?.paymentMethod?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not selected'}
-                  </span>
-                </div>
-                
-                {watchedValues.financialArrangements?.agentCommissionRateSnapshot && (
+                {watchedValues.agentReferral?.referralSource && (
                   <div className="flex justify-between">
-                    <span className="font-medium">Agent Commission:</span>
+                    <span className="font-medium">Referral Source:</span>
                     <span className="text-muted-foreground">
-                      {watchedValues.financialArrangements.agentCommissionRateSnapshot}%
+                      {watchedValues.agentReferral.referralSource}
+                    </span>
+                  </div>
+                )}
+                
+                {watchedValues.agentReferral?.marketingAttribution && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Marketing Attribution:</span>
+                    <span className="text-muted-foreground">
+                      {watchedValues.agentReferral.marketingAttribution}
                     </span>
                   </div>
                 )}
@@ -500,7 +294,7 @@ export default function Step5FinancialArrangements() {
                 Previous Step
               </Button>
               <Button type="button" onClick={handleNext}>
-                Review Application
+                Next Step
               </Button>
             </div>
           </form>

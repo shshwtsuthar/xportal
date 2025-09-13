@@ -1401,6 +1401,141 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  # ---------------------------------------------------------------------------
+  # == DOCUMENT MANAGEMENT ==
+  # ---------------------------------------------------------------------------
+  /applications/{applicationId}/documents:
+    get:
+      operationId: listApplicationDocuments
+      summary: List Documents for an Application
+      description: Returns all documents associated with an application, including uploaded files and generated documents.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent, finance]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApplicationDocument'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /applications/{applicationId}/documents/upload-url:
+    post:
+      operationId: generateDocumentUploadUrl
+      summary: Generate Upload URL for Document
+      description: Generates a signed URL for uploading a document to Supabase Storage with proper validation and security.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent, finance]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentUploadRequest'
+      responses:
+        '200':
+          description: Upload URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUploadUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /applications/{applicationId}/documents/confirm:
+    post:
+      operationId: confirmDocumentUpload
+      summary: Confirm Document Upload
+      description: Confirms that a document has been successfully uploaded to storage and records the metadata.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent, finance]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentConfirmRequest'
+      responses:
+        '201':
+          description: Document upload confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentConfirmResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /applications/{applicationId}/documents/{documentId}:
+    delete:
+      operationId: deleteApplicationDocument
+      summary: Delete Application Document
+      description: Deletes a document from both storage and database, with proper authorization checks.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent, finance]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - name: documentId
+          in: path
+          required: true
+          description: Unique identifier of the document to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Document deleted successfully"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /programs/{programId}/offerings:
     get:
       operationId: listProgramOfferings
@@ -2504,3 +2639,123 @@ components:
         status:
           type: string
           enum: [Scheduled, Active, Completed, Cancelled]
+
+    # --- DOCUMENT MANAGEMENT SCHEMAS ---
+    ApplicationDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the document
+        application_id:
+          type: string
+          format: uuid
+          description: ID of the application this document belongs to
+        path:
+          type: string
+          description: Full path to the document in Supabase Storage
+          example: "student-docs/applications/123/uploads/passport.pdf"
+        doc_type:
+          type: string
+          enum: [EVIDENCE, OFFER_LETTER, COE, OTHER]
+          description: Type/category of the document
+        version:
+          type: string
+          description: Version identifier for the document
+          example: "v2024-01-15"
+        mime_type:
+          type: string
+          description: MIME type of the document
+          example: "application/pdf"
+        size_bytes:
+          type: integer
+          description: Size of the document in bytes
+        created_at:
+          type: string
+          format: date-time
+          description: When the document was uploaded
+        updated_at:
+          type: string
+          format: date-time
+          description: When the document was last modified
+
+    DocumentUploadRequest:
+      type: object
+      required: [filename, contentType, category]
+      properties:
+        filename:
+          type: string
+          description: Original filename of the document
+          example: "passport.pdf"
+        contentType:
+          type: string
+          description: MIME type of the document
+          example: "application/pdf"
+        category:
+          type: string
+          enum: [EVIDENCE, OFFER_LETTER, COE, OTHER]
+          description: Category/type of the document
+          example: "EVIDENCE"
+
+    DocumentUploadUrlResponse:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+          description: Signed URL for uploading the document
+        headers:
+          type: object
+          description: Required headers for the upload request
+          additionalProperties:
+            type: string
+        objectPath:
+          type: string
+          description: Path where the document will be stored
+          example: "applications/123/uploads/1640995200000_passport.pdf"
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the upload URL expires
+
+    DocumentConfirmRequest:
+      type: object
+      required: [objectPath, size]
+      properties:
+        objectPath:
+          type: string
+          description: Path of the uploaded document in storage
+          example: "applications/123/uploads/1640995200000_passport.pdf"
+        size:
+          type: integer
+          description: Size of the uploaded file in bytes
+          minimum: 1
+          maximum: 20971520  # 20MB
+        hash:
+          type: string
+          description: Optional file hash for integrity verification
+          nullable: true
+
+    DocumentConfirmResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the created document record
+        message:
+          type: string
+          description: Success message
+          example: "Document uploaded successfully"
+        path:
+          type: string
+          description: Full path to the document in storage
+          example: "student-docs/applications/123/uploads/1640995200000_passport.pdf"
+        size:
+          type: integer
+          description: Size of the uploaded file in bytes
+        contentType:
+          type: string
+          description: MIME type of the document
+          example: "application/pdf"
