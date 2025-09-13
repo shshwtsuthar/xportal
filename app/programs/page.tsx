@@ -8,14 +8,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   BookOpenText, 
   CalendarDays, 
-  CreditCard,
   AlertCircle,
   Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProgramSelector } from './_components/ProgramSelector';
 import { AdvancedCoursePlans } from './_components/AdvancedCoursePlans';
-import { PaymentTemplates } from './_components/PaymentTemplates';
 import { Offerings } from './_components/Offerings';
 import { usePrograms } from '@/hooks/use-programs';
 
@@ -70,7 +68,7 @@ export default function ProgramsPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Programs & Courses</h1>
-            <p className="text-muted-foreground">Manage programs, course plans, payment templates, and offerings</p>
+            <p className="text-muted-foreground">Manage programs, course plans, and offerings</p>
           </div>
         </div>
 
@@ -92,7 +90,7 @@ export default function ProgramsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Programs & Courses</h1>
-          <p className="text-muted-foreground">Manage programs, course plans, payment templates, and offerings</p>
+            <p className="text-muted-foreground">Manage programs, course plans, and offerings</p>
         </div>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
@@ -101,7 +99,7 @@ export default function ProgramsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -140,24 +138,6 @@ export default function ProgramsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Payment Templates
-            </CardTitle>
-            <div className="p-2 rounded-full bg-muted">
-              <CreditCard className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              --
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Payment plan templates
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Program Selector */}
@@ -189,18 +169,13 @@ export default function ProgramsPage() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="course-plans" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="course-plans">Course Plans</TabsTrigger>
-                <TabsTrigger value="payment-templates">Payment Templates</TabsTrigger>
                 <TabsTrigger value="offerings">Offerings</TabsTrigger>
               </TabsList>
               
               <TabsContent value="course-plans" className="mt-6">
                 <AdvancedCoursePlans programId={selectedProgramId} />
-              </TabsContent>
-              
-              <TabsContent value="payment-templates" className="mt-6">
-                <PaymentTemplates programId={selectedProgramId} />
               </TabsContent>
               
               <TabsContent value="offerings" className="mt-6">
@@ -215,7 +190,7 @@ export default function ProgramsPage() {
             <BookOpenText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">Select a Program</h3>
             <p className="text-muted-foreground">
-              Choose a program from the dropdown above to manage its course plans, payment templates, and offerings.
+              Choose a program from the dropdown above to manage its course plans and offerings.
             </p>
           </CardContent>
         </Card>

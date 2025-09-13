@@ -491,22 +491,22 @@ export const AdvancedCoursePlans = ({ programId }: Props) => {
 
       {/* Advanced Editor Modal */}
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-6xl p-0">
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4">
+        <DialogContent className="w-[95vw] sm:max-w-6xl p-0 flex flex-col h-[90vh]">
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4 flex-shrink-0">
             <DialogHeader>
               <DialogTitle>Advanced Course Plan Editor</DialogTitle>
             </DialogHeader>
           </div>
           
-          <div className="p-4 max-h-[80vh] overflow-y-auto">
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-4">
+          <div className="flex-1 min-h-0 p-4">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-4 h-full flex flex-col">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="subjects">Subjects & Structure</TabsTrigger>
                 <TabsTrigger value="prerequisites">Prerequisites</TabsTrigger>
                 <TabsTrigger value="preview">Progression Preview</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="subjects" className="space-y-4">
+              <TabsContent value="subjects" className="space-y-4 overflow-y-auto flex-1">
                 {/* Subjects Editor - Similar to Payment Templates */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -556,7 +556,8 @@ export const AdvancedCoursePlans = ({ programId }: Props) => {
                         No subjects added yet. Use "Add Subjects" to get started.
                       </p>
                     )}
-                    {subjectsData.map((subject, idx) => {
+                    <div className="max-h-80 overflow-y-auto space-y-3">
+                      {subjectsData.map((subject, idx) => {
                       const subjectInfo = subjects?.data?.find(s => s.id === subject.subject_id);
                       return (
                         <div key={idx} className="grid grid-cols-12 gap-3 items-center border rounded-md p-3">
@@ -645,11 +646,12 @@ export const AdvancedCoursePlans = ({ programId }: Props) => {
                         </div>
                       );
                     })}
+                    </div>
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="prerequisites" className="space-y-4">
+              <TabsContent value="prerequisites" className="space-y-4 overflow-y-auto flex-1">
                 {/* Prerequisites Editor */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -671,7 +673,8 @@ export const AdvancedCoursePlans = ({ programId }: Props) => {
                         No prerequisites defined yet. Add prerequisite rules to control subject progression.
                       </p>
                     )}
-                    {prerequisitesData.map((prereq, idx) => {
+                    <div className="max-h-80 overflow-y-auto space-y-3">
+                      {prerequisitesData.map((prereq, idx) => {
                       const subjectInfo = subjects?.data?.find(s => s.id === prereq.subject_id);
                       const prereqInfo = subjects?.data?.find(s => s.id === prereq.prerequisite_subject_id);
                       
@@ -761,11 +764,12 @@ export const AdvancedCoursePlans = ({ programId }: Props) => {
                         </div>
                       );
                     })}
+                    </div>
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="preview" className="space-y-4">
+              <TabsContent value="preview" className="space-y-4 overflow-y-auto flex-1">
                 {/* Progression Preview */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -875,7 +879,7 @@ export const AdvancedCoursePlans = ({ programId }: Props) => {
             </Tabs>
           </div>
 
-          <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t p-4">
+          <div className="border-t p-4 flex-shrink-0 bg-background">
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setEditorOpen(false)}>
                 Cancel

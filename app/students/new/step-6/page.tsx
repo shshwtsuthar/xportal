@@ -18,6 +18,7 @@ import { Step5FinancialArrangementsSchema } from '@/lib/schemas/application-sche
 import { useAutosave } from '@/hooks/use-autosave';
 import { usePaymentPlanTemplates } from '@/hooks/use-payment-templates';
 import { useApplication } from '@/hooks/use-application';
+import { usePrograms, transformProgramsForSelect } from '@/hooks/use-programs';
 import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 
 // =============================================================================
@@ -28,7 +29,15 @@ import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 export default function Step5FinancialArrangements() {
   const router = useRouter();
   const { updateStep5Data, nextStep, previousStep, draftId } = useApplicationWizard();
-  const { programId } = useApplication(draftId || '');
+  const { programId: applicationProgramId } = useApplication(draftId || '');
+  
+  // Program selection state (fallback if no program selected in earlier steps)
+  const [selectedProgramId, setSelectedProgramId] = useState<string>(applicationProgramId || '');
+  const { data: programsData, isLoading: programsLoading } = usePrograms();
+  const programs = transformProgramsForSelect(programsData);
+  
+  // Use selected program ID or fall back to application program ID
+  const currentProgramId = selectedProgramId || applicationProgramId;
   
   // Form state
   const [paymentPlan, setPaymentPlan] = useState<string>('');
@@ -40,7 +49,7 @@ export default function Step5FinancialArrangements() {
   const [anchor, setAnchor] = useState<'OFFER_LETTER' | 'COMMENCEMENT' | 'CUSTOM'>('OFFER_LETTER');
   const [anchorDate, setAnchorDate] = useState<string>('');
   const [derivedSchedule, setDerivedSchedule] = useState<Array<{ description: string; amount: number; dueDate: string }>>([]);
-  const { data: templates } = usePaymentPlanTemplates(programId || undefined);
+  const { data: templates, isLoading: templatesLoading, error: templatesError } = usePaymentPlanTemplates(currentProgramId || undefined);
   
   const {
     register,
@@ -82,17 +91,21 @@ export default function Step5FinancialArrangements() {
         schedule: derivedSchedule,
         tuitionFeeSnapshot: Number(derivedSchedule.reduce((s, i) => s + (Number(i.amount) || 0), 0).toFixed(2)),
       },
+      // Include program selection if changed
+      ...(selectedProgramId && selectedProgramId !== applicationProgramId ? {
+        enrolmentDetails: { programId: selectedProgramId }
+      } : {}),
     }),
   });
 
   useEffect(() => {
     schedule();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(watchedValues.financialArrangements), selectedTemplateId, anchor, anchorDate, JSON.stringify(derivedSchedule)]);
+  }, [JSON.stringify(watchedValues.financialArrangements), selectedTemplateId, anchor, anchorDate, JSON.stringify(derivedSchedule), selectedProgramId]);
 
   // Derive schedule from backend based on selection
   const derive = async () => {
-    if (!draftId || !selectedTemplateId) return;
+    if (!draftId || !selectedTemplateId || !currentProgramId) return;
     const res = await fetch(`${FUNCTIONS_URL}/payment-plan-templates/applications/${draftId}/derive-payment-plan`, {
       method: 'POST',
       headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
@@ -247,6 +260,37 @@ export default function Step5FinancialArrangements() {
           </div>
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+            {/* Program Selection (fallback if not selected in earlier steps) */}
+            {!applicationProgramId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Program Selection</CardTitle>
+                  <CardDescription>
+                    Select a program to view its payment plan templates.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <Label>Program</Label>
+                    <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
+                      <SelectTrigger aria-label="Select program" role="combobox" className="mt-2">
+                        <SelectValue placeholder="Select a program" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {programsLoading && (
+                          <SelectItem value="loading" disabled>Loading programs...</SelectItem>
+                        )}
+                        {programs.map(program => (
+                          <SelectItem key={program.value} value={program.value}>
+                            {program.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {/* Payment Template & Anchor (new flow) */}
             <Card>
               <CardHeader>
@@ -261,9 +305,18 @@ export default function Step5FinancialArrangements() {
                     <Label>Template</Label>
                     <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
                       <SelectTrigger aria-label="Select payment plan template" role="combobox" className="mt-2">
-                        <SelectValue placeholder={programId ? 'Select a template' : 'Select a program first'} />
+                        <SelectValue placeholder={currentProgramId ? 'Select a template' : 'Select a program first'} />
                       </SelectTrigger>
                       <SelectContent>
+                        {templatesLoading && (
+                          <SelectItem value="loading" disabled>Loading templates...</SelectItem>
+                        )}
+                        {templatesError && (
+                          <SelectItem value="error" disabled>Error loading templates</SelectItem>
+                        )}
+                        {!templatesLoading && !templatesError && (!templates || templates.length === 0) && (
+                          <SelectItem value="no-templates" disabled>No templates available</SelectItem>
+                        )}
                         {(templates ?? []).map(t => (
                           <SelectItem key={t.id} value={t.id}>{t.name}{t.is_default ? ' (default)' : ''}</SelectItem>
                         ))}

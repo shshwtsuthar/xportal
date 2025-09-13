@@ -118,6 +118,69 @@
 
 ---
 
+## 2025-09-13 — Payment Templates Migration & Enhanced Finance Management
+
+### Business Logic (authoritative summary)
+- **Payment Templates Migration**: Moved payment templates from Programs page to dedicated Finance section
+- **Enhanced Finance Structure**: Created comprehensive finance management system with dedicated payment plans page
+- **Improved User Experience**: Separated concerns between program management and financial management
+
+### Frontend — Payment Templates Migration
+- **New Finance Page**: Created dedicated `/finance/payment-plans` page with advanced payment template management
+  - **Enhanced UI**: Modern, polished interface with comprehensive template management
+  - **Advanced Features**: Template duplication, bulk operations, enhanced preview system
+  - **Better Organization**: Templates organized in a clean grid layout with detailed previews
+- **Removed from Programs**: Eliminated payment templates tab from programs page for better separation of concerns
+- **Updated Navigation**: Enhanced sidebar navigation with proper Finance section organization
+
+### Frontend — Advanced Payment Templates Component
+- **Enhanced Template Management**: 
+  - **Template Grid**: Clean, organized display of all payment templates with status indicators
+  - **Template Details**: Comprehensive template information with instalment previews
+  - **Advanced Editor**: Full-featured modal editor with enhanced UI and better user experience
+- **Improved Functionality**:
+  - **Template Duplication**: Easy duplication of existing templates with custom names
+  - **Enhanced Presets**: Quick preset templates for common payment structures
+  - **Bulk Operations**: Advanced tools for managing multiple instalments simultaneously
+  - **Real-time Preview**: Live preview of payment schedules with actual dates
+- **Better User Experience**:
+  - **Loading States**: Comprehensive skeleton loading states throughout the interface
+  - **Error Handling**: Improved error messages and validation feedback
+  - **Responsive Design**: Mobile-first design with proper responsive layouts
+  - **Accessibility**: Enhanced accessibility with proper ARIA labels and keyboard navigation
+
+### Frontend — Enhanced Finance Dashboard
+- **Comprehensive Stats**: Real-time statistics showing total templates, active programs, and financial metrics
+- **Program Integration**: Seamless integration with existing program management system
+- **Smart Selection**: Program selector with payment plan context and statistics
+- **Visual Indicators**: Clear visual feedback for default templates and template status
+
+### Frontend — Programs Page Cleanup
+- **Simplified Interface**: Removed payment templates tab for cleaner, more focused program management
+- **Updated Layout**: Adjusted grid layout from 3 columns to 2 columns after removing payment templates
+- **Cleaner Navigation**: Streamlined tabs with only Course Plans and Offerings
+- **Updated Descriptions**: Revised page descriptions to reflect the new structure
+
+### Technical Improvements
+- **Component Architecture**: Created modular, reusable components for payment template management
+- **Type Safety**: Maintained full TypeScript compliance throughout the migration
+- **Performance**: Optimized component rendering with proper state management
+- **Code Organization**: Better separation of concerns between program and finance management
+
+### Navigation & UX Enhancements
+- **Finance Section**: Properly organized Finance section in sidebar navigation
+- **Icon Updates**: Updated payment plans icon to CalendarDays for better visual distinction
+- **Breadcrumb Context**: Clear navigation context for finance-related operations
+- **Consistent Design**: Maintained ShadCN design system consistency throughout
+
+### Migration Benefits
+- **Better Organization**: Clear separation between academic and financial management
+- **Enhanced Usability**: Dedicated space for comprehensive payment template management
+- **Improved Scalability**: Better foundation for future finance-related features
+- **User Experience**: More intuitive workflow for finance operations
+
+---
+
 ## 2025-09-11 — Application Wizard Pipeline, Offer/Email, Status Flow, CoE Upload
 
 ### Business Logic (authoritative summary)

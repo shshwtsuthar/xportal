@@ -65,7 +65,7 @@ const agents: NavItem[] = [
 const finance: NavItem[] = [
   { title: "Invoices", href: "/finance/invoices", icon: FileText },
   { title: "Payments", href: "/finance/payments", icon: BadgeDollarSign },
-  { title: "Payment Plans", href: "/finance/payment-plans", icon: BadgeDollarSign },
+  { title: "Payment Plans", href: "/finance/payment-plans", icon: CalendarDays },
   { title: "Commissions", href: "/finance/commissions", icon: BadgeDollarSign },
   { title: "Reports", href: "/finance/reports", icon: BarChart3 },
 ];
