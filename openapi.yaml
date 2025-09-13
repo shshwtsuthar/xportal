@@ -1536,6 +1536,46 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  # ---------------------------------------------------------------------------
+  # == PASSPORT PROCESSING ==
+  # ---------------------------------------------------------------------------
+  /passport-process:
+    post:
+      operationId: processPassport
+      summary: Process Passport Document with Mindee API
+      description: |
+        Processes a passport document using Mindee API to extract personal information
+        and automatically populate application form fields. This endpoint is called
+        automatically when a document with "passport" in the filename is uploaded.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent, finance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassportProcessRequest'
+      responses:
+        '200':
+          description: Passport processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassportProcessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Internal server error during passport processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /programs/{programId}/offerings:
     get:
       operationId: listProgramOfferings
@@ -2759,3 +2799,104 @@ components:
           type: string
           description: MIME type of the document
           example: "application/pdf"
+
+    # --- PASSPORT PROCESSING SCHEMAS ---
+    PassportProcessRequest:
+      type: object
+      required: [applicationId, documentId, documentPath]
+      properties:
+        applicationId:
+          type: string
+          format: uuid
+          description: ID of the application to update with extracted data
+        documentId:
+          type: string
+          format: uuid
+          description: ID of the document being processed
+        documentPath:
+          type: string
+          description: Path to the document in Supabase Storage
+          example: "student-docs/applications/123/uploads/passport.pdf"
+
+    PassportProcessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message
+          example: "Passport processed successfully"
+        extractedData:
+          $ref: '#/components/schemas/ExtractedPassportData'
+        fieldsExtracted:
+          type: array
+          items:
+            type: string
+          description: List of field names that were successfully extracted
+          example: ["firstName", "lastName", "gender", "dateOfBirth"]
+
+    ExtractedPassportData:
+      type: object
+      description: Personal information extracted from passport document
+      properties:
+        firstName:
+          type: string
+          nullable: true
+          description: Extracted first name
+          example: "SIMRAN"
+        lastName:
+          type: string
+          nullable: true
+          description: Extracted last name
+          example: "KAUR"
+        gender:
+          type: string
+          enum: [Male, Female, Other]
+          nullable: true
+          description: Extracted gender
+          example: "Female"
+        dateOfBirth:
+          type: string
+          format: date
+          nullable: true
+          description: Extracted date of birth in YYYY-MM-DD format
+          example: "1997-06-12"
+        nationality:
+          type: string
+          nullable: true
+          description: Extracted nationality
+          example: "INDIAN"
+        placeOfBirth:
+          type: string
+          nullable: true
+          description: Extracted place of birth
+          example: "PUNJAB"
+        passportNumber:
+          type: string
+          nullable: true
+          description: Extracted passport number
+          example: "N6975116"
+        issuingCountry:
+          type: string
+          nullable: true
+          description: Extracted issuing country code
+          example: "IND"
+        dateOfIssue:
+          type: string
+          format: date
+          nullable: true
+          description: Extracted date of issue in YYYY-MM-DD format
+          example: "2016-02-01"
+        dateOfExpiry:
+          type: string
+          format: date
+          nullable: true
+          description: Extracted date of expiry in YYYY-MM-DD format
+          example: "2026-02-09"
+        mrzLine1:
+          type: string
+          nullable: true
+          description: Extracted MRZ line 1
+        mrzLine2:
+          type: string
+          nullable: true
+          description: Extracted MRZ line 2

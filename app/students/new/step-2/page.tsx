@@ -14,6 +14,7 @@ import { WizardProgress } from '../components/wizard-progress';
 import { useApplicationWizard } from '@/stores/application-wizard';
 import { Step1PersonalInfoSchema, Step1PersonalInfo } from '@/lib/schemas/application-schemas';
 import { useAutosave } from '@/hooks/use-autosave';
+import { useDocumentUpload } from '@/hooks/use-document-upload';
  
 // =============================================================================
 // STEP 1: PERSONAL INFORMATION
@@ -27,6 +28,9 @@ export default function Step1PersonalInformation() {
   const [isPostalSameAsResidential, setIsPostalSameAsResidential] = useState<boolean>(
     formData?.address?.isPostalSameAsResidential ?? true
   );
+  
+  // Get passport processing data
+  const { lastExtractedData } = useDocumentUpload(draftId || '');
   
   const {
     register,
@@ -189,7 +193,12 @@ export default function Step1PersonalInformation() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="firstName">First Name</Label>
+                    <Label htmlFor="firstName" className="flex items-center gap-2">
+                      First Name
+                      {lastExtractedData?.firstName && (
+                        <span className="text-green-600" title="Auto-filled from passport">✅</span>
+                      )}
+                    </Label>
                     <Input
                       id="firstName"
                       {...register('personalDetails.firstName')}
@@ -203,7 +212,12 @@ export default function Step1PersonalInformation() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="lastName">Last Name</Label>
+                    <Label htmlFor="lastName" className="flex items-center gap-2">
+                      Last Name
+                      {lastExtractedData?.lastName && (
+                        <span className="text-green-600" title="Auto-filled from passport">✅</span>
+                      )}
+                    </Label>
                     <Input
                       id="lastName"
                       {...register('personalDetails.lastName')}
@@ -219,7 +233,12 @@ export default function Step1PersonalInformation() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Label htmlFor="dateOfBirth" className="flex items-center gap-2">
+                      Date of Birth
+                      {lastExtractedData?.dateOfBirth && (
+                        <span className="text-green-600" title="Auto-filled from passport">✅</span>
+                      )}
+                    </Label>
                     <Input
                       id="dateOfBirth"
                       type="date"
@@ -236,7 +255,12 @@ export default function Step1PersonalInformation() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="gender">Gender</Label>
+                    <Label htmlFor="gender" className="flex items-center gap-2">
+                      Gender
+                      {lastExtractedData?.gender && (
+                        <span className="text-green-600" title="Auto-filled from passport">✅</span>
+                      )}
+                    </Label>
                     <Select value={watch('personalDetails.gender') || undefined} onValueChange={(value) => setValue('personalDetails.gender', value as 'Male' | 'Female' | 'Other')}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Select gender" />

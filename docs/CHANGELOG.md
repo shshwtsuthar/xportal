@@ -61,4 +61,46 @@
 ### Next (Phase 10 — E2E & hardening)
 - Newman suites for happy path and negative cases; Assert logs/transition details; optional correlation-id pass-through; optional funds gating (APPROVAL_REQUIRE_FUNDS off by default).
 
+---
+
+## 2025-01-27 — Passport Processing Feature
+
+### Added
+- **Passport Processing Feature**: Automatic data extraction from passport documents using Mindee API
+  - Auto-detection of passport files during upload (filename contains "passport")
+  - Automatic form field population with extracted data
+  - Visual feedback with emoji indicators (✅) for auto-filled fields
+  - Country code mapping for nationality and issuing country conversion
+  - Graceful error handling and partial data extraction
+  - New `/passport-process` API endpoint with comprehensive OpenAPI specification
+
+### Backend — Supabase Edge Functions
+- **New Function**: `passport-process/index.ts`
+  - Integrates with Mindee API for passport data extraction
+  - Validates extracted data format and completeness
+  - Maps country codes to internal system identifiers
+  - Updates application payload with extracted personal information
+  - Handles CRICOS details for international students
+  - Stores raw extraction data for reference
+
+### Frontend — Document Upload & Form Integration
+- **Enhanced Document Upload**: Automatic passport processing on upload
+- **UI Feedback**: Success notifications and emoji indicators for auto-filled fields
+- **Form Integration**: Seamless data population in Step 2 (Personal Information)
+- **Error Handling**: Graceful fallback when processing fails
+
+### API Specification
+- **New Endpoint**: `POST /passport-process`
+- **New Schemas**: `PassportProcessRequest`, `PassportProcessResponse`, `ExtractedPassportData`
+- **Type Generation**: Updated for both frontend and backend
+
+### Environment Configuration
+- **Mindee API**: Added `MINDEE_API_KEY` and `MINDEE_MODEL_ID` to `.env.local`
+- **Security**: API keys stored server-side, never exposed to client
+
+### Data Mapping
+- **Personal Details**: First name, last name, gender, date of birth
+- **International Students**: Passport number, issuing country, expiry date
+- **Additional Data**: Nationality, place of birth, MRZ data for verification
+
 

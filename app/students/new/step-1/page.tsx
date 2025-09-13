@@ -18,7 +18,13 @@ import { useDocumentUpload } from '@/hooks/use-document-upload';
 export default function Step1DocumentUpload() {
   const router = useRouter();
   const { nextStep, draftId } = useApplicationWizard();
-  const { documents, isLoading, uploadFile, deleteDocument, refreshDocuments } = useDocumentUpload(draftId || '');
+  const { 
+    documents, 
+    isLoading, 
+    uploadFile, 
+    deleteDocument, 
+    refreshDocuments
+  } = useDocumentUpload(draftId || '');
 
   const handleNext = () => {
     nextStep();
@@ -77,6 +83,7 @@ export default function Step1DocumentUpload() {
               <DocumentDropzone onFileUpload={handleFileUpload} />
             </CardContent>
           </Card>
+
 
           {/* Document List Section */}
           <Card>

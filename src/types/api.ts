@@ -814,6 +814,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/passport-process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Process Passport Document with Mindee API
+         * @description Processes a passport document using Mindee API to extract personal information
+         *     and automatically populate application form fields. This endpoint is called
+         *     automatically when a document with "passport" in the filename is uploaded.
+         *
+         */
+        post: operations["processPassport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/programs/{programId}/offerings": {
         parameters: {
             query?: never;
@@ -1642,6 +1665,102 @@ export interface components {
              * @example application/pdf
              */
             contentType?: string;
+        };
+        PassportProcessRequest: {
+            /**
+             * Format: uuid
+             * @description ID of the application to update with extracted data
+             */
+            applicationId: string;
+            /**
+             * Format: uuid
+             * @description ID of the document being processed
+             */
+            documentId: string;
+            /**
+             * @description Path to the document in Supabase Storage
+             * @example student-docs/applications/123/uploads/passport.pdf
+             */
+            documentPath: string;
+        };
+        PassportProcessResponse: {
+            /**
+             * @description Success message
+             * @example Passport processed successfully
+             */
+            message?: string;
+            extractedData?: components["schemas"]["ExtractedPassportData"];
+            /**
+             * @description List of field names that were successfully extracted
+             * @example [
+             *       "firstName",
+             *       "lastName",
+             *       "gender",
+             *       "dateOfBirth"
+             *     ]
+             */
+            fieldsExtracted?: string[];
+        };
+        /** @description Personal information extracted from passport document */
+        ExtractedPassportData: {
+            /**
+             * @description Extracted first name
+             * @example SIMRAN
+             */
+            firstName?: string | null;
+            /**
+             * @description Extracted last name
+             * @example KAUR
+             */
+            lastName?: string | null;
+            /**
+             * @description Extracted gender
+             * @example Female
+             * @enum {string|null}
+             */
+            gender?: "Male" | "Female" | "Other" | null;
+            /**
+             * Format: date
+             * @description Extracted date of birth in YYYY-MM-DD format
+             * @example 1997-06-12
+             */
+            dateOfBirth?: string | null;
+            /**
+             * @description Extracted nationality
+             * @example INDIAN
+             */
+            nationality?: string | null;
+            /**
+             * @description Extracted place of birth
+             * @example PUNJAB
+             */
+            placeOfBirth?: string | null;
+            /**
+             * @description Extracted passport number
+             * @example N6975116
+             */
+            passportNumber?: string | null;
+            /**
+             * @description Extracted issuing country code
+             * @example IND
+             */
+            issuingCountry?: string | null;
+            /**
+             * Format: date
+             * @description Extracted date of issue in YYYY-MM-DD format
+             * @example 2016-02-01
+             */
+            dateOfIssue?: string | null;
+            /**
+             * Format: date
+             * @description Extracted date of expiry in YYYY-MM-DD format
+             * @example 2026-02-09
+             */
+            dateOfExpiry?: string | null;
+            /** @description Extracted MRZ line 1 */
+            mrzLine1?: string | null;
+            /** @description Extracted MRZ line 2 */
+            mrzLine2?: string | null;
         };
     };
     responses: {
@@ -3020,6 +3139,42 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    processPassport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PassportProcessRequest"];
+            };
+        };
+        responses: {
+            /** @description Passport processed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PassportProcessResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Internal server error during passport processing */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     listProgramOfferings: {

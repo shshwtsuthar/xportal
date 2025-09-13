@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFunctionHeaders } from '@/lib/utils';
+import { usePassportProcessing } from './use-passport-processing';
 
 const BASE_URL = 'http://127.0.0.1:54321/functions/v1';
 
@@ -36,6 +37,9 @@ interface UseDocumentUploadProps {
 export function useDocumentUpload(applicationId: string) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const queryClient = useQueryClient();
+  
+  // Initialize passport processing hook
+  const { processPassport, isPassportFile, lastExtractedData, lastFieldsExtracted } = usePassportProcessing({ applicationId });
 
   // Fetch documents
   const { data: documentsData, isLoading, error } = useQuery({
@@ -162,6 +166,19 @@ export function useDocumentUpload(applicationId: string) {
         size: file.size,
       });
 
+      // Step 4: Check if it's a passport file and process it
+      if (isPassportFile(file.name)) {
+        console.log('[PASSPORT_DETECTED] Processing passport file:', file.name);
+        try {
+          // Pass the full path with bucket name to passport processing
+          const fullDocumentPath = `student-docs/${uploadUrlData.objectPath}`;
+          await processPassport(confirmData.id, fullDocumentPath);
+        } catch (passportError) {
+          console.warn('[PASSPORT_PROCESS_WARNING] Failed to process passport:', passportError);
+          // Don't throw here - upload was successful, just passport processing failed
+        }
+      }
+
       // Invalidate and refetch documents
       queryClient.invalidateQueries({ queryKey: ['documents', applicationId] });
 
@@ -170,7 +187,7 @@ export function useDocumentUpload(applicationId: string) {
       console.error('Upload error:', error);
       throw error;
     }
-  }, [applicationId, generateUploadUrlMutation, confirmUploadMutation, queryClient]);
+  }, [applicationId, generateUploadUrlMutation, confirmUploadMutation, queryClient, isPassportFile, processPassport]);
 
   // Delete document function
   const deleteDocument = useCallback(async (documentId: string) => {
@@ -195,5 +212,8 @@ export function useDocumentUpload(applicationId: string) {
     refreshDocuments,
     isUploading: generateUploadUrlMutation.isPending || confirmUploadMutation.isPending,
     isDeleting: deleteDocumentMutation.isPending,
+    // Passport processing data
+    lastExtractedData,
+    lastFieldsExtracted,
   };
 }

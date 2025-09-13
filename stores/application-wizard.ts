@@ -39,6 +39,9 @@ interface ApplicationWizardState {
   updateStep4Data: (data: Step4AgentReferral) => void;
   updateStep5Data: (data: Step5FinancialArrangements) => void;
   
+  // Passport processing
+  updateFromPassportData: (passportData: any) => void;
+  
   // Validation
   setValidationErrors: (errors: Record<string, string[]>) => void;
   clearValidationErrors: () => void;
@@ -174,6 +177,58 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
           },
           isDirty: true,
         }));
+      },
+      
+      // Passport processing
+      updateFromPassportData: (passportData: any) => {
+        set((state) => {
+          const currentFormData = state.formData;
+          const updates: Partial<FullEnrolmentPayload> = {};
+          
+          // Update personal details if available
+          if (passportData.firstName || passportData.lastName || passportData.gender || passportData.dateOfBirth) {
+            updates.personalDetails = {
+              ...currentFormData.personalDetails,
+              ...(passportData.firstName && { firstName: passportData.firstName }),
+              ...(passportData.lastName && { lastName: passportData.lastName }),
+              ...(passportData.gender && { gender: passportData.gender }),
+              ...(passportData.dateOfBirth && { dateOfBirth: passportData.dateOfBirth }),
+            };
+          }
+          
+          // Update CRICOS details if international student and passport data available
+          if (currentFormData.isInternationalStudent && (passportData.passportNumber || passportData.issuingCountry || passportData.dateOfExpiry)) {
+            updates.cricosDetails = {
+              ...currentFormData.cricosDetails,
+              ...(passportData.passportNumber && { passportNumber: passportData.passportNumber }),
+              ...(passportData.issuingCountry && { countryOfCitizenshipId: passportData.issuingCountry }),
+              ...(passportData.dateOfExpiry && { passportExpiryDate: passportData.dateOfExpiry }),
+            };
+          }
+          
+          // Update AVETMISS details if nationality available
+          if (passportData.nationality) {
+            updates.avetmissDetails = {
+              ...currentFormData.avetmissDetails,
+              countryOfBirthId: passportData.nationality,
+            };
+          }
+          
+          // Store raw passport data for reference
+          updates.passportExtractionData = {
+            ...currentFormData.passportExtractionData,
+            extractedAt: new Date().toISOString(),
+            rawData: passportData,
+          };
+          
+          return {
+            formData: {
+              ...currentFormData,
+              ...updates,
+            },
+            isDirty: true,
+          };
+        });
       },
       
       // Validation
