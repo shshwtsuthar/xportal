@@ -320,35 +320,86 @@ const previewCoursePlanProgression = async (_req: Request, _ctx: ApiContext, pro
   
   if (!plan) throw new NotFoundError('Course plan not found');
 
-  // For now, we'll implement a simplified progression calculation
-  // In a real implementation, you'd use the PostgreSQL function
-  const phases: any[] = [];
+  // Get course plan subjects with their details
+  const planSubjects = await db.selectFrom('core.program_course_plan_subjects as pcps')
+    .innerJoin('core.subjects as s', 's.id', 'pcps.subject_id')
+    .selectAll(['pcps', 's'])
+    .where('pcps.plan_id', '=', planId)
+    .orderBy('pcps.sort_order', 'asc')
+    .execute();
+
+  if (planSubjects.length === 0) {
+    return new Response(JSON.stringify({
+      intake_model,
+      total_duration_weeks: 0,
+      progression_phases: [],
+      fixed_intake_timeline: [],
+      rolling_intake_sequence: [],
+    }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
 
   // Calculate total duration
-  const totalDuration = phases.reduce((sum: number, phase: any) => sum + (phase.estimated_end_week - phase.estimated_start_week), 0);
+  const totalDuration = planSubjects.reduce((sum, subject) => sum + (subject.estimated_duration_weeks || 4), 0);
 
-  // Generate timeline for Fixed intake
-  const fixedIntakeTimeline = phases.flatMap((phase: any) => 
-    phase.subject_ids.map((subjectId: string) => ({
-      subject_id: subjectId,
-      subject_name: `Subject ${subjectId}`, // Would need to join with subjects table
-      start_week: phase.estimated_start_week,
-      end_week: phase.estimated_end_week,
-      duration_weeks: phase.estimated_end_week - phase.estimated_start_week,
-      prerequisites_completed_by_week: phase.estimated_start_week - 1,
-    }))
-  );
+  // Generate progression phases (simplified - all subjects in one phase for now)
+  const phases = [{
+    phase_number: 1,
+    subject_ids: planSubjects.map(s => s.subject_id),
+    estimated_start_week: 1,
+    estimated_end_week: totalDuration,
+  }];
 
-  // Generate unlock sequence for Rolling intake
-  const rollingIntakeSequence = phases.map((phase: any, index: number) => ({
-    unlock_trigger: index === 0 ? 'Enrolment' : 'SubjectCompletion',
-    subjects_unlocked: phase.subject_ids.map((subjectId: string) => ({
-      subject_id: subjectId,
-      subject_name: `Subject ${subjectId}`, // Would need to join with subjects table
-      estimated_duration_weeks: phase.estimated_end_week - phase.estimated_start_week,
-      prerequisite_subjects: index > 0 ? (phases[index - 1] as any).subject_ids : [],
-    })),
-  }));
+  // Generate timeline for Fixed intake with actual dates
+  let currentWeek = 1;
+  const startDate = new Date(start_date || new Date());
+  
+  const fixedIntakeTimeline = planSubjects.map((subject) => {
+    const duration = subject.estimated_duration_weeks || 4;
+    
+    // Calculate actual dates
+    const subjectStartDate = new Date(startDate);
+    subjectStartDate.setDate(subjectStartDate.getDate() + (currentWeek - 1) * 7);
+    
+    const subjectEndDate = new Date(subjectStartDate);
+    subjectEndDate.setDate(subjectEndDate.getDate() + (duration * 7) - 1);
+    
+    const timeline = {
+      subject_id: subject.subject_id,
+      subject_name: subject.subject_name,
+      start_week: currentWeek,
+      end_week: currentWeek + duration - 1,
+      duration_weeks: duration,
+      prerequisites_completed_by_week: currentWeek - 1,
+      start_date: subjectStartDate.toISOString().split('T')[0],
+      end_date: subjectEndDate.toISOString().split('T')[0],
+    };
+    currentWeek += duration;
+    return timeline;
+  });
+
+  // Generate unlock sequence for Rolling intake with date estimates
+  const rollingStartDate = new Date(start_date || new Date());
+  
+  const rollingIntakeSequence = [{
+    unlock_trigger: 'Enrolment',
+    subjects_unlocked: planSubjects.map((subject) => {
+      const duration = subject.estimated_duration_weeks || 4;
+      
+      // For rolling intake, subjects can start immediately upon enrolment
+      // but we'll show estimated completion dates
+      const estimatedEndDate = new Date(rollingStartDate);
+      estimatedEndDate.setDate(estimatedEndDate.getDate() + (duration * 7));
+      
+      return {
+        subject_id: subject.subject_id,
+        subject_name: subject.subject_name,
+        estimated_duration_weeks: duration,
+        prerequisite_subjects: [], // Simplified - no prerequisites for now
+        available_from_date: rollingStartDate.toISOString().split('T')[0],
+        estimated_completion_date: estimatedEndDate.toISOString().split('T')[0],
+      };
+    }),
+  }];
 
   const result = {
     intake_model,

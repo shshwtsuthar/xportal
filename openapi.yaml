@@ -3187,6 +3187,8 @@ components:
         end_week: { type: integer, description: Week when this subject ends }
         duration_weeks: { type: integer, description: Duration of this subject in weeks }
         prerequisites_completed_by_week: { type: integer, description: Week by which prerequisites must be completed }
+        start_date: { type: string, format: date, description: Actual start date of this subject }
+        end_date: { type: string, format: date, description: Actual end date of this subject }
 
     RollingIntakeSequenceEntry:
       type: object
@@ -3203,3 +3205,5 @@ components:
               subject_name: { type: string }
               estimated_duration_weeks: { type: integer }
               prerequisite_subjects: { type: array, items: { type: string, format: uuid }, description: Subject IDs that must be completed first }
+              available_from_date: { type: string, format: date, description: Date when this subject becomes available }
+              estimated_completion_date: { type: string, format: date, description: Estimated completion date if started immediately }

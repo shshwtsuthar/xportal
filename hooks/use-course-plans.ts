@@ -225,4 +225,37 @@ export const usePreviewCoursePlanProgression = () => {
   });
 };
 
+// Hook for getting course plans by program
+export const useProgramCoursePlans = (programId?: string) => {
+  return useQuery({
+    queryKey: ['course-plans', programId],
+    queryFn: async () => {
+      if (!programId) return [];
+      
+      const response = await fetch(
+        `${FUNCTIONS_URL}/course-plans/programs/${programId}/course-plans`,
+        {
+          headers: getFunctionHeaders(),
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch course plans');
+      }
+      
+      return response.json() as Promise<CoursePlan[]>;
+    },
+    enabled: !!programId,
+  });
+};
+
+// Transform course plans for select components
+export const transformCoursePlansForSelect = (coursePlans: CoursePlan[] = []) => {
+  return coursePlans.map(plan => ({
+    value: plan.id,
+    label: `${plan.name} (v${plan.version})`,
+    isActive: plan.is_active,
+  }));
+};
+
 

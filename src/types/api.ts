@@ -1971,6 +1971,16 @@ export interface components {
             duration_weeks?: number;
             /** @description Week by which prerequisites must be completed */
             prerequisites_completed_by_week?: number;
+            /**
+             * Format: date
+             * @description Actual start date of this subject
+             */
+            start_date?: string;
+            /**
+             * Format: date
+             * @description Actual end date of this subject
+             */
+            end_date?: string;
         };
         /** @description Sequence entry for Rolling intake model */
         RollingIntakeSequenceEntry: {
@@ -1984,6 +1994,16 @@ export interface components {
                 estimated_duration_weeks?: number;
                 /** @description Subject IDs that must be completed first */
                 prerequisite_subjects?: string[];
+                /**
+                 * Format: date
+                 * @description Date when this subject becomes available
+                 */
+                available_from_date?: string;
+                /**
+                 * Format: date
+                 * @description Estimated completion date if started immediately
+                 */
+                estimated_completion_date?: string;
             }[];
         };
     };

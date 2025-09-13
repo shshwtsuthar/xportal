@@ -85,25 +85,34 @@ const UuidLike = z.string().regex(/^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-f
 
 export const EnrolmentDetailsSchema = z.object({
   programId: UuidLike,
-  courseOfferingId: UuidLike,
+  coursePlanId: UuidLike.optional(), // New: Course plan selection
+  courseOfferingId: UuidLike.optional(), // Made optional for rolling intakes
+  intakeModel: z.enum(['Fixed', 'Rolling']).optional(), // New: Intake model selection
   subjectStructure: z.object({
     coreSubjectIds: z.array(UuidLike).min(1, "At least one core subject must be selected"),
     electiveSubjectIds: z.array(UuidLike).default([]),
   }),
-  startDate: z.string().refine((date) => {
-    const parsed = new Date(date);
-    return !isNaN(parsed.getTime());
-  }, "Invalid start date"),
-  expectedCompletionDate: z.string().refine((date) => {
-    const parsed = new Date(date);
-    return !isNaN(parsed.getTime());
-  }, "Invalid completion date"),
+  startDate: z.string().optional(), // Made optional for rolling intakes
+  expectedCompletionDate: z.string().optional(), // Made optional for rolling intakes
   deliveryLocationId: z.string().trim().toLowerCase().regex(/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/,
     "Invalid delivery location ID"),
   deliveryModeId: z.string().min(1, "Delivery mode is required"),
   fundingSourceId: z.string().min(1, "Funding source is required"),
   studyReasonId: z.string().min(1, "Study reason is required"),
   isVetInSchools: z.boolean().default(false),
+}).refine((data) => {
+  // For Fixed intake, courseOfferingId and dates are required
+  if (data.intakeModel === 'Fixed') {
+    return data.courseOfferingId && data.startDate && data.expectedCompletionDate;
+  }
+  // For Rolling intake, coursePlanId is required, dates are optional
+  if (data.intakeModel === 'Rolling') {
+    return data.coursePlanId;
+  }
+  return true;
+}, {
+  message: "Invalid intake model configuration",
+  path: ["intakeModel"]
 });
 
 // Step 2 Schema - Academic Information (matches backend expectations)

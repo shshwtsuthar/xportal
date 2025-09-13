@@ -11,6 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, Clock, Users, User } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { WizardProgress } from '../components/wizard-progress';
 import { useApplicationWizard } from '@/stores/application-wizard';
 import { useAutosave } from '@/hooks/use-autosave';
@@ -24,6 +31,11 @@ import {
   transformCourseOfferingsForSelect,
   transformSubjectsForSelection
 } from '@/hooks/use-programs';
+import { 
+  useProgramCoursePlans,
+  usePreviewCoursePlanProgression,
+  transformCoursePlansForSelect
+} from '@/hooks/use-course-plans';
 import { useFundingSources, useStudyReasons, transformReferenceData } from '@/hooks/use-reference-data';
 import { useLocations, transformLocationsForSelect } from '@/hooks/use-locations';
 
@@ -32,26 +44,36 @@ import { useLocations, transformLocationsForSelect } from '@/hooks/use-locations
 // Matches backend EnrolmentDetails schema exactly
 // =============================================================================
 
-export default function Step3ProgramSelection() {
+export default function Step4ProgramSelection() {
   const router = useRouter();
   const { updateStep3Data, nextStep, previousStep, draftId, formData } = useApplicationWizard();
   
   // Form state
   const [selectedProgramId, setSelectedProgramId] = useState<string>('');
+  const [selectedCoursePlanId, setSelectedCoursePlanId] = useState<string>('');
   const [selectedCourseOfferingId, setSelectedCourseOfferingId] = useState<string>('');
+  const [selectedIntakeModel, setSelectedIntakeModel] = useState<'Fixed' | 'Rolling' | ''>('');
+  const [selectedStartDate, setSelectedStartDate] = useState<Date | undefined>();
   const [selectedCoreSubjects, setSelectedCoreSubjects] = useState<string[]>([]);
   const [selectedElectiveSubjects, setSelectedElectiveSubjects] = useState<string[]>([]);
   
   // Reference data queries
   const { data: programsData, isLoading: programsLoading } = usePrograms();
+  const { data: coursePlansData, isLoading: coursePlansLoading } = useProgramCoursePlans(selectedProgramId);
   const { data: courseOfferingsData, isLoading: courseOfferingsLoading } = useCourseOfferings(selectedProgramId);
   const { data: subjectsData, isLoading: subjectsLoading } = useProgramSubjects(selectedProgramId);
   const { data: fundingSourcesData, isLoading: fundingSourcesLoading } = useFundingSources();
   const { data: studyReasonsData, isLoading: studyReasonsLoading } = useStudyReasons();
   const { data: locationsData, isLoading: locationsLoading } = useLocations();
   
+  // Progression preview
+  const previewProgression = usePreviewCoursePlanProgression();
+  const [progressionData, setProgressionData] = useState<any>(null);
+  const [isLoadingProgression, setIsLoadingProgression] = useState(false);
+  
   // Transform data for select components
   const programs = transformProgramsForSelect(programsData);
+  const coursePlans = transformCoursePlansForSelect(coursePlansData);
   const courseOfferings = transformCourseOfferingsForSelect(courseOfferingsData);
   const { core: coreSubjects, electives: electiveSubjects } = transformSubjectsForSelection(subjectsData);
   const fundingSources = transformReferenceData(fundingSourcesData);
@@ -68,7 +90,9 @@ export default function Step3ProgramSelection() {
     defaultValues: {
       enrolmentDetails: {
         programId: (formData as any)?.enrolmentDetails?.programId ?? '',
+        coursePlanId: (formData as any)?.enrolmentDetails?.coursePlanId ?? '',
         courseOfferingId: (formData as any)?.enrolmentDetails?.courseOfferingId ?? '',
+        intakeModel: (formData as any)?.enrolmentDetails?.intakeModel ?? '',
         subjectStructure: {
           coreSubjectIds: (formData as any)?.enrolmentDetails?.subjectStructure?.coreSubjectIds ?? [],
           electiveSubjectIds: (formData as any)?.enrolmentDetails?.subjectStructure?.electiveSubjectIds ?? [],
@@ -88,11 +112,17 @@ export default function Step3ProgramSelection() {
   useEffect(() => {
     const e = (formData as any)?.enrolmentDetails ?? {};
     setSelectedProgramId(e.programId ?? '');
+    setSelectedCoursePlanId(e.coursePlanId ?? '');
     setSelectedCourseOfferingId(e.courseOfferingId ?? '');
+    setSelectedIntakeModel(e.intakeModel ?? '');
+    setSelectedStartDate(e.startDate ? new Date(e.startDate) : undefined);
     setSelectedCoreSubjects(e?.subjectStructure?.coreSubjectIds ?? []);
     setSelectedElectiveSubjects(e?.subjectStructure?.electiveSubjectIds ?? []);
+    
     setValue('enrolmentDetails.programId', e.programId ?? '');
+    setValue('enrolmentDetails.coursePlanId', e.coursePlanId ?? '');
     setValue('enrolmentDetails.courseOfferingId', e.courseOfferingId ?? '');
+    setValue('enrolmentDetails.intakeModel', e.intakeModel ?? '');
     setValue('enrolmentDetails.subjectStructure.coreSubjectIds', e?.subjectStructure?.coreSubjectIds ?? []);
     setValue('enrolmentDetails.subjectStructure.electiveSubjectIds', e?.subjectStructure?.electiveSubjectIds ?? []);
     setValue('enrolmentDetails.startDate', e.startDate ?? '');
@@ -106,7 +136,7 @@ export default function Step3ProgramSelection() {
   
   const watchedValues = watch();
 
-  // Autosave draft (backend-first) for Step 3
+  // Autosave draft (backend-first) for Step 4
   const { schedule, saveNow } = useAutosave({
     applicationId: draftId || '',
     enabled: Boolean(draftId),
@@ -114,7 +144,9 @@ export default function Step3ProgramSelection() {
     getPayload: () => ({
       enrolmentDetails: {
         programId: watchedValues.enrolmentDetails?.programId,
+        coursePlanId: watchedValues.enrolmentDetails?.coursePlanId,
         courseOfferingId: watchedValues.enrolmentDetails?.courseOfferingId,
+        intakeModel: watchedValues.enrolmentDetails?.intakeModel,
         subjectStructure: watchedValues.enrolmentDetails?.subjectStructure,
         startDate: watchedValues.enrolmentDetails?.startDate,
         expectedCompletionDate: watchedValues.enrolmentDetails?.expectedCompletionDate,
@@ -132,7 +164,9 @@ export default function Step3ProgramSelection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     watchedValues.enrolmentDetails?.programId,
+    watchedValues.enrolmentDetails?.coursePlanId,
     watchedValues.enrolmentDetails?.courseOfferingId,
+    watchedValues.enrolmentDetails?.intakeModel,
     JSON.stringify(watchedValues.enrolmentDetails?.subjectStructure),
     watchedValues.enrolmentDetails?.startDate,
     watchedValues.enrolmentDetails?.expectedCompletionDate,
@@ -143,13 +177,20 @@ export default function Step3ProgramSelection() {
     watchedValues.enrolmentDetails?.isVetInSchools,
   ]);
   
-  // Reset course offering when program changes
+  // Reset dependent selections when program changes
   useEffect(() => {
     if (selectedProgramId) {
+      setSelectedCoursePlanId('');
       setSelectedCourseOfferingId('');
+      setSelectedIntakeModel('');
+      setSelectedStartDate(undefined);
       setSelectedCoreSubjects([]);
       setSelectedElectiveSubjects([]);
+      setValue('enrolmentDetails.coursePlanId', '');
       setValue('enrolmentDetails.courseOfferingId', '');
+      setValue('enrolmentDetails.intakeModel', '');
+      setValue('enrolmentDetails.startDate', '');
+      setValue('enrolmentDetails.expectedCompletionDate', '');
       setValue('enrolmentDetails.subjectStructure.coreSubjectIds', []);
       setValue('enrolmentDetails.subjectStructure.electiveSubjectIds', []);
     }
@@ -186,6 +227,25 @@ export default function Step3ProgramSelection() {
     setValue('enrolmentDetails.programId', programId);
   };
   
+  const handleCoursePlanChange = (planId: string) => {
+    setSelectedCoursePlanId(planId);
+    setValue('enrolmentDetails.coursePlanId', planId);
+  };
+  
+  const handleIntakeModelChange = (model: 'Fixed' | 'Rolling') => {
+    setSelectedIntakeModel(model);
+    setValue('enrolmentDetails.intakeModel', model);
+    
+    // Reset course offering and dates when intake model changes
+    if (model === 'Rolling') {
+      setSelectedCourseOfferingId('');
+      setSelectedStartDate(undefined);
+      setValue('enrolmentDetails.courseOfferingId', '');
+      setValue('enrolmentDetails.startDate', '');
+      setValue('enrolmentDetails.expectedCompletionDate', '');
+    }
+  };
+  
   const handleCourseOfferingChange = (offeringId: string) => {
     setSelectedCourseOfferingId(offeringId);
     setValue('enrolmentDetails.courseOfferingId', offeringId);
@@ -193,10 +253,54 @@ export default function Step3ProgramSelection() {
     // Set start and end dates from course offering
     const offering = courseOfferings.find(o => o.value === offeringId);
     if (offering) {
+      setSelectedStartDate(offering.startDate ? new Date(offering.startDate) : undefined);
       setValue('enrolmentDetails.startDate', offering.startDate);
       setValue('enrolmentDetails.expectedCompletionDate', offering.endDate);
     }
   };
+  
+  const handleStartDateChange = (date: Date | undefined) => {
+    setSelectedStartDate(date);
+    if (date) {
+      setValue('enrolmentDetails.startDate', date.toISOString().split('T')[0]);
+    } else {
+      setValue('enrolmentDetails.startDate', '');
+    }
+    // Trigger progression preview update
+    fetchProgressionPreview();
+  };
+
+  // Function to fetch progression preview
+  const fetchProgressionPreview = async () => {
+    if (!selectedProgramId || !selectedCoursePlanId || !selectedIntakeModel) {
+      setProgressionData(null);
+      return;
+    }
+
+    setIsLoadingProgression(true);
+    try {
+      const payload = {
+        programId: selectedProgramId,
+        planId: selectedCoursePlanId,
+        intake_model: selectedIntakeModel,
+        start_date: selectedStartDate ? selectedStartDate.toISOString().split('T')[0] : undefined,
+        simulation_duration_weeks: 52, // 1 year simulation
+      };
+
+      const result = await previewProgression.mutateAsync(payload);
+      setProgressionData(result);
+    } catch (error) {
+      console.error('Failed to fetch progression preview:', error);
+      setProgressionData(null);
+    } finally {
+      setIsLoadingProgression(false);
+    }
+  };
+
+  // Trigger progression preview when selections change
+  useEffect(() => {
+    fetchProgressionPreview();
+  }, [selectedProgramId, selectedCoursePlanId, selectedIntakeModel, selectedStartDate]);
   
   const handleCoreSubjectChange = (subjectId: string, checked: boolean) => {
     const newSubjects = checked 
@@ -226,8 +330,8 @@ export default function Step3ProgramSelection() {
         <div className="space-y-8">
           {/* Page Header */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground">Program & Intake</h1>
-            <p className="mt-2 text-muted-foreground">Staff: record the program, intake, and subjects.</p>
+            <h1 className="text-3xl font-bold text-foreground">Program & Course Selection</h1>
+            <p className="mt-2 text-muted-foreground">Select your program, course plan, and intake model.</p>
           </div>
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -267,8 +371,98 @@ export default function Step3ProgramSelection() {
               </CardContent>
             </Card>
             
-            {/* Course Offering Selection */}
+            {/* Course Plan Selection */}
             {selectedProgramId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Course Plan</CardTitle>
+                  <CardDescription>
+                    Select the course plan (template) that defines the subjects and structure
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <Label htmlFor="coursePlan">Course Plan</Label>
+                    <Select onValueChange={handleCoursePlanChange}>
+                      <SelectTrigger aria-label="Course Plan" role="combobox" className="mt-2" tabIndex={0}>
+                        <SelectValue placeholder="Select a course plan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {coursePlansLoading ? (
+                          <SelectItem value="loading-plans" disabled>Loading course plans...</SelectItem>
+                        ) : coursePlans.length === 0 ? (
+                          <SelectItem value="no-plans" disabled>No course plans available</SelectItem>
+                        ) : (
+                          coursePlans.map((plan) => (
+                            <SelectItem key={plan.value} value={plan.value}>
+                              {plan.label}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {errors.enrolmentDetails?.coursePlanId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.enrolmentDetails.coursePlanId.message}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Intake Model Selection */}
+            {selectedProgramId && selectedCoursePlanId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Intake Model</CardTitle>
+                  <CardDescription>
+                    Choose how you want to progress through the course
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <RadioGroup 
+                    value={selectedIntakeModel} 
+                    onValueChange={handleIntakeModelChange}
+                    className="space-y-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Fixed" id="fixed" />
+                      <Label htmlFor="fixed" className="flex items-center space-x-2 cursor-pointer">
+                        <Users className="h-4 w-4" />
+                        <div>
+                          <div className="font-medium">Fixed Intake (Cohort-based)</div>
+                          <div className="text-sm text-muted-foreground">
+                            Join a group of students with fixed start and end dates
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Rolling" id="rolling" />
+                      <Label htmlFor="rolling" className="flex items-center space-x-2 cursor-pointer">
+                        <User className="h-4 w-4" />
+                        <div>
+                          <div className="font-medium">Rolling Intake (Self-paced)</div>
+                          <div className="text-sm text-muted-foreground">
+                            Start anytime and progress at your own pace
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  {errors.enrolmentDetails?.intakeModel && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.enrolmentDetails.intakeModel.message}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Course Offering Selection - Only for Fixed Intake */}
+            {selectedProgramId && selectedIntakeModel === 'Fixed' && (
               <Card>
                 <CardHeader>
                   <CardTitle>Course Offering</CardTitle>
@@ -307,116 +501,196 @@ export default function Step3ProgramSelection() {
               </Card>
             )}
             
-            {/* Subject Selection */}
-            {selectedProgramId && (
+            {/* Start Date Selection - Only for Rolling Intake */}
+            {selectedProgramId && selectedIntakeModel === 'Rolling' && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Subjects</CardTitle>
+                  <CardTitle>Start Date</CardTitle>
                   <CardDescription>
-                    Select the core and elective subjects
+                    When would you like to begin your studies? (Optional - you can start anytime)
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Core Subjects */}
+                <CardContent>
                   <div>
-                    <Label>Core Subjects</Label>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Select all core subjects (required for the program)
+                    <Label>Preferred Start Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal mt-2",
+                            !selectedStartDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {selectedStartDate ? format(selectedStartDate, "PPP") : "Select start date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={selectedStartDate}
+                          onSelect={handleStartDateChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      You can start immediately or choose a future date. This date can be changed later.
                     </p>
-                    <div className="space-y-2">
-                      {subjectsLoading ? (
-                        <p className="text-muted-foreground">Loading subjects...</p>
-                      ) : coreSubjects.length === 0 ? (
-                        <p className="text-muted-foreground">No core subjects available</p>
-                      ) : (
-                        coreSubjects.map((subject) => (
-                          <div key={subject.value} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`core-${subject.value}`}
-                              checked={selectedCoreSubjects.includes(subject.value)}
-                              onCheckedChange={(checked) => 
-                                handleCoreSubjectChange(subject.value, checked as boolean)
-                              }
-                            />
-                            <Label htmlFor={`core-${subject.value}`}>
-                              {subject.label}
-                            </Label>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    
-                    {selectedCoreSubjects.length > 0 && (
-                      <div className="mt-3">
-                        <Label>Selected Core Subjects:</Label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {selectedCoreSubjects.map((subjectId) => {
-                            const subject = coreSubjects.find(s => s.value === subjectId);
-                            return (
-                              <Badge key={subjectId} variant="default">
-                                {subject?.label || subjectId}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {errors.enrolmentDetails?.subjectStructure?.coreSubjectIds && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.enrolmentDetails.subjectStructure.coreSubjectIds.message}
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Elective Subjects */}
-                  <div>
-                    <Label>Elective Subjects</Label>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Select elective subjects (optional)
-                    </p>
-                    <div className="space-y-2">
-                      {subjectsLoading ? (
-                        <p className="text-muted-foreground">Loading subjects...</p>
-                      ) : electiveSubjects.length === 0 ? (
-                        <p className="text-muted-foreground">No elective subjects available</p>
-                      ) : (
-                        electiveSubjects.map((subject) => (
-                          <div key={subject.value} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`elective-${subject.value}`}
-                              checked={selectedElectiveSubjects.includes(subject.value)}
-                              onCheckedChange={(checked) => 
-                                handleElectiveSubjectChange(subject.value, checked as boolean)
-                              }
-                            />
-                            <Label htmlFor={`elective-${subject.value}`}>
-                              {subject.label}
-                            </Label>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    
-                    {selectedElectiveSubjects.length > 0 && (
-                      <div className="mt-3">
-                        <Label>Selected Elective Subjects:</Label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {selectedElectiveSubjects.map((subjectId) => {
-                            const subject = electiveSubjects.find(s => s.value === subjectId);
-                            return (
-                              <Badge key={subjectId} variant="secondary">
-                                {subject?.label || subjectId}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </CardContent>
               </Card>
             )}
+            
+            {/* Progression Preview */}
+            {selectedProgramId && selectedCoursePlanId && selectedIntakeModel && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Clock className="h-5 w-5" />
+                    <span>Course Timeline Preview</span>
+                  </CardTitle>
+                  <CardDescription>
+                    See how your course progression will work with the selected intake model
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingProgression ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground"></div>
+                      <span className="ml-3 text-muted-foreground">Loading progression preview...</span>
+                    </div>
+                  ) : progressionData ? (
+                    <div className="space-y-6">
+                      {/* Course Overview */}
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <h4 className="font-semibold mb-2">Course Overview</h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Intake Model:</span>
+                            <span className="ml-2 font-medium">{progressionData.intake_model}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Total Duration:</span>
+                            <span className="ml-2 font-medium">{progressionData.total_duration_weeks} weeks</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Fixed Intake Timeline */}
+                      {selectedIntakeModel === 'Fixed' && progressionData.fixed_intake_timeline && (
+                        <div>
+                          <h4 className="font-semibold mb-3">Fixed Intake Timeline</h4>
+                          <div className="space-y-3">
+                            {progressionData.fixed_intake_timeline.map((subject: any, index: number) => (
+                              <div key={subject.subject_id} className="flex items-center justify-between p-3 border rounded-lg">
+                                <div className="flex-1">
+                                  <div className="font-medium">{subject.subject_name}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    Week {subject.start_week} - Week {subject.end_week} ({subject.duration_weeks} weeks)
+                                  </div>
+                                  {subject.start_date && subject.end_date && (
+                                    <div className="text-sm text-blue-600 font-medium">
+                                      {new Date(subject.start_date).toLocaleDateString()} - {new Date(subject.end_date).toLocaleDateString()}
+                                    </div>
+                                  )}
+                                </div>
+                                <Badge variant="secondary">
+                                  {subject.prerequisites_completed_by_week > 0 
+                                    ? `Prerequisites by Week ${subject.prerequisites_completed_by_week}`
+                                    : 'No Prerequisites'
+                                  }
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Rolling Intake Sequence */}
+                      {selectedIntakeModel === 'Rolling' && progressionData.rolling_intake_sequence && (
+                        <div>
+                          <h4 className="font-semibold mb-3">Rolling Intake Progression</h4>
+                          <div className="space-y-4">
+                            {progressionData.rolling_intake_sequence.map((phase: any, index: number) => (
+                              <div key={index} className="border rounded-lg p-4">
+                                <div className="flex items-center space-x-2 mb-3">
+                                  <Badge variant="outline">Phase {index + 1}</Badge>
+                                  <span className="text-sm font-medium">{phase.unlock_trigger}</span>
+                                </div>
+                                <div className="space-y-2">
+                                  {phase.subjects_unlocked.map((subject: any) => (
+                                    <div key={subject.subject_id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                                      <div className="flex-1">
+                                        <div className="font-medium">{subject.subject_name}</div>
+                                        <div className="text-sm text-muted-foreground">
+                                          {subject.estimated_duration_weeks} weeks
+                                          {subject.prerequisite_subjects.length > 0 && (
+                                            <span className="ml-2">
+                                              • Requires: {subject.prerequisite_subjects.join(', ')}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {subject.available_from_date && subject.estimated_completion_date && (
+                                          <div className="text-sm text-green-600 font-medium">
+                                            Available: {new Date(subject.available_from_date).toLocaleDateString()} | 
+                                            Est. Complete: {new Date(subject.estimated_completion_date).toLocaleDateString()}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Progression Phases */}
+                      {progressionData.progression_phases && (
+                        <div>
+                          <h4 className="font-semibold mb-3">Progression Phases</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {progressionData.progression_phases.map((phase: any) => (
+                              <div key={phase.phase_number} className="border rounded-lg p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <Badge>Phase {phase.phase_number}</Badge>
+                                  <span className="text-sm text-muted-foreground">
+                                    Week {phase.estimated_start_week}-{phase.estimated_end_week}
+                                  </span>
+                                </div>
+                                <div className="text-sm">
+                                  {phase.subject_ids.length} subject{phase.subject_ids.length !== 1 ? 's' : ''}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Alert>
+                      <AlertDescription>
+                        {selectedIntakeModel === 'Fixed' ? (
+                          <>
+                            <strong>Fixed Intake:</strong> You'll join a cohort and follow a structured timeline with your classmates. 
+                            All subjects will be scheduled with specific start and end dates.
+                          </>
+                        ) : (
+                          <>
+                            <strong>Rolling Intake:</strong> You'll progress through subjects individually as you complete them. 
+                            Each subject unlocks the next one based on prerequisites. You control your own pace.
+                          </>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
             
             {/* Delivery and Funding Information */}
             {selectedProgramId && (

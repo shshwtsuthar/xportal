@@ -1,3 +1,123 @@
+## 2025-09-13 — Dual Intake Model System & Advanced Course Plan Management
+
+### Business Logic (authoritative summary)
+- **Dual Intake Models**: Implemented comprehensive system supporting both Fixed and Rolling intake models for course delivery
+  - **Fixed Intake**: Traditional cohort-based model with rigid start/end dates for groups of students
+  - **Rolling Intake**: Flexible, individual-based model allowing students to start at any time with self-directed progression
+- **Course Plan Architecture**: Separated course structure (Course Plan) from delivery schedule (Course Offering)
+  - Course Plans define units, durations, and prerequisite rules (the "what")
+  - Course Offerings define delivery model and scheduling (the "when")
+- **Progression Logic**: Advanced prerequisite system with circular dependency detection and phase-based progression calculation
+
+### Backend — Supabase Edge Functions (course-plans)
+- **Enhanced Course Plans API**: Major expansion of course plan management capabilities
+  - **New Endpoints**:
+    - `GET /programs/{programId}/course-plans/{planId}/structure`: Retrieve course plan structure with subjects and durations
+    - `GET /programs/{programId}/course-plans/{planId}/prerequisites`: Get prerequisite relationships between subjects
+    - `PUT /programs/{programId}/course-plans/{planId}/prerequisites`: Update prerequisite rules
+    - `POST /programs/{programId}/course-plans/{planId}/validate-progression`: Validate progression logic for circular dependencies
+    - `POST /programs/{programId}/course-plans/{planId}/progression-preview`: Generate timeline preview for both intake models
+  - **Advanced Features**:
+    - Real-time date calculations for Fixed intake timelines
+    - Rolling intake sequence generation with availability dates
+    - Progression phase calculation with prerequisite validation
+    - Support for estimated durations and complexity levels per subject
+
+### Backend — Database Schema & Migrations
+- **New Migration**: `20250913142411_add_course_plan_prerequisites.sql`
+  - Added `core.subject_prerequisites` table for prerequisite relationships
+  - Enhanced `core.program_course_plan_subjects` with `estimated_duration_weeks` and `complexity_level`
+  - **Advanced Functions**:
+    - `core.detect_circular_prerequisites()`: Identifies circular dependencies in prerequisite chains
+    - `core.get_subject_progression_phases()`: Calculates optimal progression phases based on prerequisites
+- **Schema Validation**: CHECK constraints for prerequisite types ('Required', 'Recommended') and complexity levels ('Basic', 'Intermediate', 'Advanced')
+
+### Frontend — Advanced Course Plan Management
+- **New Component**: `AdvancedCoursePlans.tsx` - Sophisticated course plan editor
+  - **Three-Tab Interface**:
+    - **Subjects Tab**: Manage subjects with durations and complexity levels
+    - **Prerequisites Tab**: Define prerequisite relationships with visual validation
+    - **Progression Preview Tab**: Real-time preview of course progression logic
+  - **Advanced Features**:
+    - Drag-and-drop subject reordering
+    - Prerequisite validation with circular dependency detection
+    - Real-time progression phase calculation
+    - Visual timeline preview for both intake models
+- **Enhanced Programs Page**: Replaced basic course plans interface with advanced editor
+  - Integrated with existing program management workflow
+  - Maintains ShadCN design consistency
+  - Full-featured editor comparable to Payment Templates UI
+
+### Frontend — New Application Wizard (Step 4)
+- **Complete Redesign**: Transformed Step 4 from basic program selection to comprehensive dual intake system
+  - **New UI Structure**:
+    - **Program Selection**: Enhanced with course plan integration
+    - **Course Plan Selection**: Dynamic dropdown based on selected program
+    - **Intake Model Selection**: Radio buttons for Fixed vs Rolling intake
+    - **Course Offering Selection**: Only shown for Fixed intake (with start/end dates)
+    - **Start Date Selection**: Calendar picker for Rolling intake
+    - **Course Timeline Preview**: Real-time progression visualization
+  - **Smart Logic**:
+    - Conditional field visibility based on intake model
+    - Automatic progression preview updates
+    - Date calculations for both intake models
+    - Real-time timeline generation
+
+### Frontend — Enhanced User Experience
+- **Removed Redundancy**: Eliminated duplicate "Subjects" card from Step 4 (now handled by course plan selection)
+- **Date Visualization**: 
+  - **Fixed Intake**: Shows actual start/end dates for each subject in blue text
+  - **Rolling Intake**: Displays availability date and estimated completion date in green text
+- **Progressive Disclosure**: UI elements appear contextually based on user selections
+- **Real-time Updates**: Timeline preview refreshes automatically when selections change
+
+### API Specification & Type Safety
+- **Enhanced OpenAPI Schema**: Comprehensive updates for dual intake system
+  - **New Schemas**:
+    - `CoursePlanStructure`: Complete course plan definition with subjects and durations
+    - `PrerequisiteItem`: Prerequisite relationship with type (Required/Recommended)
+    - `ProgressionPreview`: Timeline data for both intake models
+    - `FixedIntakeTimelineItem`: Subject timeline with actual dates
+    - `RollingIntakeSequenceItem`: Rolling progression with availability dates
+  - **Date Fields**: Added `start_date`, `end_date`, `available_from_date`, `estimated_completion_date`
+- **Type Generation**: Updated both frontend and backend types using flow.md procedures
+- **Validation**: Enhanced Zod schemas for intake model validation and conditional field requirements
+
+### Application Schema Updates
+- **Enhanced Enrolment Details**: Updated `EnrolmentDetailsSchema` to support dual intake models
+  - Added `coursePlanId` for Rolling intake
+  - Added `intakeModel` field ('Fixed' | 'Rolling')
+  - Made `courseOfferingId`, `startDate`, `expectedCompletionDate` conditional based on intake model
+  - **Smart Validation**: Conditional requirements based on selected intake model
+
+### Technical Improvements
+- **Error Handling**: Fixed 500 Internal Server Error in progression preview API
+- **TypeScript Compliance**: Resolved all compilation errors in Supabase Edge Functions
+- **Kysely Query Optimization**: Fixed database query syntax for proper type safety
+- **API Endpoint Corrections**: Fixed incorrect URL paths in frontend hooks
+- **Date Calculations**: Implemented robust date arithmetic for timeline generation
+
+### Development Workflow
+- **API-First Development**: Followed flow.md procedures for type generation and validation
+- **Type Safety**: Generated types for both frontend and backend from OpenAPI specification
+- **Database Management**: Created properly ordered migrations with schema validation
+- **Testing**: Comprehensive testing of progression preview functionality
+
+### User Interface Enhancements
+- **Modern Design**: Maintained ShadCN UI consistency throughout
+- **Accessibility**: Proper ARIA labels and keyboard navigation
+- **Responsive Layout**: Mobile-first design with proper breakpoints
+- **Loading States**: Skeleton loading and progress indicators
+- **Error States**: Graceful error handling with user-friendly messages
+
+### Known Limitations & Future Enhancements
+- **Prerequisites**: Currently simplified (no complex prerequisite chains implemented)
+- **Progression Logic**: Basic phase calculation (all subjects in single phase)
+- **Date Calculations**: Weekly-based calculations (could be enhanced with business days)
+- **Validation**: Could be enhanced with more sophisticated prerequisite validation
+
+---
+
 ## 2025-09-11 — Application Wizard Pipeline, Offer/Email, Status Flow, CoE Upload
 
 ### Business Logic (authoritative summary)
