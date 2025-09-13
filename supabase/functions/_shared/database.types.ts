@@ -5,22 +5,6 @@
 
 import type { ColumnType } from "kysely";
 
-// Buffer type declaration for Deno compatibility
-declare global {
-  interface Buffer {
-    length: number;
-    toString(encoding?: string): string;
-    slice(start?: number, end?: number): Buffer;
-  }
-  const Buffer: {
-    new (data: any): Buffer;
-    isBuffer(obj: any): obj is Buffer;
-    from(data: any): Buffer;
-    alloc(size: number): Buffer;
-    concat(list: Buffer[]): Buffer;
-  };
-}
-
 export type AuthAalLevel = "aal1" | "aal2" | "aal3";
 
 export type AuthCodeChallengeMethod = "plain" | "s256";
@@ -563,6 +547,14 @@ export interface CoreProgramCoursePlans {
 }
 
 export interface CoreProgramCoursePlanSubjects {
+  /**
+   * Difficulty level of the subject content
+   */
+  complexity_level: Generated<string | null>;
+  /**
+   * Estimated time to complete this subject in weeks
+   */
+  estimated_duration_weeks: Generated<number | null>;
   plan_id: string;
   sort_order: Generated<number>;
   subject_id: string;
@@ -585,6 +577,17 @@ export interface CoreProgramSubjects {
   program_id: string;
   subject_id: string;
   unit_type: string;
+}
+
+export interface CoreSubjectPrerequisites {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  prerequisite_subject_id: string;
+  /**
+   * Required: Must be completed before subject can start. Recommended: Suggested but not mandatory
+   */
+  prerequisite_type: string;
+  subject_id: string;
 }
 
 export interface CoreSubjects {
@@ -690,7 +693,7 @@ export interface ExtensionsPgStatStatementsInfo {
 }
 
 export interface NetHttpRequestQueue {
-  body: Buffer | null;
+  body: Uint8Array | null;
   headers: Json;
   id: Generated<Int8>;
   method: string;
@@ -1144,7 +1147,7 @@ export interface VaultDecryptedSecrets {
   id: string | null;
   key_id: string | null;
   name: string | null;
-  nonce: Buffer | null;
+  nonce: Uint8Array | null;
   secret: string | null;
   updated_at: Timestamp | null;
 }
@@ -1155,7 +1158,7 @@ export interface VaultSecrets {
   id: Generated<string>;
   key_id: string | null;
   name: string | null;
-  nonce: Generated<Buffer | null>;
+  nonce: Generated<Uint8Array | null>;
   secret: string;
   updated_at: Generated<Timestamp>;
 }
@@ -1205,6 +1208,7 @@ export interface DB {
   "core.program_course_plans": CoreProgramCoursePlans;
   "core.program_subjects": CoreProgramSubjects;
   "core.programs": CorePrograms;
+  "core.subject_prerequisites": CoreSubjectPrerequisites;
   "core.subjects": CoreSubjects;
   "cricos.client_details": CricosClientDetails;
   "cricos.confirmations_of_enrolment": CricosConfirmationsOfEnrolment;

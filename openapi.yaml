@@ -1216,6 +1216,174 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /programs/{programId}/course-plans/{planId}/structure:
+    get:
+      operationId: getCoursePlanStructure
+      summary: Get complete course plan structure with prerequisites
+      description: Returns the full course plan structure including subjects, prerequisites, and progression validation results.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Complete course plan structure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoursePlanStructure'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/course-plans/{planId}/prerequisites:
+    get:
+      operationId: getCoursePlanPrerequisites
+      summary: Get prerequisites for a course plan
+      description: Returns all prerequisite relationships defined for subjects in the course plan.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Prerequisites for the course plan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectPrerequisite'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateCoursePlanPrerequisites
+      summary: Update prerequisites for a course plan
+      description: Replaces all prerequisite relationships for subjects in the course plan.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/SubjectPrerequisiteInput'
+      responses:
+        '200':
+          description: Prerequisites updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Prerequisites updated"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/course-plans/{planId}/validate-progression:
+    post:
+      operationId: validateCoursePlanProgression
+      summary: Validate course plan progression rules
+      description: Validates the prerequisite relationships in a course plan for circular dependencies and other issues.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Progression validation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressionValidationResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/course-plans/{planId}/progression-preview:
+    post:
+      operationId: previewCoursePlanProgression
+      summary: Preview course progression for intake models
+      description: Generates a preview of how students will progress through the course in either Fixed or Rolling intake models.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressionPreviewRequest'
+      responses:
+        '200':
+          description: Progression preview results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressionPreviewResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /course-offerings/{id}:
     put:
       operationId: updateCourseOffering
@@ -1786,6 +1954,8 @@ components:
         subject_id: { type: string, format: uuid }
         unit_type: { type: string, enum: [Core, Elective] }
         sort_order: { type: integer, default: 0 }
+        estimated_duration_weeks: { type: integer, minimum: 1, default: 4 }
+        complexity_level: { type: string, enum: [Basic, Intermediate, Advanced], default: Basic }
 
     CourseOfferingUpdate:
       type: object
@@ -2900,3 +3070,136 @@ components:
           type: string
           nullable: true
           description: Extracted MRZ line 2
+
+    # --- COURSE PLAN PREREQUISITE SCHEMAS ---
+    CoursePlanStructure:
+      type: object
+      description: Complete course plan structure with subjects, prerequisites, and validation results
+      properties:
+        plan:
+          $ref: '#/components/schemas/CoursePlan'
+        subjects:
+          type: array
+          description: Subjects in the plan with additional metadata
+          items:
+            allOf:
+              - $ref: '#/components/schemas/CoursePlanSubject'
+              - type: object
+                properties:
+                  estimated_duration_weeks: { type: integer }
+                  complexity_level: { type: string, enum: [Basic, Intermediate, Advanced] }
+                  prerequisites_count: { type: integer, description: Number of prerequisites for this subject }
+                  dependents_count: { type: integer, description: Number of subjects that depend on this subject }
+        prerequisites:
+          type: array
+          description: All prerequisite relationships in the plan
+          items:
+            $ref: '#/components/schemas/SubjectPrerequisite'
+        progression_validation:
+          $ref: '#/components/schemas/ProgressionValidationResult'
+
+    SubjectPrerequisite:
+      type: object
+      description: A prerequisite relationship between two subjects
+      properties:
+        id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid, description: The subject that requires the prerequisite }
+        prerequisite_subject_id: { type: string, format: uuid, description: The subject that must be completed first }
+        prerequisite_type: { type: string, enum: [Required, Recommended] }
+        subject_name: { type: string, description: Name of the subject requiring the prerequisite }
+        prerequisite_subject_name: { type: string, description: Name of the prerequisite subject }
+        created_at: { type: string, format: 'date-time' }
+
+    SubjectPrerequisiteInput:
+      type: object
+      required: [subject_id, prerequisite_subject_id, prerequisite_type]
+      properties:
+        subject_id: { type: string, format: uuid }
+        prerequisite_subject_id: { type: string, format: uuid }
+        prerequisite_type: { type: string, enum: [Required, Recommended] }
+
+    ProgressionValidationResult:
+      type: object
+      description: Results of validating course plan progression rules
+      properties:
+        is_valid: { type: boolean, description: Whether the progression rules are valid }
+        errors:
+          type: array
+          description: List of validation errors
+          items:
+            type: object
+            properties:
+              type: { type: string, description: Error type (e.g., CircularDependency, OrphanedSubject) }
+              message: { type: string, description: Human-readable error message }
+              subject_ids: { type: array, items: { type: string, format: uuid }, description: IDs of subjects involved in the error }
+        warnings:
+          type: array
+          description: List of validation warnings
+          items:
+            type: object
+
+    ProgressionPreviewRequest:
+      type: object
+      required: [intake_model]
+      properties:
+        intake_model: { type: string, enum: [Fixed, Rolling], description: The intake model to preview }
+        start_date: { type: string, format: date, nullable: true, description: Start date for Fixed intake preview }
+        simulation_duration_weeks: { type: integer, minimum: 1, default: 52, description: Duration to simulate in weeks }
+
+    ProgressionPreviewResult:
+      type: object
+      description: Results of course progression preview for different intake models
+      properties:
+        intake_model: { type: string, enum: [Fixed, Rolling] }
+        total_duration_weeks: { type: integer, description: Total estimated duration of the course }
+        progression_phases:
+          type: array
+          description: Phases of progression through the course
+          items:
+            $ref: '#/components/schemas/ProgressionPhase'
+        fixed_intake_timeline:
+          type: array
+          description: Timeline for Fixed intake model
+          items:
+            $ref: '#/components/schemas/FixedIntakeTimelineEntry'
+        rolling_intake_sequence:
+          type: array
+          description: Sequence for Rolling intake model
+          items:
+            $ref: '#/components/schemas/RollingIntakeSequenceEntry'
+
+    ProgressionPhase:
+      type: object
+      description: A phase in the course progression
+      properties:
+        phase_number: { type: integer, description: Sequential phase number }
+        subject_ids: { type: array, items: { type: string, format: uuid }, description: Subjects that can be taken in this phase }
+        estimated_start_week: { type: integer, description: Week when this phase begins }
+        estimated_end_week: { type: integer, description: Week when this phase ends }
+
+    FixedIntakeTimelineEntry:
+      type: object
+      description: Timeline entry for Fixed intake model
+      properties:
+        subject_id: { type: string, format: uuid }
+        subject_name: { type: string }
+        start_week: { type: integer, description: Week when this subject begins }
+        end_week: { type: integer, description: Week when this subject ends }
+        duration_weeks: { type: integer, description: Duration of this subject in weeks }
+        prerequisites_completed_by_week: { type: integer, description: Week by which prerequisites must be completed }
+
+    RollingIntakeSequenceEntry:
+      type: object
+      description: Sequence entry for Rolling intake model
+      properties:
+        unlock_trigger: { type: string, description: What triggers unlocking these subjects (Enrolment, SubjectCompletion) }
+        subjects_unlocked:
+          type: array
+          description: Subjects unlocked by this trigger
+          items:
+            type: object
+            properties:
+              subject_id: { type: string, format: uuid }
+              subject_name: { type: string }
+              estimated_duration_weeks: { type: integer }
+              prerequisite_subjects: { type: array, items: { type: string, format: uuid }, description: Subject IDs that must be completed first }

@@ -663,6 +663,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/programs/{programId}/course-plans/{planId}/structure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get complete course plan structure with prerequisites
+         * @description Returns the full course plan structure including subjects, prerequisites, and progression validation results.
+         */
+        get: operations["getCoursePlanStructure"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans/{planId}/prerequisites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get prerequisites for a course plan
+         * @description Returns all prerequisite relationships defined for subjects in the course plan.
+         */
+        get: operations["getCoursePlanPrerequisites"];
+        /**
+         * Update prerequisites for a course plan
+         * @description Replaces all prerequisite relationships for subjects in the course plan.
+         */
+        put: operations["updateCoursePlanPrerequisites"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans/{planId}/validate-progression": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate course plan progression rules
+         * @description Validates the prerequisite relationships in a course plan for circular dependencies and other issues.
+         */
+        post: operations["validateCoursePlanProgression"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans/{planId}/progression-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview course progression for intake models
+         * @description Generates a preview of how students will progress through the course in either Fixed or Rolling intake models.
+         */
+        post: operations["previewCoursePlanProgression"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/course-offerings/{id}": {
         parameters: {
             query?: never;
@@ -932,6 +1016,13 @@ export interface components {
             unit_type: "Core" | "Elective";
             /** @default 0 */
             sort_order: number;
+            /** @default 4 */
+            estimated_duration_weeks: number;
+            /**
+             * @default Basic
+             * @enum {string}
+             */
+            complexity_level: "Basic" | "Intermediate" | "Advanced";
         };
         CourseOfferingUpdate: {
             /** Format: uuid */
@@ -1761,6 +1852,139 @@ export interface components {
             mrzLine1?: string | null;
             /** @description Extracted MRZ line 2 */
             mrzLine2?: string | null;
+        };
+        /** @description Complete course plan structure with subjects, prerequisites, and validation results */
+        CoursePlanStructure: {
+            plan?: components["schemas"]["CoursePlan"];
+            /** @description Subjects in the plan with additional metadata */
+            subjects?: (components["schemas"]["CoursePlanSubject"] & {
+                estimated_duration_weeks?: number;
+                /** @enum {string} */
+                complexity_level?: "Basic" | "Intermediate" | "Advanced";
+                /** @description Number of prerequisites for this subject */
+                prerequisites_count?: number;
+                /** @description Number of subjects that depend on this subject */
+                dependents_count?: number;
+            })[];
+            /** @description All prerequisite relationships in the plan */
+            prerequisites?: components["schemas"]["SubjectPrerequisite"][];
+            progression_validation?: components["schemas"]["ProgressionValidationResult"];
+        };
+        /** @description A prerequisite relationship between two subjects */
+        SubjectPrerequisite: {
+            /** Format: uuid */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description The subject that requires the prerequisite
+             */
+            subject_id?: string;
+            /**
+             * Format: uuid
+             * @description The subject that must be completed first
+             */
+            prerequisite_subject_id?: string;
+            /** @enum {string} */
+            prerequisite_type?: "Required" | "Recommended";
+            /** @description Name of the subject requiring the prerequisite */
+            subject_name?: string;
+            /** @description Name of the prerequisite subject */
+            prerequisite_subject_name?: string;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        SubjectPrerequisiteInput: {
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            prerequisite_subject_id: string;
+            /** @enum {string} */
+            prerequisite_type: "Required" | "Recommended";
+        };
+        /** @description Results of validating course plan progression rules */
+        ProgressionValidationResult: {
+            /** @description Whether the progression rules are valid */
+            is_valid?: boolean;
+            /** @description List of validation errors */
+            errors?: {
+                /** @description Error type (e.g. */
+                type?: string;
+                /** @description Human-readable error message */
+                message?: string;
+                /** @description IDs of subjects involved in the error */
+                subject_ids?: string[];
+            }[];
+            /** @description List of validation warnings */
+            warnings?: Record<string, never>[];
+        };
+        ProgressionPreviewRequest: {
+            /**
+             * @description The intake model to preview
+             * @enum {string}
+             */
+            intake_model: "Fixed" | "Rolling";
+            /**
+             * Format: date
+             * @description Start date for Fixed intake preview
+             */
+            start_date?: string | null;
+            /**
+             * @description Duration to simulate in weeks
+             * @default 52
+             */
+            simulation_duration_weeks: number;
+        };
+        /** @description Results of course progression preview for different intake models */
+        ProgressionPreviewResult: {
+            /** @enum {string} */
+            intake_model?: "Fixed" | "Rolling";
+            /** @description Total estimated duration of the course */
+            total_duration_weeks?: number;
+            /** @description Phases of progression through the course */
+            progression_phases?: components["schemas"]["ProgressionPhase"][];
+            /** @description Timeline for Fixed intake model */
+            fixed_intake_timeline?: components["schemas"]["FixedIntakeTimelineEntry"][];
+            /** @description Sequence for Rolling intake model */
+            rolling_intake_sequence?: components["schemas"]["RollingIntakeSequenceEntry"][];
+        };
+        /** @description A phase in the course progression */
+        ProgressionPhase: {
+            /** @description Sequential phase number */
+            phase_number?: number;
+            /** @description Subjects that can be taken in this phase */
+            subject_ids?: string[];
+            /** @description Week when this phase begins */
+            estimated_start_week?: number;
+            /** @description Week when this phase ends */
+            estimated_end_week?: number;
+        };
+        /** @description Timeline entry for Fixed intake model */
+        FixedIntakeTimelineEntry: {
+            /** Format: uuid */
+            subject_id?: string;
+            subject_name?: string;
+            /** @description Week when this subject begins */
+            start_week?: number;
+            /** @description Week when this subject ends */
+            end_week?: number;
+            /** @description Duration of this subject in weeks */
+            duration_weeks?: number;
+            /** @description Week by which prerequisites must be completed */
+            prerequisites_completed_by_week?: number;
+        };
+        /** @description Sequence entry for Rolling intake model */
+        RollingIntakeSequenceEntry: {
+            /** @description What triggers unlocking these subjects (Enrolment */
+            unlock_trigger?: string;
+            /** @description Subjects unlocked by this trigger */
+            subjects_unlocked?: {
+                /** Format: uuid */
+                subject_id?: string;
+                subject_name?: string;
+                estimated_duration_weeks?: number;
+                /** @description Subject IDs that must be completed first */
+                prerequisite_subjects?: string[];
+            }[];
         };
     };
     responses: {
@@ -2823,6 +3047,147 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCoursePlanStructure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Complete course plan structure */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoursePlanStructure"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCoursePlanPrerequisites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Prerequisites for the course plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectPrerequisite"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateCoursePlanPrerequisites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectPrerequisiteInput"][];
+            };
+        };
+        responses: {
+            /** @description Prerequisites updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example Prerequisites updated */
+                        message?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    validateCoursePlanProgression: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Progression validation results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressionValidationResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    previewCoursePlanProgression: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgressionPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Progression preview results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressionPreviewResult"];
+                };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];

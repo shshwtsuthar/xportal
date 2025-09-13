@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProgramSelector } from './_components/ProgramSelector';
-import { CoursePlans } from './_components/CoursePlans';
+import { AdvancedCoursePlans } from './_components/AdvancedCoursePlans';
 import { PaymentTemplates } from './_components/PaymentTemplates';
 import { Offerings } from './_components/Offerings';
 import { usePrograms } from '@/hooks/use-programs';
@@ -196,7 +196,7 @@ export default function ProgramsPage() {
               </TabsList>
               
               <TabsContent value="course-plans" className="mt-6">
-                <CoursePlans programId={selectedProgramId} />
+                <AdvancedCoursePlans programId={selectedProgramId} />
               </TabsContent>
               
               <TabsContent value="payment-templates" className="mt-6">
