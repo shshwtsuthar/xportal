@@ -1,0 +1,15 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+All the documentation documents are in the docs folder in the root.
+Read @development for previous context about development.
+Read @CHANGELOG.md for context about current and ongoing changes.
+Read @flow.md for development flow.
+The development is API driven.
+Check if Database is competent @openapi.yaml, if not implement migration -> Update OpenAPI -> Generate Types -> Create Backend -> Create Frontend Hooks -> Create Frontend UI -> Test -> Write to Changelog
+
+The project is extremely critical, and is massive. We will be implementing smaller features, first discuss, create to-do, then implement.
+If you don't understand a thing, then please inform.
