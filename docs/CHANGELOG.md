@@ -1,3 +1,52 @@
+## 2025-01-27 — Application Delete Functionality
+
+### Business Logic (authoritative summary)
+- **Application Deletion**: Implemented comprehensive delete functionality for applications across all status stages
+  - **Universal Access**: Delete button available for applications in any status (Draft, Submitted, AwaitingPayment, Accepted, Approved, Rejected)
+  - **Complete Removal**: Applications are permanently deleted from the `sms_op.applications` table with no soft delete
+  - **User Safety**: Clear visual separation with destructive styling and confirmation through UI feedback
+
+### Backend — Supabase Edge Functions (applications)
+- **New DELETE Endpoint**: `DELETE /applications/{applicationId}`
+  - **Complete Deletion**: Permanently removes application from database
+  - **Transaction Safety**: Uses database transactions to ensure data integrity
+  - **Error Handling**: Proper 404 responses for non-existent applications
+  - **CORS Support**: Added DELETE method to CORS headers for cross-origin requests
+
+### Frontend — Application Management
+- **Enhanced Applications Table**: Added delete functionality to Actions dropdown
+  - **Visual Design**: Delete button with destructive styling (red text, trash icon)
+  - **UI Separation**: Clear visual separation with border-top styling
+  - **Loading States**: Proper loading indicators during delete operations
+  - **Error Handling**: User-friendly error messages for failed deletions
+- **React Hooks**: New `useDeleteApplication` hook for API integration
+  - **Query Invalidation**: Automatically refreshes application lists after deletion
+  - **ETag Cleanup**: Removes cached ETags for deleted applications
+  - **Error Management**: Comprehensive error handling and user feedback
+
+### API Specification & Type Safety
+- **OpenAPI Schema**: Added DELETE endpoint specification
+  - **Response Codes**: 204 No Content for successful deletion
+  - **Error Responses**: 404 for not found, 500 for server errors
+  - **Type Generation**: Updated TypeScript types for both frontend and backend
+- **CORS Configuration**: Fixed CORS headers to include DELETE method
+  - **Cross-Origin Support**: Proper handling of DELETE requests from frontend
+  - **Method Allowance**: Added DELETE to Access-Control-Allow-Methods header
+
+### Technical Improvements
+- **Database Operations**: Transaction-based deletion for data integrity
+- **Type Safety**: Full TypeScript compliance throughout the implementation
+- **Error Handling**: Comprehensive error management with user feedback
+- **Performance**: Efficient query invalidation and cache management
+
+### User Experience Enhancements
+- **Intuitive Design**: Delete button clearly separated and styled as destructive action
+- **Consistent UI**: Follows existing ShadCN design patterns and theme system
+- **Accessibility**: Proper ARIA labels and keyboard navigation support
+- **Responsive Design**: Works across all device sizes and screen resolutions
+
+---
+
 ## 2025-09-13 — Dual Intake Model System & Advanced Course Plan Management
 
 ### Business Logic (authoritative summary)

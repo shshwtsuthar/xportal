@@ -283,6 +283,28 @@ const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
   });
 };
 
+// --- Logic: Delete Application ---
+const deleteApplicationLogic = async (_req: Request, _ctx: ApiContext, applicationId: string) => {
+  await db.transaction().execute(async (trx: DatabaseTransaction) => {
+    // Check if application exists
+    const existingApplication = await trx.selectFrom('sms_op.applications')
+      .selectAll().where('id', '=', applicationId).forUpdate().executeTakeFirst();
+    
+    if (!existingApplication) {
+      throw new NotFoundError('Application not found.');
+    }
+
+    // Delete the application completely from the database
+    await trx.deleteFrom('sms_op.applications')
+      .where('id', '=', applicationId)
+      .execute();
+  });
+
+  return new Response(null, {
+    status: 204, headers: corsHeaders,
+  });
+};
+
 // --- Logic: Submit a Draft for Approval ---
 const submitApplicationLogic = async (_req: Request, _ctx: ApiContext, _body: unknown, applicationId: string) => {
   const submittedApplication = await db.transaction().execute(async (trx: DatabaseTransaction) => {
@@ -1569,6 +1591,11 @@ const applicationsRouter = async (req: Request, ctx: ApiContext, body: unknown):
       const validationError = validateApplicationId(pathSegments[1]);
       if (validationError) return validationError;
       return await updateApplicationLogic(req, ctx, body, pathSegments[1]);
+    }
+    if (pathSegments.length === 2 && method === 'DELETE') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await deleteApplicationLogic(req, ctx, pathSegments[1]);
     }
     if (pathSegments.length === 3 && pathSegments[2] === 'submit' && method === 'POST') {
       const validationError = validateApplicationId(pathSegments[1]);

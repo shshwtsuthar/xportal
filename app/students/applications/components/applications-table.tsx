@@ -12,7 +12,8 @@ import {
   XCircle, 
   Clock,
   Eye,
-  MoreHorizontal
+  MoreHorizontal,
+  Trash2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -36,6 +37,7 @@ interface ApplicationsTableProps {
   onSendOfferAndAwaiting?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
   onDownloadOfferAndAwaiting?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
   onView?: (applicationId: string) => void;
+  onDelete?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const statusConfig = {
@@ -74,6 +76,7 @@ export function ApplicationsTable({
   onSendOfferAndAwaiting,
   onDownloadOfferAndAwaiting,
   onView,
+  onDelete,
 }: ApplicationsTableProps) {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
@@ -380,6 +383,31 @@ export function ApplicationsTable({
                             </DropdownMenuItem>
                           )}
                         </>
+                      )}
+
+                      {/* Delete button - available for all statuses */}
+                      {onDelete && (
+                        <DropdownMenuItem 
+                          onClick={async () => {
+                            if (!onDelete) return;
+                            setProcessingId(app.id || null);
+                            try {
+                              const result = await onDelete(app.id || '');
+                              if (!result.success) {
+                                alert(`Failed to delete application: ${result.error || 'Unknown error'}`);
+                              }
+                            } catch (error: any) {
+                              alert(`Failed to delete application: ${error?.message || 'Unknown error'}`);
+                            } finally {
+                              setProcessingId(null);
+                            }
+                          }}
+                          disabled={isProcessing}
+                          className="text-destructive focus:text-destructive border-t border-border mt-1 pt-1"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Application
+                        </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>

@@ -92,4 +92,27 @@ export const useApproveApplication = (applicationId: string) => {
   });
 };
 
+export const useDeleteApplication = (applicationId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${BASE_URL}/applications/${applicationId}`, { 
+        method: 'DELETE', 
+        headers: getFunctionHeaders() 
+      });
+      if (!res.ok) throw new Error('Failed to delete application');
+      return null; // DELETE returns 204 No Content
+    },
+    onSuccess: () => {
+      // Invalidate all application-related queries since the application is deleted
+      qc.invalidateQueries({ queryKey: ['applications'] });
+      qc.invalidateQueries({ queryKey: ['application', applicationId] });
+      // Clear ETag for this application
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(getEtagKey(applicationId));
+      }
+    },
+  });
+};
+
 

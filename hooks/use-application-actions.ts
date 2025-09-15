@@ -263,6 +263,32 @@ export const useBulkApplicationActions = () => {
   };
 };
 
+// Hook for deleting applications
+export const useDeleteApplication = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (applicationId: string) => {
+      const response = await fetch(`${BASE_URL}/applications/${applicationId}`, {
+        method: 'DELETE',
+        headers: getFunctionHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to delete application: ${response.statusText}`);
+      }
+
+      return null; // DELETE returns 204 No Content
+    },
+    onSuccess: (_, applicationId) => {
+      // Invalidate all application queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['application', applicationId] });
+    },
+  });
+};
+
 // Export types
 export type {
   RejectApplicationPayload,

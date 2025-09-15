@@ -34,6 +34,7 @@ export default function ApplicationsPage() {
     handleAcceptApplication,
     handleSendOfferAndAwaiting,
     handleDownloadOfferAndAwaiting,
+    handleDeleteApplication,
     refreshData,
   } = useApplicationsManagement();
 
@@ -84,6 +85,7 @@ export default function ApplicationsPage() {
             onAccept={handleAcceptApplication}
             onSendOfferAndAwaiting={handleSendOfferAndAwaiting}
             onDownloadOfferAndAwaiting={handleDownloadOfferAndAwaiting}
+            onDelete={handleDeleteApplication}
           />
 
           {/* Pagination */}

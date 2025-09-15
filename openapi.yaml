@@ -171,6 +171,27 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteApplication
+      summary: Delete an Application
+      description: >
+        Permanently deletes an application from the database. This action is irreversible.
+        The application will be completely removed from the sms_op.applications table.
+        This operation is available for applications in any status (Draft, Submitted, Approved, Rejected).
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '204':
+          description: Application successfully deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /applications/{applicationId}/submit:
     post:
@@ -1842,6 +1863,12 @@ components:
       description: Unauthorized
     NotFound:
       description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal Server Error
       content:
         application/json:
           schema:

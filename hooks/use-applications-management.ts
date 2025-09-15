@@ -22,6 +22,7 @@ import {
   useSendOffer,
   useMarkAwaitingPayment,
   useBulkApplicationActions,
+  useDeleteApplication,
   type RejectApplicationPayload,
   type ApproveApplicationPayload,
 } from './use-application-actions';
@@ -81,6 +82,7 @@ export const useApplicationsManagement = () => {
   const acceptMutation = useAcceptApplication();
   const sendOfferMutation = useSendOffer();
   const markAwaitingMutation = useMarkAwaitingPayment();
+  const deleteMutation = useDeleteApplication();
   const { bulkReject, bulkApprove } = useBulkApplicationActions();
 
   // Helper functions
@@ -176,6 +178,18 @@ export const useApplicationsManagement = () => {
       return { success: true };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to mark awaiting payment' };
+    }
+  };
+
+  const handleDeleteApplication = async (applicationId: string) => {
+    try {
+      await deleteMutation.mutateAsync(applicationId);
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to delete application' 
+      };
     }
   };
 
@@ -275,6 +289,7 @@ export const useApplicationsManagement = () => {
     handleAcceptApplication,
     handleSendOfferAndAwaiting,
     handleDownloadOfferAndAwaiting,
+    handleDeleteApplication,
     handleBulkReject,
     handleBulkApprove,
     refreshData,

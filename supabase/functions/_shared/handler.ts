@@ -10,7 +10,7 @@ export const createApiRoute = (logic: ApiLogicHandler) => {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, if-match, idempotency-key',
-          'Access-Control-Allow-Methods': 'GET,POST,PATCH,PUT,OPTIONS',
+          'Access-Control-Allow-Methods': 'GET,POST,PATCH,PUT,DELETE,OPTIONS',
         }
       }); 
     }
@@ -54,6 +54,6 @@ export const createApiRoute = (logic: ApiLogicHandler) => {
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, if-match, idempotency-key',
-  'Access-Control-Allow-Methods': 'GET,POST,PATCH,PUT,OPTIONS',
+  'Access-Control-Allow-Methods': 'GET,POST,PATCH,PUT,DELETE,OPTIONS',
   'Access-Control-Expose-Headers': 'etag',
 };
