@@ -9,7 +9,11 @@ Read @development for previous context about development.
 Read @CHANGELOG.md for context about current and ongoing changes.
 Read @flow.md for development flow.
 The development is API driven.
-Check if Database is competent @openapi.yaml, if not implement migration -> Update OpenAPI -> Generate Types -> Create Backend -> Create Frontend Hooks -> Create Frontend UI -> Test -> Write to Changelog
+Check if Database is competent @openapi.yaml, if not implement migration -> Update OpenAPI -> Generate Types -> Create Backend -> Create Frontend Hooks -> Create Frontend UI -> Lint every file you have touched -> ask me to Test -> Write to Changelog
 
 The project is extremely critical, and is massive. We will be implementing smaller features, first discuss, create to-do, then implement.
-If you don't understand a thing, then please inform.
+If you don't understand a thing, then please ask me and only THEN move forward. DO NOT be confused about anything. If you are confused, your responsibility is to ask ME.
+
+Remember, lint every file you have touched using internal tools, deno check every backend file you have touched.
+
+Never ever run the development server or the supabase functions serve command. Remember, they are always running (ran by me), you do not need to run them again.
