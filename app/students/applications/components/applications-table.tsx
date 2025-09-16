@@ -218,17 +218,18 @@ export function ApplicationsTable({
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="w-[100px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
           {applications.map((app) => {
             const statusConfig = getStatusConfig(app.status || 'Draft');
             const isProcessing = processingId === app.id;
@@ -418,7 +419,8 @@ export function ApplicationsTable({
             );
           })}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
 
       {/* Reject Dialog */}
       {showRejectDialog && (
