@@ -17,3 +17,5 @@ If you don't understand a thing, then please ask me and only THEN move forward. 
 Remember, lint every file you have touched using internal tools, deno check every backend file you have touched.
 
 Never ever run the development server or the supabase functions serve command. Remember, they are always running (ran by me), you do not need to run them again.
+
+We will ALWAYS work on this project incrementally. Feature by feature. We will break a feature down into its subcomponents, and only then will we work on every subcomponent slowly. We will tackle all problems systematically instead of rushing and implementing it in its entirety in one go.
