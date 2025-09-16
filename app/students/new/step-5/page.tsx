@@ -13,11 +13,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { WizardProgress } from '../components/wizard-progress';
+import { SaveDraftButton } from '../components/save-draft-button';
 import { useApplicationWizard } from '@/stores/application-wizard';
 import type { Step4AgentReferral } from '@/lib/schemas/application-schemas';
 import { Step4AgentReferralSchema } from '@/lib/schemas/application-schemas';
 import { useAgents, transformAgentsForSelect } from '@/hooks/use-agents';
-import { useAutosave } from '@/hooks/use-autosave';
 import { useEffect } from 'react';
 
 // =============================================================================
@@ -27,7 +27,7 @@ import { useEffect } from 'react';
 
 export default function Step4AgentReferral() {
   const router = useRouter();
-  const { updateStep4Data, nextStep, previousStep, draftId, formData } = useApplicationWizard();
+  const { updateStep4Data, nextStep, previousStep, draftId, formData, markDirty } = useApplicationWizard();
   
   // Agents query
   const { data: agentsData, isLoading: agentsLoading } = useAgents();
@@ -42,6 +42,7 @@ export default function Step4AgentReferral() {
     formState: { errors },
     watch,
     setValue,
+    getValues,
   } = useForm<Step4AgentReferral>({
     // Keep runtime field type checks, but do not block Next step
     // resolver: zodResolver(Step4AgentReferralSchema) as any,
@@ -56,20 +57,17 @@ export default function Step4AgentReferral() {
   });
   
   const watchedValues = watch();
-
-  // Autosave draft (Step 4)
-  const { schedule, saveNow } = useAutosave({
-    applicationId: draftId || '',
-    enabled: Boolean(draftId),
-    debounceMs: 1500,
-    getPayload: () => ({
-      agentId: watchedValues.agentReferral?.agentId ?? null,
-    }),
-  });
-
+  
+  // Mark store as dirty when form values change
   useEffect(() => {
-    schedule();
-  }, [watchedValues.agentReferral?.agentId]);
+    const subscription = watch((value, { name, type }) => {
+      if (type === 'change' && name) {
+        markDirty();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, markDirty]);
+
 
   // Hydrate when formData changes
   useEffect(() => {
@@ -293,9 +291,12 @@ export default function Step4AgentReferral() {
               <Button type="button" variant="outline" onClick={handlePrevious}>
                 Previous Step
               </Button>
-              <Button type="button" onClick={handleNext}>
-                Next Step
-              </Button>
+              <div className="flex gap-2">
+                <SaveDraftButton getFormData={() => getValues()} />
+                <Button type="button" onClick={handleNext}>
+                  Next Step
+                </Button>
+              </div>
             </div>
           </form>
         </div>

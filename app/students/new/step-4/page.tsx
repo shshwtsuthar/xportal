@@ -19,8 +19,8 @@ import { CalendarIcon, Clock, Users, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { WizardProgress } from '../components/wizard-progress';
+import { SaveDraftButton } from '../components/save-draft-button';
 import { useApplicationWizard } from '@/stores/application-wizard';
-import { useAutosave } from '@/hooks/use-autosave';
 import type { Step3ProgramSelection } from '@/lib/schemas/application-schemas';
 import { Step3ProgramSelectionSchema } from '@/lib/schemas/application-schemas';
 import { 
@@ -46,7 +46,7 @@ import { useLocations, transformLocationsForSelect } from '@/hooks/use-locations
 
 export default function Step4ProgramSelection() {
   const router = useRouter();
-  const { updateStep3Data, nextStep, previousStep, draftId, formData } = useApplicationWizard();
+  const { updateStep3Data, nextStep, previousStep, draftId, formData, markDirty } = useApplicationWizard();
   
   // Form state
   const [selectedProgramId, setSelectedProgramId] = useState<string>('');
@@ -86,6 +86,7 @@ export default function Step4ProgramSelection() {
     formState: { errors },
     watch,
     setValue,
+    getValues,
   } = useForm<Step3ProgramSelection>({
     defaultValues: {
       enrolmentDetails: {
@@ -135,47 +136,16 @@ export default function Step4ProgramSelection() {
   }, [formData, setValue]);
   
   const watchedValues = watch();
-
-  // Autosave draft (backend-first) for Step 4
-  const { schedule, saveNow } = useAutosave({
-    applicationId: draftId || '',
-    enabled: Boolean(draftId),
-    debounceMs: 1500,
-    getPayload: () => ({
-      enrolmentDetails: {
-        programId: watchedValues.enrolmentDetails?.programId,
-        coursePlanId: watchedValues.enrolmentDetails?.coursePlanId,
-        courseOfferingId: watchedValues.enrolmentDetails?.courseOfferingId,
-        intakeModel: watchedValues.enrolmentDetails?.intakeModel,
-        subjectStructure: watchedValues.enrolmentDetails?.subjectStructure,
-        startDate: watchedValues.enrolmentDetails?.startDate,
-        expectedCompletionDate: watchedValues.enrolmentDetails?.expectedCompletionDate,
-        deliveryLocationId: watchedValues.enrolmentDetails?.deliveryLocationId,
-        deliveryModeId: watchedValues.enrolmentDetails?.deliveryModeId,
-        fundingSourceId: watchedValues.enrolmentDetails?.fundingSourceId,
-        studyReasonId: watchedValues.enrolmentDetails?.studyReasonId,
-        isVetInSchools: Boolean(watchedValues.enrolmentDetails?.isVetInSchools),
-      },
-    }),
-  });
-
+  
+  // Mark store as dirty when form values change
   useEffect(() => {
-    schedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    watchedValues.enrolmentDetails?.programId,
-    watchedValues.enrolmentDetails?.coursePlanId,
-    watchedValues.enrolmentDetails?.courseOfferingId,
-    watchedValues.enrolmentDetails?.intakeModel,
-    JSON.stringify(watchedValues.enrolmentDetails?.subjectStructure),
-    watchedValues.enrolmentDetails?.startDate,
-    watchedValues.enrolmentDetails?.expectedCompletionDate,
-    watchedValues.enrolmentDetails?.deliveryLocationId,
-    watchedValues.enrolmentDetails?.deliveryModeId,
-    watchedValues.enrolmentDetails?.fundingSourceId,
-    watchedValues.enrolmentDetails?.studyReasonId,
-    watchedValues.enrolmentDetails?.isVetInSchools,
-  ]);
+    const subscription = watch((value, { name, type }) => {
+      if (type === 'change' && name) {
+        markDirty();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, markDirty]);
   
   // Reset dependent selections when program changes
   useEffect(() => {
@@ -188,7 +158,7 @@ export default function Step4ProgramSelection() {
       setSelectedElectiveSubjects([]);
       setValue('enrolmentDetails.coursePlanId', '');
       setValue('enrolmentDetails.courseOfferingId', '');
-      setValue('enrolmentDetails.intakeModel', '');
+      setValue('enrolmentDetails.intakeModel', undefined);
       setValue('enrolmentDetails.startDate', '');
       setValue('enrolmentDetails.expectedCompletionDate', '');
       setValue('enrolmentDetails.subjectStructure.coreSubjectIds', []);
@@ -211,13 +181,11 @@ export default function Step4ProgramSelection() {
     }
   };
   
-  const handleNext = async () => {
-    await saveNow();
+  const handleNext = () => {
     handleSubmit(onSubmit)();
   };
   
-  const handlePrevious = async () => {
-    await saveNow();
+  const handlePrevious = () => {
     previousStep();
     router.push('/students/new/step-3');
   };
@@ -819,9 +787,12 @@ export default function Step4ProgramSelection() {
               <Button type="button" variant="outline" onClick={handlePrevious}>
                 Previous Step
               </Button>
-              <Button type="button" onClick={handleNext}>
-                Next Step
-              </Button>
+              <div className="flex gap-2">
+                <SaveDraftButton getFormData={() => getValues()} />
+                <Button type="button" onClick={handleNext}>
+                  Next Step
+                </Button>
+              </div>
             </div>
           </form>
         </div>

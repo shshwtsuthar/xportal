@@ -22,7 +22,7 @@ import {
   transformReferenceData 
 } from '@/hooks/use-reference-data';
 import { useEffect } from 'react';
-import { useAutosave } from '@/hooks/use-autosave';
+import { SaveDraftButton } from '../components/save-draft-button';
 
 // =============================================================================
 // STEP 2: ACADEMIC INFORMATION
@@ -31,7 +31,7 @@ import { useAutosave } from '@/hooks/use-autosave';
 
 export default function Step2AcademicInformation() {
   const router = useRouter();
-  const { updateStep2Data, nextStep, previousStep, draftId, formData } = useApplicationWizard();
+  const { updateStep2Data, nextStep, previousStep, draftId, formData, markDirty } = useApplicationWizard();
   
   // Reference data queries
   const { data: countriesData, isLoading: countriesLoading } = useCountries();
@@ -56,6 +56,7 @@ export default function Step2AcademicInformation() {
     formState: { errors },
     watch,
     setValue,
+    getValues,
   } = useForm<Step2AcademicInfo>({
     defaultValues: {
       avetmissDetails: {
@@ -114,45 +115,16 @@ export default function Step2AcademicInformation() {
   }, [formData, setValue]);
   
   const watchedValues = watch();
-
-  // Autosave draft (Step 2)
-  const { schedule, saveNow } = useAutosave({
-    applicationId: draftId || '',
-    enabled: Boolean(draftId),
-    debounceMs: 1500,
-    getPayload: () => {
-      const rawUsi = (watchedValues as any).usi || {};
-      const normalizedUsi = {
-        usi: rawUsi.usi ?? rawUsi.value ?? undefined,
-        exemptionCode: rawUsi.exemptionCode ?? rawUsi.exemption ?? undefined,
-      };
-      // Enforce mutual exclusivity at source
-      if (normalizedUsi.usi && normalizedUsi.exemptionCode) {
-        // Use null to ensure backend merge clears previous value
-        normalizedUsi.exemptionCode = null as any;
+  
+  // Mark store as dirty when form values change
+  useEffect(() => {
+    const subscription = watch((value, { name, type }) => {
+      if (type === 'change' && name) {
+        markDirty();
       }
-      // Only include CRICOS when international
-      const isIntl = Boolean((formData as any)?.isInternationalStudent);
-      const rawCricos = (watchedValues as any)?.cricosDetails || undefined;
-      const includeCricos = isIntl && rawCricos && Object.values(rawCricos).some((v) => v != null && String(v).trim() !== '');
-      return {
-        avetmissDetails: watchedValues.avetmissDetails,
-        usi: normalizedUsi,
-        // @ts-ignore only relevant for international students; omit when not set
-        cricosDetails: includeCricos ? (watchedValues as any)?.cricosDetails : undefined,
-      };
-    },
-  });
-
-  useEffect(() => {
-    schedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(watchedValues.avetmissDetails)]);
-  // Also autosave when USI/CRICOS change
-  useEffect(() => {
-    schedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify((watchedValues as any)?.usi), JSON.stringify((watchedValues as any)?.cricosDetails)]);
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, markDirty]);
   
   const onSubmit: SubmitHandler<any> = async (data) => {
     try {
@@ -169,13 +141,11 @@ export default function Step2AcademicInformation() {
     }
   };
   
-  const handleNext = async () => {
-    await saveNow();
+  const handleNext = () => {
     handleSubmit(onSubmit)();
   };
   
-  const handlePrevious = async () => {
-    await saveNow();
+  const handlePrevious = () => {
     previousStep();
     router.push('/students/new/step-2');
   };
@@ -684,9 +654,12 @@ export default function Step2AcademicInformation() {
               <Button type="button" variant="outline" onClick={handlePrevious}>
                 Previous Step
               </Button>
-              <Button type="button" onClick={handleNext}>
-                Next Step
-              </Button>
+              <div className="flex gap-2">
+                <SaveDraftButton getFormData={() => getValues()} />
+                <Button type="button" onClick={handleNext}>
+                  Next Step
+                </Button>
+              </div>
             </div>
           </form>
         </div>

@@ -1,10 +1,11 @@
 'use client';
 
-import { } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { WizardProgress } from '../components/wizard-progress';
+import { SaveDraftButton } from '../components/save-draft-button';
 import { useApplicationWizard } from '@/stores/application-wizard';
 import { DocumentDropzone } from './components/document-dropzone';
 import { DocumentList } from './components/document-list';
@@ -17,7 +18,7 @@ import { useDocumentUpload } from '@/hooks/use-document-upload';
 
 export default function Step1DocumentUpload() {
   const router = useRouter();
-  const { nextStep, draftId } = useApplicationWizard();
+  const { nextStep, draftId, markDirty } = useApplicationWizard();
   const { 
     documents, 
     isLoading, 
@@ -30,6 +31,13 @@ export default function Step1DocumentUpload() {
     nextStep();
     router.push('/students/new/step-2');
   };
+
+  // Mark as dirty when documents change
+  useEffect(() => {
+    if (documents && documents.length > 0) {
+      markDirty();
+    }
+  }, [documents, markDirty]);
 
   const handleFileUpload = async (file: File) => {
     if (!draftId) return;
@@ -103,7 +111,8 @@ export default function Step1DocumentUpload() {
           </Card>
           
           {/* Navigation */}
-          <div className="flex justify-end">
+          <div className="flex justify-between">
+            <SaveDraftButton />
             <Button onClick={handleNext} className="px-8">
               Continue to Personal Information
             </Button>

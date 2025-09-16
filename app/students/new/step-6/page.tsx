@@ -12,10 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { WizardProgress } from '../components/wizard-progress';
+import { SaveDraftButton } from '../components/save-draft-button';
 import { useApplicationWizard } from '@/stores/application-wizard';
 import type { Step5FinancialArrangements } from '@/lib/schemas/application-schemas';
 import { Step5FinancialArrangementsSchema } from '@/lib/schemas/application-schemas';
-import { useAutosave } from '@/hooks/use-autosave';
 import { usePaymentPlanTemplates } from '@/hooks/use-payment-templates';
 import { useApplication } from '@/hooks/use-application';
 import { usePrograms, transformProgramsForSelect } from '@/hooks/use-programs';
@@ -28,7 +28,7 @@ import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 
 export default function Step5FinancialArrangements() {
   const router = useRouter();
-  const { updateStep5Data, nextStep, previousStep, draftId } = useApplicationWizard();
+  const { updateStep5Data, nextStep, previousStep, draftId, markDirty } = useApplicationWizard();
   const { programId: applicationProgramId } = useApplication(draftId || '');
   
   // Program selection state (fallback if no program selected in earlier steps)
@@ -57,6 +57,7 @@ export default function Step5FinancialArrangements() {
     formState: { errors },
     watch,
     setValue,
+    getValues,
   } = useForm<Step5FinancialArrangements>({
     defaultValues: {
       financialArrangements: {
@@ -74,34 +75,17 @@ export default function Step5FinancialArrangements() {
   });
   
   const watchedValues = watch();
-
-  // Autosave draft (Step 5)
-  const { schedule, saveNow } = useAutosave({
-    applicationId: draftId || '',
-    enabled: Boolean(draftId),
-    debounceMs: 1500,
-    getPayload: () => ({
-      // Legacy payload retained
-      financialArrangements: watchedValues.financialArrangements,
-      // New payment plan snapshot persisted alongside legacy
-      paymentPlan: {
-        selectedTemplateId: selectedTemplateId || undefined,
-        anchor,
-        anchorDate: anchor === 'CUSTOM' ? (anchorDate || undefined) : (anchor === 'COMMENCEMENT' ? (anchorDate || undefined) : undefined),
-        schedule: derivedSchedule,
-        tuitionFeeSnapshot: Number(derivedSchedule.reduce((s, i) => s + (Number(i.amount) || 0), 0).toFixed(2)),
-      },
-      // Include program selection if changed
-      ...(selectedProgramId && selectedProgramId !== applicationProgramId ? {
-        enrolmentDetails: { programId: selectedProgramId }
-      } : {}),
-    }),
-  });
-
+  
+  // Mark store as dirty when form values change
   useEffect(() => {
-    schedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(watchedValues.financialArrangements), selectedTemplateId, anchor, anchorDate, JSON.stringify(derivedSchedule), selectedProgramId]);
+    const subscription = watch((value, { name, type }) => {
+      if (type === 'change' && name) {
+        markDirty();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, markDirty]);
+
 
   // Derive schedule from backend based on selection
   const derive = async () => {
@@ -552,9 +536,12 @@ export default function Step5FinancialArrangements() {
               <Button type="button" variant="outline" onClick={handlePrevious}>
                 Previous Step
               </Button>
-              <Button type="button" onClick={handleNext}>
-                Review Application
-              </Button>
+              <div className="flex gap-2">
+                <SaveDraftButton getFormData={() => getValues()} />
+                <Button type="button" onClick={handleNext}>
+                  Review Application
+                </Button>
+              </div>
             </div>
           </form>
         </div>

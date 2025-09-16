@@ -3,8 +3,10 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { WizardProgress } from './components/wizard-progress';
-import { useApplicationWizard } from '@/stores/application-wizard';
+import { useApplicationWizard, useUnsavedChangesWarning } from '@/stores/application-wizard';
 import { clearApplicationWizardStorage } from '@/lib/utils';
+import { UnsavedChangesDialog } from './components/unsaved-changes-dialog';
+import { useState } from 'react';
 
 // =============================================================================
 // NEW APPLICATION WIZARD CONTAINER
@@ -13,35 +15,49 @@ import { clearApplicationWizardStorage } from '@/lib/utils';
 
 export default function NewApplicationWizard() {
   const router = useRouter();
-  const { currentStep, createDraft, draftId } = useApplicationWizard();
+  const { currentStep, draftId, loadDraft, isDirty } = useApplicationWizard();
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   
-  // Create draft on mount if it doesn't exist or is invalid (legacy non-UUID)
+  // Enable unsaved changes warning
+  useUnsavedChangesWarning();
+  
+  // Load existing draft if it exists (no automatic creation)
   useEffect(() => {
     const isUuidLike = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/;
-    if (!draftId || !isUuidLike.test(draftId)) {
-      createDraft().catch(console.error);
-    } else {
+    if (draftId && isUuidLike.test(draftId)) {
       // Hydrate formData from server on app mount
-      useApplicationWizard.getState().loadDraft(draftId).catch(console.error);
+      loadDraft(draftId).catch((error) => {
+        console.error('Failed to load draft:', error);
+        // Could show a toast here if needed
+      });
     }
-  }, [draftId, createDraft]);
+  }, [draftId, loadDraft]);
 
   // If user navigates to New Application afresh via sidebar, clear any old wizard storage first
   useEffect(() => {
     clearApplicationWizardStorage();
   }, []);
   
-  // Redirect to current step only after we have a valid draftId
+  // Redirect to current step (no need to wait for draftId since we don't auto-create)
   useEffect(() => {
-    if (!draftId) return;
     const stepPath = `/students/new/step-${currentStep}`;
     if (currentStep === 7) {
       router.replace('/students/new/review');
     } else {
       router.replace(stepPath);
     }
-  }, [currentStep, router, draftId]);
+  }, [currentStep, router]);
   
+  const handleConfirmLeave = () => {
+    // User confirmed they want to leave without saving
+    router.push('/students/applications');
+  };
+
+  const handleCancelLeave = () => {
+    // User cancelled - stay on current page
+    setShowUnsavedDialog(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Progress Indicator - Non-overlapping with sidebar */}
@@ -57,6 +73,14 @@ export default function NewApplicationWizard() {
           </div>
         </div>
       </div>
+      
+      {/* Unsaved Changes Dialog */}
+      <UnsavedChangesDialog
+        open={showUnsavedDialog}
+        onOpenChange={setShowUnsavedDialog}
+        onConfirmLeave={handleConfirmLeave}
+        onCancel={handleCancelLeave}
+      />
     </div>
   );
 }

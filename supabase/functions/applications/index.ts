@@ -235,12 +235,21 @@ const createApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
 // --- Logic: Update a Draft Application ---
 const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unknown, applicationId: string) => {
   const payload = body as Partial<FullEnrolmentPayload> & { status?: string };
+  
+  // Handle case where payload might be null
+  if (!payload) {
+    const emptyPayload = {} as Partial<FullEnrolmentPayload> & { status?: string };
+    return await updateApplicationLogic(_req, _ctx, emptyPayload, applicationId);
+  }
   const updatedApplication = await db.transaction().execute(async (trx: DatabaseTransaction) => {
     const existingApplication = await trx.selectFrom('sms_op.applications')
       .selectAll().where('id', '=', applicationId).forUpdate().executeTakeFirst();
     if (!existingApplication) throw new NotFoundError('Application not found.');
-    if (existingApplication.status !== 'Draft' && !payload.status) {
-      throw new ValidationError(`Cannot update an application with status '${existingApplication.status}'.`);
+    
+    // Handle case where status might be null (defensive programming)
+    const currentStatus = existingApplication.status || 'Draft';
+    if (currentStatus !== 'Draft' && !payload.status) {
+      throw new ValidationError(`Cannot update an application with status '${currentStatus}'.`);
     }
     
     const updateData: Record<string, unknown> = { updated_at: new Date() };
@@ -248,6 +257,9 @@ const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
     // Handle status updates
     if (payload.status) {
       updateData.status = payload.status;
+    } else if (!existingApplication.status) {
+      // If status is null, set it to Draft
+      updateData.status = 'Draft';
     }
     
     // Handle payload updates (exclude status from payload merge)
@@ -270,7 +282,11 @@ const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
           }
         }
       }
-      const mergedPayload = deepMerge(existingApplication.application_payload as FullEnrolmentPayload, payloadData);
+      
+      // Ensure we have a valid target for deepMerge
+      const existingPayload = existingApplication.application_payload || {};
+      const mergedPayload = deepMerge(existingPayload as FullEnrolmentPayload, payloadData);
+      
       updateData.application_payload = mergedPayload;
     }
     
@@ -312,8 +328,11 @@ const submitApplicationLogic = async (_req: Request, _ctx: ApiContext, _body: un
       .selectAll().where('id', '=', applicationId).forUpdate().executeTakeFirst();
 
     if (!application) throw new NotFoundError('Application not found.');
-    if (application.status === 'Submitted') return application;
-    if (application.status !== 'Draft') {
+    
+    // Handle case where status might be null (defensive programming)
+    const currentStatus = application.status || 'Draft';
+    if (currentStatus === 'Submitted') return application;
+    if (currentStatus !== 'Draft') {
       throw new ValidationError(`Only applications in 'Draft' status can be submitted.`);
     }
 
@@ -349,7 +368,10 @@ const approveApplicationLogic = async (_req: Request, _ctx: ApiContext, body: un
     if (!application) {
       throw new NotFoundError('Application not found.');
     }
-    if (application.status !== 'Accepted') {
+    
+    // Handle case where status might be null (defensive programming)
+    const currentStatus = application.status || 'Draft';
+    if (currentStatus !== 'Accepted') {
       throw new ValidationError(`Only applications in 'Accepted' status can be approved.`);
     }
 
@@ -468,7 +490,9 @@ const rejectApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
     });
   }
 
-  if (application.status !== 'Submitted') {
+  // Handle case where status might be null (defensive programming)
+  const currentStatus = application.status || 'Draft';
+  if (currentStatus !== 'Submitted') {
     return new Response(JSON.stringify({ message: 'Only submitted applications can be rejected' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

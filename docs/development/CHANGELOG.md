@@ -1,3 +1,88 @@
+## 2025-09-16 — Manual Save Draft System Implementation
+
+### Business Logic (authoritative summary)
+- **Manual Draft System**: Completely overhauled the application wizard draft system from auto-save to manual save
+  - **Removed Auto-Save**: Eliminated all automatic draft saving functionality throughout the application wizard
+  - **Manual Save Only**: Drafts are now saved only when users explicitly click the "Save Draft" button
+  - **No Initial Draft Creation**: Drafts are not automatically created when the wizard opens - only created on first save
+  - **User Control**: Users have complete control over when their work is saved to the server
+  - **Unsaved Changes Warning**: Browser-level warning when users try to navigate away with unsaved changes
+
+### Frontend — Save Draft Button Component
+- **New Component**: `SaveDraftButton.tsx` - Reusable save draft button following ShadCN design system
+  - **Smart State Management**: Button automatically disabled when no changes since last save
+  - **Loading States**: Visual feedback with spinner during save operations
+  - **Form Data Integration**: Accepts `getFormData` callback to capture current form state
+  - **Error Handling**: User-friendly error messages for failed save operations
+  - **Design Compliance**: Follows ShadCN button variants with proper styling and accessibility
+- **Integration**: Added to all wizard steps (Step 1-6) with proper form data capture
+  - **Step 1**: Document upload (no form data capture needed)
+  - **Steps 2-6**: Personal info, academic info, program selection, agent referral, financial arrangements
+  - **Form Data Capture**: Each step passes `getFormData={() => getValues()}` to capture React Hook Form data
+
+### Frontend — Unsaved Changes Dialog
+- **New Component**: `UnsavedChangesDialog.tsx` - Warning dialog for unsaved changes
+  - **Browser Integration**: Uses `beforeunload` event to warn users about unsaved changes
+  - **User Choice**: Options to "Stay and Save" or "Leave Without Saving"
+  - **Design System**: Follows ShadCN AlertDialog component with proper destructive styling
+  - **Accessibility**: Proper ARIA labels and keyboard navigation support
+
+### Frontend — Application Wizard State Management
+- **Enhanced Zustand Store**: Updated `application-wizard.ts` with manual save functionality
+  - **Dirty State Tracking**: Added `isDirty` boolean to track unsaved changes
+  - **Manual Actions**: `markDirty()` and `markClean()` functions for state management
+  - **Form Data Updates**: All form update functions now mark the store as dirty
+  - **Browser Environment Checks**: Added SSR safety checks for browser-specific APIs
+  - **ETag Management**: Optimistic concurrency control for PATCH operations
+- **Removed Auto-Save**: Eliminated `useAutoSave` hook and all automatic saving logic
+- **Improved Error Handling**: Better error messages and graceful fallbacks for missing drafts
+
+### Backend — Applications API Enhancements
+- **Enhanced Error Handling**: Improved `updateApplicationLogic` with defensive programming
+  - **Null Payload Handling**: Graceful handling of null/empty request bodies
+  - **Status Validation**: Defensive programming for null application status values
+  - **Deep Merge Safety**: Ensured `deepMerge` always has valid target objects
+  - **Debug Logging**: Added comprehensive logging for payload processing (temporary)
+- **CORS Headers**: Fixed missing `Content-Type: application/json` header in `getFunctionHeaders()`
+  - **Root Cause**: Missing Content-Type header caused "Failed to parse JSON body" errors
+  - **Solution**: Added proper JSON content type to all API requests
+
+### Technical Improvements
+- **TypeScript Compliance**: Fixed all TypeScript errors in step components
+  - **Missing Imports**: Added `getValues` to `useForm` destructuring in all steps
+  - **Type Safety**: Proper type assertions and error handling throughout
+- **Form Integration**: Proper integration with React Hook Form across all wizard steps
+  - **Data Capture**: Each step correctly captures form data via `getValues()` callback
+  - **State Synchronization**: Form changes properly mark the store as dirty
+  - **Validation**: Maintained existing form validation while removing auto-save
+
+### User Experience Enhancements
+- **Clear Visual Feedback**: Save Draft button shows loading state and disabled state appropriately
+- **No Success Toasts**: Button becomes disabled after successful save (no success messages as requested)
+- **Error Feedback**: Clear error messages only when saves fail
+- **Consistent Placement**: Save Draft button positioned consistently beside "Next Step" buttons
+- **Accessibility**: Proper ARIA labels, keyboard navigation, and screen reader support
+
+### API Specification & Type Safety
+- **OpenAPI Compliance**: All endpoints follow existing OpenAPI specification
+- **Type Generation**: Maintained type safety with generated TypeScript types
+- **Request/Response**: Proper JSON payload handling with correct Content-Type headers
+- **Error Responses**: Comprehensive error handling with appropriate HTTP status codes
+
+### Development Workflow
+- **API-First Development**: Followed flow.md procedures for implementation
+- **Incremental Development**: Implemented feature step-by-step with proper testing
+- **Code Quality**: Linted all modified files following development guidelines
+- **Error Resolution**: Systematic debugging and resolution of all issues
+
+### Migration from Auto-Save
+- **Complete Removal**: Eliminated all auto-save functionality from the application wizard
+- **State Management**: Converted from automatic to manual state management
+- **User Control**: Users now have complete control over when drafts are saved
+- **Data Integrity**: Maintained data integrity while changing save behavior
+
+---
+
 ## 2025-01-16 — Address Autocomplete Integration
 
 ### Business Logic (authoritative summary)

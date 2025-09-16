@@ -208,15 +208,15 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
           
           // Update AVETMISS details if nationality available
           if (passportData.nationality) {
-            updates.avetmissDetails = {
+            (updates as any).avetmissDetails = {
               ...currentFormData.avetmissDetails,
               countryOfBirthId: passportData.nationality,
             };
           }
           
           // Store raw passport data for reference
-          updates.passportExtractionData = {
-            ...currentFormData.passportExtractionData,
+          (updates as any).passportExtractionData = {
+            ...(currentFormData as any).passportExtractionData,
             extractedAt: new Date().toISOString(),
             rawData: passportData,
           };
@@ -244,18 +244,25 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
       createDraft: async (): Promise<string> => {
         set({ isLoading: true });
         try {
+          // Check if we're in browser environment
+          if (typeof window === 'undefined') {
+            set({ isLoading: false });
+            throw new Error('Cannot create draft in server environment');
+          }
+          
           const idempotencyKey = crypto.randomUUID();
+          const { formData } = get();
           const res = await fetch(`${FUNCTIONS_URL}/applications`, {
             method: 'POST',
             headers: { ...getFunctionHeaders(), 'Idempotency-Key': idempotencyKey },
-            body: JSON.stringify({}),
+            body: JSON.stringify(formData),
           });
           if (!res.ok) throw new Error('Failed to create draft application');
           const etag = res.headers.get('ETag');
           const data = await res.json();
           const draftId: string = data?.id;
           if (!draftId) throw new Error('No application id returned');
-          if (typeof window !== 'undefined' && etag) {
+          if (etag) {
             window.localStorage.setItem(`app-etag:${draftId}`, etag);
           }
           set({
@@ -276,15 +283,39 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
           throw new Error('No draft ID available');
         }
         
+        // Check if we're in browser environment
+        if (typeof window === 'undefined') {
+          throw new Error('Cannot save draft in server environment');
+        }
+        
         set({ isLoading: true });
         try {
-          // TODO: Implement API call to update draft
-          // await api.patch(`/applications/${draftId}`, {
-          //   application_payload: formData
-          // });
+          // Get ETag for optimistic concurrency control
+          const etag = window.localStorage.getItem(`app-etag:${draftId}`);
           
-          // Mock implementation for now
-          console.log('Saving draft:', { draftId, formData });
+          const headers = { ...getFunctionHeaders() };
+          if (etag) {
+            headers['If-Match'] = etag;
+          }
+          
+          const res = await fetch(`${FUNCTIONS_URL}/applications/${draftId}`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify(formData),
+          });
+          
+          if (!res.ok) {
+            if (res.status === 412) {
+              throw new Error('Draft is out of date. Please refresh the page.');
+            }
+            throw new Error(`Failed to save draft: ${res.statusText}`);
+          }
+          
+          // Update ETag for next save
+          const newEtag = res.headers.get('ETag');
+          if (newEtag) {
+            window.localStorage.setItem(`app-etag:${draftId}`, newEtag);
+          }
           
           set({ 
             lastSaved: new Date(),
@@ -300,10 +331,23 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
       loadDraft: async (draftId: string): Promise<void> => {
         set({ isLoading: true });
         try {
+          // Check if we're in browser environment
+          if (typeof window === 'undefined') {
+            set({ isLoading: false });
+            return;
+          }
+          
           const res = await fetch(`${FUNCTIONS_URL}/applications/${draftId}`, {
             headers: getFunctionHeaders(),
           });
-          if (!res.ok) throw new Error('Failed to load draft');
+          if (!res.ok) {
+            if (res.status === 404) {
+              console.warn(`Draft ${draftId} not found, treating as new draft`);
+              set({ isLoading: false });
+              return;
+            }
+            throw new Error(`Failed to load draft: ${res.status} ${res.statusText}`);
+          }
           const data = await res.json();
           const payload = (data?.application_payload ?? {}) as Partial<FullEnrolmentPayload>;
           set({ 
@@ -364,18 +408,22 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
   )
 );
 
-// Auto-save hook
-export const useAutoSave = () => {
-  const { saveDraft, isDirty, draftId } = useApplicationWizard();
+// Hook for unsaved changes warning
+export const useUnsavedChangesWarning = () => {
+  const { isDirty } = useApplicationWizard();
   
-  // Auto-save every 30 seconds if there are changes
   React.useEffect(() => {
-    if (!isDirty || !draftId) return;
+    // Only add event listener in browser environment
+    if (typeof window === 'undefined') return;
     
-    const interval = setInterval(() => {
-      saveDraft().catch(console.error);
-    }, 30000); // 30 seconds
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    };
     
-    return () => clearInterval(interval);
-  }, [isDirty, draftId, saveDraft]);
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 };

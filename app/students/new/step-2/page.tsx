@@ -13,9 +13,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { WizardProgress } from '../components/wizard-progress';
 import { useApplicationWizard } from '@/stores/application-wizard';
 import { Step1PersonalInfoSchema, Step1PersonalInfo } from '@/lib/schemas/application-schemas';
-import { useAutosave } from '@/hooks/use-autosave';
 import { useDocumentUpload } from '@/hooks/use-document-upload';
 import { AddressAutocomplete } from '@/components/address-autocomplete';
+import { SaveDraftButton } from '../components/save-draft-button';
  
 // =============================================================================
 // STEP 1: PERSONAL INFORMATION
@@ -41,6 +41,7 @@ export default function Step1PersonalInformation() {
     formState: { errors, isDirty },
     watch,
     setValue,
+    getValues,
   } = useForm<Step1PersonalInfo>({
     defaultValues: {
       personalDetails: {
@@ -108,29 +109,16 @@ export default function Step1PersonalInformation() {
   
   // Watch for changes to mark form as dirty
   const watchedValues = watch();
-
-  // Autosave draft (Step 1)
-  const { schedule, saveNow } = useAutosave({
-    applicationId: draftId || '',
-    enabled: Boolean(draftId),
-    debounceMs: 1500,
-    getPayload: () => ({
-      isInternationalStudent,
-      personalDetails: watchedValues.personalDetails,
-      address: watchedValues.address,
-      emergencyContact: watchedValues.emergencyContact,
-    }),
-  });
-
+  
+  // Mark store as dirty when form values change
   useEffect(() => {
-    schedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    JSON.stringify(watchedValues.personalDetails),
-    JSON.stringify(watchedValues.address),
-    JSON.stringify(watchedValues.emergencyContact),
-    isInternationalStudent,
-  ]);
+    const subscription = watch((value, { name, type }) => {
+      if (type === 'change' && name) {
+        markDirty();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, markDirty]);
   
   const onSubmit: SubmitHandler<Step1PersonalInfo> = async (data) => {
     try {
@@ -147,8 +135,7 @@ export default function Step1PersonalInformation() {
     }
   };
   
-  const handleNext = async () => {
-    await saveNow();
+  const handleNext = () => {
     handleSubmit(onSubmit)();
   };
 
@@ -694,7 +681,8 @@ export default function Step1PersonalInformation() {
             </Card>
             
             {/* Navigation */}
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              <SaveDraftButton getFormData={() => getValues()} />
               <Button type="button" onClick={handleNext} className="px-8">
                 Next Step
               </Button>
