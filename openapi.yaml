@@ -1841,6 +1841,60 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+  # ---------------------------------------------------------------------------
+  # == ADDRESS AUTOCOMPLETE ==
+  # ---------------------------------------------------------------------------
+  /address-autocomplete:
+    get:
+      operationId: addressAutocomplete
+      summary: Address Autocomplete
+      description: >
+        Provides address autocomplete functionality using the Addressable API.
+        Returns formatted addresses that can be used to populate address forms.
+      tags: [Reference Data]
+      security:
+        - bearerAuth: [admin, agent, trainer]
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: The partial address query string (4-6 characters recommended)
+          schema:
+            type: string
+            example: "220 Queen St Auc"
+        - name: country
+          in: query
+          required: true
+          description: The country code for address lookup
+          schema:
+            type: string
+            enum: [AU, NZ]
+            default: AU
+        - name: maxResults
+          in: query
+          required: false
+          description: Maximum number of results to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 5
+      responses:
+        '200':
+          description: A list of matching addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AddressableAddress'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 # =============================================================================
 # REUSABLE COMPONENTS
 # =============================================================================
@@ -2602,6 +2656,45 @@ components:
         postcode:
           type: string
           example: "2000"
+
+    AddressableAddress:
+      type: object
+      description: Address response from Addressable API
+      properties:
+        streetNumber:
+          type: string
+          description: Street number
+          example: "220"
+        streetName:
+          type: string
+          description: Street name
+          example: "Queen Street"
+        unitDetails:
+          type: string
+          nullable: true
+          description: Unit/apartment details
+          example: "Unit 5"
+        buildingName:
+          type: string
+          nullable: true
+          description: Building name
+          example: "Central Plaza"
+        suburb:
+          type: string
+          description: Suburb/locality
+          example: "Melbourne"
+        state:
+          type: string
+          description: State code
+          example: "VIC"
+        postcode:
+          type: string
+          description: Postcode
+          example: "3000"
+        formatted:
+          type: string
+          description: Complete formatted address
+          example: "220 Queen Street, Melbourne VIC 3000"
 
     ErrorResponse:
       type: object

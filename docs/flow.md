@@ -468,6 +468,37 @@ npm run test:e2e
    - Check type definitions match
    - Validate form schemas
 
+6. **CORS Errors**
+   - **Problem**: "CORS Missing Allow Origin" or "Network Error" when calling Supabase Edge Functions
+   - **Root Causes**:
+     - New Edge Function not deployed/recognized by Supabase
+     - Missing CORS headers in function implementation
+     - Incorrect authentication method (user session vs anonymous key)
+     - Environment variables not configured for Edge Functions
+   - **Solutions**:
+     - **Restart Supabase Functions**: `supabase functions serve` to pick up new functions
+     - **Use createApiRoute Pattern**: Leverage shared handler for consistent CORS handling
+     - **Anonymous Authentication**: Use `getFunctionHeaders()` utility for anonymous key auth
+     - **Environment Configuration**: Add secrets to `supabase/config.toml` under `[edge_runtime.secrets]`
+     - **CORS Headers**: Ensure proper CORS headers in function responses
+   - **Example Fix**:
+     ```typescript
+     // ❌ Wrong: User session authentication
+     const { data: { session } } = await supabase.auth.getSession();
+     if (!session) throw new Error('Authentication required');
+     
+     // ✅ Correct: Anonymous authentication
+     const response = await fetch(url, {
+       headers: { ...getFunctionHeaders() }
+     });
+     ```
+   - **Environment Setup**:
+     ```toml
+     # supabase/config.toml
+     [edge_runtime.secrets]
+     ADDRESSABLE_API_KEY = "env(ADDRESSABLE_API_KEY)"
+     ```
+
 ---
 
 ## Conclusion

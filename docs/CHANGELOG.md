@@ -1,3 +1,70 @@
+## 2025-01-16 — Address Autocomplete Integration
+
+### Business Logic (authoritative summary)
+- **Address Autocomplete**: Implemented comprehensive address autocomplete functionality for application wizard Step 2
+  - **Addressable API Integration**: Seamless integration with Addressable API for Australian and New Zealand addresses
+  - **Dual Address Support**: Autocomplete available for both Residential and Postal address sections
+  - **Manual Entry Fallback**: Users can still manually enter addresses if autocomplete fails or is unavailable
+  - **Auto-Population**: Selected addresses automatically populate all address form fields
+
+### Backend — Supabase Edge Functions (address-autocomplete)
+- **New GET Endpoint**: `GET /address-autocomplete`
+  - **Query Parameters**: `query` (required), `country` (AU/NZ), `maxResults` (1-10, default 5)
+  - **Addressable API Proxy**: Secure proxy to external Addressable API with API key management
+  - **State Mapping**: Converts full state names (Victoria) to codes (VIC) for form compatibility
+  - **Response Mapping**: Transforms Addressable API response to internal address schema format
+  - **CORS Support**: Proper CORS headers for cross-origin frontend requests
+  - **Error Handling**: Comprehensive error responses for invalid queries, API failures, and configuration issues
+
+### Frontend — Address Autocomplete Components
+- **AddressAutocomplete Component**: Reusable autocomplete input component following ShadCN design system
+  - **Single Input Design**: Main input field serves as both search input and display (no redundant popover inputs)
+  - **Command Component Integration**: Uses Command, CommandList, CommandItem for proper autocomplete behavior
+  - **Keyboard Navigation**: Full keyboard support with Arrow keys, Enter, and Escape
+  - **Loading States**: Visual loading indicators during API calls
+  - **Error Handling**: User-friendly error messages for API failures
+  - **Design System Compliance**: Uses proper color tokens, hover states, and rounded corners
+- **useAddressAutocomplete Hook**: Custom React hook for autocomplete logic
+  - **Debounced Search**: 300ms debounce to optimize API calls
+  - **AbortController**: Cancels previous requests to prevent race conditions
+  - **State Management**: Handles suggestions, loading, and error states
+  - **Anonymous Authentication**: Uses Supabase anonymous key for API access
+
+### API Specification & Type Safety
+- **OpenAPI Schema**: Added address autocomplete endpoint specification
+  - **Request Parameters**: Detailed parameter definitions with validation rules
+  - **Response Schema**: `AddressableAddress` schema with mapped address fields
+  - **Error Responses**: 400 for bad requests, 401 for unauthorized, 500 for server errors
+  - **Type Generation**: Updated TypeScript types for both frontend and backend
+- **Address Mapping**: Comprehensive state name-to-code mapping for Australia and New Zealand
+  - **Australian States**: Victoria→VIC, New South Wales→NSW, Queensland→QLD, etc.
+  - **New Zealand Regions**: Handles NZ regions with graceful fallback for unmapped areas
+  - **Type Safety**: Full TypeScript compliance with proper type assertions
+
+### Technical Improvements
+- **Environment Configuration**: Secure API key management through Supabase environment variables
+  - **Supabase Config**: Added `ADDRESSABLE_API_KEY` to `[edge_runtime.secrets]` section
+  - **Local Development**: Environment variable setup in `.env.local`
+- **Authentication**: Anonymous authentication pattern consistent with other application functions
+- **Performance**: Debounced API calls and request cancellation for optimal user experience
+- **Error Resilience**: Graceful handling of API failures with user-friendly fallback options
+
+### User Experience Enhancements
+- **Intuitive Interface**: Single input field with dropdown suggestions (no redundant inputs)
+- **Visual Feedback**: Loading spinners, hover states, and selection highlighting
+- **Accessibility**: Proper ARIA labels, keyboard navigation, and screen reader support
+- **Responsive Design**: Works seamlessly across all device sizes
+- **Consistent Design**: Follows ShadCN design system with proper color tokens and styling
+- **Manual Entry Option**: Clear "Enter address manually" button when suggestions are available
+
+### Integration Points
+- **Application Wizard**: Seamlessly integrated into Step 2 Personal Information form
+- **Form Auto-Population**: Selected addresses automatically fill all address fields
+- **Validation Compatibility**: Works with existing form validation schemas
+- **State Management**: Integrates with React Hook Form for form state management
+
+---
+
 ## 2025-01-27 — Application Delete Functionality
 
 ### Business Logic (authoritative summary)

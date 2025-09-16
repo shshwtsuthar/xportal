@@ -15,6 +15,7 @@ import { useApplicationWizard } from '@/stores/application-wizard';
 import { Step1PersonalInfoSchema, Step1PersonalInfo } from '@/lib/schemas/application-schemas';
 import { useAutosave } from '@/hooks/use-autosave';
 import { useDocumentUpload } from '@/hooks/use-document-upload';
+import { AddressAutocomplete } from '@/components/address-autocomplete';
  
 // =============================================================================
 // STEP 1: PERSONAL INFORMATION
@@ -28,6 +29,8 @@ export default function Step1PersonalInformation() {
   const [isPostalSameAsResidential, setIsPostalSameAsResidential] = useState<boolean>(
     formData?.address?.isPostalSameAsResidential ?? true
   );
+  const [residentialAddressSearch, setResidentialAddressSearch] = useState<string>('');
+  const [postalAddressSearch, setPostalAddressSearch] = useState<string>('');
   
   // Get passport processing data
   const { lastExtractedData } = useDocumentUpload(draftId || '');
@@ -147,6 +150,27 @@ export default function Step1PersonalInformation() {
   const handleNext = async () => {
     await saveNow();
     handleSubmit(onSubmit)();
+  };
+
+  // Handle address selection from autocomplete
+  const handleResidentialAddressSelect = (address: any) => {
+    setValue('address.residential.streetNumber', address.streetNumber);
+    setValue('address.residential.streetName', address.streetName);
+    setValue('address.residential.unitDetails', address.unitDetails || '');
+    setValue('address.residential.buildingName', address.buildingName || '');
+    setValue('address.residential.suburb', address.suburb);
+    setValue('address.residential.state', address.state);
+    setValue('address.residential.postcode', address.postcode);
+  };
+
+  const handlePostalAddressSelect = (address: any) => {
+    setValue('address.postal.streetNumber', address.streetNumber);
+    setValue('address.postal.streetName', address.streetName);
+    setValue('address.postal.unitDetails', address.unitDetails || '');
+    setValue('address.postal.buildingName', address.buildingName || '');
+    setValue('address.postal.suburb', address.suburb);
+    setValue('address.postal.state', address.state);
+    setValue('address.postal.postcode', address.postcode);
   };
   
   return (
@@ -341,113 +365,126 @@ export default function Step1PersonalInformation() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="streetNumber">Street Number</Label>
-                    <Input
-                      id="streetNumber"
-                      {...register('address.residential.streetNumber')}
-                      className={(errors.address?.residential?.streetNumber ? 'border-red-500 ' : '') + 'mt-2'}
-                    />
-                    {errors.address?.residential?.streetNumber && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.address.residential.streetNumber.message}
-                      </p>
-                    )}
+                {/* Address Autocomplete */}
+                <AddressAutocomplete
+                  label="Search Address"
+                  placeholder="Start typing an address..."
+                  value={residentialAddressSearch}
+                  onChange={setResidentialAddressSearch}
+                  onAddressSelect={handleResidentialAddressSelect}
+                  country="AU"
+                />
+
+                {/* Manual Address Fields */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="streetNumber">Street Number</Label>
+                      <Input
+                        id="streetNumber"
+                        {...register('address.residential.streetNumber')}
+                        className={(errors.address?.residential?.streetNumber ? 'border-red-500 ' : '') + 'mt-2'}
+                      />
+                      {errors.address?.residential?.streetNumber && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address.residential.streetNumber.message}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="streetName">Street Name</Label>
+                      <Input
+                        id="streetName"
+                        {...register('address.residential.streetName')}
+                        className={(errors.address?.residential?.streetName ? 'border-red-500 ' : '') + 'mt-2'}
+                      />
+                      {errors.address?.residential?.streetName && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address.residential.streetName.message}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   
-                  <div>
-                    <Label htmlFor="streetName">Street Name</Label>
-                    <Input
-                      id="streetName"
-                      {...register('address.residential.streetName')}
-                      className={(errors.address?.residential?.streetName ? 'border-red-500 ' : '') + 'mt-2'}
-                    />
-                    {errors.address?.residential?.streetName && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.address.residential.streetName.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="unitDetails">Unit Details</Label>
-                    <Input
-                      id="unitDetails"
-                      {...register('address.residential.unitDetails')}
-                      placeholder="e.g., Unit 5, Apartment 10B"
-                      className="mt-2"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="unitDetails">Unit Details</Label>
+                      <Input
+                        id="unitDetails"
+                        {...register('address.residential.unitDetails')}
+                        placeholder="e.g., Unit 5, Apartment 10B"
+                        className="mt-2"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="buildingName">Building Name</Label>
+                      <Input
+                        id="buildingName"
+                        {...register('address.residential.buildingName')}
+                        placeholder="e.g., Building name, homestead"
+                        className="mt-2"
+                      />
+                    </div>
                   </div>
                   
-                  <div>
-                    <Label htmlFor="buildingName">Building Name</Label>
-                    <Input
-                      id="buildingName"
-                      {...register('address.residential.buildingName')}
-                      placeholder="e.g., Building name, homestead"
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="suburb">Suburb</Label>
-                    <Input
-                      id="suburb"
-                      {...register('address.residential.suburb')}
-                      className={(errors.address?.residential?.suburb ? 'border-red-500 ' : '') + 'mt-2'}
-                    />
-                    {errors.address?.residential?.suburb && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.address.residential.suburb.message}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="state">State</Label>
-                    <Select value={watch('address.residential.state') || undefined} onValueChange={(value) => setValue('address.residential.state', value as any)}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select state" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="VIC">Victoria</SelectItem>
-                        <SelectItem value="NSW">New South Wales</SelectItem>
-                        <SelectItem value="QLD">Queensland</SelectItem>
-                        <SelectItem value="SA">South Australia</SelectItem>
-                        <SelectItem value="WA">Western Australia</SelectItem>
-                        <SelectItem value="TAS">Tasmania</SelectItem>
-                        <SelectItem value="NT">Northern Territory</SelectItem>
-                        <SelectItem value="ACT">Australian Capital Territory</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.address?.residential?.state && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.address.residential.state.message}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="postcode">Postcode</Label>
-                    <Input
-                      id="postcode"
-                      {...register('address.residential.postcode')}
-                      placeholder="e.g., 3000"
-                      aria-label="Residential postcode"
-                      pattern="^\\\d{4}$"
-                      title="Enter a 4-digit postcode"
-                      className={(errors.address?.residential?.postcode ? 'border-red-500 ' : '') + 'mt-2'}
-                    />
-                    {errors.address?.residential?.postcode && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.address.residential.postcode.message}
-                      </p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="suburb">Suburb</Label>
+                      <Input
+                        id="suburb"
+                        {...register('address.residential.suburb')}
+                        className={(errors.address?.residential?.suburb ? 'border-red-500 ' : '') + 'mt-2'}
+                      />
+                      {errors.address?.residential?.suburb && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address.residential.suburb.message}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="state">State</Label>
+                      <Select value={watch('address.residential.state') || undefined} onValueChange={(value) => setValue('address.residential.state', value as any)}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="VIC">Victoria</SelectItem>
+                          <SelectItem value="NSW">New South Wales</SelectItem>
+                          <SelectItem value="QLD">Queensland</SelectItem>
+                          <SelectItem value="SA">South Australia</SelectItem>
+                          <SelectItem value="WA">Western Australia</SelectItem>
+                          <SelectItem value="TAS">Tasmania</SelectItem>
+                          <SelectItem value="NT">Northern Territory</SelectItem>
+                          <SelectItem value="ACT">Australian Capital Territory</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.address?.residential?.state && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address.residential.state.message}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="postcode">Postcode</Label>
+                      <Input
+                        id="postcode"
+                        {...register('address.residential.postcode')}
+                        placeholder="e.g., 3000"
+                        aria-label="Residential postcode"
+                        pattern="^\\\d{4}$"
+                        title="Enter a 4-digit postcode"
+                        className={(errors.address?.residential?.postcode ? 'border-red-500 ' : '') + 'mt-2'}
+                      />
+                      {errors.address?.residential?.postcode && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address.residential.postcode.message}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -478,91 +515,104 @@ export default function Step1PersonalInformation() {
                 
                 {!isPostalSameAsResidential && (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="postalStreetNumber">Street Number *</Label>
-                        <Input
-                          id="postalStreetNumber"
-                          {...register('address.postal.streetNumber')}
-                          className={(errors.address?.postal?.streetNumber ? 'border-red-500' : '') + 'mt-2'}
-                        />
-                        {errors.address?.postal?.streetNumber && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.address.postal.streetNumber.message}
-                          </p>
-                        )}
+                    {/* Address Autocomplete */}
+                    <AddressAutocomplete
+                      label="Search Postal Address"
+                      placeholder="Start typing a postal address..."
+                      value={postalAddressSearch}
+                      onChange={setPostalAddressSearch}
+                      onAddressSelect={handlePostalAddressSelect}
+                      country="AU"
+                    />
+
+                    {/* Manual Address Fields */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="postalStreetNumber">Street Number *</Label>
+                          <Input
+                            id="postalStreetNumber"
+                            {...register('address.postal.streetNumber')}
+                            className={(errors.address?.postal?.streetNumber ? 'border-red-500' : '') + 'mt-2'}
+                          />
+                          {errors.address?.postal?.streetNumber && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors.address.postal.streetNumber.message}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="postalStreetName">Street Name *</Label>
+                          <Input
+                            id="postalStreetName"
+                            {...register('address.postal.streetName')}
+                            className={(errors.address?.postal?.streetName ? 'border-red-500' : '') + 'mt-2'}
+                          />
+                          {errors.address?.postal?.streetName && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors.address.postal.streetName.message}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       
-                      <div>
-                        <Label htmlFor="postalStreetName">Street Name *</Label>
-                        <Input
-                          id="postalStreetName"
-                          {...register('address.postal.streetName')}
-                          className={(errors.address?.postal?.streetName ? 'border-red-500' : '') + 'mt-2'}
-                        />
-                        {errors.address?.postal?.streetName && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.address.postal.streetName.message}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="postalSuburb">Suburb *</Label>
-                        <Input
-                          id="postalSuburb"
-                          {...register('address.postal.suburb')}
-                          className={(errors.address?.postal?.suburb ? 'border-red-500' : '') + 'mt-2'}
-                        />
-                        {errors.address?.postal?.suburb && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.address.postal.suburb.message}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="postalState">State *</Label>
-                        <Select onValueChange={(value) => setValue('address.postal.state', value as any)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select state" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="VIC">Victoria</SelectItem>
-                            <SelectItem value="NSW">New South Wales</SelectItem>
-                            <SelectItem value="QLD">Queensland</SelectItem>
-                            <SelectItem value="SA">South Australia</SelectItem>
-                            <SelectItem value="WA">Western Australia</SelectItem>
-                            <SelectItem value="TAS">Tasmania</SelectItem>
-                            <SelectItem value="NT">Northern Territory</SelectItem>
-                            <SelectItem value="ACT">Australian Capital Territory</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {errors.address?.postal?.state && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.address.postal.state.message}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="postalPostcode">Postcode *</Label>
-                        <Input
-                          id="postalPostcode"
-                          {...register('address.postal.postcode')}
-                          placeholder="e.g., 3000"
-                          aria-label="Postal postcode"
-                          pattern="^\\\d{4}$"
-                          title="Enter a 4-digit postcode"
-                          className={(errors.address?.postal?.postcode ? 'border-red-500' : '') + 'mt-2'}
-                        />
-                        {errors.address?.postal?.postcode && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.address.postal.postcode.message}
-                          </p>
-                        )}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label htmlFor="postalSuburb">Suburb *</Label>
+                          <Input
+                            id="postalSuburb"
+                            {...register('address.postal.suburb')}
+                            className={(errors.address?.postal?.suburb ? 'border-red-500' : '') + 'mt-2'}
+                          />
+                          {errors.address?.postal?.suburb && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors.address.postal.suburb.message}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="postalState">State *</Label>
+                          <Select onValueChange={(value) => setValue('address.postal.state', value as any)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select state" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="VIC">Victoria</SelectItem>
+                              <SelectItem value="NSW">New South Wales</SelectItem>
+                              <SelectItem value="QLD">Queensland</SelectItem>
+                              <SelectItem value="SA">South Australia</SelectItem>
+                              <SelectItem value="WA">Western Australia</SelectItem>
+                              <SelectItem value="TAS">Tasmania</SelectItem>
+                              <SelectItem value="NT">Northern Territory</SelectItem>
+                              <SelectItem value="ACT">Australian Capital Territory</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {errors.address?.postal?.state && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors.address.postal.state.message}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="postalPostcode">Postcode *</Label>
+                          <Input
+                            id="postalPostcode"
+                            {...register('address.postal.postcode')}
+                            placeholder="e.g., 3000"
+                            aria-label="Postal postcode"
+                            pattern="^\\\d{4}$"
+                            title="Enter a 4-digit postcode"
+                            className={(errors.address?.postal?.postcode ? 'border-red-500' : '') + 'mt-2'}
+                          />
+                          {errors.address?.postal?.postcode && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors.address.postal.postcode.message}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

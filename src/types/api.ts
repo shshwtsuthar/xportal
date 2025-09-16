@@ -983,6 +983,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/address-autocomplete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Address Autocomplete
+         * @description Provides address autocomplete functionality using the Addressable API. Returns formatted addresses that can be used to populate address forms.
+         *
+         */
+        get: operations["addressAutocomplete"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1494,6 +1515,49 @@ export interface components {
             state?: string;
             /** @example 2000 */
             postcode?: string;
+        };
+        /** @description Address response from Addressable API */
+        AddressableAddress: {
+            /**
+             * @description Street number
+             * @example 220
+             */
+            streetNumber?: string;
+            /**
+             * @description Street name
+             * @example Queen Street
+             */
+            streetName?: string;
+            /**
+             * @description Unit/apartment details
+             * @example Unit 5
+             */
+            unitDetails?: string | null;
+            /**
+             * @description Building name
+             * @example Central Plaza
+             */
+            buildingName?: string | null;
+            /**
+             * @description Suburb/locality
+             * @example Melbourne
+             */
+            suburb?: string;
+            /**
+             * @description State code
+             * @example VIC
+             */
+            state?: string;
+            /**
+             * @description Postcode
+             * @example 3000
+             */
+            postcode?: string;
+            /**
+             * @description Complete formatted address
+             * @example 220 Queen Street, Melbourne VIC 3000
+             */
+            formatted?: string;
         };
         ErrorResponse: {
             /** @example Validation failed */
@@ -3668,6 +3732,36 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    addressAutocomplete: {
+        parameters: {
+            query: {
+                /** @description The partial address query string (4-6 characters recommended) */
+                query: string;
+                /** @description The country code for address lookup */
+                country: "AU" | "NZ";
+                /** @description Maximum number of results to return */
+                maxResults?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of matching addresses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressableAddress"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
         };
     };
 }
