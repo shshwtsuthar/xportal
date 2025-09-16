@@ -10,7 +10,6 @@ import {
   FileText, 
   CheckCircle, 
   XCircle, 
-  Clock,
   Eye,
   MoreHorizontal,
   Trash2
@@ -42,24 +41,28 @@ interface ApplicationsTableProps {
 
 const statusConfig = {
   Draft: {
-    variant: 'secondary' as const,
-    icon: <Clock className="h-3 w-3" />,
-    color: 'text-muted-foreground',
+    variant: 'destructive' as const,
+    className: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
   },
   Submitted: {
-    variant: 'default' as const,
-    icon: <FileText className="h-3 w-3" />,
-    color: 'text-primary',
+    variant: 'outline' as const,
+    className: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
+  },
+  'Awaiting Payment': {
+    variant: 'outline' as const,
+    className: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800',
+  },
+  Accepted: {
+    variant: 'outline' as const,
+    className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800',
   },
   Approved: {
-    variant: 'default' as const,
-    icon: <CheckCircle className="h-3 w-3" />,
-    color: 'text-foreground',
+    variant: 'outline' as const,
+    className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800',
   },
   Rejected: {
     variant: 'destructive' as const,
-    icon: <XCircle className="h-3 w-3" />,
-    color: 'text-destructive',
+    className: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
   },
 };
 
@@ -244,9 +247,8 @@ export function ApplicationsTable({
                 </TableCell>
                 <TableCell className="text-muted-foreground">{app.clientEmail}</TableCell>
                 <TableCell>
-                  <Badge variant={statusConfig.variant} className="flex items-center space-x-1">
-                    {statusConfig.icon}
-                    <span>{app.status}</span>
+                  <Badge variant={statusConfig.variant} className={statusConfig.className}>
+                    {app.status}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
