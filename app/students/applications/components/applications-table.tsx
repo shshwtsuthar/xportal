@@ -391,6 +391,7 @@ export function ApplicationsTable({
                       {/* Delete button - available for all statuses */}
                       {onDelete && (
                         <DropdownMenuItem 
+                          variant="destructive"
                           onClick={async () => {
                             if (!onDelete) return;
                             setProcessingId(app.id || null);
@@ -406,7 +407,7 @@ export function ApplicationsTable({
                             }
                           }}
                           disabled={isProcessing}
-                          className="text-destructive focus:text-destructive border-t border-border mt-1 pt-1"
+                          className="mt-1 pt-1"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete Application
