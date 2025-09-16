@@ -5,6 +5,7 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +24,8 @@ import {
 } from '@/hooks/use-reference-data';
 import { useEffect } from 'react';
 import { SaveDraftButton } from '../components/save-draft-button';
+import { DatePicker } from '@/components/ui/date-picker';
+import { format, parseISO } from 'date-fns';
 
 // =============================================================================
 // STEP 2: ACADEMIC INFORMATION
@@ -30,6 +33,7 @@ import { SaveDraftButton } from '../components/save-draft-button';
 // =============================================================================
 
 export default function Step2AcademicInformation() {
+  const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
   const { updateStep2Data, nextStep, previousStep, draftId, formData, markDirty } = useApplicationWizard();
   
@@ -115,6 +119,22 @@ export default function Step2AcademicInformation() {
   }, [formData, setValue]);
   
   const watchedValues = watch();
+  // Derive Date objects for DatePicker from stored ISO strings
+  const passportExpiryDateValue = (() => {
+    const v = (watchedValues as any)?.cricosDetails?.passportExpiryDate as string | undefined;
+    if (!v) return undefined;
+    try { const d = parseISO(v); return isNaN(d.getTime()) ? undefined : d; } catch { return undefined; }
+  })();
+  const visaExpiryDateValue = (() => {
+    const v = (watchedValues as any)?.cricosDetails?.visaExpiryDate as string | undefined;
+    if (!v) return undefined;
+    try { const d = parseISO(v); return isNaN(d.getTime()) ? undefined : d; } catch { return undefined; }
+  })();
+  const oshcPaidToDateValue = (() => {
+    const v = (watchedValues as any)?.cricosDetails?.oshcPaidToDate as string | undefined;
+    if (!v) return undefined;
+    try { const d = parseISO(v); return isNaN(d.getTime()) ? undefined : d; } catch { return undefined; }
+  })();
   
   // Mark store as dirty when form values change
   useEffect(() => {
@@ -141,8 +161,10 @@ export default function Step2AcademicInformation() {
     }
   };
   
-  const handleNext = () => {
-    handleSubmit(onSubmit)();
+  const handleNext = async () => {
+    setIsNavigating(true);
+    await handleSubmit(onSubmit)();
+    setIsNavigating(false);
   };
   
   const handlePrevious = () => {
@@ -501,14 +523,25 @@ export default function Step2AcademicInformation() {
                     <div>
                       <Label htmlFor="passportNumber">Passport Number</Label>
                       {/* @ts-ignore */}
-                      <Input id="passportNumber" {...register('cricosDetails.passportNumber' as any)} className="mt-2" />
+                      <Input id="passportNumber" {...register('cricosDetails.passportNumber' as any)} placeholder="e.g., N1234567" className="mt-2" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="passportExpiryDate">Passport Expiry Date</Label>
                       {/* @ts-ignore */}
-                      <Input id="passportExpiryDate" type="date" {...register('cricosDetails.passportExpiryDate' as any)} className="mt-2" />
+                      <div className="mt-2">
+                        <DatePicker
+                          id="passportExpiryDate"
+                          value={passportExpiryDateValue}
+                          onValueChange={(date) => {
+                            // @ts-ignore
+                            setValue('cricosDetails.passportExpiryDate', date ? format(date, 'yyyy-MM-dd') : undefined);
+                          }}
+                          placeholder="Pick a date"
+                          dateFormat="PPP"
+                        />
+                      </div>
                     </div>
                     <div>
                       <Label htmlFor="visaSubclass">Visa Subclass</Label>
@@ -520,12 +553,23 @@ export default function Step2AcademicInformation() {
                     <div>
                       <Label htmlFor="visaGrantNumber">Visa Grant Number</Label>
                       {/* @ts-ignore */}
-                      <Input id="visaGrantNumber" {...register('cricosDetails.visaGrantNumber' as any)} className="mt-2" />
+                      <Input id="visaGrantNumber" {...register('cricosDetails.visaGrantNumber' as any)} placeholder="e.g., EGV1234567" className="mt-2" />
                     </div>
                     <div>
                       <Label htmlFor="visaExpiryDate">Visa Expiry Date</Label>
                       {/* @ts-ignore */}
-                      <Input id="visaExpiryDate" type="date" {...register('cricosDetails.visaExpiryDate' as any)} className="mt-2" />
+                      <div className="mt-2">
+                        <DatePicker
+                          id="visaExpiryDate"
+                          value={visaExpiryDateValue}
+                          onValueChange={(date) => {
+                            // @ts-ignore
+                            setValue('cricosDetails.visaExpiryDate', date ? format(date, 'yyyy-MM-dd') : undefined);
+                          }}
+                          placeholder="Pick a date"
+                          dateFormat="PPP"
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -537,14 +581,25 @@ export default function Step2AcademicInformation() {
                     <div>
                       <Label htmlFor="oshcPolicyNumber">OSHC Policy Number</Label>
                       {/* @ts-ignore */}
-                      <Input id="oshcPolicyNumber" {...register('cricosDetails.oshcPolicyNumber' as any)} className="mt-2" />
+                      <Input id="oshcPolicyNumber" {...register('cricosDetails.oshcPolicyNumber' as any)} placeholder="e.g., ABC123456" className="mt-2" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="oshcPaidToDate">OSHC Paid To Date</Label>
                       {/* @ts-ignore */}
-                      <Input id="oshcPaidToDate" type="date" {...register('cricosDetails.oshcPaidToDate' as any)} className="mt-2" />
+                      <div className="mt-2">
+                        <DatePicker
+                          id="oshcPaidToDate"
+                          value={oshcPaidToDateValue}
+                          onValueChange={(date) => {
+                            // @ts-ignore
+                            setValue('cricosDetails.oshcPaidToDate', date ? format(date, 'yyyy-MM-dd') : undefined);
+                          }}
+                          placeholder="Pick a date"
+                          dateFormat="PPP"
+                        />
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -656,9 +711,9 @@ export default function Step2AcademicInformation() {
               </Button>
               <div className="flex gap-2">
                 <SaveDraftButton getFormData={() => getValues()} />
-                <Button type="button" onClick={handleNext}>
+                <LoadingButton type="button" onClick={handleNext} isLoading={isNavigating} loadingText="Next...">
                   Next Step
-                </Button>
+                </LoadingButton>
               </div>
             </div>
           </form>

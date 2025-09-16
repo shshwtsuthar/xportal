@@ -5,6 +5,7 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,8 @@ import { usePaymentPlanTemplates } from '@/hooks/use-payment-templates';
 import { useApplication } from '@/hooks/use-application';
 import { usePrograms, transformProgramsForSelect } from '@/hooks/use-programs';
 import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
+import { DatePicker } from '@/components/ui/date-picker';
+import { format, parseISO } from 'date-fns';
 
 // =============================================================================
 // STEP 5: FINANCIAL ARRANGEMENTS
@@ -182,13 +185,14 @@ export default function Step5FinancialArrangements() {
     }
   };
   
+  const [isNavigating, setIsNavigating] = useState(false);
   const handleNext = async () => {
-    await saveNow();
-    handleSubmit(onSubmit)();
+    setIsNavigating(true);
+    await handleSubmit(onSubmit)();
+    setIsNavigating(false);
   };
   
   const handlePrevious = async () => {
-    await saveNow();
     previousStep();
     router.push('/students/new/step-5');
   };
@@ -322,7 +326,16 @@ export default function Step5FinancialArrangements() {
                   </div>
                   <div>
                     <Label>Anchor date</Label>
-                    <Input type="date" value={anchorDate} onChange={(e) => setAnchorDate(e.target.value)} disabled={anchor === 'OFFER_LETTER'} aria-label="Anchor date" className="mt-2" />
+                    <div className="mt-2">
+                      <DatePicker
+                        value={anchorDate ? parseISO(anchorDate) : undefined}
+                        onValueChange={(date) => setAnchorDate(date ? format(date, 'yyyy-MM-dd') : '')}
+                        placeholder="Select anchor date"
+                        dateFormat="PPP"
+                        disabled={anchor === 'OFFER_LETTER'}
+                        aria-label="Anchor date"
+                      />
+                    </div>
                     {anchor === 'COMMENCEMENT' && !anchorDate && (
                       <p className="text-xs text-muted-foreground mt-1">Provide commencement date or switch to Offer letter anchor.</p>
                     )}
@@ -538,9 +551,9 @@ export default function Step5FinancialArrangements() {
               </Button>
               <div className="flex gap-2">
                 <SaveDraftButton getFormData={() => getValues()} />
-                <Button type="button" onClick={handleNext}>
+                <LoadingButton type="button" onClick={handleNext} isLoading={isNavigating} loadingText="Reviewing...">
                   Review Application
-                </Button>
+                </LoadingButton>
               </div>
             </div>
           </form>

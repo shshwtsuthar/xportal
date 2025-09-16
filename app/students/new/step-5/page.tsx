@@ -5,6 +5,7 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,6 +36,7 @@ export default function Step4AgentReferral() {
   
   // Form state
   const [hasAgent, setHasAgent] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   
   const {
     register,
@@ -94,12 +96,12 @@ export default function Step4AgentReferral() {
   };
   
   const handleNext = async () => {
-    await saveNow();
-    handleSubmit(onSubmit)();
+    setIsNavigating(true);
+    await handleSubmit(onSubmit)();
+    setIsNavigating(false);
   };
   
   const handlePrevious = async () => {
-    await saveNow();
     previousStep();
     router.push('/students/new/step-4');
   };
@@ -293,9 +295,9 @@ export default function Step4AgentReferral() {
               </Button>
               <div className="flex gap-2">
                 <SaveDraftButton getFormData={() => getValues()} />
-                <Button type="button" onClick={handleNext}>
+                <LoadingButton type="button" onClick={handleNext} isLoading={isNavigating} loadingText="Next...">
                   Next Step
-                </Button>
+                </LoadingButton>
               </div>
             </div>
           </form>

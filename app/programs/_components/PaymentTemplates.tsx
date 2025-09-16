@@ -172,7 +172,7 @@ export const PaymentTemplates = ({ programId }: Props) => {
                 createTemplate.mutate({ programId, name: n, is_default: createAsDefault }, { onSuccess: () => { toast.success('Template created'); setOpen(false); form.reset({ name: '' }); setCreateAsDefault(false); }, onError: () => toast.error('Failed to create template') });
               })}
             >
-              <Input placeholder="Template name" {...form.register('name')} />
+              <Input placeholder="e.g., Standard 4-instalment plan" {...form.register('name')} />
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <div className="text-sm font-medium">Make default</div>
@@ -232,7 +232,7 @@ export const PaymentTemplates = ({ programId }: Props) => {
                   <PopoverContent align="end" className="w-56">
                     <div className="space-y-2">
                       <label className="text-xs text-muted-foreground">Target total (AUD)</label>
-                      <Input inputMode="decimal" placeholder="0.00" onKeyDown={(e) => {
+                      <Input inputMode="decimal" placeholder="e.g., 0.00" onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           const input = (e.target as HTMLInputElement).value.replace(/,/g, '.');
                           if (/^\d*(?:\.\d{0,2})?$/.test(input) && input !== '') {
@@ -263,14 +263,14 @@ export const PaymentTemplates = ({ programId }: Props) => {
                 <div key={idx} className="grid grid-cols-12 gap-3 items-center border rounded-md p-3">
                   <div className="col-span-12 md:col-span-5 min-w-0">
                     <label className="text-xs text-muted-foreground">Description</label>
-                    <Input value={r.description} onChange={(e) => setRows(prev => prev.map((row, i) => i===idx?{...row, description: e.target.value}:row))} placeholder="e.g., Deposit" />
+                    <Input value={r.description} onChange={(e) => setRows(prev => prev.map((row, i) => i===idx?{...row, description: e.target.value}:row))} placeholder="e.g., Initial deposit" />
                   </div>
                   <div className="col-span-6 md:col-span-3">
                     <label className="text-xs text-muted-foreground">Amount (AUD)</label>
                     <Input
                       inputMode="decimal"
                       value={amountInputs[idx] ?? ""}
-                      placeholder="0.00"
+                      placeholder="e.g., 0.00"
                       onChange={(e) => {
                         const raw = e.target.value.replace(/,/g, '.');
                         // Allow only digits and at most one dot, and max 2 decimals
@@ -286,7 +286,7 @@ export const PaymentTemplates = ({ programId }: Props) => {
                   </div>
                   <div className="col-span-6 md:col-span-2">
                     <label className="text-xs text-muted-foreground">Offset days</label>
-                    <Input type="number" value={r.offset_days} onChange={(e) => setRows(prev => prev.map((row, i) => i===idx?{...row, offset_days: Number(e.target.value)}:row))} placeholder="0" />
+                    <Input type="number" value={r.offset_days} onChange={(e) => setRows(prev => prev.map((row, i) => i===idx?{...row, offset_days: Number(e.target.value)}:row))} placeholder="e.g., 30" />
                   </div>
                   <div className="col-span-12 md:col-span-2 flex md:items-end justify-end gap-2 flex-wrap">
                     <Button variant="outline" size="icon" aria-label="Move up" onClick={() => {

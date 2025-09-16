@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format, parseISO } from "date-fns";
 
 // No token needed - handled by hooks
 
@@ -34,20 +36,22 @@ export const Offerings = ({ programId }: Props) => {
           <Checkbox id="rolling" checked={isRolling} onCheckedChange={(checked) => setIsRolling(!!checked)} />
           <label htmlFor="rolling" className="text-sm font-medium">Rolling intake</label>
         </div>
-        <Input 
-          type="date" 
-          placeholder="Start date"
-          value={start} 
-          onChange={(e) => setStart(e.target.value)}
-          className="w-auto"
-        />
-        <Input 
-          type="date" 
-          placeholder="End date"
-          value={end} 
-          onChange={(e) => setEnd(e.target.value)}
-          className="w-auto"
-        />
+        <div className="w-[240px]">
+          <DatePicker
+            value={start ? parseISO(start) : undefined}
+            onValueChange={(d) => setStart(d ? format(d, 'yyyy-MM-dd') : "")}
+            placeholder="Start date"
+            dateFormat="PPP"
+          />
+        </div>
+        <div className="w-[240px]">
+          <DatePicker
+            value={end ? parseISO(end) : undefined}
+            onValueChange={(d) => setEnd(d ? format(d, 'yyyy-MM-dd') : "")}
+            placeholder="End date"
+            dateFormat="PPP"
+          />
+        </div>
         <Select value={defPlan} onValueChange={setDefPlan}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Default plan (optional)" />

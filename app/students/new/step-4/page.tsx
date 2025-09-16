@@ -5,6 +5,7 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,10 +14,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Clock, Users, User } from 'lucide-react';
 import { format } from 'date-fns';
+import { DatePicker } from '@/components/ui/date-picker';
 import { cn } from '@/lib/utils';
 import { WizardProgress } from '../components/wizard-progress';
 import { SaveDraftButton } from '../components/save-draft-button';
@@ -45,6 +45,7 @@ import { useLocations, transformLocationsForSelect } from '@/hooks/use-locations
 // =============================================================================
 
 export default function Step4ProgramSelection() {
+  const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
   const { updateStep3Data, nextStep, previousStep, draftId, formData, markDirty } = useApplicationWizard();
   
@@ -181,8 +182,10 @@ export default function Step4ProgramSelection() {
     }
   };
   
-  const handleNext = () => {
-    handleSubmit(onSubmit)();
+  const handleNext = async () => {
+    setIsNavigating(true);
+    await handleSubmit(onSubmit)();
+    setIsNavigating(false);
   };
   
   const handlePrevious = () => {
@@ -481,28 +484,14 @@ export default function Step4ProgramSelection() {
                 <CardContent>
                   <div>
                     <Label>Preferred Start Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal mt-2",
-                            !selectedStartDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedStartDate ? format(selectedStartDate, "PPP") : "Select start date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={selectedStartDate}
-                          onSelect={handleStartDateChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="mt-2">
+                      <DatePicker
+                        value={selectedStartDate}
+                        onValueChange={handleStartDateChange}
+                        placeholder="Select start date"
+                        dateFormat="PPP"
+                      />
+                    </div>
                     <p className="text-sm text-muted-foreground mt-2">
                       You can start immediately or choose a future date. This date can be changed later.
                     </p>
@@ -789,9 +778,9 @@ export default function Step4ProgramSelection() {
               </Button>
               <div className="flex gap-2">
                 <SaveDraftButton getFormData={() => getValues()} />
-                <Button type="button" onClick={handleNext}>
+                <LoadingButton type="button" onClick={handleNext} isLoading={isNavigating} loadingText="Next...">
                   Next Step
-                </Button>
+                </LoadingButton>
               </div>
             </div>
           </form>

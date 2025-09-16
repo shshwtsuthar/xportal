@@ -5,11 +5,14 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
+import { format, parseISO } from 'date-fns';
 import { WizardProgress } from '../components/wizard-progress';
 import { useApplicationWizard } from '@/stores/application-wizard';
 import { Step1PersonalInfoSchema, Step1PersonalInfo } from '@/lib/schemas/application-schemas';
@@ -23,6 +26,7 @@ import { SaveDraftButton } from '../components/save-draft-button';
 // =============================================================================
 
 export default function Step1PersonalInformation() {
+  const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
   const { updateStep1Data, updateFormData, nextStep, markDirty, draftId, formData } = useApplicationWizard();
   const [isInternationalStudent, setIsInternationalStudent] = useState<boolean>(Boolean(formData?.isInternationalStudent));
@@ -135,9 +139,23 @@ export default function Step1PersonalInformation() {
     }
   };
   
-  const handleNext = () => {
-    handleSubmit(onSubmit)();
+  const handleNext = async () => {
+    setIsNavigating(true);
+    await handleSubmit(onSubmit)();
+    setIsNavigating(false);
   };
+
+  // Derive Date object for DatePicker from stored ISO string
+  const dobString = watch('personalDetails.dateOfBirth');
+  const dobDate = (() => {
+    if (!dobString) return undefined;
+    try {
+      const d = parseISO(dobString);
+      return isNaN(d.getTime()) ? undefined : d;
+    } catch {
+      return undefined;
+    }
+  })();
 
   // Handle address selection from autocomplete
   const handleResidentialAddressSelect = (address: any) => {
@@ -213,6 +231,7 @@ export default function Step1PersonalInformation() {
                     <Input
                       id="firstName"
                       {...register('personalDetails.firstName')}
+                      placeholder="e.g., John"
                       className={(errors.personalDetails?.firstName ? 'border-red-500 ' : '') + 'mt-2'}
                     />
                     {errors.personalDetails?.firstName && (
@@ -232,6 +251,7 @@ export default function Step1PersonalInformation() {
                     <Input
                       id="lastName"
                       {...register('personalDetails.lastName')}
+                      placeholder="e.g., Smith"
                       className={(errors.personalDetails?.lastName ? 'border-red-500 ' : '') + 'mt-2'}
                     />
                     {errors.personalDetails?.lastName && (
@@ -250,19 +270,24 @@ export default function Step1PersonalInformation() {
                         <span className="text-green-600" title="Auto-filled from passport">✅</span>
                       )}
                     </Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      {...register('personalDetails.dateOfBirth')}
-                      placeholder="YYYY-MM-DD"
-                      aria-label="Date of birth"
-                      className={(errors.personalDetails?.dateOfBirth ? 'border-red-500 ' : '') + 'mt-2'}
-                    />
-                    {errors.personalDetails?.dateOfBirth && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.personalDetails.dateOfBirth.message}
-                      </p>
-                    )}
+                    <div className="mt-2">
+                      <DatePicker
+                        id="dateOfBirth"
+                        aria-label="Date of birth"
+                        value={dobDate}
+                        onValueChange={(date) => {
+                          // Store as ISO yyyy-MM-dd string in RHF
+                          setValue(
+                            'personalDetails.dateOfBirth',
+                            date ? format(date, 'yyyy-MM-dd') : ''
+                          );
+                        }}
+                        placeholder="Pick a date"
+                        dateFormat="PPP"
+                        error={Boolean(errors.personalDetails?.dateOfBirth)}
+                        errorMessage={errors.personalDetails?.dateOfBirth?.message as string}
+                      />
+                    </div>
                   </div>
                   
                   <div>
@@ -370,6 +395,7 @@ export default function Step1PersonalInformation() {
                       <Input
                         id="streetNumber"
                         {...register('address.residential.streetNumber')}
+                        placeholder="e.g., 123"
                         className={(errors.address?.residential?.streetNumber ? 'border-red-500 ' : '') + 'mt-2'}
                       />
                       {errors.address?.residential?.streetNumber && (
@@ -384,6 +410,7 @@ export default function Step1PersonalInformation() {
                       <Input
                         id="streetName"
                         {...register('address.residential.streetName')}
+                        placeholder="e.g., Main St"
                         className={(errors.address?.residential?.streetName ? 'border-red-500 ' : '') + 'mt-2'}
                       />
                       {errors.address?.residential?.streetName && (
@@ -400,7 +427,7 @@ export default function Step1PersonalInformation() {
                       <Input
                         id="unitDetails"
                         {...register('address.residential.unitDetails')}
-                        placeholder="e.g., Unit 5, Apartment 10B"
+                        placeholder="e.g., Unit 5, Apt 10B"
                         className="mt-2"
                       />
                     </div>
@@ -422,6 +449,7 @@ export default function Step1PersonalInformation() {
                       <Input
                         id="suburb"
                         {...register('address.residential.suburb')}
+                        placeholder="e.g., Melbourne"
                         className={(errors.address?.residential?.suburb ? 'border-red-500 ' : '') + 'mt-2'}
                       />
                       {errors.address?.residential?.suburb && (
@@ -683,9 +711,9 @@ export default function Step1PersonalInformation() {
             {/* Navigation */}
             <div className="flex justify-between">
               <SaveDraftButton getFormData={() => getValues()} />
-              <Button type="button" onClick={handleNext} className="px-8">
+              <LoadingButton type="button" onClick={handleNext} className="px-8" isLoading={isNavigating} loadingText="Next...">
                 Next Step
-              </Button>
+              </LoadingButton>
             </div>
           </form>
         </div>
