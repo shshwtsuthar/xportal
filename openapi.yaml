@@ -1373,7 +1373,7 @@ paths:
     post:
       operationId: previewCoursePlanProgression
       summary: Preview course progression for intake models
-      description: Generates a preview of how students will progress through the course in either Fixed or Rolling intake models.
+      description: Generates a preview of how students will progress through the course in either Fixed or Rolling intake models. Supports rolling schedule alignment and optional catch-up strategies for late starters.
       tags: [Program & Subject Management]
       security:
         - bearerAuth: [admin, trainer]
@@ -1390,7 +1390,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProgressionPreviewRequest'
+              allOf:
+                - $ref: '#/components/schemas/ProgressionPreviewRequest'
+                - type: object
+                  properties:
+                    requestedStartDate:
+                      type: string
+                      format: date
+                      description: Optional requested start date to align with rolling schedule windows
+                    catchupMode:
+                      type: string
+                      enum: [SequentialNextTerm, ParallelNextTerm]
+                      description: Strategy for allocating catch-up units in the next term
+                    cycles:
+                      type: integer
+                      minimum: 1
+                      default: 2
       responses:
         '200':
           description: Progression preview results
@@ -1788,6 +1803,176 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/rolling-schedule:
+    get:
+      operationId: getProgramRollingSchedule
+      summary: Get rolling schedule definition for a program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: The current rolling schedule for the program
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramSchedule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: upsertProgramRollingSchedule
+      summary: Create or update rolling schedule for a program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramScheduleUpsert'
+      responses:
+        '200':
+          description: Schedule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramSchedule'
+        '201':
+          description: Schedule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramSchedule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /programs/{programId}/rolling-schedule/validate:
+    post:
+      operationId: validateProgramRollingSchedule
+      summary: Validate rolling schedule payload
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramScheduleUpsert'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isValid:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /programs/{programId}/rolling-schedule/preview:
+    post:
+      operationId: previewProgramRollingSchedule
+      summary: Preview rolling schedule windows across cycles
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cycles:
+                  type: integer
+                  minimum: 1
+                  default: 2
+                requestedStartDate:
+                  type: string
+                  format: date
+                  nullable: true
+                catchupMode:
+                  type: string
+                  enum: [SequentialNextTerm, ParallelNextTerm]
+                  nullable: true
+      responses:
+        '200':
+          description: Rolling schedule preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RollingSchedulePreview'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/derive-catchup:
+    post:
+      operationId: deriveCatchupForProgram
+      summary: Derive catch-up units based on start unit and schedule
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startUnitId]
+              properties:
+                startUnitId:
+                  type: string
+                  format: uuid
+                catchupMode:
+                  type: string
+                  enum: [SequentialNextTerm, ParallelNextTerm]
+      responses:
+        '200':
+          description: Derived catch-up units
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  catchupUnits:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        subjectId: { type: string, format: uuid }
+                        targetTermIndex: { type: integer }
+                        startDate: { type: string, format: date }
+                        endDate: { type: string, format: date }
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -3265,6 +3450,74 @@ components:
         intake_model: { type: string, enum: [Fixed, Rolling], description: The intake model to preview }
         start_date: { type: string, format: date, nullable: true, description: Start date for Fixed intake preview }
         simulation_duration_weeks: { type: integer, minimum: 1, default: 52, description: Duration to simulate in weeks }
+
+    ProgramSchedule:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        program_id: { type: string, format: uuid }
+        name: { type: string }
+        cycle_anchor_date:
+          type: string
+          format: date
+          description: The anchor date for cycle calculations (inclusive start)
+        timezone:
+          type: string
+          description: IANA timezone (default Australia/Melbourne)
+        units:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgramScheduleUnit'
+        created_at: { type: string, format: 'date-time' }
+        updated_at: { type: string, format: 'date-time' }
+
+    ProgramScheduleUnit:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        schedule_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        order_index: { type: integer }
+        duration_days: { type: integer, minimum: 1 }
+
+    ProgramScheduleUpsert:
+      type: object
+      required: [cycleAnchorDate, units]
+      properties:
+        name: { type: string }
+        cycleAnchorDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+          default: Australia/Melbourne
+        units:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [subjectId, orderIndex, durationDays]
+            properties:
+              subjectId: { type: string, format: uuid }
+              orderIndex: { type: integer, minimum: 0 }
+              durationDays: { type: integer, minimum: 1 }
+
+    RollingSchedulePreview:
+      type: object
+      properties:
+        cycle_anchor_date: { type: string, format: date }
+        timezone: { type: string }
+        cycles: { type: integer }
+        windows:
+          type: array
+          items:
+            type: object
+            properties:
+              term_index: { type: integer }
+              subject_id: { type: string, format: uuid }
+              subject_name: { type: string }
+              start_date: { type: string, format: date }
+              end_date: { type: string, format: date }
 
     ProgressionPreviewResult:
       type: object

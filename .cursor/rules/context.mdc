@@ -19,3 +19,14 @@ Remember, lint every file you have touched using internal tools, deno check ever
 Never ever run the development server or the supabase functions serve command. Remember, they are always running (ran by me), you do not need to run them again.
 
 We will ALWAYS work on this project incrementally. Feature by feature. We will break a feature down into its subcomponents, and only then will we work on every subcomponent slowly. We will tackle all problems systematically instead of rushing and implementing it in its entirety in one go.
+
+ALWAYS follow @flow.md for development.
+Flow describes a simple development process:
+1. Check if DB is competent
+2. If not, migrations
+3. Decide upon backend, endpoints
+4. Update OpenAPI as required
+5. Implement backend work
+6. Decide upon hooks and frontend
+7. Implement frontend work
+8. Implement UI work

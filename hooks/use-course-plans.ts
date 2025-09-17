@@ -209,6 +209,9 @@ export const usePreviewCoursePlanProgression = () => {
       intake_model: 'Fixed' | 'Rolling';
       start_date?: string;
       simulation_duration_weeks?: number;
+      requestedStartDate?: string;
+      catchupMode?: 'SequentialNextTerm' | 'ParallelNextTerm';
+      cycles?: number;
     }) => {
       const res = await fetch(`${FUNCTIONS_URL}/course-plans/programs/${payload.programId}/course-plans/${payload.planId}/progression-preview`, {
         method: 'POST',
@@ -217,6 +220,9 @@ export const usePreviewCoursePlanProgression = () => {
           intake_model: payload.intake_model,
           start_date: payload.start_date,
           simulation_duration_weeks: payload.simulation_duration_weeks,
+          requestedStartDate: payload.requestedStartDate,
+          catchupMode: payload.catchupMode,
+          cycles: payload.cycles,
         }),
       });
       if (!res.ok) throw new Error(await res.text());

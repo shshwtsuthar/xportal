@@ -40,6 +40,26 @@ const ProgressionPreviewSchema = z.object({
   simulation_duration_weeks: z.number().int().positive().optional(),
 });
 
+// --- Rolling Schedule Schemas ---
+const ProgramScheduleUnitSchema = z.object({
+  subjectId: z.string().uuid(),
+  orderIndex: z.number().int().min(0),
+  durationDays: z.number().int().min(1),
+});
+
+const ProgramScheduleUpsertSchema = z.object({
+  name: z.string().min(1).default('Default Rolling Schedule'),
+  cycleAnchorDate: z.string(), // YYYY-MM-DD
+  timezone: z.string().default('Australia/Melbourne'),
+  units: z.array(ProgramScheduleUnitSchema).min(1),
+});
+
+const SchedulePreviewSchema = z.object({
+  cycles: z.number().int().min(1).default(2),
+  requestedStartDate: z.string().optional(),
+  catchupMode: z.enum(['SequentialNextTerm', 'ParallelNextTerm']).optional(),
+});
+
 const listPlans = async (_req: Request, _ctx: ApiContext, programId: string) => {
   const rows = await db.selectFrom('core.program_course_plans')
     .selectAll()
@@ -412,6 +432,191 @@ const previewCoursePlanProgression = async (_req: Request, _ctx: ApiContext, pro
   return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 };
 
+// ---------------------------------------------
+// Rolling Schedule Handlers
+// ---------------------------------------------
+const getProgramRollingSchedule = async (_req: Request, _ctx: ApiContext, programId: string) => {
+  const schedule = await db.selectFrom('core.program_schedules')
+    .selectAll()
+    .where('program_id', '=', programId)
+    .orderBy('created_at', 'desc')
+    .executeTakeFirst();
+
+  if (!schedule) {
+    return new Response(JSON.stringify({
+      id: null,
+      program_id: programId,
+      name: 'Default Rolling Schedule',
+      cycle_anchor_date: null,
+      timezone: 'Australia/Melbourne',
+      units: [],
+      created_at: null,
+      updated_at: null,
+    }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  const units = await db.selectFrom('core.program_schedule_units as u')
+    .innerJoin('core.subjects as s', 's.id', 'u.subject_id')
+    .select([
+      'u.id', 'u.schedule_id', 'u.subject_id', 'u.order_index', 'u.duration_days',
+      's.subject_name', 's.subject_identifier'
+    ])
+    .where('u.schedule_id', '=', schedule.id as string)
+    .orderBy('u.order_index', 'asc')
+    .execute();
+
+  return new Response(JSON.stringify({
+    id: schedule.id,
+    program_id: schedule.program_id,
+    name: schedule.name,
+    cycle_anchor_date: schedule.cycle_anchor_date,
+    timezone: schedule.timezone,
+    units,
+    created_at: schedule.created_at,
+    updated_at: schedule.updated_at,
+  }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+const validateProgramRollingSchedule = async (_req: Request, _ctx: ApiContext, _programId: string, body: unknown) => {
+  const parsed = ProgramScheduleUpsertSchema.safeParse(body);
+  if (!parsed.success) {
+    return new Response(JSON.stringify({ isValid: false, errors: parsed.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })), warnings: [] }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+  const { units } = parsed.data;
+  const errors: Array<{ field: string; message: string }> = [];
+  // Unique orderIndex and subjectId
+  const orderSet = new Set<number>();
+  const subjectSet = new Set<string>();
+  for (const u of units) {
+    if (orderSet.has(u.orderIndex)) errors.push({ field: 'units.orderIndex', message: 'Duplicate orderIndex in units' });
+    orderSet.add(u.orderIndex);
+    if (subjectSet.has(u.subjectId)) errors.push({ field: 'units.subjectId', message: 'Duplicate subjectId in units' });
+    subjectSet.add(u.subjectId);
+  }
+  return new Response(JSON.stringify({ isValid: errors.length === 0, errors, warnings: [] }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+const upsertProgramRollingSchedule = async (_req: Request, _ctx: ApiContext, programId: string, body: unknown) => {
+  const { name, cycleAnchorDate, timezone, units } = ProgramScheduleUpsertSchema.parse(body);
+
+  // simple validation reuse
+  const validation = await validateProgramRollingSchedule(_req, _ctx, programId, body);
+  const { isValid, errors } = await validation.json();
+  if (!isValid) throw new ValidationError('Invalid schedule', { errors });
+
+  const existing = await db.selectFrom('core.program_schedules')
+    .selectAll()
+    .where('program_id', '=', programId)
+    .orderBy('created_at', 'desc')
+    .executeTakeFirst();
+
+  const result = await db.transaction().execute(async (trx) => {
+    let scheduleId: string;
+    if (!existing) {
+      const created = await trx.insertInto('core.program_schedules')
+        .values({ program_id: programId, name, cycle_anchor_date: cycleAnchorDate as unknown as Date, timezone })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      scheduleId = created.id as string;
+    } else {
+      const updated = await trx.updateTable('core.program_schedules')
+        .set({ name, cycle_anchor_date: cycleAnchorDate as unknown as Date, timezone, updated_at: new Date() as unknown as Date })
+        .where('id', '=', existing.id as string)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      scheduleId = updated.id as string;
+      await trx.deleteFrom('core.program_schedule_units').where('schedule_id', '=', scheduleId).execute();
+    }
+    if (units.length > 0) {
+      await trx.insertInto('core.program_schedule_units')
+        .values(units.map(u => ({ schedule_id: scheduleId, subject_id: u.subjectId, order_index: u.orderIndex, duration_days: u.durationDays })))
+        .execute();
+    }
+    return scheduleId;
+  });
+
+  // Return the schedule
+  const resp = await db.selectFrom('core.program_schedules').selectAll().where('id', '=', result).executeTakeFirstOrThrow();
+  return new Response(JSON.stringify(resp), { status: existing ? 200 : 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+const previewProgramRollingSchedule = async (_req: Request, _ctx: ApiContext, programId: string, body: unknown) => {
+  const { cycles, requestedStartDate } = SchedulePreviewSchema.parse(body);
+  const schedule = await db.selectFrom('core.program_schedules')
+    .selectAll()
+    .where('program_id', '=', programId)
+    .orderBy('created_at', 'desc')
+    .executeTakeFirst();
+  if (!schedule) throw new NotFoundError('Rolling schedule not found');
+
+  const units = await db.selectFrom('core.program_schedule_units as u')
+    .innerJoin('core.subjects as s', 's.id', 'u.subject_id')
+    .select(['u.subject_id', 's.subject_name', 'u.order_index', 'u.duration_days'])
+    .where('u.schedule_id', '=', schedule.id as string)
+    .orderBy('u.order_index', 'asc')
+    .execute();
+
+  // Build windows across cycles
+  const anchor = new Date(schedule.cycle_anchor_date as unknown as string);
+  const cycleLength = units.reduce((sum, u) => sum + u.duration_days, 0);
+  const windows: Array<{ term_index: number; subject_id: string; subject_name: string; start_date: string; end_date: string }> = [];
+  for (let term = 0; term < cycles; term++) {
+    let dayOffset = term * cycleLength;
+    for (const u of units) {
+      const start = new Date(anchor);
+      start.setDate(start.getDate() + dayOffset);
+      const end = new Date(start);
+      end.setDate(end.getDate() + u.duration_days - 1);
+      windows.push({ term_index: term, subject_id: u.subject_id as string, subject_name: u.subject_name as string, start_date: start.toISOString().split('T')[0], end_date: end.toISOString().split('T')[0] });
+      dayOffset += u.duration_days;
+    }
+  }
+
+  // Optionally could align requestedStartDate, but business rule postponed
+  return new Response(JSON.stringify({ cycle_anchor_date: schedule.cycle_anchor_date, timezone: schedule.timezone, cycles, windows }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+const deriveCatchupForProgram = async (_req: Request, _ctx: ApiContext, programId: string, body: unknown) => {
+  const { startUnitId, catchupMode } = z.object({ startUnitId: z.string().uuid(), catchupMode: z.enum(['SequentialNextTerm', 'ParallelNextTerm']).default('SequentialNextTerm') }).parse(body);
+
+  const schedule = await db.selectFrom('core.program_schedules')
+    .selectAll()
+    .where('program_id', '=', programId)
+    .orderBy('created_at', 'desc')
+    .executeTakeFirst();
+  if (!schedule) throw new NotFoundError('Rolling schedule not found');
+
+  const units = await db.selectFrom('core.program_schedule_units')
+    .selectAll()
+    .where('schedule_id', '=', schedule.id as string)
+    .orderBy('order_index', 'asc')
+    .execute();
+
+  const idx = units.findIndex(u => u.subject_id === startUnitId);
+  if (idx === -1) throw new ValidationError('startUnitId not in schedule');
+  const prior = units.slice(0, idx);
+  const anchor = new Date(schedule.cycle_anchor_date as unknown as string);
+  const cycleLength = units.reduce((sum, u) => sum + u.duration_days, 0);
+  const nextTermOffset = cycleLength; // next cycle offset in days
+
+  const catchupUnits = prior.map(u => {
+    // compute per next term
+    let dayOffset = nextTermOffset;
+    for (const v of units) {
+      if (v.subject_id === u.subject_id) break;
+      dayOffset += 0; // order is preserved; we only place in its natural slot in next term
+    }
+    const start = new Date(anchor);
+    start.setDate(start.getDate() + dayOffset + units.slice(0, u.order_index as number).reduce((s, x) => s + x.duration_days, 0));
+    const end = new Date(start);
+    end.setDate(end.getDate() + u.duration_days - 1);
+    return { subjectId: u.subject_id as string, targetTermIndex: 1, startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] };
+  });
+
+  // For ParallelNextTerm we still schedule in next term same windows; compression not implemented per scope
+  return new Response(JSON.stringify({ catchupUnits }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
 const router = async (req: Request, ctx: ApiContext, body: unknown) => {
   const url = new URL(req.url);
   const p = url.pathname.split('/').filter(Boolean);
@@ -496,6 +701,52 @@ const router = async (req: Request, ctx: ApiContext, body: unknown) => {
   // Support: /course-plans/programs/{programId}/course-plans/{planId}/progression-preview
   if (m === 'POST' && p.length === 6 && p[0] === 'course-plans' && p[1] === 'programs' && p[3] === 'course-plans' && p[5] === 'progression-preview') {
     return previewCoursePlanProgression(req, ctx, p[2], p[4], body);
+  }
+
+  // --- Rolling schedule routes ---
+  // GET /programs/{programId}/rolling-schedule
+  if (m === 'GET' && p.length === 3 && p[0] === 'programs' && p[2] === 'rolling-schedule') {
+    return getProgramRollingSchedule(req, ctx, p[1]);
+  }
+  // GET /course-plans/programs/{programId}/rolling-schedule
+  if (m === 'GET' && p.length === 4 && p[0] === 'course-plans' && p[1] === 'programs' && p[3] === 'rolling-schedule') {
+    return getProgramRollingSchedule(req, ctx, p[2]);
+  }
+
+  // PUT /programs/{programId}/rolling-schedule
+  if (m === 'PUT' && p.length === 3 && p[0] === 'programs' && p[2] === 'rolling-schedule') {
+    return upsertProgramRollingSchedule(req, ctx, p[1], body);
+  }
+  // PUT /course-plans/programs/{programId}/rolling-schedule
+  if (m === 'PUT' && p.length === 4 && p[0] === 'course-plans' && p[1] === 'programs' && p[3] === 'rolling-schedule') {
+    return upsertProgramRollingSchedule(req, ctx, p[2], body);
+  }
+
+  // POST /programs/{programId}/rolling-schedule/validate
+  if (m === 'POST' && p.length === 4 && p[0] === 'programs' && p[2] === 'rolling-schedule' && p[3] === 'validate') {
+    return validateProgramRollingSchedule(req, ctx, p[1], body);
+  }
+  // POST /course-plans/programs/{programId}/rolling-schedule/validate
+  if (m === 'POST' && p.length === 5 && p[0] === 'course-plans' && p[1] === 'programs' && p[3] === 'rolling-schedule' && p[4] === 'validate') {
+    return validateProgramRollingSchedule(req, ctx, p[2], body);
+  }
+
+  // POST /programs/{programId}/rolling-schedule/preview
+  if (m === 'POST' && p.length === 4 && p[0] === 'programs' && p[2] === 'rolling-schedule' && p[3] === 'preview') {
+    return previewProgramRollingSchedule(req, ctx, p[1], body);
+  }
+  // POST /course-plans/programs/{programId}/rolling-schedule/preview
+  if (m === 'POST' && p.length === 5 && p[0] === 'course-plans' && p[1] === 'programs' && p[3] === 'rolling-schedule' && p[4] === 'preview') {
+    return previewProgramRollingSchedule(req, ctx, p[2], body);
+  }
+
+  // POST /programs/{programId}/derive-catchup
+  if (m === 'POST' && p.length === 3 && p[0] === 'programs' && p[2] === 'derive-catchup') {
+    return deriveCatchupForProgram(req, ctx, p[1], body);
+  }
+  // POST /course-plans/programs/{programId}/derive-catchup
+  if (m === 'POST' && p.length === 4 && p[0] === 'course-plans' && p[1] === 'programs' && p[3] === 'derive-catchup') {
+    return deriveCatchupForProgram(req, ctx, p[2], body);
   }
 
   throw new NotFoundError();

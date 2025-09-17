@@ -36,6 +36,7 @@ import {
   usePreviewCoursePlanProgression,
   transformCoursePlansForSelect
 } from '@/hooks/use-course-plans';
+import { useSchedulePreview } from '@/hooks/use-rolling-schedule';
 import { useFundingSources, useStudyReasons, transformReferenceData } from '@/hooks/use-reference-data';
 import { useLocations, transformLocationsForSelect } from '@/hooks/use-locations';
 
@@ -69,7 +70,9 @@ export default function Step4ProgramSelection() {
   
   // Progression preview
   const previewProgression = usePreviewCoursePlanProgression();
+  const previewSchedule = useSchedulePreview();
   const [progressionData, setProgressionData] = useState<any>(null);
+  const [rollingPreview, setRollingPreview] = useState<any>(null);
   const [isLoadingProgression, setIsLoadingProgression] = useState(false);
   
   // Transform data for select components
@@ -245,6 +248,7 @@ export default function Step4ProgramSelection() {
   const fetchProgressionPreview = async () => {
     if (!selectedProgramId || !selectedCoursePlanId || !selectedIntakeModel) {
       setProgressionData(null);
+      setRollingPreview(null);
       return;
     }
 
@@ -256,13 +260,25 @@ export default function Step4ProgramSelection() {
         intake_model: selectedIntakeModel,
         start_date: selectedStartDate ? selectedStartDate.toISOString().split('T')[0] : undefined,
         simulation_duration_weeks: 52, // 1 year simulation
+        // rolling extras pass-through
+        requestedStartDate: selectedStartDate ? selectedStartDate.toISOString().split('T')[0] : undefined,
+        catchupMode: 'SequentialNextTerm' as const,
+        cycles: 2,
       };
 
       const result = await previewProgression.mutateAsync(payload);
       setProgressionData(result);
+
+      if (selectedIntakeModel === 'Rolling') {
+        const sched = await previewSchedule.mutateAsync({ programId: selectedProgramId, cycles: 2, requestedStartDate: payload.requestedStartDate, catchupMode: 'SequentialNextTerm' });
+        setRollingPreview(sched);
+      } else {
+        setRollingPreview(null);
+      }
     } catch (error) {
       console.error('Failed to fetch progression preview:', error);
       setProgressionData(null);
+      setRollingPreview(null);
     } finally {
       setIsLoadingProgression(false);
     }
@@ -566,42 +582,48 @@ export default function Step4ProgramSelection() {
                       )}
 
                       {/* Rolling Intake Sequence */}
-                      {selectedIntakeModel === 'Rolling' && progressionData.rolling_intake_sequence && (
+                      {selectedIntakeModel === 'Rolling' && (
                         <div>
                           <h4 className="font-semibold mb-3">Rolling Intake Progression</h4>
-                          <div className="space-y-4">
-                            {progressionData.rolling_intake_sequence.map((phase: any, index: number) => (
-                              <div key={index} className="border rounded-lg p-4">
-                                <div className="flex items-center space-x-2 mb-3">
-                                  <Badge variant="outline">Phase {index + 1}</Badge>
-                                  <span className="text-sm font-medium">{phase.unlock_trigger}</span>
-                                </div>
-                                <div className="space-y-2">
-                                  {phase.subjects_unlocked.map((subject: any) => (
-                                    <div key={subject.subject_id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                                      <div className="flex-1">
-                                        <div className="font-medium">{subject.subject_name}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                          {subject.estimated_duration_weeks} weeks
-                                          {subject.prerequisite_subjects.length > 0 && (
-                                            <span className="ml-2">
-                                              • Requires: {subject.prerequisite_subjects.join(', ')}
-                                            </span>
-                                          )}
-                                        </div>
-                                        {subject.available_from_date && subject.estimated_completion_date && (
-                                          <div className="text-sm text-green-600 font-medium">
-                                            Available: {new Date(subject.available_from_date).toLocaleDateString()} | 
-                                            Est. Complete: {new Date(subject.estimated_completion_date).toLocaleDateString()}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
+                          {rollingPreview ? (
+                            <div className="space-y-3">
+                              <div className="text-sm text-muted-foreground">Anchor: {rollingPreview.cycle_anchor_date} • TZ: {rollingPreview.timezone}</div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {rollingPreview.windows.map((w: any, i: number) => (
+                                  <div key={i} className="rounded border p-3">
+                                    <div className="text-xs text-muted-foreground">Term {w.term_index + 1}</div>
+                                    <div className="font-medium">{w.subject_name}</div>
+                                    <div className="text-sm">{w.start_date} → {w.end_date}</div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
+                            </div>
+                          ) : (
+                            progressionData?.rolling_intake_sequence && (
+                              <div className="space-y-4">
+                                {progressionData.rolling_intake_sequence.map((phase: any, index: number) => (
+                                  <div key={index} className="border rounded-lg p-4">
+                                    <div className="flex items-center space-x-2 mb-3">
+                                      <Badge variant="outline">Phase {index + 1}</Badge>
+                                      <span className="text-sm font-medium">{phase.unlock_trigger}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {phase.subjects_unlocked.map((subject: any) => (
+                                        <div key={subject.subject_id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                                          <div className="flex-1">
+                                            <div className="font-medium">{subject.subject_name}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                              {subject.estimated_duration_weeks} weeks
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          )}
                         </div>
                       )}
 

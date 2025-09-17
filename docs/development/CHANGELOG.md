@@ -1,3 +1,22 @@
+## 2025-09-17
+
+### Added
+- Rolling schedule system for programs:
+  - New DB tables: `core.program_schedules`, `core.program_schedule_units` with anchor date, timezone, ordered units, and duration in days.
+  - Optional offering coupling columns: `sms_op.course_offerings.schedule_id`, `term_index`.
+  - OpenAPI: endpoints to get/upsert/validate/preview rolling schedules and derive catch-up.
+  - Backend: implemented handlers under `course-plans` function to serve the new endpoints.
+- Frontend hooks:
+  - `useProgramRollingSchedule`, `useValidateProgramRollingSchedule`, `useUpsertProgramRollingSchedule`, `useSchedulePreview`, `useDeriveCatchup`.
+  - Extended `usePreviewCoursePlanProgression` to accept `requestedStartDate`, `catchupMode`, and `cycles`.
+
+### Changed
+- Extended progression preview OpenAPI to include rolling-specific options and catch-up preview support.
+
+### Notes
+- 50% late-start rule is deferred; staff will validate manually. Timezone defaults to `Australia/Melbourne`. Security/overrides deferred.
+- Regenerated OpenAPI types for backend and frontend; removed stray `supabase/functions/shared/api.types.ts` to keep canonical path at `supabase/functions/_shared/api.types.ts`.
+
 ## 2025-09-16 — Manual Save Draft System Implementation
 
 ### Business Logic (authoritative summary)

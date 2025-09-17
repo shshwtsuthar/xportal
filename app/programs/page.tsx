@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ProgramSelector } from './_components/ProgramSelector';
 import { AdvancedCoursePlans } from './_components/AdvancedCoursePlans';
+import { RollingSchedule } from './_components/RollingSchedule';
 import { Offerings } from './_components/Offerings';
 import { usePrograms } from '@/hooks/use-programs';
 
@@ -169,8 +170,9 @@ export default function ProgramsPage() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="course-plans" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="course-plans">Course Plans</TabsTrigger>
+                <TabsTrigger value="rolling-schedule">Rolling Schedule</TabsTrigger>
                 <TabsTrigger value="offerings">Offerings</TabsTrigger>
               </TabsList>
               
@@ -178,6 +180,10 @@ export default function ProgramsPage() {
                 <AdvancedCoursePlans programId={selectedProgramId} />
               </TabsContent>
               
+              <TabsContent value="rolling-schedule" className="mt-6">
+                <RollingSchedule programId={selectedProgramId} />
+              </TabsContent>
+
               <TabsContent value="offerings" className="mt-6">
                 <Offerings programId={selectedProgramId} />
               </TabsContent>

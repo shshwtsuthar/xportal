@@ -743,7 +743,7 @@ export interface paths {
         put?: never;
         /**
          * Preview course progression for intake models
-         * @description Generates a preview of how students will progress through the course in either Fixed or Rolling intake models.
+         * @description Generates a preview of how students will progress through the course in either Fixed or Rolling intake models. Supports rolling schedule alignment and optional catch-up strategies for late starters.
          */
         post: operations["previewCoursePlanProgression"];
         delete?: never;
@@ -940,6 +940,75 @@ export interface paths {
         get: operations["listProgramOfferings"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/rolling-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get rolling schedule definition for a program */
+        get: operations["getProgramRollingSchedule"];
+        /** Create or update rolling schedule for a program */
+        put: operations["upsertProgramRollingSchedule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/rolling-schedule/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate rolling schedule payload */
+        post: operations["validateProgramRollingSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/rolling-schedule/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview rolling schedule windows across cycles */
+        post: operations["previewProgramRollingSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/derive-catchup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Derive catch-up units based on start unit and schedule */
+        post: operations["deriveCatchupForProgram"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2002,6 +2071,64 @@ export interface components {
              * @default 52
              */
             simulation_duration_weeks: number;
+        };
+        ProgramSchedule: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            program_id?: string;
+            name?: string;
+            /**
+             * Format: date
+             * @description The anchor date for cycle calculations (inclusive start)
+             */
+            cycle_anchor_date?: string;
+            /** @description IANA timezone (default Australia/Melbourne) */
+            timezone?: string;
+            units?: components["schemas"]["ProgramScheduleUnit"][];
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        ProgramScheduleUnit: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            schedule_id?: string;
+            /** Format: uuid */
+            subject_id?: string;
+            order_index?: number;
+            duration_days?: number;
+        };
+        ProgramScheduleUpsert: {
+            name?: string;
+            /** Format: date */
+            cycleAnchorDate: string;
+            /** @default Australia/Melbourne */
+            timezone: string;
+            units: {
+                /** Format: uuid */
+                subjectId: string;
+                orderIndex: number;
+                durationDays: number;
+            }[];
+        };
+        RollingSchedulePreview: {
+            /** Format: date */
+            cycle_anchor_date?: string;
+            timezone?: string;
+            cycles?: number;
+            windows?: {
+                term_index?: number;
+                /** Format: uuid */
+                subject_id?: string;
+                subject_name?: string;
+                /** Format: date */
+                start_date?: string;
+                /** Format: date */
+                end_date?: string;
+            }[];
         };
         /** @description Results of course progression preview for different intake models */
         ProgressionPreviewResult: {
@@ -3297,7 +3424,20 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ProgressionPreviewRequest"];
+                "application/json": components["schemas"]["ProgressionPreviewRequest"] & {
+                    /**
+                     * Format: date
+                     * @description Optional requested start date to align with rolling schedule windows
+                     */
+                    requestedStartDate?: string;
+                    /**
+                     * @description Strategy for allocating catch-up units in the next term
+                     * @enum {string}
+                     */
+                    catchupMode?: "SequentialNextTerm" | "ParallelNextTerm";
+                    /** @default 2 */
+                    cycles?: number;
+                };
             };
         };
         responses: {
@@ -3685,6 +3825,175 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getProgramRollingSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The current rolling schedule for the program */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgramSchedule"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    upsertProgramRollingSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramScheduleUpsert"];
+            };
+        };
+        responses: {
+            /** @description Schedule updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgramSchedule"];
+                };
+            };
+            /** @description Schedule created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgramSchedule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    validateProgramRollingSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramScheduleUpsert"];
+            };
+        };
+        responses: {
+            /** @description Validation result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        isValid?: boolean;
+                        errors?: {
+                            field?: string;
+                            message?: string;
+                        }[];
+                        warnings?: string[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    previewProgramRollingSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @default 2 */
+                    cycles?: number;
+                    /** Format: date */
+                    requestedStartDate?: string | null;
+                    /** @enum {string|null} */
+                    catchupMode?: "SequentialNextTerm" | "ParallelNextTerm" | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Rolling schedule preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RollingSchedulePreview"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deriveCatchupForProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    startUnitId: string;
+                    /** @enum {string} */
+                    catchupMode?: "SequentialNextTerm" | "ParallelNextTerm";
+                };
+            };
+        };
+        responses: {
+            /** @description Derived catch-up units */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        catchupUnits?: {
+                            /** Format: uuid */
+                            subjectId?: string;
+                            targetTermIndex?: number;
+                            /** Format: date */
+                            startDate?: string;
+                            /** Format: date */
+                            endDate?: string;
+                        }[];
+                    };
+                };
+            };
             404: components["responses"]["NotFound"];
         };
     };
