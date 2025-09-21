@@ -16,6 +16,83 @@ import {
   NAT00020_REQUIRED_FIELDS
 } from '@/src/types/compliance-types';
 import { NATFieldStatus } from '@/components/nat-field-status-table';
+import { getFunctionHeaders } from '@/lib/utils';
+
+/**
+ * Analyzes individual field status for NAT00020 locations
+ */
+export const analyzeNAT00020FieldStatus = (locationsData: LocationValidationData[]): NATFieldStatus[] => {
+  const fieldStatuses: NATFieldStatus[] = [
+    // Required fields for NAT00020
+    {
+      fieldName: 'location_identifier',
+      displayName: 'Training organisation delivery location identifier',
+      isAvailable: locationsData.some(loc => !!(loc.location_identifier && loc.location_identifier.trim() !== '')),
+      isRequired: true,
+      isOptional: false
+    },
+    {
+      fieldName: 'location_name',
+      displayName: 'Training organisation delivery location name',
+      isAvailable: locationsData.some(loc => !!(loc.location_name && loc.location_name.trim() !== '')),
+      isRequired: true,
+      isOptional: false
+    },
+    {
+      fieldName: 'address.street_name',
+      displayName: 'Address street name',
+      isAvailable: locationsData.some(loc => !!(loc.address?.street_name && loc.address.street_name.trim() !== '')),
+      isRequired: true,
+      isOptional: false
+    },
+    {
+      fieldName: 'address.suburb',
+      displayName: 'Address suburb, locality or town',
+      isAvailable: locationsData.some(loc => !!(loc.address?.suburb && loc.address.suburb.trim() !== '')),
+      isRequired: true,
+      isOptional: false
+    },
+    {
+      fieldName: 'address.postcode',
+      displayName: 'Postcode',
+      isAvailable: locationsData.some(loc => !!(loc.address?.postcode && loc.address.postcode.trim() !== '' && isValidPostcode(loc.address.postcode))),
+      isRequired: true,
+      isOptional: false
+    },
+    {
+      fieldName: 'address.state_identifier',
+      displayName: 'State identifier',
+      isAvailable: locationsData.some(loc => !!(loc.address?.state_identifier && loc.address.state_identifier.trim() !== '')),
+      isRequired: true,
+      isOptional: false
+    },
+    
+    // Optional fields for NAT00020
+    {
+      fieldName: 'address.building_property_name',
+      displayName: 'Address building/property name',
+      isAvailable: locationsData.some(loc => !!(loc.address?.building_property_name && loc.address.building_property_name.trim() !== '')),
+      isRequired: false,
+      isOptional: true
+    },
+    {
+      fieldName: 'address.flat_unit_details',
+      displayName: 'Address flat/unit details',
+      isAvailable: locationsData.some(loc => !!(loc.address?.flat_unit_details && loc.address.flat_unit_details.trim() !== '')),
+      isRequired: false,
+      isOptional: true
+    },
+    {
+      fieldName: 'address.street_number',
+      displayName: 'Address street number',
+      isAvailable: locationsData.some(loc => !!(loc.address?.street_number && loc.address.street_number.trim() !== '')),
+      isRequired: false,
+      isOptional: true
+    }
+  ];
+
+  return fieldStatuses;
+};
 
 /**
  * Analyzes individual field status for NAT00010
@@ -493,23 +570,49 @@ export const getOrganisationData = async (): Promise<OrganisationValidationData 
 };
 
 /**
+ * Fetches locations data for validation
+ */
+export const getLocationsData = async (): Promise<LocationValidationData[]> => {
+  try {
+    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1';
+    
+    const response = await fetch(`${FUNCTIONS_URL}/locations`, {
+      headers: getFunctionHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.locations || [];
+  } catch (error) {
+    console.error('Error fetching locations data:', error);
+    return [];
+  }
+};
+
+/**
  * Checks both organisation and locations status
  */
 export const checkAVETMISSStatus = async (): Promise<{
   nat00010Status: NATFileStatus;
   nat00020Status: NATFileStatus;
   organisationData?: OrganisationValidationData;
+  locationsData?: LocationValidationData[];
 }> => {
-  const [nat00010Status, nat00020Status, organisationData] = await Promise.all([
+  const [nat00010Status, nat00020Status, organisationData, locationsData] = await Promise.all([
     checkOrganisationStatus(),
     checkLocationsStatus(),
-    getOrganisationData()
+    getOrganisationData(),
+    getLocationsData()
   ]);
   
   return {
     nat00010Status,
     nat00020Status,
-    organisationData
+    organisationData,
+    locationsData
   };
 };
 

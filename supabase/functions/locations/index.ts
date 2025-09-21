@@ -77,6 +77,7 @@ const listLocationsLogic = async (_req: Request, _ctx: ApiContext) => {
       'core.addresses.created_at as address_created_at',
       'core.addresses.updated_at as address_updated_at',
       'core.organisations.organisation_name as organisation_name',
+      'core.organisations.organisation_identifier as organisation_identifier',
     ])
     .orderBy('core.locations.location_name', 'asc')
     .execute();
@@ -85,6 +86,7 @@ const listLocationsLogic = async (_req: Request, _ctx: ApiContext) => {
   const transformedLocations = locations.map(location => ({
     id: location.id,
     organisation_id: location.organisation_id,
+    organisation_identifier: location.organisation_identifier,
     location_identifier: location.location_identifier,
     location_name: location.location_name,
     is_active: location.is_active,
@@ -178,6 +180,7 @@ const createLocationLogic = async (_req: Request, _ctx: ApiContext, body: unknow
   const completeLocation = await db
     .selectFrom('core.locations')
     .leftJoin('core.addresses', 'core.addresses.id', 'core.locations.address_id')
+    .leftJoin('core.organisations', 'core.organisations.id', 'core.locations.organisation_id')
     .select([
       'core.locations.id as id',
       'core.locations.organisation_id as organisation_id',
@@ -199,6 +202,7 @@ const createLocationLogic = async (_req: Request, _ctx: ApiContext, body: unknow
       'core.addresses.sa2_identifier as sa2_identifier',
       'core.addresses.created_at as address_created_at',
       'core.addresses.updated_at as address_updated_at',
+      'core.organisations.organisation_identifier as organisation_identifier',
     ])
     .where('core.locations.id', '=', result.location?.id!)
     .executeTakeFirst();
@@ -210,6 +214,7 @@ const createLocationLogic = async (_req: Request, _ctx: ApiContext, body: unknow
   const transformedLocation = {
     id: completeLocation.id,
     organisation_id: completeLocation.organisation_id,
+    organisation_identifier: completeLocation.organisation_identifier,
     location_identifier: completeLocation.location_identifier,
     location_name: completeLocation.location_name,
     is_active: completeLocation.is_active,
@@ -398,6 +403,7 @@ const updateLocationLogic = async (_req: Request, _ctx: ApiContext, id: string, 
   const transformedLocation = {
     id: completeLocation.id,
     organisation_id: completeLocation.organisation_id,
+    organisation_identifier: completeLocation.organisation_identifier,
     location_identifier: completeLocation.location_identifier,
     location_name: completeLocation.location_name,
     is_active: completeLocation.is_active,
@@ -522,6 +528,7 @@ const toggleLocationStatusLogic = async (_req: Request, _ctx: ApiContext, id: st
   const transformedLocation = {
     id: completeLocation.id,
     organisation_id: completeLocation.organisation_id,
+    organisation_identifier: completeLocation.organisation_identifier,
     location_identifier: completeLocation.location_identifier,
     location_name: completeLocation.location_name,
     is_active: completeLocation.is_active,

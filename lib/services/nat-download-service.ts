@@ -297,17 +297,19 @@ export const validateDataForDownload = async (fileType: 'NAT00010' | 'NAT00020')
         };
       }
       
-      // Check each location
+      // Check each location for NAT00020 required fields
       const missingFields: string[] = [];
       activeLocations.forEach((location: any, index: number) => {
         const prefix = `location_${index + 1}`;
         
+        // Required fields for NAT00020
         if (!location.location_identifier) missingFields.push(`${prefix}.location_identifier`);
         if (!location.location_name) missingFields.push(`${prefix}.location_name`);
         
         if (!location.address) {
           missingFields.push(`${prefix}.address`);
         } else {
+          // Required address fields for NAT00020
           if (!location.address.street_name) missingFields.push(`${prefix}.address.street_name`);
           if (!location.address.suburb) missingFields.push(`${prefix}.address.suburb`);
           if (!location.address.postcode) missingFields.push(`${prefix}.address.postcode`);

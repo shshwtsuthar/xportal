@@ -21,8 +21,9 @@ import {
 } from 'lucide-react';
 import { StatusCardProps } from '@/src/types/compliance-types';
 import { useDownloadButtonState } from '@/hooks/use-nat-downloads';
-import { getFieldDisplayName, analyzeNAT00010FieldStatus } from '@/lib/services/avetmiss-status-service';
+import { getFieldDisplayName, analyzeNAT00010FieldStatus, analyzeNAT00020FieldStatus } from '@/lib/services/avetmiss-status-service';
 import { NATFieldStatusTable } from '@/components/nat-field-status-table';
+import { NAT00020LocationsTable } from '@/components/nat00020-locations-table';
 
 /**
  * Status icon component
@@ -198,8 +199,32 @@ export const NATFileStatusCard: React.FC<StatusCardProps> = ({
           />
         )}
 
-        {/* Status Section for NAT00020 */}
-        {fileType === 'NAT00020' && (
+        {/* Locations Table for NAT00020 */}
+        {fileType === 'NAT00020' && locationsData && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-foreground">Training Locations</h4>
+              <p className="text-xs text-muted-foreground">
+                {locationsData.length} location{locationsData.length !== 1 ? 's' : ''} configured
+              </p>
+            </div>
+            <NAT00020LocationsTable locations={locationsData} />
+          </div>
+        )}
+
+        {/* Field Status Table for NAT00020 */}
+        {fileType === 'NAT00020' && locationsData && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-foreground">Field Status</h4>
+            <NATFieldStatusTable 
+              fields={analyzeNAT00020FieldStatus(locationsData)} 
+              isLoading={false}
+            />
+          </div>
+        )}
+
+        {/* Status Section for NAT00020 (when no data) */}
+        {fileType === 'NAT00020' && !locationsData && (
           <div className="flex items-start gap-3">
             <StatusIcon status={status.status} />
             <div className="flex-1">
@@ -215,8 +240,8 @@ export const NATFileStatusCard: React.FC<StatusCardProps> = ({
           </div>
         )}
 
-        {/* Missing Fields for NAT00020 */}
-        {fileType === 'NAT00020' && status.status === 'incomplete' && status.missingFields.length > 0 && (
+        {/* Missing Fields for NAT00020 (when no data) */}
+        {fileType === 'NAT00020' && !locationsData && status.status === 'incomplete' && status.missingFields.length > 0 && (
           <MissingFieldsList fields={status.missingFields} />
         )}
 

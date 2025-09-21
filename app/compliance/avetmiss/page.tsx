@@ -12,13 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  FileText, 
   Download, 
   RefreshCw, 
   Loader2,
   AlertCircle,
-  CheckCircle2,
-  ExternalLink
+  CheckCircle2
 } from 'lucide-react';
 import { useAvetmissStatus, useAvetmissStatusRefresh } from '@/hooks/use-avetmiss-status';
 import { useNATDownloads } from '@/hooks/use-nat-downloads';
@@ -151,19 +149,12 @@ export default function AVETMISSCompliancePage() {
 
   return (
     <div className="container mx-auto p-6">
-      {/* Page Header - Following design system layout patterns */}
-      <div className="flex flex-col gap-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-12 rounded-xl bg-primary/10 text-primary">
-              <FileText className="size-6" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight">AVETMISS Compliance</h1>
-              <p className="text-sm text-muted-foreground">
-                Monitor data completeness and download NAT files for government reporting
-              </p>
-            </div>
+      <div className="space-y-6">
+        {/* Page Header - Following design system layout patterns */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">AVETMISS Compliance</h1>
+            <p className="text-muted-foreground">Monitor data completeness and download NAT files for government reporting</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -217,50 +208,37 @@ export default function AVETMISSCompliancePage() {
         {statusData && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
-              <CardContent className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400">
-                  <CheckCircle2 className="size-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Complete Files</p>
-                  <p className="text-xs text-muted-foreground">
-                    {[statusData.nat00010Status, statusData.nat00020Status]
-                      .filter(status => status.isComplete).length} of 2
-                  </p>
-                </div>
+              <CardContent className="flex flex-col items-center text-center py-6">
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {[statusData.nat00010Status, statusData.nat00020Status]
+                    .filter(status => status.isComplete).length}
+                </p>
+                <p className="text-sm font-medium">Complete Files</p>
+                <p className="text-xs text-muted-foreground">of 2 files</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                  <FileText className="size-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Total Records</p>
-                  <p className="text-xs text-muted-foreground">
-                    {statusData.nat00010Status.recordCount + statusData.nat00020Status.recordCount} records
-                  </p>
-                </div>
+              <CardContent className="flex flex-col items-center text-center py-6">
+                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {statusData.nat00010Status.recordCount + statusData.nat00020Status.recordCount}
+                </p>
+                <p className="text-sm font-medium">Total Records</p>
+                <p className="text-xs text-muted-foreground">records</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400">
-                  <AlertCircle className="size-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Missing Fields</p>
-                  <p className="text-xs text-muted-foreground">
-                    {statusData.nat00010Status.missingFields.length + statusData.nat00020Status.missingFields.length} fields
-                  </p>
-                </div>
+              <CardContent className="flex flex-col items-center text-center py-6">
+                <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                  {statusData.nat00010Status.missingFields.length + statusData.nat00020Status.missingFields.length}
+                </p>
+                <p className="text-sm font-medium">Missing Fields</p>
+                <p className="text-xs text-muted-foreground">fields</p>
               </CardContent>
             </Card>
           </div>
         )}
-      </div>
 
       {/* NAT File Status Cards - Grid layout following design system */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -280,52 +258,48 @@ export default function AVETMISSCompliancePage() {
             status={statusData.nat00020Status}
             onDownload={() => {}} // Handled by the card component
             isDownloading={false} // Handled by the card component
+            locationsData={statusData.locationsData}
           />
         )}
       </div>
 
-      {/* Help Section - Following card structure and typography */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="size-5" />
-            AVETMISS File Information
-          </CardTitle>
-          <CardDescription>
-            Understanding NAT files and compliance requirements
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm">NAT00010 - Organisation</h4>
-              <p className="text-xs text-muted-foreground">
-                Contains training organisation details including address, contact information, and RTO identifier.
-              </p>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• Single record per organisation</li>
-                <li>• Required for all AVETMISS submissions</li>
-                <li>• Must match training.gov.au data</li>
-              </ul>
+        {/* Help Section - Following card structure and typography */}
+        <Card>
+          <CardHeader>
+            <CardTitle>AVETMISS File Information</CardTitle>
+            <CardDescription>
+              Understanding NAT files and compliance requirements
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">NAT00010 - Organisation</h4>
+                <p className="text-sm text-muted-foreground">
+                  Contains training organisation details including address, contact information, and RTO identifier.
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Single record per organisation</li>
+                  <li>• Required for all AVETMISS submissions</li>
+                  <li>• Must match training.gov.au data</li>
+                </ul>
+              </div>
+              
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">NAT00020 - Locations</h4>
+                <p className="text-sm text-muted-foreground">
+                  Contains delivery location details for all training activities and assessment locations.
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• One record per delivery location</li>
+                  <li>• Required for location-based reporting</li>
+                  <li>• Must include complete address details</li>
+                </ul>
+              </div>
             </div>
             
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm">NAT00020 - Locations</h4>
-              <p className="text-xs text-muted-foreground">
-                Contains delivery location details for all training activities and assessment locations.
-              </p>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• One record per delivery location</li>
-                <li>• Required for location-based reporting</li>
-                <li>• Must include complete address details</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="pt-4 border-t">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <ExternalLink className="size-3" />
-              <span>
+            <div className="pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
                 For detailed AVETMISS specifications, visit the{' '}
                 <a 
                   href="https://www.ncver.edu.au/data-and-research/avetmiss" 
@@ -335,11 +309,11 @@ export default function AVETMISSCompliancePage() {
                 >
                   NCVER AVETMISS documentation
                 </a>
-              </span>
+              </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

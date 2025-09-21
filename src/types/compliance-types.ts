@@ -47,6 +47,9 @@ export interface LocationValidationData {
   location_name?: string;
   is_active?: boolean;
   address?: {
+    building_property_name?: string;
+    flat_unit_details?: string;
+    street_number?: string;
     street_name?: string;
     suburb?: string;
     postcode?: string;
@@ -126,7 +129,8 @@ export const NAT00010_FIELD_SPECS: AVETMISSFieldSpec[] = [
   { name: 'sa2_identifier', length: 9, type: 'A', required: false, description: 'Statistical area level 2 identifier' }
 ];
 
-// NAT00020 field specifications (423 characters total per record)
+// NAT00020 field specifications (341 characters total per record)
+// Based on official AVETMISS Data Element Definitions Edition 2.3
 export const NAT00020_FIELD_SPECS: AVETMISSFieldSpec[] = [
   { name: 'organisation_identifier', length: 10, type: 'A', required: true, description: 'Training organisation identifier' },
   { name: 'location_identifier', length: 10, type: 'A', required: true, description: 'Training organisation delivery location identifier' },
@@ -137,10 +141,7 @@ export const NAT00020_FIELD_SPECS: AVETMISSFieldSpec[] = [
   { name: 'street_name', length: 70, type: 'A', required: true, description: 'Address street name' },
   { name: 'suburb', length: 50, type: 'A', required: true, description: 'Address suburb, locality or town' },
   { name: 'postcode', length: 4, type: 'A', required: true, description: 'Postcode' },
-  { name: 'state_identifier', length: 2, type: 'A', required: true, description: 'State identifier' },
-  { name: 'country_identifier', length: 4, type: 'A', required: false, description: 'Country identifier' },
-  { name: 'sa1_identifier', length: 11, type: 'A', required: false, description: 'Statistical area level 1 identifier' },
-  { name: 'sa2_identifier', length: 9, type: 'A', required: false, description: 'Statistical area level 2 identifier' }
+  { name: 'state_identifier', length: 2, type: 'A', required: true, description: 'State identifier' }
 ];
 
 // Download state management

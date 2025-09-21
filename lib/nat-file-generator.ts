@@ -122,7 +122,10 @@ export const generateNAT00010 = (organisationData: any): string => {
 
 /**
  * Generates NAT00020 file content (Locations records)
- * Based on sample: "90855     TPL1      TRAINING ORG. DELIVERY LOCATION 1..."
+ * Based on AVETMISS specification: exactly 341 characters per record
+ * Field structure: Organisation ID (10) + Location ID (10) + Location Name (100) + 
+ *                  Building Name (50) + Unit Details (30) + Street Number (15) + 
+ *                  Street Name (70) + Suburb (50) + Postcode (4) + State (2) = 341 chars
  */
 export const generateNAT00020 = (locationsData: any[]): string => {
   const records: string[] = [];
@@ -133,28 +136,28 @@ export const generateNAT00020 = (locationsData: any[]): string => {
   activeLocations.forEach(location => {
     const fields: string[] = [];
     
-    // Field 1: Organisation identifier (10 chars) - Position 1-10
+    // Field 1: Training organisation identifier (10 chars) - Position 1-10
     fields.push(padField(location.organisation_id || location.organisation_identifier, 10, 'A'));
     
-    // Field 2: Location identifier (10 chars) - Position 11-20
+    // Field 2: Training organisation delivery location identifier (10 chars) - Position 11-20
     fields.push(padField(location.location_identifier, 10, 'A'));
     
-    // Field 3: Location name (100 chars) - Position 21-120
+    // Field 3: Training organisation delivery location name (100 chars) - Position 21-120
     fields.push(padField(location.location_name, 100, 'A'));
     
-    // Field 4: Building/property name (50 chars) - Position 121-170
+    // Field 4: Address building/property name (50 chars) - Position 121-170
     fields.push(padField(location.address?.building_property_name, 50, 'A'));
     
-    // Field 5: Flat/unit details (30 chars) - Position 171-200
+    // Field 5: Address flat/unit details (30 chars) - Position 171-200
     fields.push(padField(location.address?.flat_unit_details, 30, 'A'));
     
-    // Field 6: Street number (15 chars) - Position 201-215
+    // Field 6: Address street number (15 chars) - Position 201-215
     fields.push(padField(location.address?.street_number, 15, 'A'));
     
-    // Field 7: Street name (70 chars) - Position 216-285
+    // Field 7: Address street name (70 chars) - Position 216-285
     fields.push(padField(location.address?.street_name, 70, 'A'));
     
-    // Field 8: Suburb (50 chars) - Position 286-335
+    // Field 8: Address suburb, locality or town (50 chars) - Position 286-335
     fields.push(padField(location.address?.suburb, 50, 'A'));
     
     // Field 9: Postcode (4 chars) - Position 336-339
@@ -163,21 +166,47 @@ export const generateNAT00020 = (locationsData: any[]): string => {
     // Field 10: State identifier (2 chars) - Position 340-341
     fields.push(padField(location.address?.state_identifier, 2, 'A'));
     
-    // Field 11: Country identifier (4 chars) - Position 342-345
-    fields.push(padField(location.address?.country_identifier || '1101', 4, 'A'));
+    // Join all fields and add DOS line ending
+    const content = fields.join('');
     
-    // Field 12: SA1 identifier (11 chars) - Position 346-356
-    fields.push(padField(location.address?.sa1_identifier, 11, 'A'));
+    // Comprehensive debug logging for NAT00020
+    console.log('=== NAT00020 FIELD DEBUG ===');
+    console.log('Location:', location.location_name);
+    console.log('Total fields:', fields.length);
+    console.log('Expected fields: 10');
     
-    // Field 13: SA2 identifier (9 chars) - Position 357-365
-    fields.push(padField(location.address?.sa2_identifier, 9, 'A'));
+    // Debug each field individually
+    const fieldNames = [
+      'Organisation identifier', 'Location identifier', 'Location name', 
+      'Building name', 'Unit details', 'Street number', 'Street name', 'Suburb',
+      'Postcode', 'State'
+    ];
     
-    // Add remaining padding to reach 423 characters total
-    // Position 366-423 (58 chars of padding)
-    fields.push(padField('', 58, 'A'));
+    let totalLength = 0;
+    fields.forEach((field, index) => {
+      const expectedLengths = [10, 10, 100, 50, 30, 15, 70, 50, 4, 2];
+      const actualLength = field.length;
+      const expectedLength = expectedLengths[index];
+      
+      console.log(`Field ${index + 1} (${fieldNames[index]}): ${actualLength} chars (expected: ${expectedLength})`);
+      
+      if (actualLength !== expectedLength) {
+        console.error(`❌ FIELD ${index + 1} LENGTH MISMATCH!`);
+      }
+      
+      totalLength += actualLength;
+    });
     
-    // Join fields and add DOS line ending
-    records.push(fields.join('') + '\r\n');
+    console.log('Total content length:', totalLength);
+    console.log('Expected total: 341');
+    console.log('===========================');
+    
+    // Validate total length
+    if (totalLength !== 341) {
+      console.error(`❌ NAT00020 RECORD LENGTH MISMATCH! Expected 341, got ${totalLength}`);
+    }
+    
+    records.push(content + '\r\n');
   });
   
   return records.join('');
@@ -275,8 +304,7 @@ export const generateTestNAT00020 = (): string => {
         street_name: 'Test Street',
         suburb: 'Test Suburb',
         postcode: '3000',
-        state_identifier: '02',
-        country_identifier: '1101'
+        state_identifier: '02'
       }
     },
     {
@@ -291,8 +319,7 @@ export const generateTestNAT00020 = (): string => {
         street_name: 'Another Street',
         suburb: 'Another Suburb',
         postcode: '4000',
-        state_identifier: '03',
-        country_identifier: '1101'
+        state_identifier: '03'
       }
     }
   ];
