@@ -1,3 +1,13 @@
 1. New Application Wizard
 - Document uploader - unified Document uploader instead of the One Drive we currently have 
 - Documents are tied to the Application forever for the rest of their life
+
+2. Problem with Axcelerate:
+- For every week, we have to send some students class reminder, all the students that have commenced in Axcelerate are automatically send these class reminder emails even if their start date is different
+- Payment plans are extremely hard to create (EXPLAIN EXTRA STUFF AS WELL)
+- Missing Information, keeping it for Later and then forgetting but still commenced
+- Not changing status to Confirmed after COE stage, this messes up the total count of students
+- Messed up count of all pending invoices
+- Manual entry of offer letters
+- Legacy software
+- Have to use OneDrive

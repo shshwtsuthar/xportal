@@ -278,7 +278,8 @@ export const getLocationStatusLabel = (isActive: boolean) => {
   return isActive ? 'Active' : 'Inactive';
 };
 
-export const transformLocationsForSelect = (locations: Location[]) => {
+export const transformLocationsForSelect = (locations: Location[] | undefined) => {
+  if (!locations) return [];
   return locations.map(location => ({
     value: location.id,
     label: `${location.location_name} (${location.location_identifier})`,
