@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 
 // =============================================================================
@@ -58,10 +58,10 @@ export const usePrograms = () => {
       if (!response.ok) {
         throw new Error('Failed to fetch programs');
       }
-      const raw: any = await response.json();
+      const raw: unknown = await response.json();
       // Normalize to { data: Program[] }
       if (Array.isArray(raw)) {
-        const data: Program[] = raw.map((p: any) => ({
+        const data: Program[] = (raw as Program[]).map((p) => ({
           id: p.id,
           name: p.program_name ?? p.programName ?? p.name ?? '',
           programCode: p.program_code ?? p.programCode ?? p.program_identifier ?? p.programIdentifier ?? '',
@@ -75,6 +75,57 @@ export const usePrograms = () => {
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+// Hook for creating a new program
+export const useCreateProgram = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (programData: {
+      program_identifier: string;
+      program_name: string;
+      status?: string;
+      tga_url?: string;
+    }) => {
+      const response = await fetch(`${FUNCTIONS_URL}/programs`, {
+        method: 'POST',
+        headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(programData),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create program');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+    },
+  });
+};
+
+// Hook for updating a program
+export const useUpdateProgram = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<{
+      program_name: string;
+      status: string;
+      tga_url?: string;
+    }> }) => {
+      const response = await fetch(`${FUNCTIONS_URL}/programs/${id}`, {
+        method: 'PUT',
+        headers: { ...getFunctionHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update program');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+    },
   });
 };
 
@@ -105,9 +156,9 @@ export const useCourseOfferings = (programId: string) => {
       if (!response.ok) {
         throw new Error('Failed to fetch course offerings');
       }
-      const raw: any = await response.json();
+      const raw: unknown = await response.json();
       if (Array.isArray(raw)) {
-        const data: CourseOffering[] = raw.map((o: any) => ({
+        const data: CourseOffering[] = (raw as CourseOffering[]).map((o) => ({
           id: o.id,
           programId: o.program_id ?? o.programId ?? programId,
           name: o.name ?? `${new Date(o.start_date ?? o.startDate).toLocaleDateString()} → ${new Date(o.end_date ?? o.endDate).toLocaleDateString()}`,
@@ -136,9 +187,9 @@ export const useProgramSubjects = (programId: string) => {
       if (!response.ok) {
         throw new Error('Failed to fetch program subjects');
       }
-      const raw: any = await response.json();
+      const raw: unknown = await response.json();
       if (Array.isArray(raw)) {
-        const data: Subject[] = raw.map((s: any) => ({
+        const data: Subject[] = (raw as Subject[]).map((s) => ({
           id: s.subject_id ?? s.id,
           name: s.subject_name ?? s.name ?? '',
           code: s.subject_identifier ?? s.code ?? '',

@@ -8,8 +8,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface Program {
+  id: string;
+  programCode: string;
+  name: string;
+}
+
 type Props = {
-  programs: any[];
+  programs: Program[];
   selectedProgramId: string;
   onProgramSelect: (id: string) => void;
   placeholder?: string;

@@ -52,6 +52,8 @@ const students: NavItem[] = [
 
 const programs: NavItem[] = [
   { title: "Programs & Courses", href: "/programs", icon: BookOpenText },
+  { title: "Units", href: "/units", icon: BookOpenText },
+  { title: "Program Plan Templates", href: "/programs/program-plan-templates", icon: CalendarDays },
 ];
 
 const staff: NavItem[] = [

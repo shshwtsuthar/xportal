@@ -608,6 +608,25 @@ export interface paths {
         /** List all Programs */
         get: operations["getPrograms"];
         put?: never;
+        /** Create a new Program */
+        post: operations["createProgram"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a specific Program */
+        get: operations["getProgram"];
+        /** Update a Program */
+        put: operations["updateProgram"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1015,6 +1034,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all Units of Competency */
+        get: operations["getUnits"];
+        put?: never;
+        /** Create a new Unit of Competency */
+        post: operations["createUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/units/{unitId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a specific Unit of Competency */
+        get: operations["getUnit"];
+        /** Update a Unit of Competency */
+        put: operations["updateUnit"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agents": {
         parameters: {
             query?: never;
@@ -1227,6 +1282,8 @@ export interface components {
             /** @enum {string} */
             unit_type?: "Core" | "Elective";
             sort_order?: number;
+            /** @description Duration of the unit in weeks for this program plan template */
+            duration_weeks?: number;
         };
         CoursePlanSubjectInput: {
             /** Format: uuid */
@@ -1235,8 +1292,11 @@ export interface components {
             unit_type: "Core" | "Elective";
             /** @default 0 */
             sort_order: number;
-            /** @default 4 */
-            estimated_duration_weeks: number;
+            /**
+             * @description Duration of the unit in weeks for this program plan template
+             * @default 1
+             */
+            duration_weeks: number;
             /**
              * @default Basic
              * @enum {string}
@@ -1844,9 +1904,127 @@ export interface components {
         Program: {
             /** Format: uuid */
             id?: string;
+            /** @description NAT00030 Program identifier (10 chars max) */
             program_identifier?: string;
+            /** @description NAT00030 Program name (100 chars max) */
             program_name?: string;
-            status?: string;
+            /** @enum {string} */
+            status?: "Current" | "Superseded" | "Archived";
+            /** @description NAT00030 AQF level identifier (3 chars) */
+            program_level_of_education_identifier?: string;
+            /** @description NAT00030 ASCED field identifier (4 chars) */
+            program_field_of_education_identifier?: string;
+            /** @description NAT00030 Program recognition status (2 chars) */
+            program_recognition_identifier?: string;
+            /**
+             * @description NAT00030 VET flag indicator (Y/N)
+             * @enum {string}
+             */
+            vet_flag?: "Y" | "N";
+            /** @description NAT00030 Program nominal hours */
+            nominal_hours?: number;
+            /** @description NAT00030 ANZSCO occupation code (6 chars, optional) */
+            anzsco_identifier?: string | null;
+            /** @description NAT00030 ANZSIC industry code (4 chars, optional) */
+            anzsic_identifier?: string | null;
+            /** @description Training.gov.au URL for the program */
+            tga_url?: string | null;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        ProgramCreate: {
+            /** @description NAT00030 Program identifier (10 chars max) */
+            program_identifier: string;
+            /** @description NAT00030 Program name (100 chars max) */
+            program_name: string;
+            /**
+             * @default Current
+             * @enum {string}
+             */
+            status: "Current" | "Superseded" | "Archived";
+            /** @description NAT00030 AQF level identifier (3 chars) */
+            program_level_of_education_identifier: string;
+            /** @description NAT00030 ASCED field identifier (4 chars) */
+            program_field_of_education_identifier: string;
+            /** @description NAT00030 Program recognition status (2 chars) */
+            program_recognition_identifier: string;
+            /**
+             * @description NAT00030 VET flag indicator (Y/N)
+             * @enum {string}
+             */
+            vet_flag: "Y" | "N";
+            /** @description NAT00030 Program nominal hours */
+            nominal_hours: number;
+            /** @description NAT00030 ANZSCO occupation code (6 chars, optional) */
+            anzsco_identifier?: string | null;
+            /** @description NAT00030 ANZSIC industry code (4 chars, optional) */
+            anzsic_identifier?: string | null;
+            /** @description Training.gov.au URL for the program */
+            tga_url?: string | null;
+        };
+        ProgramUpdate: {
+            /** @description NAT00030 Program name (100 chars max) */
+            program_name?: string;
+            /** @enum {string} */
+            status?: "Current" | "Superseded" | "Archived";
+            /** @description NAT00030 AQF level identifier (3 chars) */
+            program_level_of_education_identifier?: string;
+            /** @description NAT00030 ASCED field identifier (4 chars) */
+            program_field_of_education_identifier?: string;
+            /** @description NAT00030 Program recognition status (2 chars) */
+            program_recognition_identifier?: string;
+            /**
+             * @description NAT00030 VET flag indicator (Y/N)
+             * @enum {string}
+             */
+            vet_flag?: "Y" | "N";
+            /** @description NAT00030 Program nominal hours */
+            nominal_hours?: number;
+            /** @description NAT00030 ANZSCO occupation code (6 chars, optional) */
+            anzsco_identifier?: string | null;
+            /** @description NAT00030 ANZSIC industry code (4 chars, optional) */
+            anzsic_identifier?: string | null;
+            /** @description Training.gov.au URL for the program */
+            tga_url?: string | null;
+        };
+        Unit: {
+            /** Format: uuid */
+            id?: string;
+            /** @description Unit identifier (e.g., BSBLDR411) */
+            subject_identifier?: string;
+            /** @description Unit name */
+            subject_name?: string;
+            /** @enum {string} */
+            status?: "Current" | "Superseded" | "Archived";
+            /** @description Training.gov.au URL for the unit */
+            tga_url?: string | null;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        UnitCreate: {
+            /** @description Unit identifier (e.g., BSBLDR411) */
+            subject_identifier: string;
+            /** @description Unit name */
+            subject_name: string;
+            /**
+             * @default Current
+             * @enum {string}
+             */
+            status: "Current" | "Superseded" | "Archived";
+            /** @description Training.gov.au URL for the unit */
+            tga_url?: string | null;
+        };
+        UnitUpdate: {
+            /** @description Unit name */
+            subject_name?: string;
+            /** @enum {string} */
+            status?: "Current" | "Superseded" | "Archived";
+            /** @description Training.gov.au URL for the unit */
+            tga_url?: string | null;
         };
         ProgramSubject: {
             /** Format: uuid */
@@ -3445,6 +3623,94 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    createProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramCreate"];
+            };
+        };
+        responses: {
+            /** @description Program created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Program identifier already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Program details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramUpdate"];
+            };
+        };
+        responses: {
+            /** @description Program updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getProgramSubjects: {
         parameters: {
             query?: never;
@@ -4271,6 +4537,125 @@ export interface operations {
                     };
                 };
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getUnits: {
+        parameters: {
+            query?: {
+                /** @description Search units by name or identifier */
+                search?: string;
+                /** @description Filter by unit status */
+                status?: "Current" | "Superseded" | "Archived";
+                /** @description Filter by unit type */
+                unit_type?: "Core" | "Elective";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of units */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unit"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitCreate"];
+            };
+        };
+        responses: {
+            /** @description Unit created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Unit identifier already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unit ID */
+                unitId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unit details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unit"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unit ID */
+                unitId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitUpdate"];
+            };
+        };
+        responses: {
+            /** @description Unit updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
     };

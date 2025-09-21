@@ -22,7 +22,7 @@ const PlanSubjectsSchema = z.array(z.object({
   subject_id: z.string().uuid(),
   unit_type: z.enum(['Core','Elective']),
   sort_order: z.number().int().nonnegative().optional(),
-  estimated_duration_weeks: z.number().int().positive().optional(),
+  duration_weeks: z.number().int().positive().optional(),
   complexity_level: z.enum(['Basic', 'Intermediate', 'Advanced']).optional(),
 }));
 
@@ -92,6 +92,7 @@ const getPlanSubjects = async (_req: Request, _ctx: ApiContext, programId: strin
       's.subject_name',
       'ps.unit_type',
       'ps.sort_order',
+      'ps.duration_weeks',
     ])
     .where('ps.plan_id','=',planId)
     .orderBy('ps.unit_type','asc')
@@ -126,7 +127,7 @@ const replacePlanSubjects = async (_req: Request, _ctx: ApiContext, programId: s
           subject_id: p.subject_id, 
           unit_type: p.unit_type, 
           sort_order: p.sort_order ?? 0,
-          estimated_duration_weeks: p.estimated_duration_weeks ?? 4,
+          duration_weeks: p.duration_weeks ?? 1,
           complexity_level: p.complexity_level ?? 'Basic'
         })))
         .execute();
@@ -155,7 +156,7 @@ const getCoursePlanStructure = async (_req: Request, _ctx: ApiContext, programId
       's.subject_name',
       'ps.unit_type',
       'ps.sort_order',
-      'ps.estimated_duration_weeks',
+      'ps.duration_weeks',
       'ps.complexity_level',
     ])
     .where('ps.plan_id', '=', planId)
@@ -359,7 +360,7 @@ const previewCoursePlanProgression = async (_req: Request, _ctx: ApiContext, pro
   }
 
   // Calculate total duration
-  const totalDuration = planSubjects.reduce((sum, subject) => sum + (subject.estimated_duration_weeks || 4), 0);
+  const totalDuration = planSubjects.reduce((sum, subject) => sum + (subject.duration_weeks || 1), 0);
 
   // Generate progression phases (simplified - all subjects in one phase for now)
   const phases = [{
@@ -374,7 +375,7 @@ const previewCoursePlanProgression = async (_req: Request, _ctx: ApiContext, pro
   const startDate = new Date(start_date || new Date());
   
   const fixedIntakeTimeline = planSubjects.map((subject) => {
-    const duration = subject.estimated_duration_weeks || 4;
+    const duration = subject.duration_weeks || 1;
     
     // Calculate actual dates
     const subjectStartDate = new Date(startDate);
@@ -403,7 +404,7 @@ const previewCoursePlanProgression = async (_req: Request, _ctx: ApiContext, pro
   const rollingIntakeSequence = [{
     unlock_trigger: 'Enrolment',
     subjects_unlocked: planSubjects.map((subject) => {
-      const duration = subject.estimated_duration_weeks || 4;
+      const duration = subject.duration_weeks || 1;
       
       // For rolling intake, subjects can start immediately upon enrolment
       // but we'll show estimated completion dates

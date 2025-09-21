@@ -1098,6 +1098,83 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '400':
           $ref: '#/components/responses/BadRequest'
+    post:
+      operationId: createProgram
+      summary: Create a new Program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramCreate'
+      responses:
+        '201':
+          description: Program created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Program identifier already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /programs/{programId}:
+    get:
+      operationId: getProgram
+      summary: Get a specific Program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, agent, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: Program details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateProgram
+      summary: Update a Program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramUpdate'
+      responses:
+        '200':
+          description: Program updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /programs/{programId}/subjects:
     get:
@@ -1976,6 +2053,137 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  # ---------------------------------------------------------------------------
+  # == UNITS MANAGEMENT ==
+  # ---------------------------------------------------------------------------
+  /units:
+    get:
+      operationId: getUnits
+      summary: List all Units of Competency
+      tags: [Units Management]
+      security:
+        - bearerAuth: [admin, agent, trainer]
+      parameters:
+        - name: search
+          in: query
+          description: Search units by name or identifier
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by unit status
+          schema:
+            type: string
+            enum: [Current, Superseded, Archived]
+        - name: unit_type
+          in: query
+          description: Filter by unit type
+          schema:
+            type: string
+            enum: [Core, Elective]
+      responses:
+        '200':
+          description: A list of units
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Unit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      operationId: createUnit
+      summary: Create a new Unit of Competency
+      tags: [Units Management]
+      security:
+        - bearerAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitCreate'
+      responses:
+        '201':
+          description: Unit created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Unit identifier already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /units/{unitId}:
+    get:
+      operationId: getUnit
+      summary: Get a specific Unit of Competency
+      tags: [Units Management]
+      security:
+        - bearerAuth: [admin, agent, trainer]
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          description: The unit ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Unit details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateUnit
+      summary: Update a Unit of Competency
+      tags: [Units Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          description: The unit ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitUpdate'
+      responses:
+        '200':
+          description: Unit updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /agents:
     get:
       operationId: listAgents
@@ -2507,6 +2715,7 @@ components:
         subject_name: { type: string }
         unit_type: { type: string, enum: [Core, Elective] }
         sort_order: { type: integer }
+        duration_weeks: { type: integer, minimum: 1, description: "Duration of the unit in weeks for this program plan template" }
 
     CoursePlanSubjectInput:
       type: object
@@ -2515,7 +2724,7 @@ components:
         subject_id: { type: string, format: uuid }
         unit_type: { type: string, enum: [Core, Elective] }
         sort_order: { type: integer, default: 0 }
-        estimated_duration_weeks: { type: integer, minimum: 1, default: 4 }
+        duration_weeks: { type: integer, minimum: 1, default: 1, description: "Duration of the unit in weeks for this program plan template" }
         complexity_level: { type: string, enum: [Basic, Intermediate, Advanced], default: Basic }
 
     CourseOfferingUpdate:
@@ -3362,10 +3571,233 @@ components:
           format: uuid
         program_identifier:
           type: string
+          description: NAT00030 Program identifier (10 chars max)
+          maxLength: 10
         program_name:
           type: string
+          description: NAT00030 Program name (100 chars max)
+          maxLength: 100
         status:
           type: string
+          enum: [Current, Superseded, Archived]
+        # NAT00030 MANDATORY FIELDS
+        program_level_of_education_identifier:
+          type: string
+          description: NAT00030 AQF level identifier (3 chars)
+          pattern: '^[0-9]{3}$'
+        program_field_of_education_identifier:
+          type: string
+          description: NAT00030 ASCED field identifier (4 chars)
+          pattern: '^[0-9]{4}$'
+        program_recognition_identifier:
+          type: string
+          description: NAT00030 Program recognition status (2 chars)
+          pattern: '^[0-9]{2}$'
+        vet_flag:
+          type: string
+          description: NAT00030 VET flag indicator (Y/N)
+          enum: [Y, N]
+        nominal_hours:
+          type: integer
+          description: NAT00030 Program nominal hours
+          minimum: 0
+          maximum: 9999
+        # NAT00030 OPTIONAL FIELDS
+        anzsco_identifier:
+          type: string
+          description: NAT00030 ANZSCO occupation code (6 chars, optional)
+          pattern: '^[0-9]{6}$'
+          nullable: true
+        anzsic_identifier:
+          type: string
+          description: NAT00030 ANZSIC industry code (4 chars, optional)
+          pattern: '^[0-9]{4}$'
+          nullable: true
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the program
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProgramCreate:
+      type: object
+      required:
+        - program_identifier
+        - program_name
+        - program_level_of_education_identifier
+        - program_field_of_education_identifier
+        - program_recognition_identifier
+        - vet_flag
+        - nominal_hours
+      properties:
+        program_identifier:
+          type: string
+          description: NAT00030 Program identifier (10 chars max)
+          maxLength: 10
+        program_name:
+          type: string
+          description: NAT00030 Program name (100 chars max)
+          maxLength: 100
+        status:
+          type: string
+          enum: [Current, Superseded, Archived]
+          default: Current
+        # NAT00030 MANDATORY FIELDS
+        program_level_of_education_identifier:
+          type: string
+          description: NAT00030 AQF level identifier (3 chars)
+          pattern: '^[0-9]{3}$'
+        program_field_of_education_identifier:
+          type: string
+          description: NAT00030 ASCED field identifier (4 chars)
+          pattern: '^[0-9]{4}$'
+        program_recognition_identifier:
+          type: string
+          description: NAT00030 Program recognition status (2 chars)
+          pattern: '^[0-9]{2}$'
+        vet_flag:
+          type: string
+          description: NAT00030 VET flag indicator (Y/N)
+          enum: [Y, N]
+        nominal_hours:
+          type: integer
+          description: NAT00030 Program nominal hours
+          minimum: 0
+          maximum: 9999
+        # NAT00030 OPTIONAL FIELDS
+        anzsco_identifier:
+          type: string
+          description: NAT00030 ANZSCO occupation code (6 chars, optional)
+          pattern: '^[0-9]{6}$'
+          nullable: true
+        anzsic_identifier:
+          type: string
+          description: NAT00030 ANZSIC industry code (4 chars, optional)
+          pattern: '^[0-9]{4}$'
+          nullable: true
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the program
+          nullable: true
+
+    ProgramUpdate:
+      type: object
+      properties:
+        program_name:
+          type: string
+          description: NAT00030 Program name (100 chars max)
+          maxLength: 100
+        status:
+          type: string
+          enum: [Current, Superseded, Archived]
+        # NAT00030 MANDATORY FIELDS
+        program_level_of_education_identifier:
+          type: string
+          description: NAT00030 AQF level identifier (3 chars)
+          pattern: '^[0-9]{3}$'
+        program_field_of_education_identifier:
+          type: string
+          description: NAT00030 ASCED field identifier (4 chars)
+          pattern: '^[0-9]{4}$'
+        program_recognition_identifier:
+          type: string
+          description: NAT00030 Program recognition status (2 chars)
+          pattern: '^[0-9]{2}$'
+        vet_flag:
+          type: string
+          description: NAT00030 VET flag indicator (Y/N)
+          enum: [Y, N]
+        nominal_hours:
+          type: integer
+          description: NAT00030 Program nominal hours
+          minimum: 0
+          maximum: 9999
+        # NAT00030 OPTIONAL FIELDS
+        anzsco_identifier:
+          type: string
+          description: NAT00030 ANZSCO occupation code (6 chars, optional)
+          pattern: '^[0-9]{6}$'
+          nullable: true
+        anzsic_identifier:
+          type: string
+          description: NAT00030 ANZSIC industry code (4 chars, optional)
+          pattern: '^[0-9]{4}$'
+          nullable: true
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the program
+          nullable: true
+
+    Unit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject_identifier:
+          type: string
+          description: Unit identifier (e.g., BSBLDR411)
+          maxLength: 20
+        subject_name:
+          type: string
+          description: Unit name
+          maxLength: 200
+        status:
+          type: string
+          enum: [Current, Superseded, Archived]
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the unit
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UnitCreate:
+      type: object
+      required:
+        - subject_identifier
+        - subject_name
+      properties:
+        subject_identifier:
+          type: string
+          description: Unit identifier (e.g., BSBLDR411)
+          maxLength: 20
+        subject_name:
+          type: string
+          description: Unit name
+          maxLength: 200
+        status:
+          type: string
+          enum: [Current, Superseded, Archived]
+          default: Current
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the unit
+          nullable: true
+
+    UnitUpdate:
+      type: object
+      properties:
+        subject_name:
+          type: string
+          description: Unit name
+          maxLength: 200
+        status:
+          type: string
+          enum: [Current, Superseded, Archived]
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the unit
+          nullable: true
 
     ProgramSubject:
       type: object

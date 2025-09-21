@@ -5,11 +5,9 @@
 
 import type { ColumnType } from "kysely";
 
-// Buffer polyfill for Deno
+// Fix Buffer type for Deno
 declare global {
-  interface Buffer {
-    toString(): string;
-  }
+  type Buffer = any;
 }
 
 export type AuthAalLevel = "aal1" | "aal2" | "aal3";
@@ -583,6 +581,10 @@ export interface CoreProgramCoursePlanSubjects {
    */
   complexity_level: Generated<string | null>;
   /**
+   * Duration of the unit in weeks for this program plan template
+   */
+  duration_weeks: Generated<number>;
+  /**
    * Estimated time to complete this subject in weeks
    */
   estimated_duration_weeks: Generated<number | null>;
@@ -593,13 +595,41 @@ export interface CoreProgramCoursePlanSubjects {
 }
 
 export interface CorePrograms {
+  /**
+   * NAT00030: ANZSCO occupation code (6 chars) - optional, not all programs have occupation link
+   */
+  anzsco_identifier: string | null;
+  /**
+   * NAT00030: ANZSIC industry code (4 chars) - optional, not all programs have industry link
+   */
+  anzsic_identifier: string | null;
   created_at: Generated<Timestamp | null>;
   id: Generated<string>;
+  /**
+   * NAT00030: Program nominal hours (4 digits) - total program duration
+   */
+  nominal_hours: Generated<number>;
+  /**
+   * NAT00030: ASCED field of education identifier (4 chars) - e.g., 0809 for Business
+   */
+  program_field_of_education_identifier: Generated<string>;
   program_identifier: string;
+  /**
+   * NAT00030: AQF level identifier (3 chars) - e.g., 405 for Certificate IV
+   */
+  program_level_of_education_identifier: Generated<string>;
   program_name: string;
+  /**
+   * NAT00030: Program recognition status (2 chars) - 01=Nationally Recognised, 02=State Recognised, etc
+   */
+  program_recognition_identifier: Generated<string>;
   status: Generated<string>;
   tga_url: string | null;
   updated_at: Generated<Timestamp | null>;
+  /**
+   * NAT00030: VET flag indicator (1 char) - Y=Yes, N=No
+   */
+  vet_flag: Generated<string>;
 }
 
 export interface CoreProgramSchedules {

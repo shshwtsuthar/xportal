@@ -7,11 +7,10 @@ import { useState } from "react";
 import { useCoursePlans } from "@/hooks/use-course-plans";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
-import { format, parseISO } from "date-fns";
+import { parseISO, format } from "date-fns";
 
 // No token needed - handled by hooks
 
@@ -92,7 +91,7 @@ export const Offerings = ({ programId }: Props) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {offerings.map((o: any) => (
+              {offerings.map((o) => (
                 <TableRow key={o.id}>
                   <TableCell><span className={`px-2 py-1 text-xs rounded ${o.status==='Active'?"bg-green-600/20 text-green-400":"bg-zinc-700 text-zinc-300"}`}>{o.status}</span></TableCell>
                   <TableCell>{o.is_rolling ? 'Yes' : 'No'}</TableCell>

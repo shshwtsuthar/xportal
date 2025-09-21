@@ -8,14 +8,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   BookOpenText, 
   CalendarDays, 
-  AlertCircle,
-  Plus
+  AlertCircle
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { ProgramSelector } from './_components/ProgramSelector';
 import { AdvancedCoursePlans } from './_components/AdvancedCoursePlans';
 import { RollingSchedule } from './_components/RollingSchedule';
 import { Offerings } from './_components/Offerings';
+import { CreateProgramDialog } from './_components/CreateProgramDialog';
 import { usePrograms } from '@/hooks/use-programs';
 
 export default function ProgramsPage() {
@@ -76,14 +75,14 @@ export default function ProgramsPage() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Error loading programs: {typeof programsError === 'object' && programsError && 'message' in (programsError as any) ? (programsError as any).message : 'Unknown error'}
+            Error loading programs: {programsError ? String(programsError) : 'Unknown error'}
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  const selectedProgram = programs?.data?.find((p: any) => p.id === selectedProgramId);
+  const selectedProgram = programs?.data?.find((p) => p.id === selectedProgramId);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -93,10 +92,7 @@ export default function ProgramsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Programs & Courses</h1>
             <p className="text-muted-foreground">Manage programs, course plans, and offerings</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Program
-        </Button>
+        <CreateProgramDialog />
       </div>
 
       {/* Stats Cards */}
