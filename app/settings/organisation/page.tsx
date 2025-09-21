@@ -194,19 +194,12 @@ export default function OrganisationSettingsPage() {
 
   return (
     <div className="container mx-auto p-6">
-      {/* Page Header */}
-      <div className="flex flex-col gap-2 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-10 rounded-xl bg-primary/10 text-primary">
-              <Settings className="size-5" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight">Organisation Settings</h1>
-              <p className="text-sm text-muted-foreground">
-                Manage your RTO information for AVETMISS NAT00010 compliance
-              </p>
-            </div>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Organisation Settings</h1>
+            <p className="text-muted-foreground">Manage your RTO information for AVETMISS NAT00010 compliance</p>
           </div>
           
           {/* Status Badge and Edit Button */}
@@ -226,24 +219,13 @@ export default function OrganisationSettingsPage() {
             )}
           </div>
         </div>
-      </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-8">
+        <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
           {/* RTO Information Card */}
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary">
-                  <Building2 className="size-4" />
-                </div>
-                <div>
-                  <CardTitle>RTO Information</CardTitle>
-                  <CardDescription>
-                    Basic training organisation details from training.gov.au
-                  </CardDescription>
-                </div>
-              </div>
+              <CardTitle>RTO Information</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -353,17 +335,7 @@ export default function OrganisationSettingsPage() {
           {/* Address Information Card */}
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary">
-                  <MapPin className="size-4" />
-                </div>
-                <div>
-                  <CardTitle>Primary Address</CardTitle>
-                  <CardDescription>
-                    Main organisation address for AVETMISS reporting
-                  </CardDescription>
-                </div>
-              </div>
+              <CardTitle>Primary Address</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-6">
@@ -568,17 +540,7 @@ className="h-9"
           {/* Contact Information Card */}
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary">
-                  <Phone className="size-4" />
-                </div>
-                <div>
-                  <CardTitle>Contact Information</CardTitle>
-                  <CardDescription>
-                    Primary contact details for AVETMISS reporting
-                  </CardDescription>
-                </div>
-              </div>
+              <CardTitle>Contact Information</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-6">
@@ -764,7 +726,8 @@ className="h-9"
             </Button>
           </div>
         </form>
-      </Form>
+        </Form>
+      </div>
     </div>
   );
 }

@@ -15,8 +15,9 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useLocations, useCreateLocation, useUpdateLocation, useDeleteLocation, useToggleLocationStatus, formatAddress, getStateLabel, getLocationStatusBadgeVariant, getLocationStatusLabel } from '@/hooks/use-locations';
 import { useOrganisations } from '@/hooks/use-organisations';
-import { Loader2, Plus, MoreHorizontal, Edit, Check, X, Trash2 } from 'lucide-react';
+import { Loader2, Plus, MoreHorizontal, Edit, Check, X, Trash2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 // NAT00020 Location Schema for AVETMISS compliance
 const locationSchema = z.object({
@@ -106,43 +107,74 @@ function LocationForm({ onSuccess, location }: LocationFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="organisation_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Organisation *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Basic Information Section */}
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold text-foreground">Basic Information</h3>
+            <p className="text-sm text-muted-foreground">
+              Core details for the training location
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="organisation_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Organisation <span className="text-red-500">*</span></FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select organisation" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {organisations?.map((org) => (
+                        <SelectItem key={org.id} value={org.id}>
+                          {org.organisation_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription className="text-xs text-muted-foreground">
+                    Select the organisation this location belongs to
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="location_identifier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Location Identifier <span className="text-red-500">*</span></FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select organisation" />
-                    </SelectTrigger>
+                    <Input placeholder="e.g., LOC001" className="h-9" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    {organisations?.map((org) => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.organisation_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormDescription className="text-xs text-muted-foreground">
+                    Unique identifier for this location (max 10 chars)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={form.control}
-            name="location_identifier"
+            name="location_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Location Identifier *</FormLabel>
+                <FormLabel className="text-sm font-medium">Location Name <span className="text-red-500">*</span></FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., LOC001" {...field} />
+                  <Input placeholder="e.g., Melbourne Campus" className="h-9" {...field} />
                 </FormControl>
-                <FormDescription>
-                  Unique identifier for this location (max 10 chars)
+                <FormDescription className="text-xs text-muted-foreground">
+                  Display name for this training location (max 100 chars)
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -150,149 +182,153 @@ function LocationForm({ onSuccess, location }: LocationFormProps) {
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="location_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Location Name *</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Melbourne Campus" {...field} />
-              </FormControl>
-              <FormDescription>
-                Display name for this training location (max 100 chars)
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Address Section */}
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold text-foreground">Address Details</h3>
+            <p className="text-sm text-muted-foreground">
+              Location address for AVETMISS NAT00020 compliance
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="address.building_property_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Building/Property Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Building name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="address.flat_unit_details"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Unit/Flat Details</FormLabel>
-                <FormControl>
-                  <Input placeholder="Unit 5, Suite 10A" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="address.street_number"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Street Number</FormLabel>
-                <FormControl>
-                  <Input placeholder="123" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="address.street_name"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Street Name *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Collins Street" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="address.suburb"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Suburb *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Melbourne" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="address.state_identifier"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>State *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+          {/* Building & Unit Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="address.building_property_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Building/Property Name <span className="text-muted-foreground">(Optional)</span></FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
+                    <Input placeholder="Building name" className="h-9" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    {states.map((state) => (
-                      <SelectItem key={state.value} value={state.value}>
-                        {state.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="address.postcode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Postcode *</FormLabel>
-                <FormControl>
-                  <Input placeholder="3000" {...field} />
-                </FormControl>
-                <FormDescription>
-                  4-digit postcode or "OSPC" for overseas
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address.flat_unit_details"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Unit/Flat Details <span className="text-muted-foreground">(Optional)</span></FormLabel>
+                  <FormControl>
+                    <Input placeholder="Unit 5, Suite 10A" className="h-9" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Street Details */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FormField
+              control={form.control}
+              name="address.street_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Street Number <span className="text-muted-foreground">(Optional)</span></FormLabel>
+                  <FormControl>
+                    <Input placeholder="123" className="h-9" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address.street_name"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel className="text-sm font-medium">Street Name <span className="text-red-500">*</span></FormLabel>
+                  <FormControl>
+                    <Input placeholder="Collins Street" className="h-9" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Location Details */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FormField
+              control={form.control}
+              name="address.suburb"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Suburb <span className="text-red-500">*</span></FormLabel>
+                  <FormControl>
+                    <Input placeholder="Melbourne" className="h-9" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address.state_identifier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">State <span className="text-red-500">*</span></FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {states.map((state) => (
+                        <SelectItem key={state.value} value={state.value}>
+                          {state.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address.postcode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Postcode <span className="text-red-500">*</span></FormLabel>
+                  <FormControl>
+                    <Input placeholder="3000" className="h-9" {...field} />
+                  </FormControl>
+                  <FormDescription className="text-xs text-muted-foreground">
+                    4-digit postcode or "OSPC" for overseas
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
-        <div className="flex justify-end gap-2">
-          <Button type="submit" disabled={isLoading}>
+        {/* Form Actions */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-border">
+          <Button 
+            type="submit" 
+            disabled={isLoading}
+            className="min-w-32"
+          >
             {isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="size-4 mr-2 animate-spin" />
                 {location ? 'Updating...' : 'Creating...'}
               </>
             ) : (
-              location ? 'Update Location' : 'Create Location'
+              <>
+                <Plus className="size-4 mr-2" />
+                {location ? 'Update Location' : 'Create Location'}
+              </>
             )}
           </Button>
-    </div>
+        </div>
       </form>
     </Form>
   );
@@ -339,123 +375,157 @@ export default function LocationsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading locations...</span>
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="size-8 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Loading training locations...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header with Add Button */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Training Locations</h1>
-          <p className="text-muted-foreground">
-            Manage delivery locations for AVETMISS NAT00020 compliance
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingLocation(null)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Location
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingLocation ? 'Edit Training Location' : 'Add Training Location'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingLocation 
-                  ? 'Update the delivery location details'
-                  : 'Add a new delivery location for training activities'
-                }
-              </DialogDescription>
-            </DialogHeader>
-            <LocationForm onSuccess={handleFormSuccess} location={editingLocation} />
-          </DialogContent>
-        </Dialog>
-      </div>
+    <div className="container mx-auto p-6">
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Training Locations</h1>
+            <p className="text-muted-foreground">Manage delivery locations for AVETMISS NAT00020 compliance</p>
+          </div>
 
-      {/* Locations Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Current Locations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Location ID</TableHead>
-                <TableHead>Location Name</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead>State</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {locations?.map((location) => (
-                <TableRow key={location.id}>
-                  <TableCell className="font-mono">{location.location_identifier}</TableCell>
-                  <TableCell>{location.location_name}</TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {formatAddress(location.address)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {getStateLabel(location.address.state_identifier)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getLocationStatusBadgeVariant(location.is_active)}>
-                      {getLocationStatusLabel(location.is_active)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => handleEdit(location)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleToggleStatus(location.id)}>
-                          {location.is_active ? (
-                            <>
-                              <X className="h-4 w-4 mr-2" />
-                              Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <Check className="h-4 w-4 mr-2" />
-                              Activate
-                            </>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditingLocation(null)}>
+                <Plus className="size-4 mr-2" />
+                Add Location
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+              <DialogHeader className="space-y-2 flex-shrink-0">
+                <DialogTitle className="text-xl font-semibold">
+                  {editingLocation ? 'Edit Training Location' : 'Add Training Location'}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  {editingLocation 
+                    ? 'Update the delivery location details for AVETMISS compliance'
+                    : 'Add a new delivery location for training activities and AVETMISS reporting'
+                  }
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                <div className="pr-2">
+                  <LocationForm onSuccess={handleFormSuccess} location={editingLocation} />
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Locations Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Locations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Location ID</TableHead>
+                    <TableHead>Location Name</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead>State</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+              <TableBody>
+                {locations?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12">
+                      <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">No locations found</h3>
+                      <p className="text-muted-foreground">
+                        Add a location to get started with AVETMISS compliance
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  locations?.map((location) => (
+                    <TableRow key={location.id}>
+                      <TableCell className="font-mono text-sm">{location.location_identifier}</TableCell>
+                      <TableCell className="font-medium">{location.location_name}</TableCell>
+                      <TableCell className="max-w-xs">
+                        <div className="truncate text-sm text-muted-foreground">
+                          {formatAddress(location.address)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {getStateLabel(location.address.state_identifier)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={getLocationStatusBadgeVariant(location.is_active)}
+                          className={cn(
+                            "text-xs",
+                            location.is_active 
+                              ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
+                              : "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
                           )}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDelete(location.id)}
-                          className="text-destructive"
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                          {getLocationStatusLabel(location.is_active)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="size-8 p-0">
+                              <MoreHorizontal className="size-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(location)}>
+                              <Edit className="size-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleStatus(location.id)}>
+                              {location.is_active ? (
+                                <>
+                                  <X className="size-4 mr-2" />
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="size-4 mr-2" />
+                                  Activate
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(location.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="size-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
