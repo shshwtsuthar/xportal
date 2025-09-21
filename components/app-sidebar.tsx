@@ -115,11 +115,7 @@ function Group({ label, items, defaultOpen = false }: { label: string; items: Na
               {items.map((item) => (
                 <SidebarMenuSubItem key={item.title}>
                   <SidebarMenuSubButton asChild isActive={pathname === item.href}>
-                    <Link href={item.href} aria-label={item.title} onClick={() => {
-                      if (item.href === '/students/new') {
-                        clearApplicationWizardStorage();
-                      }
-                    }}>
+                    <Link href={item.href} aria-label={item.title}>
                       {item.title}
                     </Link>
                   </SidebarMenuSubButton>

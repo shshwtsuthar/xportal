@@ -110,6 +110,30 @@ export default function Step1PersonalInformation() {
     setValue('emergencyContact.phone', emc.phone ?? '');
     setValue('emergencyContact.email', emc.email ?? '');
   }, [formData, setValue]);
+
+  // Update form fields when passport data is extracted
+  useEffect(() => {
+    if (lastExtractedData) {
+      console.log('[PASSPORT_DATA_APPLIED] Applying extracted data to form:', lastExtractedData);
+      
+      // Update form fields with extracted passport data
+      if (lastExtractedData.firstName) {
+        setValue('personalDetails.firstName', lastExtractedData.firstName);
+      }
+      if (lastExtractedData.lastName) {
+        setValue('personalDetails.lastName', lastExtractedData.lastName);
+      }
+      if (lastExtractedData.gender) {
+        setValue('personalDetails.gender', lastExtractedData.gender);
+      }
+      if (lastExtractedData.dateOfBirth) {
+        setValue('personalDetails.dateOfBirth', lastExtractedData.dateOfBirth);
+      }
+      
+      // Mark form as dirty since we're updating it
+      markDirty();
+    }
+  }, [lastExtractedData, setValue, markDirty]);
   
   // Watch for changes to mark form as dirty
   const watchedValues = watch();

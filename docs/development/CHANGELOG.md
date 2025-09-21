@@ -1,3 +1,73 @@
+## 2025-01-27 — Application Wizard Critical Fixes
+
+### Business Logic (authoritative summary)
+- **Application Wizard Overhaul**: Fixed critical issues preventing proper application creation and file upload functionality
+  - **Fresh Draft Creation**: "New Application" button now ALWAYS creates a completely fresh draft - never loads existing drafts
+  - **Immediate Draft Creation**: Draft is created immediately when clicking "New Application" with proper loading states
+  - **Complete State Reset**: All wizard state is completely cleared and reset for each new application
+  - **Proper Step Navigation**: Fixed navigation to always start at Step 1 (Document Upload) instead of Step 2
+
+### Frontend — Application Wizard State Management
+- **Fixed Draft Creation Logic**: Updated `app/students/new/page.tsx` to always create fresh drafts
+  - **Removed Smart Logic**: Eliminated logic that tried to check for existing drafts
+  - **Always Fresh**: Every "New Application" click creates a brand new draft with new UUID
+  - **Complete Reset**: Added `resetWizard()` call to ensure clean state initialization
+  - **Step Reset**: Explicitly sets `currentStep` to 1 when creating new drafts
+- **Enhanced Error Handling**: Added comprehensive error states and retry functionality
+  - **Loading States**: Clear visual feedback during draft creation process
+  - **Error Messages**: User-friendly error messages with retry options
+  - **Debug Logging**: Added console logging for troubleshooting draft creation
+
+### Frontend — Sidebar Navigation Fix
+- **Simplified Sidebar Logic**: Updated `components/app-sidebar.tsx` to remove storage clearing
+  - **Removed Redundant Logic**: Eliminated `clearApplicationWizardStorage()` call from sidebar click handler
+  - **Centralized Management**: Main wizard page now handles all storage clearing and state reset
+  - **Clean Navigation**: Sidebar now simply navigates without interfering with wizard state
+
+### Frontend — Passport Processing Integration
+- **Fixed Form Field Population**: Updated `app/students/new/step-2/page.tsx` to properly populate form fields
+  - **Auto-Fill Effect**: Added useEffect to automatically populate form fields when passport data is extracted
+  - **Visual Indicators**: Form fields show ✅ indicators when populated from passport data
+  - **State Synchronization**: Extracted passport data properly updates both store and form fields
+  - **Debug Logging**: Added console logging to track passport data application
+
+### Technical Improvements
+- **State Management**: Enhanced Zustand store with proper state reset functionality
+  - **Complete Reset**: `resetWizard()` function properly resets all wizard state to initial values
+  - **Draft ID Management**: Proper handling of draft ID creation and storage
+  - **Persistence**: Fixed localStorage clearing to prevent state persistence issues
+- **Error Handling**: Comprehensive error handling throughout the wizard initialization process
+- **Type Safety**: Maintained full TypeScript compliance throughout all fixes
+
+### User Experience Enhancements
+- **Predictable Behavior**: "New Application" button now behaves consistently every time
+- **Clear Feedback**: Loading states and error messages provide clear user feedback
+- **Proper Flow**: Users always start at Step 1 (Document Upload) for new applications
+- **File Upload**: File upload functionality now works properly with valid draft IDs
+- **Passport Processing**: Passport data extraction and form population works seamlessly
+
+### Debugging & Monitoring
+- **Console Logging**: Added comprehensive logging for troubleshooting
+  - `[NEW_APPLICATION]` logs for initialization process
+  - `[NEW_DRAFT]` logs for draft creation
+  - `[PASSPORT_DATA_APPLIED]` logs for form field population
+- **Error Tracking**: Enhanced error messages with context for easier debugging
+- **State Visibility**: Clear visibility into wizard state changes and transitions
+
+### API Integration
+- **Draft Creation**: Proper integration with applications API for draft creation
+- **File Upload**: Fixed file upload functionality with valid application IDs
+- **Passport Processing**: Seamless integration with passport processing API
+- **Document Management**: Proper document listing and management functionality
+
+### Development Workflow
+- **Systematic Debugging**: Identified and fixed root causes of wizard issues
+- **Incremental Fixes**: Applied fixes step-by-step with proper testing
+- **Code Quality**: Linted all modified files following development guidelines
+- **Documentation**: Updated changelog with comprehensive fix documentation
+
+---
+
 ## 2025-09-21 — NAT00020 AVETMISS Compliance Implementation
 
 ### Business Logic (authoritative summary)
