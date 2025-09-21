@@ -5,6 +5,13 @@
 
 import type { ColumnType } from "kysely";
 
+// Buffer polyfill for Deno
+declare global {
+  interface Buffer {
+    toString(): string;
+  }
+}
+
 export type AuthAalLevel = "aal1" | "aal2" | "aal3";
 
 export type AuthCodeChallengeMethod = "plain" | "s256";
@@ -518,6 +525,10 @@ export interface CoreLocations {
   address_id: string;
   created_at: Generated<Timestamp | null>;
   id: Generated<string>;
+  /**
+   * Indicates if the location is active for training delivery
+   */
+  is_active: Generated<boolean | null>;
   location_identifier: string;
   location_name: string;
   organisation_id: string;
@@ -525,11 +536,31 @@ export interface CoreLocations {
 }
 
 export interface CoreOrganisations {
+  /**
+   * Reference to core.addresses table for NAT00010 address information
+   */
+  address_id: string | null;
+  /**
+   * NAT00010: Contact name (A, 60)
+   */
+  contact_name: string | null;
   created_at: Generated<Timestamp | null>;
+  /**
+   * NAT00010: Email address (A, 80)
+   */
+  email_address: string | null;
+  /**
+   * NAT00010: Facsimile number (A, 20)
+   */
+  fax_number: string | null;
   id: Generated<string>;
   organisation_identifier: string;
   organisation_name: string;
   organisation_type_identifier: string | null;
+  /**
+   * NAT00010: Telephone number (A, 20)
+   */
+  phone_number: string | null;
   /**
    * AVETMISS State Identifier (e.g., VIC, NSW). Governs state-specific reporting logic.
    */
@@ -569,6 +600,26 @@ export interface CorePrograms {
   status: Generated<string>;
   tga_url: string | null;
   updated_at: Generated<Timestamp | null>;
+}
+
+export interface CoreProgramSchedules {
+  created_at: Generated<Timestamp>;
+  cycle_anchor_date: Timestamp;
+  id: Generated<string>;
+  name: Generated<string>;
+  program_id: string;
+  timezone: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface CoreProgramScheduleUnits {
+  created_at: Generated<Timestamp>;
+  duration_days: number;
+  id: Generated<string>;
+  order_index: number;
+  schedule_id: string;
+  subject_id: string;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface CoreProgramSubjects {
@@ -693,7 +744,7 @@ export interface ExtensionsPgStatStatementsInfo {
 }
 
 export interface NetHttpRequestQueue {
-  body: Uint8Array | null;
+  body: Buffer | null;
   headers: Json;
   id: Generated<Int8>;
   method: string;
@@ -825,8 +876,10 @@ export interface SmsOpCourseOfferings {
   is_rolling: Generated<boolean>;
   max_students: number | null;
   program_id: string;
+  schedule_id: string | null;
   start_date: Timestamp | null;
   status: Generated<string>;
+  term_index: number | null;
   trainer_id: string | null;
 }
 
@@ -1147,7 +1200,7 @@ export interface VaultDecryptedSecrets {
   id: string | null;
   key_id: string | null;
   name: string | null;
-  nonce: Uint8Array | null;
+  nonce: Buffer | null;
   secret: string | null;
   updated_at: Timestamp | null;
 }
@@ -1158,7 +1211,7 @@ export interface VaultSecrets {
   id: Generated<string>;
   key_id: string | null;
   name: string | null;
-  nonce: Generated<Uint8Array | null>;
+  nonce: Generated<Buffer | null>;
   secret: string;
   updated_at: Generated<Timestamp>;
 }
@@ -1206,6 +1259,8 @@ export interface DB {
   "core.organisations": CoreOrganisations;
   "core.program_course_plan_subjects": CoreProgramCoursePlanSubjects;
   "core.program_course_plans": CoreProgramCoursePlans;
+  "core.program_schedule_units": CoreProgramScheduleUnits;
+  "core.program_schedules": CoreProgramSchedules;
   "core.program_subjects": CoreProgramSubjects;
   "core.programs": CorePrograms;
   "core.subject_prerequisites": CoreSubjectPrerequisites;

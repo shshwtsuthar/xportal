@@ -1073,6 +1073,130 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organisations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Organisations
+         * @description Retrieve all organisations for NAT00010 AVETMISS compliance
+         */
+        get: operations["listOrganisations"];
+        put?: never;
+        /**
+         * Create Organisation
+         * @description Create a new organisation for NAT00010 AVETMISS compliance
+         */
+        post: operations["createOrganisation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organisations/{organisationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Organisation
+         * @description Retrieve a specific organisation by ID
+         */
+        get: operations["getOrganisation"];
+        /**
+         * Update Organisation
+         * @description Update an organisation for NAT00010 AVETMISS compliance
+         */
+        put: operations["updateOrganisation"];
+        post?: never;
+        /**
+         * Delete Organisation
+         * @description Delete an organisation
+         */
+        delete: operations["deleteOrganisation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Locations
+         * @description Retrieve all training delivery locations for NAT00020 AVETMISS compliance
+         */
+        get: operations["listLocations"];
+        put?: never;
+        /**
+         * Create Location
+         * @description Create a new training delivery location for NAT00020 AVETMISS compliance
+         */
+        post: operations["createLocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations/{locationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Location
+         * @description Retrieve a specific location by ID
+         */
+        get: operations["getLocation"];
+        /**
+         * Update Location
+         * @description Update a training delivery location for NAT00020 AVETMISS compliance
+         */
+        put: operations["updateLocation"];
+        post?: never;
+        /**
+         * Delete Location
+         * @description Delete a training delivery location
+         */
+        delete: operations["deleteLocation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations/{locationId}/toggle-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Toggle Location Status
+         * @description Toggle the active status of a training delivery location
+         */
+        patch: operations["toggleLocationStatus"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2201,6 +2325,159 @@ export interface components {
                  */
                 estimated_completion_date?: string;
             }[];
+        };
+        Organisation: {
+            /** Format: uuid */
+            id?: string;
+            /** @description NAT00010: Training organisation identifier (A, 10) - Your RTO code */
+            organisation_identifier?: string;
+            /** @description NAT00010: Training organisation name (A, 100) - Organisation legal name */
+            organisation_name?: string;
+            /** @description NAT00010: Training organisation type identifier (A, 2) */
+            organisation_type_identifier?: string;
+            /** @description NAT00010: State identifier (A, 2) */
+            state_identifier?: string;
+            /**
+             * Format: uuid
+             * @description Reference to address table
+             */
+            address_id?: string | null;
+            /** @description NAT00010: Telephone number (A, 20) */
+            phone_number?: string | null;
+            /** @description NAT00010: Facsimile number (A, 20) */
+            fax_number?: string | null;
+            /** @description NAT00010: Email address (A, 80) */
+            email_address?: string | null;
+            /** @description NAT00010: Contact name (A, 60) */
+            contact_name?: string | null;
+            address?: components["schemas"]["OrganisationAddress"];
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        CreateOrganisationRequest: {
+            /** @description RTO code from training.gov.au */
+            organisation_identifier: string;
+            /** @description Legal organisation name */
+            organisation_name: string;
+            /** @enum {string} */
+            organisation_type_identifier: "21" | "25" | "27" | "31" | "41" | "43" | "45" | "51" | "53" | "61" | "91" | "93" | "95" | "97" | "99";
+            /** @enum {string} */
+            state_identifier: "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08";
+            address?: components["schemas"]["CreateOrganisationAddressRequest"];
+            phone_number?: string;
+            fax_number?: string;
+            /** Format: email */
+            email_address?: string;
+            contact_name?: string;
+        };
+        UpdateOrganisationRequest: {
+            organisation_identifier?: string;
+            organisation_name?: string;
+            /** @enum {string} */
+            organisation_type_identifier?: "21" | "25" | "27" | "31" | "41" | "43" | "45" | "51" | "53" | "61" | "91" | "93" | "95" | "97" | "99";
+            /** @enum {string} */
+            state_identifier?: "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08";
+            address?: components["schemas"]["UpdateOrganisationAddressRequest"];
+            phone_number?: string;
+            fax_number?: string;
+            /** Format: email */
+            email_address?: string;
+            contact_name?: string;
+        };
+        Location: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            organisation_id?: string;
+            /** @description NAT00020: Training organisation delivery location identifier (A, 10) */
+            location_identifier?: string;
+            /** @description NAT00020: Training organisation delivery location name (A, 100) */
+            location_name?: string;
+            /** Format: uuid */
+            address_id?: string;
+            address?: components["schemas"]["OrganisationAddress"];
+            /** @description Whether this location is active for training delivery */
+            is_active?: boolean;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        CreateLocationRequest: {
+            /** Format: uuid */
+            organisation_id: string;
+            location_identifier: string;
+            location_name: string;
+            address: components["schemas"]["CreateOrganisationAddressRequest"];
+            /** @default true */
+            is_active: boolean;
+        };
+        UpdateLocationRequest: {
+            location_identifier?: string;
+            location_name?: string;
+            address?: components["schemas"]["UpdateOrganisationAddressRequest"];
+            is_active?: boolean;
+        };
+        OrganisationAddress: {
+            /** Format: uuid */
+            id?: string;
+            /** @description NAT00010/00020: Address building/property name (A, 50) */
+            building_property_name?: string | null;
+            /** @description NAT00010/00020: Address flat/unit details (A, 30) */
+            flat_unit_details?: string | null;
+            /** @description NAT00010/00020: Address street number (A, 15) */
+            street_number?: string | null;
+            /** @description NAT00010/00020: Address street name (A, 70) */
+            street_name?: string | null;
+            /** @description NAT00010/00020: Address suburb, locality or town (A, 50) */
+            suburb?: string;
+            /** @description NAT00010/00020: Postcode (A, 4) */
+            postcode?: string;
+            /** @description NAT00010/00020: State identifier (A, 2) */
+            state_identifier?: string;
+            /** @description Country identifier */
+            country_identifier?: string;
+            /** @description NAT00010: Statistical area level 1 identifier (A, 11) */
+            sa1_identifier?: string | null;
+            /** @description NAT00010: Statistical area level 2 identifier (A, 9) */
+            sa2_identifier?: string | null;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        CreateOrganisationAddressRequest: {
+            building_property_name?: string;
+            flat_unit_details?: string;
+            street_number?: string;
+            street_name?: string;
+            suburb: string;
+            /** @description 4-digit postcode or 'OSPC' for overseas */
+            postcode: string;
+            /** @enum {string} */
+            state_identifier: "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08";
+            /**
+             * @description Australia
+             * @default 1101
+             */
+            country_identifier: string;
+            sa1_identifier?: string;
+            sa2_identifier?: string;
+        };
+        UpdateOrganisationAddressRequest: {
+            building_property_name?: string;
+            flat_unit_details?: string;
+            street_number?: string;
+            street_name?: string;
+            suburb?: string;
+            postcode?: string;
+            /** @enum {string} */
+            state_identifier?: "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08";
+            country_identifier?: string;
+            sa1_identifier?: string;
+            sa2_identifier?: string;
         };
     };
     responses: {
@@ -4070,6 +4347,278 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listOrganisations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        organisations?: components["schemas"]["Organisation"][];
+                    };
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createOrganisation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrganisationRequest"];
+            };
+        };
+        responses: {
+            /** @description Organisation created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organisation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getOrganisation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organisationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organisation"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateOrganisation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organisationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOrganisationRequest"];
+            };
+        };
+        responses: {
+            /** @description Organisation updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organisation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteOrganisation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organisationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Organisation deleted successfully */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listLocations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        locations?: components["schemas"]["Location"][];
+                    };
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description Location created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Location"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Location"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description Location updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Location"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Location deleted successfully */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    toggleLocationStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Location status updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Location"];
+                };
+            };
+            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalServerError"];
         };
     };

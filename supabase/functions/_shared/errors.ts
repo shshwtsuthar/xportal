@@ -28,3 +28,9 @@ export class ValidationError extends ApiError {
     this.details = details;
   }
 }
+
+export class BadRequestError extends ApiError {
+  constructor(message = 'Bad request.') {
+    super(message, 400);
+  }
+}

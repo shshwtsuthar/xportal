@@ -2080,6 +2080,301 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  # ---------------------------------------------------------------------------
+  # == ORGANISATION MANAGEMENT (NAT00010) ==
+  # ---------------------------------------------------------------------------
+  /organisations:
+    get:
+      operationId: listOrganisations
+      summary: List Organisations
+      description: Retrieve all organisations for NAT00010 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  organisations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Organisation'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      operationId: createOrganisation
+      summary: Create Organisation
+      description: Create a new organisation for NAT00010 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganisationRequest'
+      responses:
+        '201':
+          description: Organisation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organisation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organisations/{organisationId}:
+    get:
+      operationId: getOrganisation
+      summary: Get Organisation
+      description: Retrieve a specific organisation by ID
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: organisationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organisation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      operationId: updateOrganisation
+      summary: Update Organisation
+      description: Update an organisation for NAT00010 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: organisationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganisationRequest'
+      responses:
+        '200':
+          description: Organisation updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organisation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      operationId: deleteOrganisation
+      summary: Delete Organisation
+      description: Delete an organisation
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: organisationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Organisation deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ---------------------------------------------------------------------------
+  # == LOCATION MANAGEMENT (NAT00020) ==
+  # ---------------------------------------------------------------------------
+  /locations:
+    get:
+      operationId: listLocations
+      summary: List Locations
+      description: Retrieve all training delivery locations for NAT00020 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Location'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      operationId: createLocation
+      summary: Create Location
+      description: Create a new training delivery location for NAT00020 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLocationRequest'
+      responses:
+        '201':
+          description: Location created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /locations/{locationId}:
+    get:
+      operationId: getLocation
+      summary: Get Location
+      description: Retrieve a specific location by ID
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      operationId: updateLocation
+      summary: Update Location
+      description: Update a training delivery location for NAT00020 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocationRequest'
+      responses:
+        '200':
+          description: Location updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      operationId: deleteLocation
+      summary: Delete Location
+      description: Delete a training delivery location
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Location deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /locations/{locationId}/toggle-status:
+    patch:
+      operationId: toggleLocationStatus
+      summary: Toggle Location Status
+      description: Toggle the active status of a training delivery location
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Location status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 # =============================================================================
 # REUSABLE COMPONENTS
 # =============================================================================
@@ -3580,3 +3875,127 @@ components:
               prerequisite_subjects: { type: array, items: { type: string, format: uuid }, description: Subject IDs that must be completed first }
               available_from_date: { type: string, format: date, description: Date when this subject becomes available }
               estimated_completion_date: { type: string, format: date, description: Estimated completion date if started immediately }
+
+    # --- ORGANISATION MANAGEMENT SCHEMAS (NAT00010) ---
+    Organisation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        organisation_identifier: { type: string, description: "NAT00010: Training organisation identifier (A, 10) - Your RTO code" }
+        organisation_name: { type: string, description: "NAT00010: Training organisation name (A, 100) - Organisation legal name" }
+        organisation_type_identifier: { type: string, description: "NAT00010: Training organisation type identifier (A, 2)" }
+        state_identifier: { type: string, description: "NAT00010: State identifier (A, 2)" }
+        address_id: { type: string, format: uuid, nullable: true, description: "Reference to address table" }
+        phone_number: { type: string, nullable: true, description: "NAT00010: Telephone number (A, 20)" }
+        fax_number: { type: string, nullable: true, description: "NAT00010: Facsimile number (A, 20)" }
+        email_address: { type: string, nullable: true, description: "NAT00010: Email address (A, 80)" }
+        contact_name: { type: string, nullable: true, description: "NAT00010: Contact name (A, 60)" }
+        address: { $ref: '#/components/schemas/OrganisationAddress' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateOrganisationRequest:
+      type: object
+      required: [organisation_identifier, organisation_name, organisation_type_identifier, state_identifier]
+      properties:
+        organisation_identifier: { type: string, maxLength: 10, description: "RTO code from training.gov.au" }
+        organisation_name: { type: string, maxLength: 100, description: "Legal organisation name" }
+        organisation_type_identifier: { type: string, enum: ["21", "25", "27", "31", "41", "43", "45", "51", "53", "61", "91", "93", "95", "97", "99"] }
+        state_identifier: { type: string, enum: ["01", "02", "03", "04", "05", "06", "07", "08"] }
+        address: { $ref: '#/components/schemas/CreateOrganisationAddressRequest' }
+        phone_number: { type: string, maxLength: 20 }
+        fax_number: { type: string, maxLength: 20 }
+        email_address: { type: string, format: email, maxLength: 80 }
+        contact_name: { type: string, maxLength: 60 }
+
+    UpdateOrganisationRequest:
+      type: object
+      properties:
+        organisation_identifier: { type: string, maxLength: 10 }
+        organisation_name: { type: string, maxLength: 100 }
+        organisation_type_identifier: { type: string, enum: ["21", "25", "27", "31", "41", "43", "45", "51", "53", "61", "91", "93", "95", "97", "99"] }
+        state_identifier: { type: string, enum: ["01", "02", "03", "04", "05", "06", "07", "08"] }
+        address: { $ref: '#/components/schemas/UpdateOrganisationAddressRequest' }
+        phone_number: { type: string, maxLength: 20 }
+        fax_number: { type: string, maxLength: 20 }
+        email_address: { type: string, format: email, maxLength: 80 }
+        contact_name: { type: string, maxLength: 60 }
+
+    # --- LOCATION MANAGEMENT SCHEMAS (NAT00020) ---
+    Location:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        organisation_id: { type: string, format: uuid }
+        location_identifier: { type: string, description: "NAT00020: Training organisation delivery location identifier (A, 10)" }
+        location_name: { type: string, description: "NAT00020: Training organisation delivery location name (A, 100)" }
+        address_id: { type: string, format: uuid }
+        address: { $ref: '#/components/schemas/OrganisationAddress' }
+        is_active: { type: boolean, description: "Whether this location is active for training delivery" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateLocationRequest:
+      type: object
+      required: [organisation_id, location_identifier, location_name, address]
+      properties:
+        organisation_id: { type: string, format: uuid }
+        location_identifier: { type: string, maxLength: 10 }
+        location_name: { type: string, maxLength: 100 }
+        address: { $ref: '#/components/schemas/CreateOrganisationAddressRequest' }
+        is_active: { type: boolean, default: true }
+
+    UpdateLocationRequest:
+      type: object
+      properties:
+        location_identifier: { type: string, maxLength: 10 }
+        location_name: { type: string, maxLength: 100 }
+        address: { $ref: '#/components/schemas/UpdateOrganisationAddressRequest' }
+        is_active: { type: boolean }
+
+    # --- ORGANISATION & LOCATION ADDRESS SCHEMAS ---
+    OrganisationAddress:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        building_property_name: { type: string, nullable: true, description: "NAT00010/00020: Address building/property name (A, 50)" }
+        flat_unit_details: { type: string, nullable: true, description: "NAT00010/00020: Address flat/unit details (A, 30)" }
+        street_number: { type: string, nullable: true, description: "NAT00010/00020: Address street number (A, 15)" }
+        street_name: { type: string, nullable: true, description: "NAT00010/00020: Address street name (A, 70)" }
+        suburb: { type: string, description: "NAT00010/00020: Address suburb, locality or town (A, 50)" }
+        postcode: { type: string, description: "NAT00010/00020: Postcode (A, 4)" }
+        state_identifier: { type: string, description: "NAT00010/00020: State identifier (A, 2)" }
+        country_identifier: { type: string, description: "Country identifier" }
+        sa1_identifier: { type: string, nullable: true, description: "NAT00010: Statistical area level 1 identifier (A, 11)" }
+        sa2_identifier: { type: string, nullable: true, description: "NAT00010: Statistical area level 2 identifier (A, 9)" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateOrganisationAddressRequest:
+      type: object
+      required: [suburb, postcode, state_identifier]
+      properties:
+        building_property_name: { type: string, maxLength: 50 }
+        flat_unit_details: { type: string, maxLength: 30 }
+        street_number: { type: string, maxLength: 15 }
+        street_name: { type: string, maxLength: 70 }
+        suburb: { type: string, maxLength: 50 }
+        postcode: { type: string, pattern: "^\\d{4}$|^OSPC$", description: "4-digit postcode or 'OSPC' for overseas" }
+        state_identifier: { type: string, enum: ["01", "02", "03", "04", "05", "06", "07", "08"] }
+        country_identifier: { type: string, default: "1101", description: "Australia" }
+        sa1_identifier: { type: string, maxLength: 11 }
+        sa2_identifier: { type: string, maxLength: 9 }
+
+    UpdateOrganisationAddressRequest:
+      type: object
+      properties:
+        building_property_name: { type: string, maxLength: 50 }
+        flat_unit_details: { type: string, maxLength: 30 }
+        street_number: { type: string, maxLength: 15 }
+        street_name: { type: string, maxLength: 70 }
+        suburb: { type: string, maxLength: 50 }
+        postcode: { type: string, pattern: "^\\d{4}$|^OSPC$" }
+        state_identifier: { type: string, enum: ["01", "02", "03", "04", "05", "06", "07", "08"] }
+        country_identifier: { type: string }
+        sa1_identifier: { type: string, maxLength: 11 }
+        sa2_identifier: { type: string, maxLength: 9 }

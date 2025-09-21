@@ -1,7 +1,7 @@
 // =============================================================================
-// FILE:        use-locations.ts
+// FILE:        use-organisations.ts
 // PROJECT:     XPortal Student Management System (SMS)
-// DESCRIPTION: React hooks for location management (NAT00020 AVETMISS compliance)
+// DESCRIPTION: React hooks for organisation management (NAT00010 AVETMISS compliance)
 // =============================================================================
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,14 +13,18 @@ const FUNCTIONS_URL = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1';
 // TYPES
 // =============================================================================
 
-export interface Location {
+export interface Organisation {
   id: string;
-  organisation_id: string;
-  location_identifier: string;
-  location_name: string;
-  address_id: string;
-  address: OrganisationAddress;
-  is_active: boolean;
+  organisation_identifier: string;
+  organisation_name: string;
+  organisation_type_identifier: string | null;
+  state_identifier: string;
+  address_id: string | null;
+  phone_number: string | null;
+  fax_number: string | null;
+  email_address: string | null;
+  contact_name: string | null;
+  address: OrganisationAddress | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,12 +45,16 @@ export interface OrganisationAddress {
   updated_at: string;
 }
 
-export interface CreateLocationRequest {
-  organisation_id: string;
-  location_identifier: string;
-  location_name: string;
-  address: CreateOrganisationAddressRequest;
-  is_active?: boolean;
+export interface CreateOrganisationRequest {
+  organisation_identifier: string;
+  organisation_name: string;
+  organisation_type_identifier: string;
+  state_identifier: string;
+  address?: CreateOrganisationAddressRequest;
+  phone_number?: string;
+  fax_number?: string;
+  email_address?: string;
+  contact_name?: string;
 }
 
 export interface CreateOrganisationAddressRequest {
@@ -62,11 +70,16 @@ export interface CreateOrganisationAddressRequest {
   sa2_identifier?: string;
 }
 
-export interface UpdateLocationRequest {
-  location_identifier?: string;
-  location_name?: string;
+export interface UpdateOrganisationRequest {
+  organisation_identifier?: string;
+  organisation_name?: string;
+  organisation_type_identifier?: string;
+  state_identifier?: string;
   address?: UpdateOrganisationAddressRequest;
-  is_active?: boolean;
+  phone_number?: string;
+  fax_number?: string;
+  email_address?: string;
+  contact_name?: string;
 }
 
 export interface UpdateOrganisationAddressRequest {
@@ -86,33 +99,33 @@ export interface UpdateOrganisationAddressRequest {
 // API FUNCTIONS
 // =============================================================================
 
-const fetchLocations = async (): Promise<Location[]> => {
-  const response = await fetch(`${FUNCTIONS_URL}/locations`, {
+const fetchOrganisations = async (): Promise<Organisation[]> => {
+  const response = await fetch(`${FUNCTIONS_URL}/organisations`, {
     headers: getFunctionHeaders(),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch locations');
+    throw new Error('Failed to fetch organisations');
   }
 
   const data = await response.json();
-  return data.locations;
+  return data.organisations;
 };
 
-const fetchLocation = async (id: string): Promise<Location> => {
-  const response = await fetch(`${FUNCTIONS_URL}/locations/${id}`, {
+const fetchOrganisation = async (id: string): Promise<Organisation> => {
+  const response = await fetch(`${FUNCTIONS_URL}/organisations/${id}`, {
     headers: getFunctionHeaders(),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch location');
+    throw new Error('Failed to fetch organisation');
   }
 
   return response.json();
 };
 
-const createLocation = async (data: CreateLocationRequest): Promise<Location> => {
-  const response = await fetch(`${FUNCTIONS_URL}/locations`, {
+const createOrganisation = async (data: CreateOrganisationRequest): Promise<Organisation> => {
+  const response = await fetch(`${FUNCTIONS_URL}/organisations`, {
     method: 'POST',
     headers: getFunctionHeaders(),
     body: JSON.stringify(data),
@@ -120,20 +133,20 @@ const createLocation = async (data: CreateLocationRequest): Promise<Location> =>
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Failed to create location');
+    throw new Error(error.message || 'Failed to create organisation');
   }
 
   return response.json();
 };
 
-const updateLocation = async ({ 
+const updateOrganisation = async ({ 
   id, 
   data 
 }: { 
   id: string; 
-  data: UpdateLocationRequest; 
-}): Promise<Location> => {
-  const response = await fetch(`${FUNCTIONS_URL}/locations/${id}`, {
+  data: UpdateOrganisationRequest; 
+}): Promise<Organisation> => {
+  const response = await fetch(`${FUNCTIONS_URL}/organisations/${id}`, {
     method: 'PUT',
     headers: getFunctionHeaders(),
     body: JSON.stringify(data),
@@ -141,99 +154,73 @@ const updateLocation = async ({
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Failed to update location');
+    throw new Error(error.message || 'Failed to update organisation');
   }
 
   return response.json();
 };
 
-const deleteLocation = async (id: string): Promise<void> => {
-  const response = await fetch(`${FUNCTIONS_URL}/locations/${id}`, {
+const deleteOrganisation = async (id: string): Promise<void> => {
+  const response = await fetch(`${FUNCTIONS_URL}/organisations/${id}`, {
     method: 'DELETE',
     headers: getFunctionHeaders(),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Failed to delete location');
+    throw new Error(error.message || 'Failed to delete organisation');
   }
-};
-
-const toggleLocationStatus = async (id: string): Promise<Location> => {
-  const response = await fetch(`${FUNCTIONS_URL}/locations/${id}/toggle-status`, {
-    method: 'PATCH',
-    headers: getFunctionHeaders(),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to toggle location status');
-  }
-
-  return response.json();
 };
 
 // =============================================================================
 // REACT HOOKS
 // =============================================================================
 
-export const useLocations = () => {
+export const useOrganisations = () => {
   return useQuery({
-    queryKey: ['locations'],
-    queryFn: fetchLocations,
+    queryKey: ['organisations'],
+    queryFn: fetchOrganisations,
   });
 };
 
-export const useLocation = (id: string) => {
+export const useOrganisation = (id: string) => {
   return useQuery({
-    queryKey: ['locations', id],
-    queryFn: () => fetchLocation(id),
+    queryKey: ['organisations', id],
+    queryFn: () => fetchOrganisation(id),
     enabled: !!id,
   });
 };
 
-export const useCreateLocation = () => {
+export const useCreateOrganisation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createLocation,
+    mutationFn: createOrganisation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['locations'] });
+      queryClient.invalidateQueries({ queryKey: ['organisations'] });
     },
   });
 };
 
-export const useUpdateLocation = () => {
+export const useUpdateOrganisation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateLocation,
+    mutationFn: updateOrganisation,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['locations'] });
-      queryClient.invalidateQueries({ queryKey: ['locations', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['organisations'] });
+      queryClient.invalidateQueries({ queryKey: ['organisations', data.id] });
     },
   });
 };
 
-export const useDeleteLocation = () => {
+export const useDeleteOrganisation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteLocation,
+    mutationFn: deleteOrganisation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['locations'] });
-    },
-  });
-};
-
-export const useToggleLocationStatus = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: toggleLocationStatus,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['locations'] });
-      queryClient.invalidateQueries({ queryKey: ['locations', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['organisations'] });
     },
   });
 };
@@ -241,6 +228,28 @@ export const useToggleLocationStatus = () => {
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
+
+export const getOrganisationTypeLabel = (typeId: string): string => {
+  const types: Record<string, string> = {
+    '21': 'School - Government',
+    '25': 'School - Catholic',
+    '27': 'School - Independent',
+    '31': 'TAFE/Skills Institute',
+    '41': 'University - Government',
+    '43': 'University - Catholic',
+    '45': 'University - Independent',
+    '51': 'Enterprise - Government',
+    '53': 'Enterprise - Non-government',
+    '61': 'Community Adult Education',
+    '91': 'Private Training Business',
+    '93': 'Professional Association',
+    '95': 'Industry Association',
+    '97': 'Equipment/Product Manufacturer',
+    '99': 'Other Training Provider',
+  };
+  
+  return types[typeId] || typeId;
+};
 
 export const getStateLabel = (stateId: string): string => {
   const states: Record<string, string> = {
@@ -268,19 +277,4 @@ export const formatAddress = (address: OrganisationAddress): string => {
   ].filter(Boolean);
   
   return parts.join(', ');
-};
-
-export const getLocationStatusBadgeVariant = (isActive: boolean) => {
-  return isActive ? 'default' : 'secondary';
-};
-
-export const getLocationStatusLabel = (isActive: boolean) => {
-  return isActive ? 'Active' : 'Inactive';
-};
-
-export const transformLocationsForSelect = (locations: Location[]) => {
-  return locations.map(location => ({
-    value: location.id,
-    label: `${location.location_name} (${location.location_identifier})`,
-  }));
 };
