@@ -62,8 +62,21 @@ export default function ReviewApplication() {
   if (!formData.personalDetails) missingFields.push('Personal details');
   if (!formData.address) missingFields.push('Address');
   if (!formData.enrolmentDetails?.programId) missingFields.push('Program');
-  if (!formData.enrolmentDetails?.courseOfferingId) missingFields.push('Course offering');
-  if (!formData.enrolmentDetails?.subjectStructure?.coreSubjectIds?.length) missingFields.push('Core subjects');
+  
+  // Check intake model specific requirements
+  const intakeModel = formData.enrolmentDetails?.intakeModel;
+  if (intakeModel === 'Fixed') {
+    if (!formData.enrolmentDetails?.courseOfferingId) missingFields.push('Course offering');
+  } else if (intakeModel === 'Rolling') {
+    if (!formData.enrolmentDetails?.programPlanTemplateId) missingFields.push('Program plan template');
+  } else {
+    // If no intake model selected, require template selection
+    if (!formData.enrolmentDetails?.programPlanTemplateId) missingFields.push('Program plan template');
+  }
+  
+  // Core subjects are auto-populated from template, so we don't need to check them
+  // if (!formData.enrolmentDetails?.subjectStructure?.coreSubjectIds?.length) missingFields.push('Core subjects');
+  
   if (!formData.enrolmentDetails?.deliveryLocationId) missingFields.push('Delivery location');
   if (!formData.enrolmentDetails?.fundingSourceId) missingFields.push('Funding source');
   if (!formData.enrolmentDetails?.studyReasonId) missingFields.push('Study reason');
@@ -83,11 +96,12 @@ export default function ReviewApplication() {
       if (
         item === 'Program' ||
         item === 'Course offering' ||
+        item === 'Program plan template' ||
         item === 'Core subjects' ||
         item === 'Delivery location' ||
         item === 'Funding source' ||
         item === 'Study reason'
-      ) return '/students/new/step-3';
+      ) return '/students/new/step-4';
     }
     return '/students/new/step-1';
   };
@@ -128,6 +142,34 @@ export default function ReviewApplication() {
         avetmissDetails: formData.avetmissDetails,
         enrolmentDetails: formData.enrolmentDetails,
         usi: normalizedUsi,
+        // Structure payment plan as object per backend schema
+        paymentPlan: {
+          selectedTemplateId: (formData as any)?.selectedTemplateId || '11111111-1111-1111-1111-111111111111',
+          anchor: (formData as any)?.anchor || 'OFFER_LETTER',
+          anchorDate: (formData as any)?.anchorDate || null,
+          schedule: (() => {
+            const paymentSchedule = (formData as any)?.paymentSchedule;
+            const tuitionFee = Number((formData as any)?.tuitionFeeSnapshot || 0);
+            
+            // If we have a payment schedule, use it
+            if (paymentSchedule && paymentSchedule.length > 0) {
+              return paymentSchedule.map(item => ({
+                description: item.description || 'Payment',
+                dueDate: item.dueDate,
+                amount: Number(item.amount) || 0
+              }));
+            }
+            
+            // Always create a schedule - never return empty array
+            const fallbackSchedule = [{
+              description: 'Full tuition payment',
+              dueDate: new Date().toISOString().split('T')[0],
+              amount: tuitionFee || 0
+            }];
+            return fallbackSchedule;
+          })(),
+          tuitionFeeSnapshot: Number((formData as any)?.tuitionFeeSnapshot || 0),
+        },
       });
       await submit();
       // Cleanup persisted wizard state and related localStorage keys

@@ -466,7 +466,94 @@ BEGIN
        },
        "agentId": "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c8"
      }'::jsonb,
-     v_client_id, NULL, NULL, NOW() - INTERVAL '15 days', NOW() - INTERVAL '5 days')
+     v_client_id, NULL, NULL, NOW() - INTERVAL '15 days', NOW() - INTERVAL '5 days'),
+
+    -- Perfect Test Application - Karan Rajput (Complete Data)
+    ('a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6', 'Submitted',
+     '{
+       "personalDetails": {
+         "firstName": "Karan",
+         "lastName": "Rajput",
+         "dateOfBirth": "1993-06-15",
+         "gender": "M",
+         "primaryEmail": "shshwtsuthar@gmail.com",
+         "primaryPhone": "+61 4 1234 5678",
+         "passportNumber": "P1234567",
+         "nationality": "Indian"
+       },
+       "address": {
+         "residential": {
+           "street_number": "42",
+           "street_name": "Collins Street",
+           "suburb": "Melbourne",
+           "state": "VIC",
+           "postcode": "3000",
+           "flat_unit_details": "Apt 15B",
+           "building_property_name": "Melbourne Central Tower"
+         }
+       },
+       "avetmissDetails": {
+         "countryOfBirthId": "1106",
+         "highestSchoolLevelId": "12",
+         "languageAtHomeId": "1201",
+         "indigenousStatusId": "4",
+         "labourForceId": "01",
+         "hasDisability": false,
+         "hasPriorEducation": true,
+         "isAtSchool": false
+       },
+       "usi": {
+         "usi": "USI987654321"
+       },
+       "enrolmentDetails": {
+         "courseOfferingId": "d1e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6",
+         "programName": "Certificate III in Information, Digital Media and Technology",
+         "courseName": "Certificate III in Information, Digital Media and Technology",
+         "courseCode": "ICT30120",
+         "courseCricosCode": "12345A",
+         "startDate": "2026-02-01",
+         "endDate": "2026-11-30",
+         "expectedCompletionDate": "2026-11-30",
+         "locationName": "Melbourne Campus",
+         "subjectStructure": {
+           "coreSubjectIds": ["b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6", "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c7"],
+           "electiveSubjectIds": ["c1d2e3f4-a5b6-c7d8-e9f0-a1b2c3d4e5f6", "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5d1"]
+         }
+       },
+       "paymentPlan": {
+         "tuitionFeeSnapshot": 12000,
+         "schedule": [
+           {
+             "dueDate": "2026-02-01",
+             "description": "Enrollment Fee",
+             "amount": 2000
+           },
+           {
+             "dueDate": "2026-03-01",
+             "description": "First Instalment",
+             "amount": 2500
+           },
+           {
+             "dueDate": "2026-05-01",
+             "description": "Second Instalment",
+             "amount": 2500
+           },
+           {
+             "dueDate": "2026-07-01",
+             "description": "Third Instalment",
+             "amount": 2500
+           },
+           {
+             "dueDate": "2026-09-01",
+             "description": "Fourth Instalment",
+             "amount": 2500
+           }
+         ]
+       },
+       "agentId": "f1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c7",
+       "agentName": "Global Education Services"
+     }'::jsonb,
+     NULL, NULL, NULL, NOW() - INTERVAL '3 days', NOW() - INTERVAL '1 day')
   ON CONFLICT (id) DO NOTHING;
 
   -- === SEED REFERENCE DATA ===

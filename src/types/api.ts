@@ -1436,17 +1436,33 @@ export interface components {
             programId?: string;
             /**
              * Format: uuid
-             * @description The specific course offering/intake the student is enrolling in
+             * @description The program plan template that defines subjects, structure, and durations
+             */
+            programPlanTemplateId?: string;
+            /**
+             * Format: uuid
+             * @description The specific course offering/intake the student is enrolling in (required for Fixed intake)
              */
             courseOfferingId?: string;
+            /**
+             * @description The intake model for this enrolment
+             * @enum {string}
+             */
+            intakeModel?: "Fixed" | "Rolling";
             /** @description The snapshot of the program structure for this enrolment. */
             subjectStructure?: {
                 coreSubjectIds?: string[];
                 electiveSubjectIds?: string[];
             };
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Start date for the enrolment (required for Fixed intake)
+             */
             startDate?: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Expected completion date (calculated from template durations for Rolling intake)
+             */
             expectedCompletionDate?: string;
             /** Format: uuid */
             deliveryLocationId?: string;

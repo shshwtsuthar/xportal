@@ -89,13 +89,17 @@ const ClientCricosDetailsSchema = z.object({
 
 const EnrolmentDetailsSchema = z.object({
   programId: z.string().uuid({ message: 'A valid program must be selected.' }),
-  courseOfferingId: z.string().uuid({ message: 'A valid course offering must be selected.' }),
+  programPlanTemplateId: z.string().uuid({ message: 'A valid program plan template must be selected.' }),
+  courseOfferingId: z.string().optional().nullable().refine((val) => !val || z.string().uuid().safeParse(val).success, {
+    message: 'A valid course offering must be selected.'
+  }),
+  intakeModel: z.enum(['Fixed', 'Rolling']).optional(),
   subjectStructure: z.object({
     coreSubjectIds: z.array(z.string().uuid()),
     electiveSubjectIds: z.array(z.string().uuid()),
   }),
-  startDate: z.coerce.date(),
-  expectedCompletionDate: z.coerce.date(),
+  startDate: z.coerce.date().optional(),
+  expectedCompletionDate: z.coerce.date().optional(),
   deliveryLocationId: z.string().uuid({ message: 'A valid delivery location must be selected.' }),
   deliveryModeId: z.string().min(1, { message: 'Delivery mode is required.' }),
   fundingSourceId: z.string().min(1, { message: 'Funding source is required.' }),
@@ -107,7 +111,24 @@ const EnrolmentDetailsSchema = z.object({
   client_identifier_apprenticeships: z.string().optional().nullable(),
   specific_funding_identifier: z.string().optional().nullable(),
 }).superRefine((data, ctx) => {
-  if (data.startDate >= data.expectedCompletionDate) {
+  // For Fixed intake, courseOfferingId and dates are required
+  if (data.intakeModel === 'Fixed') {
+    if (!data.courseOfferingId) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['courseOfferingId'], message: 'Course offering is required for Fixed intake.' });
+    }
+    if (!data.startDate || !data.expectedCompletionDate) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['startDate'], message: 'Start and completion dates are required for Fixed intake.' });
+    }
+  }
+  
+  // For Rolling intake, programPlanTemplateId is required
+  if (data.intakeModel === 'Rolling') {
+    if (!data.programPlanTemplateId) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['programPlanTemplateId'], message: 'Program plan template is required for Rolling intake.' });
+    }
+  }
+  
+  if (data.startDate && data.expectedCompletionDate && data.startDate >= data.expectedCompletionDate) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['expectedCompletionDate'], message: 'Expected completion date must be after the start date.' });
   }
 });

@@ -19,7 +19,9 @@ import {
   useApproveApplication, 
   useSubmitApplication,
   useAcceptApplication,
+  useGenerateOfferLetter,
   useSendOffer,
+  useSendOfferLetterEmail,
   useMarkAwaitingPayment,
   useBulkApplicationActions,
   useDeleteApplication,
@@ -80,7 +82,9 @@ export const useApplicationsManagement = () => {
   const approveMutation = useApproveApplication();
   const submitMutation = useSubmitApplication();
   const acceptMutation = useAcceptApplication();
+  const generateOfferLetterMutation = useGenerateOfferLetter();
   const sendOfferMutation = useSendOffer();
+  const sendOfferLetterEmailMutation = useSendOfferLetterEmail();
   const markAwaitingMutation = useMarkAwaitingPayment();
   const deleteMutation = useDeleteApplication();
   const { bulkReject, bulkApprove } = useBulkApplicationActions();
@@ -162,12 +166,46 @@ export const useApplicationsManagement = () => {
     }
   };
 
+  const handleGenerateOfferLetter = async (applicationId: string) => {
+    try {
+      await generateOfferLetterMutation.mutateAsync(applicationId);
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to generate offer letter' 
+      };
+    }
+  };
+
+  const handleDownloadOfferLetter = async (applicationId: string) => {
+    try {
+      const { downloadLatestOffer } = await import('./use-application-actions');
+      await downloadLatestOffer(applicationId);
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to download offer letter' 
+      };
+    }
+  };
+
   const handleSendOfferAndAwaiting = async (applicationId: string) => {
     try {
       await sendOfferMutation.mutateAsync(applicationId);
       return { success: true };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to send offer' };
+    }
+  };
+
+  const handleSendOfferLetterEmail = async (applicationId: string) => {
+    try {
+      await sendOfferLetterEmailMutation.mutateAsync(applicationId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to send offer letter email' };
     }
   };
 
@@ -287,7 +325,10 @@ export const useApplicationsManagement = () => {
     handleApproveApplication,
     handleSubmitApplication,
     handleAcceptApplication,
+    handleGenerateOfferLetter,
+    handleDownloadOfferLetter,
     handleSendOfferAndAwaiting,
+    handleSendOfferLetterEmail,
     handleDownloadOfferAndAwaiting,
     handleDeleteApplication,
     handleBulkReject,

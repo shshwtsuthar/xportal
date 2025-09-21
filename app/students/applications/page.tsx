@@ -32,7 +32,10 @@ export default function ApplicationsPage() {
     handleApproveApplication,
     handleSubmitApplication,
     handleAcceptApplication,
+    handleGenerateOfferLetter,
+    handleDownloadOfferLetter,
     handleSendOfferAndAwaiting,
+    handleSendOfferLetterEmail,
     handleDownloadOfferAndAwaiting,
     handleDeleteApplication,
     refreshData,
@@ -83,7 +86,10 @@ export default function ApplicationsPage() {
             onApprove={handleApproveApplication}
             onSubmit={handleSubmitApplication}
             onAccept={handleAcceptApplication}
+            onGenerateOfferLetter={handleGenerateOfferLetter}
+            onDownloadOfferLetter={handleDownloadOfferLetter}
             onSendOfferAndAwaiting={handleSendOfferAndAwaiting}
+            onSendOfferLetterEmail={handleSendOfferLetterEmail}
             onDownloadOfferAndAwaiting={handleDownloadOfferAndAwaiting}
             onDelete={handleDeleteApplication}
           />

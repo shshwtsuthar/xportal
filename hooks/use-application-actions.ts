@@ -148,6 +148,29 @@ export const useSendOffer = () => {
   });
 };
 
+// Hook for sending offer letter email only (no status change)
+export const useSendOfferLetterEmail = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (applicationId: string) => {
+      const response = await fetch(`${BASE_URL}/applications/${applicationId}/send-offer-email`, {
+        method: 'POST',
+        headers: getFunctionHeaders(),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to send offer letter email: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    onSuccess: (_, applicationId) => {
+      // Only invalidate queries to refresh the UI, but no status change
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['application', applicationId] });
+    },
+  });
+};
+
 // Hook for marking AwaitingPayment without sending email
 export const useMarkAwaitingPayment = () => {
   const queryClient = useQueryClient();
@@ -160,6 +183,28 @@ export const useMarkAwaitingPayment = () => {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Failed to mark awaiting payment: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    onSuccess: (_, applicationId) => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['application', applicationId] });
+    },
+  });
+};
+
+// Hook for generating offer letters
+export const useGenerateOfferLetter = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (applicationId: string) => {
+      const response = await fetch(`${BASE_URL}/applications/${applicationId}/offer-letter`, {
+        method: 'POST',
+        headers: getFunctionHeaders(),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to generate offer letter');
       }
       return response.json();
     },

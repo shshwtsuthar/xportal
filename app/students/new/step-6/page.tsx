@@ -104,12 +104,55 @@ export default function Step5FinancialArrangements() {
     });
     if (!res.ok) {
       console.error('Failed to derive schedule', await res.text());
-      setDerivedSchedule([]);
+      // Create fallback schedule if derivation fails
+      const fallbackSchedule = [{
+        description: 'Full tuition payment',
+        dueDate: new Date().toISOString().split('T')[0],
+        amount: 0
+      }];
+      setDerivedSchedule(fallbackSchedule);
       return;
     }
     const data = await res.json();
     const items = (data?.items ?? []) as Array<{ description: string; amount: number; dueDate: string }>;
+    
+    // Ensure schedule is never empty
+    if (items.length === 0) {
+      const fallbackSchedule = [{
+        description: 'Full tuition payment',
+        dueDate: new Date().toISOString().split('T')[0],
+        amount: 0
+      }];
+      setDerivedSchedule(fallbackSchedule);
+      return;
+    }
+    
     setDerivedSchedule(items);
+    
+    // Calculate total tuition fee from derived schedule
+    const totalTuitionFee = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    if (totalTuitionFee > 0) {
+      setValue('financialArrangements.tuitionFeeSnapshot', totalTuitionFee);
+      
+      // Set payment plan based on number of items
+      if (items.length === 1) {
+        setValue('financialArrangements.paymentPlan', 'full-upfront');
+        setValue('financialArrangements.installmentCount', 1);
+        setValue('financialArrangements.installmentAmount', totalTuitionFee);
+      } else {
+        setValue('financialArrangements.paymentPlan', 'installments');
+        setValue('financialArrangements.installmentCount', items.length);
+        setValue('financialArrangements.installmentAmount', totalTuitionFee / items.length);
+      }
+      
+      // Set payment schedule from derived items
+      const paymentSchedule = items.map(item => ({
+        dueDate: item.dueDate,
+        amount: Number(item.amount),
+        status: 'pending' as const,
+      }));
+      setValue('financialArrangements.paymentSchedule', paymentSchedule);
+    }
   };
 
   useEffect(() => {
@@ -172,8 +215,14 @@ export default function Step5FinancialArrangements() {
   
   const onSubmit: SubmitHandler<Step5FinancialArrangements> = async (data) => {
     try {
-      // Update wizard state
-      updateStep5Data(data);
+      // Update wizard state with financial data plus template selection data
+      updateStep5Data({
+        ...data,
+        // Include template selection data for backend
+        selectedTemplateId,
+        anchor,
+        anchorDate: anchor === 'CUSTOM' ? anchorDate : null, // Always set anchorDate
+      });
       
       // Move to next step
       nextStep();

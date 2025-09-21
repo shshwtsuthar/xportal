@@ -32,10 +32,10 @@ import {
   transformSubjectsForSelection
 } from '@/hooks/use-programs';
 import { 
-  useProgramCoursePlans,
-  usePreviewCoursePlanProgression,
-  transformCoursePlansForSelect
-} from '@/hooks/use-course-plans';
+  useProgramPlanTemplates,
+  useProgramPlanSubjects,
+  type ProgramPlanTemplate
+} from '@/hooks/use-program-plan-templates';
 import { useSchedulePreview } from '@/hooks/use-rolling-schedule';
 import { useFundingSources, useStudyReasons, transformReferenceData } from '@/hooks/use-reference-data';
 import { useLocations, transformLocationsForSelect } from '@/hooks/use-locations';
@@ -52,7 +52,7 @@ export default function Step4ProgramSelection() {
   
   // Form state
   const [selectedProgramId, setSelectedProgramId] = useState<string>('');
-  const [selectedCoursePlanId, setSelectedCoursePlanId] = useState<string>('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedCourseOfferingId, setSelectedCourseOfferingId] = useState<string>('');
   const [selectedIntakeModel, setSelectedIntakeModel] = useState<'Fixed' | 'Rolling' | ''>('');
   const [selectedStartDate, setSelectedStartDate] = useState<Date | undefined>();
@@ -61,25 +61,25 @@ export default function Step4ProgramSelection() {
   
   // Reference data queries
   const { data: programsData, isLoading: programsLoading } = usePrograms();
-  const { data: coursePlansData, isLoading: coursePlansLoading } = useProgramCoursePlans(selectedProgramId);
+  const { data: templatesData, isLoading: templatesLoading } = useProgramPlanTemplates(selectedProgramId);
+  const { data: templateSubjectsData, isLoading: templateSubjectsLoading } = useProgramPlanSubjects(selectedProgramId, selectedTemplateId);
   const { data: courseOfferingsData, isLoading: courseOfferingsLoading } = useCourseOfferings(selectedProgramId);
-  const { data: subjectsData, isLoading: subjectsLoading } = useProgramSubjects(selectedProgramId);
   const { data: fundingSourcesData, isLoading: fundingSourcesLoading } = useFundingSources();
   const { data: studyReasonsData, isLoading: studyReasonsLoading } = useStudyReasons();
   const { data: locationsData, isLoading: locationsLoading } = useLocations();
   
   // Progression preview
-  const previewProgression = usePreviewCoursePlanProgression();
   const previewSchedule = useSchedulePreview();
-  const [progressionData, setProgressionData] = useState<any>(null);
   const [rollingPreview, setRollingPreview] = useState<any>(null);
   const [isLoadingProgression, setIsLoadingProgression] = useState(false);
   
   // Transform data for select components
   const programs = transformProgramsForSelect(programsData);
-  const coursePlans = transformCoursePlansForSelect(coursePlansData);
+  const templates = templatesData?.data?.map(template => ({
+    value: template.id,
+    label: `${template.name} (v${template.version})`
+  })) || [];
   const courseOfferings = transformCourseOfferingsForSelect(courseOfferingsData);
-  const { core: coreSubjects, electives: electiveSubjects } = transformSubjectsForSelection(subjectsData);
   const fundingSources = transformReferenceData(fundingSourcesData);
   const studyReasons = transformReferenceData(studyReasonsData);
   const locations = transformLocationsForSelect(locationsData);
@@ -95,15 +95,15 @@ export default function Step4ProgramSelection() {
     defaultValues: {
       enrolmentDetails: {
         programId: (formData as any)?.enrolmentDetails?.programId ?? '',
-        coursePlanId: (formData as any)?.enrolmentDetails?.coursePlanId ?? '',
+        programPlanTemplateId: (formData as any)?.enrolmentDetails?.programPlanTemplateId ?? '',
         courseOfferingId: (formData as any)?.enrolmentDetails?.courseOfferingId ?? '',
         intakeModel: (formData as any)?.enrolmentDetails?.intakeModel ?? '',
         subjectStructure: {
           coreSubjectIds: (formData as any)?.enrolmentDetails?.subjectStructure?.coreSubjectIds ?? [],
           electiveSubjectIds: (formData as any)?.enrolmentDetails?.subjectStructure?.electiveSubjectIds ?? [],
         },
-        startDate: (formData as any)?.enrolmentDetails?.startDate ?? '',
-        expectedCompletionDate: (formData as any)?.enrolmentDetails?.expectedCompletionDate ?? '',
+        startDate: (formData as any)?.enrolmentDetails?.startDate ?? undefined,
+        expectedCompletionDate: (formData as any)?.enrolmentDetails?.expectedCompletionDate ?? undefined,
         deliveryLocationId: (formData as any)?.enrolmentDetails?.deliveryLocationId ?? '',
         deliveryModeId: (formData as any)?.enrolmentDetails?.deliveryModeId ?? '',
         fundingSourceId: (formData as any)?.enrolmentDetails?.fundingSourceId ?? '',
@@ -117,7 +117,7 @@ export default function Step4ProgramSelection() {
   useEffect(() => {
     const e = (formData as any)?.enrolmentDetails ?? {};
     setSelectedProgramId(e.programId ?? '');
-    setSelectedCoursePlanId(e.coursePlanId ?? '');
+    setSelectedTemplateId(e.programPlanTemplateId ?? '');
     setSelectedCourseOfferingId(e.courseOfferingId ?? '');
     setSelectedIntakeModel(e.intakeModel ?? '');
     setSelectedStartDate(e.startDate ? new Date(e.startDate) : undefined);
@@ -125,13 +125,13 @@ export default function Step4ProgramSelection() {
     setSelectedElectiveSubjects(e?.subjectStructure?.electiveSubjectIds ?? []);
     
     setValue('enrolmentDetails.programId', e.programId ?? '');
-    setValue('enrolmentDetails.coursePlanId', e.coursePlanId ?? '');
+    setValue('enrolmentDetails.programPlanTemplateId', e.programPlanTemplateId ?? '');
     setValue('enrolmentDetails.courseOfferingId', e.courseOfferingId ?? '');
     setValue('enrolmentDetails.intakeModel', e.intakeModel ?? '');
     setValue('enrolmentDetails.subjectStructure.coreSubjectIds', e?.subjectStructure?.coreSubjectIds ?? []);
     setValue('enrolmentDetails.subjectStructure.electiveSubjectIds', e?.subjectStructure?.electiveSubjectIds ?? []);
-    setValue('enrolmentDetails.startDate', e.startDate ?? '');
-    setValue('enrolmentDetails.expectedCompletionDate', e.expectedCompletionDate ?? '');
+    setValue('enrolmentDetails.startDate', e.startDate ?? undefined);
+    setValue('enrolmentDetails.expectedCompletionDate', e.expectedCompletionDate ?? undefined);
     setValue('enrolmentDetails.deliveryLocationId', e.deliveryLocationId ?? '');
     setValue('enrolmentDetails.deliveryModeId', e.deliveryModeId ?? '');
     setValue('enrolmentDetails.fundingSourceId', e.fundingSourceId ?? '');
@@ -154,17 +154,17 @@ export default function Step4ProgramSelection() {
   // Reset dependent selections when program changes
   useEffect(() => {
     if (selectedProgramId) {
-      setSelectedCoursePlanId('');
+      setSelectedTemplateId('');
       setSelectedCourseOfferingId('');
       setSelectedIntakeModel('');
       setSelectedStartDate(undefined);
       setSelectedCoreSubjects([]);
       setSelectedElectiveSubjects([]);
-      setValue('enrolmentDetails.coursePlanId', '');
+      setValue('enrolmentDetails.programPlanTemplateId', '');
       setValue('enrolmentDetails.courseOfferingId', '');
       setValue('enrolmentDetails.intakeModel', undefined);
-      setValue('enrolmentDetails.startDate', '');
-      setValue('enrolmentDetails.expectedCompletionDate', '');
+      setValue('enrolmentDetails.startDate', undefined);
+      setValue('enrolmentDetails.expectedCompletionDate', undefined);
       setValue('enrolmentDetails.subjectStructure.coreSubjectIds', []);
       setValue('enrolmentDetails.subjectStructure.electiveSubjectIds', []);
     }
@@ -172,8 +172,17 @@ export default function Step4ProgramSelection() {
   
   const onSubmit: SubmitHandler<Step3ProgramSelection> = async (data) => {
     try {
+      // Clean up empty strings for optional fields
+      const cleanedData = {
+        ...data,
+        enrolmentDetails: {
+          ...data.enrolmentDetails,
+          courseOfferingId: data.enrolmentDetails.courseOfferingId === '' ? undefined : data.enrolmentDetails.courseOfferingId,
+        }
+      };
+      
       // Update wizard state
-      updateStep3Data(data);
+      updateStep3Data(cleanedData);
       
       // Move to next step
       nextStep();
@@ -201,9 +210,33 @@ export default function Step4ProgramSelection() {
     setValue('enrolmentDetails.programId', programId);
   };
   
-  const handleCoursePlanChange = (planId: string) => {
-    setSelectedCoursePlanId(planId);
-    setValue('enrolmentDetails.coursePlanId', planId);
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    setValue('enrolmentDetails.programPlanTemplateId', templateId);
+    
+    // Auto-populate subjects from template
+    if (templateSubjectsData?.data) {
+      const coreSubjects = templateSubjectsData.data
+        .filter(subject => subject.unit_type === 'Core')
+        .map(subject => subject.subject_id);
+      const electiveSubjects = templateSubjectsData.data
+        .filter(subject => subject.unit_type === 'Elective')
+        .map(subject => subject.subject_id);
+      
+      setSelectedCoreSubjects(coreSubjects);
+      setSelectedElectiveSubjects(electiveSubjects);
+      setValue('enrolmentDetails.subjectStructure.coreSubjectIds', coreSubjects);
+      setValue('enrolmentDetails.subjectStructure.electiveSubjectIds', electiveSubjects);
+    }
+    
+    // Calculate total duration and set expected completion date if start date is set
+    if (selectedStartDate && templateSubjectsData?.data) {
+      const totalWeeks = templateSubjectsData.data.reduce((total, subject) => total + subject.duration_weeks, 0);
+      const expectedCompletionDate = new Date(selectedStartDate);
+      expectedCompletionDate.setDate(expectedCompletionDate.getDate() + (totalWeeks * 7));
+      
+      setValue('enrolmentDetails.expectedCompletionDate', expectedCompletionDate.toISOString().split('T')[0]);
+    }
   };
   
   const handleIntakeModelChange = (model: 'Fixed' | 'Rolling') => {
@@ -215,8 +248,8 @@ export default function Step4ProgramSelection() {
       setSelectedCourseOfferingId('');
       setSelectedStartDate(undefined);
       setValue('enrolmentDetails.courseOfferingId', '');
-      setValue('enrolmentDetails.startDate', '');
-      setValue('enrolmentDetails.expectedCompletionDate', '');
+      setValue('enrolmentDetails.startDate', undefined);
+      setValue('enrolmentDetails.expectedCompletionDate', undefined);
     }
   };
   
@@ -237,8 +270,17 @@ export default function Step4ProgramSelection() {
     setSelectedStartDate(date);
     if (date) {
       setValue('enrolmentDetails.startDate', date.toISOString().split('T')[0]);
+      
+      // Calculate expected completion date based on template duration
+      if (selectedTemplateId && templateSubjectsData?.data) {
+        const totalWeeks = templateSubjectsData.data.reduce((total, subject) => total + subject.duration_weeks, 0);
+        const expectedCompletionDate = new Date(date);
+        expectedCompletionDate.setDate(expectedCompletionDate.getDate() + (totalWeeks * 7));
+        setValue('enrolmentDetails.expectedCompletionDate', expectedCompletionDate.toISOString().split('T')[0]);
+      }
     } else {
-      setValue('enrolmentDetails.startDate', '');
+      setValue('enrolmentDetails.startDate', undefined);
+      setValue('enrolmentDetails.expectedCompletionDate', undefined);
     }
     // Trigger progression preview update
     fetchProgressionPreview();
@@ -246,38 +288,22 @@ export default function Step4ProgramSelection() {
 
   // Function to fetch progression preview
   const fetchProgressionPreview = async () => {
-    if (!selectedProgramId || !selectedCoursePlanId || !selectedIntakeModel) {
-      setProgressionData(null);
+    if (!selectedProgramId || !selectedTemplateId || !selectedIntakeModel) {
       setRollingPreview(null);
       return;
     }
 
     setIsLoadingProgression(true);
     try {
-      const payload = {
-        programId: selectedProgramId,
-        planId: selectedCoursePlanId,
-        intake_model: selectedIntakeModel,
-        start_date: selectedStartDate ? selectedStartDate.toISOString().split('T')[0] : undefined,
-        simulation_duration_weeks: 52, // 1 year simulation
-        // rolling extras pass-through
-        requestedStartDate: selectedStartDate ? selectedStartDate.toISOString().split('T')[0] : undefined,
-        catchupMode: 'SequentialNextTerm' as const,
-        cycles: 2,
-      };
-
-      const result = await previewProgression.mutateAsync(payload);
-      setProgressionData(result);
-
       if (selectedIntakeModel === 'Rolling') {
-        const sched = await previewSchedule.mutateAsync({ programId: selectedProgramId, cycles: 2, requestedStartDate: payload.requestedStartDate, catchupMode: 'SequentialNextTerm' });
-        setRollingPreview(sched);
+        // For now, we'll skip the rolling schedule preview since it requires course plans
+        // TODO: Implement rolling schedule preview for Program Plan Templates
+        setRollingPreview(null);
       } else {
         setRollingPreview(null);
       }
     } catch (error) {
       console.error('Failed to fetch progression preview:', error);
-      setProgressionData(null);
       setRollingPreview(null);
     } finally {
       setIsLoadingProgression(false);
@@ -287,7 +313,24 @@ export default function Step4ProgramSelection() {
   // Trigger progression preview when selections change
   useEffect(() => {
     fetchProgressionPreview();
-  }, [selectedProgramId, selectedCoursePlanId, selectedIntakeModel, selectedStartDate]);
+  }, [selectedProgramId, selectedTemplateId, selectedIntakeModel, selectedStartDate]);
+
+  // Auto-populate subjects when template data loads
+  useEffect(() => {
+    if (selectedTemplateId && templateSubjectsData?.data && templateSubjectsData.data.length > 0) {
+      const coreSubjects = templateSubjectsData.data
+        .filter(subject => subject.unit_type === 'Core')
+        .map(subject => subject.subject_id);
+      const electiveSubjects = templateSubjectsData.data
+        .filter(subject => subject.unit_type === 'Elective')
+        .map(subject => subject.subject_id);
+      
+      setSelectedCoreSubjects(coreSubjects);
+      setSelectedElectiveSubjects(electiveSubjects);
+      setValue('enrolmentDetails.subjectStructure.coreSubjectIds', coreSubjects);
+      setValue('enrolmentDetails.subjectStructure.electiveSubjectIds', electiveSubjects);
+    }
+  }, [selectedTemplateId, templateSubjectsData, setValue]);
   
   const handleCoreSubjectChange = (subjectId: string, checked: boolean) => {
     const newSubjects = checked 
@@ -358,39 +401,39 @@ export default function Step4ProgramSelection() {
               </CardContent>
             </Card>
             
-            {/* Course Plan Selection */}
+            {/* Program Plan Template Selection */}
             {selectedProgramId && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Course Plan</CardTitle>
+                  <CardTitle>Program Plan Template</CardTitle>
                   <CardDescription>
-                    Select the course plan (template) that defines the subjects and structure
+                    Select the program plan template that defines the subjects, structure, and durations
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div>
-                    <Label htmlFor="coursePlan">Course Plan</Label>
-                    <Select onValueChange={handleCoursePlanChange}>
-                      <SelectTrigger aria-label="Course Plan" role="combobox" className="mt-2" tabIndex={0}>
-                        <SelectValue placeholder="Select a course plan" />
+                    <Label htmlFor="template">Program Plan Template</Label>
+                    <Select onValueChange={handleTemplateChange}>
+                      <SelectTrigger aria-label="Program Plan Template" role="combobox" className="mt-2" tabIndex={0}>
+                        <SelectValue placeholder="Select a program plan template" />
                       </SelectTrigger>
                       <SelectContent>
-                        {coursePlansLoading ? (
-                          <SelectItem value="loading-plans" disabled>Loading course plans...</SelectItem>
-                        ) : coursePlans.length === 0 ? (
-                          <SelectItem value="no-plans" disabled>No course plans available</SelectItem>
+                        {templatesLoading ? (
+                          <SelectItem value="loading-templates" disabled>Loading templates...</SelectItem>
+                        ) : templates.length === 0 ? (
+                          <SelectItem value="no-templates" disabled>No templates available</SelectItem>
                         ) : (
-                          coursePlans.map((plan) => (
-                            <SelectItem key={plan.value} value={plan.value}>
-                              {plan.label}
+                          templates.map((template) => (
+                            <SelectItem key={template.value} value={template.value}>
+                              {template.label}
                             </SelectItem>
                           ))
                         )}
                       </SelectContent>
                     </Select>
-                    {errors.enrolmentDetails?.coursePlanId && (
+                    {errors.enrolmentDetails?.programPlanTemplateId && (
                       <p className="text-red-500 text-sm mt-1">
-                        {errors.enrolmentDetails.coursePlanId.message}
+                        {errors.enrolmentDetails.programPlanTemplateId.message}
                       </p>
                     )}
                   </div>
@@ -399,7 +442,7 @@ export default function Step4ProgramSelection() {
             )}
             
             {/* Intake Model Selection */}
-            {selectedProgramId && selectedCoursePlanId && (
+            {selectedProgramId && selectedTemplateId && (
               <Card>
                 <CardHeader>
                   <CardTitle>Intake Model</CardTitle>
@@ -516,16 +559,83 @@ export default function Step4ProgramSelection() {
               </Card>
             )}
             
-            {/* Progression Preview */}
-            {selectedProgramId && selectedCoursePlanId && selectedIntakeModel && (
+            {/* Template Subjects Preview */}
+            {selectedProgramId && selectedTemplateId && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Clock className="h-5 w-5" />
-                    <span>Course Timeline Preview</span>
+                    <span>Template Subjects</span>
                   </CardTitle>
                   <CardDescription>
-                    See how your course progression will work with the selected intake model
+                    Subjects and durations from the selected program plan template
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {templateSubjectsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground"></div>
+                      <span className="ml-3 text-muted-foreground">Loading template subjects...</span>
+                    </div>
+                  ) : templateSubjectsData?.data && templateSubjectsData.data.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <h4 className="font-semibold mb-2">Template Overview</h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Total Units:</span>
+                            <span className="ml-2 font-medium">{templateSubjectsData.data.length}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Total Duration:</span>
+                            <span className="ml-2 font-medium">
+                              {templateSubjectsData.data.reduce((total, subject) => total + subject.duration_weeks, 0)} weeks
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {templateSubjectsData.data.map((subject, index) => (
+                          <div key={subject.subject_id} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex-1">
+                              <div className="font-medium">{subject.subject_name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {subject.subject_identifier}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={subject.unit_type === 'Core' ? 'default' : 'secondary'}>
+                                {subject.unit_type}
+                              </Badge>
+                              <div className="flex items-center gap-1 text-sm">
+                                <Clock className="h-3 w-3" />
+                                {subject.duration_weeks} week{subject.duration_weeks !== 1 ? 's' : ''}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No subjects found in this template
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Rolling Intake Preview */}
+            {selectedProgramId && selectedTemplateId && selectedIntakeModel === 'Rolling' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Clock className="h-5 w-5" />
+                    <span>Rolling Intake Preview</span>
+                  </CardTitle>
+                  <CardDescription>
+                    See how your rolling intake progression will work
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -534,135 +644,24 @@ export default function Step4ProgramSelection() {
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground"></div>
                       <span className="ml-3 text-muted-foreground">Loading progression preview...</span>
                     </div>
-                  ) : progressionData ? (
-                    <div className="space-y-6">
-                      {/* Course Overview */}
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <h4 className="font-semibold mb-2">Course Overview</h4>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Intake Model:</span>
-                            <span className="ml-2 font-medium">{progressionData.intake_model}</span>
+                  ) : rollingPreview ? (
+                    <div className="space-y-3">
+                      <div className="text-sm text-muted-foreground">Anchor: {rollingPreview.cycle_anchor_date} • TZ: {rollingPreview.timezone}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {rollingPreview.windows.map((w: any, i: number) => (
+                          <div key={i} className="rounded border p-3">
+                            <div className="text-xs text-muted-foreground">Term {w.term_index + 1}</div>
+                            <div className="font-medium">{w.subject_name}</div>
+                            <div className="text-sm">{w.start_date} → {w.end_date}</div>
                           </div>
-                          <div>
-                            <span className="text-muted-foreground">Total Duration:</span>
-                            <span className="ml-2 font-medium">{progressionData.total_duration_weeks} weeks</span>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-
-                      {/* Fixed Intake Timeline */}
-                      {selectedIntakeModel === 'Fixed' && progressionData.fixed_intake_timeline && (
-                        <div>
-                          <h4 className="font-semibold mb-3">Fixed Intake Timeline</h4>
-                          <div className="space-y-3">
-                            {progressionData.fixed_intake_timeline.map((subject: any, index: number) => (
-                              <div key={subject.subject_id} className="flex items-center justify-between p-3 border rounded-lg">
-                                <div className="flex-1">
-                                  <div className="font-medium">{subject.subject_name}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    Week {subject.start_week} - Week {subject.end_week} ({subject.duration_weeks} weeks)
-                                  </div>
-                                  {subject.start_date && subject.end_date && (
-                                    <div className="text-sm text-blue-600 font-medium">
-                                      {new Date(subject.start_date).toLocaleDateString()} - {new Date(subject.end_date).toLocaleDateString()}
-                                    </div>
-                                  )}
-                                </div>
-                                <Badge variant="secondary">
-                                  {subject.prerequisites_completed_by_week > 0 
-                                    ? `Prerequisites by Week ${subject.prerequisites_completed_by_week}`
-                                    : 'No Prerequisites'
-                                  }
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Rolling Intake Sequence */}
-                      {selectedIntakeModel === 'Rolling' && (
-                        <div>
-                          <h4 className="font-semibold mb-3">Rolling Intake Progression</h4>
-                          {rollingPreview ? (
-                            <div className="space-y-3">
-                              <div className="text-sm text-muted-foreground">Anchor: {rollingPreview.cycle_anchor_date} • TZ: {rollingPreview.timezone}</div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {rollingPreview.windows.map((w: any, i: number) => (
-                                  <div key={i} className="rounded border p-3">
-                                    <div className="text-xs text-muted-foreground">Term {w.term_index + 1}</div>
-                                    <div className="font-medium">{w.subject_name}</div>
-                                    <div className="text-sm">{w.start_date} → {w.end_date}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ) : (
-                            progressionData?.rolling_intake_sequence && (
-                              <div className="space-y-4">
-                                {progressionData.rolling_intake_sequence.map((phase: any, index: number) => (
-                                  <div key={index} className="border rounded-lg p-4">
-                                    <div className="flex items-center space-x-2 mb-3">
-                                      <Badge variant="outline">Phase {index + 1}</Badge>
-                                      <span className="text-sm font-medium">{phase.unlock_trigger}</span>
-                                    </div>
-                                    <div className="space-y-2">
-                                      {phase.subjects_unlocked.map((subject: any) => (
-                                        <div key={subject.subject_id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                                          <div className="flex-1">
-                                            <div className="font-medium">{subject.subject_name}</div>
-                                            <div className="text-sm text-muted-foreground">
-                                              {subject.estimated_duration_weeks} weeks
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )
-                          )}
-                        </div>
-                      )}
-
-                      {/* Progression Phases */}
-                      {progressionData.progression_phases && (
-                        <div>
-                          <h4 className="font-semibold mb-3">Progression Phases</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {progressionData.progression_phases.map((phase: any) => (
-                              <div key={phase.phase_number} className="border rounded-lg p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <Badge>Phase {phase.phase_number}</Badge>
-                                  <span className="text-sm text-muted-foreground">
-                                    Week {phase.estimated_start_week}-{phase.estimated_end_week}
-                                  </span>
-                                </div>
-                                <div className="text-sm">
-                                  {phase.subject_ids.length} subject{phase.subject_ids.length !== 1 ? 's' : ''}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <Alert>
                       <AlertDescription>
-                        {selectedIntakeModel === 'Fixed' ? (
-                          <>
-                            <strong>Fixed Intake:</strong> You'll join a cohort and follow a structured timeline with your classmates. 
-                            All subjects will be scheduled with specific start and end dates.
-                          </>
-                        ) : (
-                          <>
-                            <strong>Rolling Intake:</strong> You'll progress through subjects individually as you complete them. 
-                            Each subject unlocks the next one based on prerequisites. You control your own pace.
-                          </>
-                        )}
+                        <strong>Rolling Intake:</strong> You'll progress through subjects individually as you complete them. 
+                        Each subject unlocks the next one based on prerequisites. You control your own pace.
                       </AlertDescription>
                     </Alert>
                   )}

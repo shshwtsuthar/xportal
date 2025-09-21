@@ -20,7 +20,7 @@ import { validateFullEnrolmentPayload } from '../_shared/validators.ts';
 import type { components } from '../_shared/api.types.ts';
 
 // Buffer polyfill for Deno - will be available globally from database.types.ts
-import { join } from 'https://deno.land/std@0.177.0/path/mod.ts';
+// import { join } from 'https://deno.land/std@0.177.0/path/mod.ts'; // Unused import
 import { z } from 'https://deno.land/x/zod@v3.23.8/mod.ts';
 import type { ExpressionBuilder } from 'npm:kysely';
 import type { DB } from '../_shared/database.types.ts';
@@ -266,12 +266,12 @@ const updateApplicationLogic = async (_req: Request, _ctx: ApiContext, body: unk
     const { status: _status, ...payloadData } = payload;
     if (payloadData && Object.keys(payloadData).length > 0) {
       // If paymentPlan provided, normalize tuition; validate only when schedule has items
-      if ((payloadData as any).paymentPlan) {
-        const candidate = (payloadData as any).paymentPlan as Record<string, unknown>;
-        const scheduleArr = Array.isArray((candidate as any).schedule) ? ((candidate as any).schedule as any[]) : [];
-        if (scheduleArr.length > 0 && (candidate as any).tuitionFeeSnapshot == null) {
-          const sum = scheduleArr.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-          (candidate as any).tuitionFeeSnapshot = Number(sum.toFixed(2));
+      if ((payloadData as Record<string, unknown>).paymentPlan) {
+        const candidate = (payloadData as Record<string, unknown>).paymentPlan as Record<string, unknown>;
+        const scheduleArr = Array.isArray(candidate.schedule) ? (candidate.schedule as unknown[]) : [];
+        if (scheduleArr.length > 0 && candidate.tuitionFeeSnapshot == null) {
+          const sum = scheduleArr.reduce((s: number, i: unknown) => s + (Number((i as Record<string, unknown>).amount) || 0), 0);
+          candidate.tuitionFeeSnapshot = Number(sum.toFixed(2));
         }
         // Soft validation during PATCH: only enforce when schedule has items to avoid blocking autosave
         if (scheduleArr.length > 0) {
@@ -982,7 +982,7 @@ const generateOfferLetterLogic = async (_req: Request, _ctx: ApiContext, applica
     .executeTakeFirst();
   if (!app) throw new NotFoundError('Application not found.');
 
-  // Render HTML from template and upload HTML + placeholder PDF
+  // Render HTML from template and generate real PDF
   const bucket = 'student-docs';
   const version = `v${new Date().toISOString().slice(0,10)}`;
   const htmlObjectPath = `applications/${applicationId}/offer-letter/${version}/offer.html`;
@@ -1001,54 +1001,186 @@ const generateOfferLetterLogic = async (_req: Request, _ctx: ApiContext, applica
       tpl = await Deno.readTextFile(url);
       if (tpl) break;
     } catch (_) {
-      // try next location
+      // try next location - ignore error and continue
     }
   }
   if (!tpl) {
     // Fallback minimal template to avoid runtime failure
     tpl = `<!doctype html><html><head><meta charset="utf-8"><title>Offer Letter</title></head><body><h1>Offer Letter</h1><p>{student.fullName}</p><p>Program: {program.name}</p><p>Generated on {generatedAt}</p></body></html>`;
   }
-  const payload = app.application_payload as any;
-  const personal = payload?.personalDetails ?? {};
-  const enrol = payload?.enrolmentDetails ?? {};
-  const paymentPlan = payload?.paymentPlan ?? {};
+    const payload = app.application_payload as Record<string, unknown>;
+  const personal = (payload?.personalDetails as Record<string, unknown>) ?? {};
+  const enrol = (payload?.enrolmentDetails as Record<string, unknown>) ?? {};
+  const paymentPlan = (payload?.paymentPlan as Record<string, unknown>) ?? {};
+  const address = ((payload?.address as Record<string, unknown>)?.residential as Record<string, unknown>) ?? {};
   const schedule = Array.isArray(paymentPlan?.schedule) ? paymentPlan.schedule : [];
 
   const replacements: Record<string, string> = {
     '{{offer_letter_id}}': crypto.randomUUID(),
     '{{date}}': new Date().toISOString().slice(0,10),
-    '{{student_full_name}}': `${personal.firstName ?? ''} ${personal.lastName ?? ''}`.trim(),
-    '{{student_first_name}}': personal.firstName ?? '',
-    '{{student_address_line_1}}': `${payload?.address?.residential?.street_number ?? ''} ${payload?.address?.residential?.street_name ?? ''}`.trim(),
-    '{{student_address_line_2}}': `${payload?.address?.residential?.suburb ?? ''} ${payload?.address?.residential?.state ?? ''} ${payload?.address?.residential?.postcode ?? ''}`.trim(),
-    '{{agency_name}}': payload?.agentName ?? '',
-    '{{course_cricos_code}}': enrol?.courseCricosCode ?? '',
-    '{{course_code}}': enrol?.courseCode ?? '',
-    '{{course_name}}': enrol?.courseName ?? '',
-    '{{course_start_date}}': enrol?.startDate ?? '',
-    '{{course_end_date}}': enrol?.expectedCompletionDate ?? enrol?.endDate ?? '',
-    '{{course_location}}': payload?.enrolmentDetails?.locationName ?? '',
-    '{{total_course_fees}}': String(paymentPlan?.tuitionFeeSnapshot ?? 0),
+    '{{student_full_name}}': `${(personal.firstName as string) ?? ''} ${(personal.lastName as string) ?? ''}`.trim(),
+    '{{student_first_name}}': (personal.firstName as string) ?? '',
+    '{{student_last_name}}': (personal.lastName as string) ?? '',
+    '{{student_id}}': app.created_client_id ?? '',
+    '{{student_dob}}': (personal.dateOfBirth as string) ?? '',
+    '{{student_nationality}}': (personal.nationality as string) ?? '',
+    '{{student_gender}}': (personal.gender as string) ?? '',
+    '{{student_passport}}': (personal.passportNumber as string) ?? '',
+    '{{student_phone}}': (personal.primaryPhone as string) ?? '',
+    '{{student_email}}': (personal.primaryEmail as string) ?? '',
+    '{{student_address_line_1}}': `${(address.street_number as string) ?? ''} ${(address.street_name as string) ?? ''}`.trim(),
+    '{{student_address_line_2}}': `${(address.suburb as string) ?? ''} ${(address.state as string) ?? ''} ${(address.postcode as string) ?? ''}`.trim(),
+    '{{agency_name}}': (payload?.agentName as string) ?? '',
+    '{{course_cricos_code}}': (enrol?.courseCricosCode as string) ?? '',
+    '{{course_code}}': (enrol?.courseCode as string) ?? '',
+    '{{course_name}}': (enrol?.courseName as string) ?? '',
+    '{{course_start_date}}': (enrol?.startDate as string) ?? '',
+    '{{course_end_date}}': (enrol?.expectedCompletionDate as string) ?? (enrol?.endDate as string) ?? '',
+    '{{course_location}}': (enrol?.locationName as string) ?? '',
+    '{{course_proposal_id}}': `PROP-${applicationId.slice(0, 8)}`,
+    '{{course_hours_per_week}}': '20', // Default value - should come from program data
+    '{{course_duration_weeks}}': '52', // Default value - should come from program data
+    '{{agreed_start_date}}': (enrol?.startDate as string) ?? '',
+    '{{expected_end_date}}': (enrol?.expectedCompletionDate as string) ?? (enrol?.endDate as string) ?? '',
+    '{{enrol_id}}': app.created_enrolment_id ?? '',
+    '{{offer_conditions}}': 'Standard conditions apply as per the International Student Agreement.',
+    '{{total_course_fees}}': String((paymentPlan?.tuitionFeeSnapshot as number) ?? 0),
   };
   let html = tpl;
   for (const [k, v] of Object.entries(replacements)) {
     html = html.split(k).join(v);
   }
-  // Simple schedule loop replacement
+  // Simple schedule loop replacement - handle both template formats
   const rowTpl = '<tr>\n                    <td>{{dueDate}}</td>\n                    <td>{{description}}</td>\n                    <td class="amount">${{amount}}</td>\n                </tr>';
-  const rows = schedule.map((it: any) => rowTpl.replace('{{dueDate}}', it.dueDate).replace('{{description}}', it.description).replace('{{amount}}', String(it.amount))).join('\n');
+  const rows = schedule.map((it: Record<string, unknown>) => rowTpl.replace('{{dueDate}}', (it.dueDate as string)).replace('{{description}}', (it.description as string)).replace('{{amount}}', String(it.amount))).join('\n');
+  
+  // Replace both possible template formats
   html = html.replace('{{#each schedule}}\n                <tr>\n                    <td>{{dueDate}}</td>\n                    <td>{{description}}</td>\n                    <td class="amount">${{amount}}</td>\n                </tr>\n                {{/each}}', rows);
-  const placeholderPdf = new Uint8Array([
-    0x25,0x50,0x44,0x46,0x2D,0x31,0x2E,0x34,0x0A, // %PDF-1.4\n
-    0x25,0xE2,0xE3,0xCF,0xD3,0x0A,
-    0x31,0x20,0x30,0x20,0x6F,0x62,0x6A,0x0A, // 1 0 obj
-    0x3C,0x3C,0x2F,0x54,0x79,0x70,0x65,0x2F,0x43,0x61,0x74,0x61,0x6C,0x6F,0x67,0x3E,0x3E,0x0A,
-    0x65,0x6E,0x64,0x6F,0x62,0x6A,0x0A, // endobj
-    0x78,0x72,0x65,0x66,0x0A,0x30,0x20,0x30,0x20,0x6F,0x62,0x6A,0x0A, // xref 0 0 obj
-    0x65,0x6E,0x64,0x78,0x72,0x65,0x66,0x0A, // endxref
-    0x74,0x72,0x61,0x69,0x6C,0x65,0x72,0x0A, // trailer
-    0x25,0x25,0x45,0x4F,0x46,0x0A // %%EOF
-  ]);
+  
+  // Also handle the payment.* format used in the template
+  const paymentRowTpl = '<tr>\n                    <td>{{payment.due_date}}</td>\n                    <td>{{payment.description}}</td>\n                    <td class="amount">${{payment.amount}}</td>\n                </tr>';
+  const paymentRows = schedule.map((it: Record<string, unknown>) => 
+    paymentRowTpl
+      .replace('{{payment.due_date}}', (it.dueDate as string))
+      .replace('{{payment.description}}', (it.description as string))
+      .replace('{{payment.amount}}', String(it.amount))
+  ).join('\n');
+  html = html.replace(/{{#each schedule}}[\s\S]*?{{payment\.amount}}[\s\S]*?{{\/each}}/g, paymentRows);
+
+  // Generate real PDF using jsPDF (more compatible with Deno)
+  let pdfBuffer: Uint8Array;
+  let pdfGenerationSuccess = false;
+  
+  try {
+    console.log('[PDF_GENERATION] Starting jsPDF generation...');
+    console.log('[PDF_GENERATION] Available data:', {
+      studentName: replacements['{{student_full_name}}'],
+      courseName: replacements['{{course_name}}'],
+      scheduleLength: schedule.length
+    });
+    
+    // @ts-ignore: jsPDF is dynamically imported from npm and works in Deno runtime
+    const { jsPDF } = await import('npm:jspdf@2.5.1');
+    console.log('[PDF_GENERATION] jsPDF imported successfully');
+    
+    // Create a new PDF document
+    const doc = new jsPDF();
+    
+    // Set font and add title
+    doc.setFontSize(20);
+    doc.setFont(undefined, 'bold');
+    doc.text('OFFER LETTER', 105, 20, { align: 'center' });
+    
+    // Add offer letter ID and date
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Offer Letter ID: ${replacements['{{offer_letter_id}}']}`, 150, 30);
+    doc.text(`Date: ${replacements['{{date}}']}`, 150, 35);
+    
+    // Add student details
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Student Details:', 20, 50);
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Name: ${replacements['{{student_full_name}}']}`, 20, 60);
+    doc.text(`Email: ${replacements['{{student_email}}']}`, 20, 65);
+    doc.text(`Phone: ${replacements['{{student_phone}}']}`, 20, 70);
+    
+    // Add course details
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Course Details:', 20, 85);
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Course: ${replacements['{{course_name}}']}`, 20, 95);
+    doc.text(`CRICOS Code: ${replacements['{{course_cricos_code}}']}`, 20, 100);
+    doc.text(`Start Date: ${replacements['{{course_start_date}}']}`, 20, 105);
+    doc.text(`End Date: ${replacements['{{course_end_date}}']}`, 20, 110);
+    
+    // Add payment information
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Payment Schedule:', 20, 125);
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    
+    // Add payment schedule table
+    let yPos = 135;
+    schedule.forEach((payment: any, index: number) => {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.text(`${index + 1}.`, 20, yPos);
+      doc.text(payment.description, 30, yPos);
+      doc.text(`$${payment.amount}`, 150, yPos);
+      doc.text(`Due: ${payment.dueDate}`, 170, yPos);
+      yPos += 8;
+    });
+    
+    // Add total
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Total Course Fees: $${replacements['{{total_course_fees}}']}`, 20, yPos + 10);
+    
+    // Add signature section
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Acceptance:', 20, yPos + 30);
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text('Student Signature: _________________', 20, yPos + 40);
+    doc.text('Date: _________________', 20, yPos + 50);
+    
+    // Generate PDF buffer
+    const pdfData = doc.output('arraybuffer');
+    pdfBuffer = new Uint8Array(pdfData);
+    pdfGenerationSuccess = true;
+    
+    console.log(`[PDF_GENERATION] Success! Generated PDF with ${pdfBuffer.byteLength} bytes`);
+  } catch (error) {
+    console.error('[PDF_GENERATION_ERROR]', error);
+    console.log('[PDF_GENERATION] Falling back to placeholder PDF');
+    
+    // Fallback to placeholder PDF if jsPDF fails
+    pdfBuffer = new Uint8Array([
+      0x25,0x50,0x44,0x46,0x2D,0x31,0x2E,0x34,0x0A, // %PDF-1.4\n
+      0x25,0xE2,0xE3,0xCF,0xD3,0x0A,
+      0x31,0x20,0x30,0x20,0x6F,0x62,0x6A,0x0A, // 1 0 obj
+      0x3C,0x3C,0x2F,0x54,0x79,0x70,0x65,0x2F,0x43,0x61,0x74,0x61,0x6C,0x6F,0x67,0x3E,0x3E,0x0A,
+      0x65,0x6E,0x64,0x6F,0x62,0x6A,0x0A, // endobj
+      0x78,0x72,0x65,0x66,0x0A,0x30,0x20,0x30,0x20,0x6F,0x62,0x6A,0x0A, // xref 0 0 obj
+      0x65,0x6E,0x64,0x78,0x72,0x65,0x66,0x0A, // endxref
+      0x74,0x72,0x61,0x69,0x6C,0x65,0x72,0x0A, // trailer
+      0x25,0x25,0x45,0x4F,0x46,0x0A // %%EOF
+    ]);
+  }
 
   let uploadedHtml = false;
   let uploadedPdf = false;
@@ -1078,7 +1210,7 @@ const generateOfferLetterLogic = async (_req: Request, _ctx: ApiContext, applica
           'Content-Type': 'application/pdf',
           'x-upsert': 'true',
         },
-        body: placeholderPdf,
+        body: pdfBuffer,
       });
       if (!respPdf.ok) {
         const errText = await respPdf.text();
@@ -1119,11 +1251,18 @@ const generateOfferLetterLogic = async (_req: Request, _ctx: ApiContext, applica
       doc_type: 'OFFER_LETTER',
       version,
       mime_type: 'application/pdf',
-      size_bytes: String(uploadedPdf ? placeholderPdf.byteLength : 0) as unknown as number,
+      size_bytes: String(uploadedPdf ? pdfBuffer.byteLength : 0) as unknown as number,
     })
     .execute();
 
-  const result = { pathHtml: `${bucket}/${htmlObjectPath}`, pathPdf: `${bucket}/${pdfObjectPath}`, version, createdAt: new Date().toISOString() };
+  const result = { 
+    pathHtml: `${bucket}/${htmlObjectPath}`, 
+    pathPdf: `${bucket}/${pdfObjectPath}`, 
+    version, 
+    createdAt: new Date().toISOString(),
+    pdfGenerationSuccess,
+    pdfSizeBytes: pdfBuffer.byteLength
+  };
   return new Response(JSON.stringify(result), { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 };
 
@@ -1228,6 +1367,97 @@ const sendOfferLetterLogic = async (req: Request, _ctx: ApiContext, applicationI
   const providerResult = await emailResp.json();
   logTransition('APPLICATION_STATUS_CHANGED', { applicationId, from: 'Submitted', to: 'AwaitingPayment', via: 'send-offer', idempotencyKey });
   return new Response(JSON.stringify({ message: 'Offer letter sent. Status transitioned to AwaitingPayment.', providerResult, transition: { from: 'Submitted', to: 'AwaitingPayment' } }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+};
+
+// --- Send Offer Letter Email Only (No Status Change) ---
+const sendOfferLetterEmailOnlyLogic = async (req: Request, _ctx: ApiContext, applicationId: string): Promise<Response> => {
+  // Ensure there is an offer letter document
+  const doc = await db.selectFrom('sms_op.application_documents')
+    .selectAll()
+    .where('application_id', '=', applicationId)
+    .where('doc_type', '=', 'OFFER_LETTER')
+    .orderBy('created_at', 'desc')
+    .executeTakeFirst();
+  if (!doc) {
+    throw new ValidationError('Offer letter has not been generated for this application.');
+  }
+
+  // Resolve recipient email from application payload
+  const appRow = await db.selectFrom('sms_op.applications')
+    .select(['application_payload'])
+    .where('id', '=', applicationId)
+    .executeTakeFirst();
+  const payload = (appRow?.application_payload ?? {}) as Record<string, unknown>;
+  const toEmail = (payload?.personalDetails as Record<string, unknown>)?.primaryEmail;
+  if (!toEmail) {
+    throw new ValidationError('Recipient email is missing in application personal details.');
+  }
+
+  // Fetch attachment (prefer PDF)
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceKey) {
+    throw new ValidationError('Storage credentials are not configured on the server.');
+  }
+
+  const attachmentUrl = `${supabaseUrl}/storage/v1/object/${doc.path}`;
+  const attResp = await fetch(attachmentUrl, { headers: { Authorization: `Bearer ${serviceKey}` } });
+  if (!attResp.ok) {
+    throw new ValidationError('Failed to fetch offer letter from storage for emailing.');
+  }
+  const attBuf = new Uint8Array(await attResp.arrayBuffer());
+  const b64 = btoa(String.fromCharCode(...attBuf));
+  const fileName = doc.path.split('/').pop() || 'offer.pdf';
+  const mimeType = doc.mime_type || 'application/pdf';
+
+  // Prepare email via Resend
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  const emailFrom = Deno.env.get('EMAIL_FROM') || 'no-reply@example.com';
+  const replyTo = Deno.env.get('EMAIL_REPLY_TO') || undefined;
+  const bccDefault = Deno.env.get('EMAIL_BCC_DEFAULT') || undefined;
+  if (!resendKey) {
+    throw new ValidationError('RESEND_API_KEY is not configured.');
+  }
+
+  // Build a simple HTML body
+  const subject = `Offer Letter`;
+  const htmlBody = `<p>Please find attached your offer letter.</p>`;
+
+  const idempotencyKey = req.headers.get('Idempotency-Key') || undefined;
+  const emailResp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendKey}`,
+      'Content-Type': 'application/json',
+      ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+    },
+    body: JSON.stringify({
+      from: emailFrom,
+      to: [toEmail as string],
+      ...(bccDefault ? { bcc: [bccDefault] } : {}),
+      ...(replyTo ? { reply_to: replyTo } : {}),
+      subject,
+      html: htmlBody,
+      attachments: [
+        {
+          filename: fileName,
+          content: b64,
+          path: undefined,
+          type: mimeType,
+        },
+      ],
+    }),
+  });
+
+  if (!emailResp.ok) {
+    const errText = await emailResp.text();
+    return new Response(JSON.stringify({ message: 'Email provider error', details: errText }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // NO STATUS CHANGE - Just send email and return success
+  const providerResult = await emailResp.json();
+  logTransition('EMAIL_SENT', { applicationId, via: 'send-offer-email-only', idempotencyKey });
+  return new Response(JSON.stringify({ message: 'Offer letter email sent successfully.', providerResult }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 };
 
 // --- Accept Application ---
@@ -1645,6 +1875,11 @@ const applicationsRouter = async (req: Request, ctx: ApiContext, body: unknown):
       const validationError = validateApplicationId(pathSegments[1]);
       if (validationError) return validationError;
       return await sendOfferLetterLogic(req, ctx, pathSegments[1]);
+    }
+    if (pathSegments.length === 3 && pathSegments[2] === 'send-offer-email' && method === 'POST') {
+      const validationError = validateApplicationId(pathSegments[1]);
+      if (validationError) return validationError;
+      return await sendOfferLetterEmailOnlyLogic(req, ctx, pathSegments[1]);
     }
     if (pathSegments.length === 3 && pathSegments[2] === 'accept' && method === 'POST') {
       const validationError = validateApplicationId(pathSegments[1]);

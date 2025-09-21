@@ -8,11 +8,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   FileText, 
+  FilePlus,
   CheckCircle, 
   XCircle, 
   Eye,
   MoreHorizontal,
-  Trash2
+  Trash2,
+  Mail
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -33,8 +35,11 @@ interface ApplicationsTableProps {
   onApprove?: (applicationId: string, payload: any) => Promise<{ success: boolean; error?: string }>;
   onSubmit?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
   onAccept?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onGenerateOfferLetter?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onDownloadOfferLetter?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
   onSendOfferAndAwaiting?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
   onDownloadOfferAndAwaiting?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onSendOfferLetterEmail?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
   onView?: (applicationId: string) => void;
   onDelete?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
 }
@@ -76,8 +81,11 @@ export function ApplicationsTable({
   onApprove,
   onSubmit,
   onAccept,
+  onGenerateOfferLetter,
+  onDownloadOfferLetter,
   onSendOfferAndAwaiting,
   onDownloadOfferAndAwaiting,
+  onSendOfferLetterEmail,
   onView,
   onDelete,
 }: ApplicationsTableProps) {
@@ -284,6 +292,36 @@ export function ApplicationsTable({
                         <>
                           <DropdownMenuItem 
                             onClick={async () => {
+                              if (!onGenerateOfferLetter) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                await onGenerateOfferLetter(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <FilePlus className="h-4 w-4 mr-2" />
+                            Generate Offer Letter
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onDownloadOfferLetter) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                await onDownloadOfferLetter(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Download Offer Letter
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={async () => {
                               if (!onDownloadOfferAndAwaiting) return;
                               setProcessingId(app.id || null);
                               try {
@@ -313,6 +351,21 @@ export function ApplicationsTable({
                           >
                             <FileText className="h-4 w-4 mr-2" />
                             Send Offer Letter & mark as Awaiting Payment
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onSendOfferLetterEmail) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                await onSendOfferLetterEmail(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            Send Offer Letter Email
                           </DropdownMenuItem>
                         </>
                       )}

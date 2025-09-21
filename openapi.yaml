@@ -2890,10 +2890,18 @@ components:
         programId:
           type: string
           format: uuid
+        programPlanTemplateId:
+          type: string
+          format: uuid
+          description: The program plan template that defines subjects, structure, and durations
         courseOfferingId:
           type: string
           format: uuid
-          description: The specific course offering/intake the student is enrolling in
+          description: The specific course offering/intake the student is enrolling in (required for Fixed intake)
+        intakeModel:
+          type: string
+          enum: [Fixed, Rolling]
+          description: The intake model for this enrolment
         subjectStructure:
           type: object
           description: The snapshot of the program structure for this enrolment.
@@ -2911,9 +2919,11 @@ components:
         startDate:
           type: string
           format: date
+          description: Start date for the enrolment (required for Fixed intake)
         expectedCompletionDate:
           type: string
           format: date
+          description: Expected completion date (calculated from template durations for Rolling intake)
         deliveryLocationId:
           type: string
           format: uuid

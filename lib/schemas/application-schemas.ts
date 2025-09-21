@@ -85,7 +85,7 @@ const UuidLike = z.string().regex(/^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-f
 
 export const EnrolmentDetailsSchema = z.object({
   programId: UuidLike,
-  coursePlanId: UuidLike.optional(), // New: Course plan selection
+  programPlanTemplateId: UuidLike, // Required: Program plan template selection
   courseOfferingId: UuidLike.optional(), // Made optional for rolling intakes
   intakeModel: z.enum(['Fixed', 'Rolling']).optional(), // New: Intake model selection
   subjectStructure: z.object({
@@ -105,9 +105,9 @@ export const EnrolmentDetailsSchema = z.object({
   if (data.intakeModel === 'Fixed') {
     return data.courseOfferingId && data.startDate && data.expectedCompletionDate;
   }
-  // For Rolling intake, coursePlanId is required, dates are optional
+  // For Rolling intake, programPlanTemplateId is required, dates are optional
   if (data.intakeModel === 'Rolling') {
-    return data.coursePlanId;
+    return data.programPlanTemplateId;
   }
   return true;
 }, {

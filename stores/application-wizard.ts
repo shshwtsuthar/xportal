@@ -160,7 +160,7 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
         }));
       },
       
-      updateStep5Data: (data: Step5FinancialArrangements) => {
+      updateStep5Data: (data: Step5FinancialArrangements & { selectedTemplateId?: string; anchor?: string; anchorDate?: string }) => {
         set((state) => ({
           formData: {
             ...state.formData,
@@ -174,6 +174,10 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
             paymentSchedule: data.financialArrangements.paymentSchedule,
             specialArrangements: data.financialArrangements.specialArrangements,
             financialNotes: data.financialArrangements.financialNotes,
+            // Store template selection data for backend
+            selectedTemplateId: data.selectedTemplateId,
+            anchor: data.anchor,
+            anchorDate: data.anchorDate,
           },
           isDirty: true,
         }));
