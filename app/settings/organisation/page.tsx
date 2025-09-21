@@ -15,27 +15,38 @@ import { Loader2, Save, Building2, MapPin, Phone, Mail, User, Settings, Edit, Pl
 import { toast } from 'sonner';
 
 // NAT00010 Organisation Schema for AVETMISS compliance
+// Based on official AVETMISS Data Element Definitions Edition 2.3
 const organisationSchema = z.object({
+  // MANDATORY FIELDS (NAT00010 Required)
   organisation_identifier: z.string().min(1, 'RTO identifier is required').max(10, 'RTO identifier must be 10 characters or less'),
   organisation_name: z.string().min(1, 'Organisation name is required').max(100, 'Organisation name must be 100 characters or less'),
   organisation_type_identifier: z.string().min(1, 'Organisation type is required'),
   state_identifier: z.string().min(1, 'State is required'),
+  
   address: z.object({
+    // OPTIONAL FIELDS (can be space-padded in NAT00010)
     building_property_name: z.string().max(50, 'Building name must be 50 characters or less').optional(),
     flat_unit_details: z.string().max(30, 'Unit details must be 30 characters or less').optional(),
     street_number: z.string().max(15, 'Street number must be 15 characters or less').optional(),
-    street_name: z.string().min(1, 'Street name is required').max(70, 'Street name must be 70 characters or less'),
+    street_name: z.string().max(70, 'Street name must be 70 characters or less').optional(),
+    
+    // MANDATORY FIELDS (NAT00010 Required)
     suburb: z.string().min(1, 'Suburb is required').max(50, 'Suburb must be 50 characters or less'),
-    postcode: z.string().regex(/^\d{4}$|^OSPC$/, 'Invalid postcode (must be 4 digits or OSPC)'),
+    postcode: z.string().min(1, 'Postcode is required').regex(/^\d{4}$|^OSPC$/, 'Invalid postcode (must be 4 digits or OSPC)'),
     state_identifier: z.string().min(1, 'State is required'),
-    country_identifier: z.string().optional(),
+    
+    // OPTIONAL FIELDS (can be space-padded in NAT00010)
     sa1_identifier: z.string().max(11, 'SA1 identifier must be 11 characters or less').optional(),
     sa2_identifier: z.string().max(9, 'SA2 identifier must be 9 characters or less').optional(),
-  }).optional(),
-  phone_number: z.string().max(20, 'Phone number must be 20 characters or less').optional(),
+  }),
+  
+  // MANDATORY FIELDS (NAT00010 Required)
+  phone_number: z.string().min(1, 'Phone number is required').max(20, 'Phone number must be 20 characters or less'),
+  email_address: z.string().min(1, 'Email address is required').email('Invalid email address').max(80, 'Email must be 80 characters or less'),
+  contact_name: z.string().min(1, 'Contact name is required').max(60, 'Contact name must be 60 characters or less'),
+  
+  // OPTIONAL FIELDS (can be space-padded in NAT00010)
   fax_number: z.string().max(20, 'Fax number must be 20 characters or less').optional(),
-  email_address: z.string().email('Invalid email address').max(80, 'Email must be 80 characters or less').optional(),
-  contact_name: z.string().max(60, 'Contact name must be 60 characters or less').optional(),
 });
 
 type OrganisationFormData = z.infer<typeof organisationSchema>;
@@ -93,7 +104,6 @@ export default function OrganisationSettingsPage() {
         suburb: '',
         postcode: '',
         state_identifier: '02',
-        country_identifier: '1101',
         sa1_identifier: '',
         sa2_identifier: '',
       },
@@ -125,7 +135,6 @@ export default function OrganisationSettingsPage() {
           suburb: organisation.address.suburb || '',
           postcode: organisation.address.postcode || '',
           state_identifier: organisation.address.state_identifier || '02',
-          country_identifier: organisation.address.country_identifier || '1101',
           sa1_identifier: organisation.address.sa1_identifier || '',
           sa2_identifier: organisation.address.sa2_identifier || '',
         } : {
@@ -136,7 +145,6 @@ export default function OrganisationSettingsPage() {
           suburb: '',
           postcode: '',
           state_identifier: '02',
-          country_identifier: '1101',
           sa1_identifier: '',
           sa2_identifier: '',
         },
@@ -365,7 +373,7 @@ export default function OrganisationSettingsPage() {
                     name="address.building_property_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Building/Property Name</FormLabel>
+                        <FormLabel className="text-sm font-medium">Building/Property Name <span className="text-muted-foreground">(Optional)</span></FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="Building name" 
@@ -384,7 +392,7 @@ className="h-9"
                     name="address.flat_unit_details"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Unit/Flat Details</FormLabel>
+                        <FormLabel className="text-sm font-medium">Unit/Flat Details <span className="text-muted-foreground">(Optional)</span></FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="Unit 5, Suite 10A" 
@@ -405,7 +413,7 @@ className="h-9"
                     name="address.street_number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Street Number</FormLabel>
+                        <FormLabel className="text-sm font-medium">Street Number <span className="text-muted-foreground">(Optional)</span></FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="123" 
@@ -424,7 +432,7 @@ className="h-9"
                     name="address.street_name"
                     render={({ field }) => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel className="text-sm font-medium">Street Name</FormLabel>
+                        <FormLabel className="text-sm font-medium">Street Name <span className="text-muted-foreground">(Optional)</span></FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="Collins Street" 
@@ -445,7 +453,7 @@ className="h-9"
                     name="address.suburb"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Suburb</FormLabel>
+                        <FormLabel className="text-sm font-medium">Suburb <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="Melbourne" 
@@ -489,17 +497,64 @@ className="h-9"
                     name="address.postcode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Postcode</FormLabel>
+                        <FormLabel className="text-sm font-medium">Postcode <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="3000" 
-className="h-9"
-                          disabled={hasExistingData && !isEditMode}
-                          {...field}
+                            className="h-9"
+                            disabled={hasExistingData && !isEditMode}
+                            {...field}
                           />
                         </FormControl>
                         <FormDescription className="text-xs text-muted-foreground">
                           4-digit postcode or "OSPC" for overseas
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                {/* Statistical Area Fields */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="address.sa1_identifier"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">SA1 Identifier <span className="text-muted-foreground">(Optional)</span></FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="12345678901" 
+                            className="h-9"
+                            disabled={hasExistingData && !isEditMode}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs text-muted-foreground">
+                          ABS Statistical Area Level 1 (11 characters)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="address.sa2_identifier"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">SA2 Identifier <span className="text-muted-foreground">(Optional)</span></FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="123456789" 
+                            className="h-9"
+                            disabled={hasExistingData && !isEditMode}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs text-muted-foreground">
+                          ABS Statistical Area Level 2 (9 characters)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -533,7 +588,7 @@ className="h-9"
                     name="contact_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Contact Name</FormLabel>
+                        <FormLabel className="text-sm font-medium">Contact Name <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <div className="relative">
                             <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -558,7 +613,7 @@ className="h-9"
                     name="email_address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Email Address</FormLabel>
+                        <FormLabel className="text-sm font-medium">Email Address <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -586,7 +641,7 @@ className="h-9"
                     name="phone_number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Phone Number</FormLabel>
+                        <FormLabel className="text-sm font-medium">Phone Number <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -611,7 +666,7 @@ className="h-9"
                     name="fax_number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Fax Number</FormLabel>
+                        <FormLabel className="text-sm font-medium">Fax Number <span className="text-muted-foreground">(Optional)</span></FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="03 9123 4568" 
@@ -655,7 +710,6 @@ className="h-9"
                         suburb: organisation.address.suburb || '',
                         postcode: organisation.address.postcode || '',
                         state_identifier: organisation.address.state_identifier || '02',
-                        country_identifier: organisation.address.country_identifier || '1101',
                         sa1_identifier: organisation.address.sa1_identifier || '',
                         sa2_identifier: organisation.address.sa2_identifier || '',
                       } : {
@@ -666,7 +720,6 @@ className="h-9"
                         suburb: '',
                         postcode: '',
                         state_identifier: '02',
-                        country_identifier: '1101',
                         sa1_identifier: '',
                         sa2_identifier: '',
                       },
