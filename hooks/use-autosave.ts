@@ -48,8 +48,14 @@ export function useAutosave({ applicationId, getPayload, enabled = true, debounc
       setStatus('saving');
       pendingRef.current = false;
       const payload = getPayload();
+      const sanitized = sanitizePayload(payload);
+      if (isDeepEmpty(sanitized)) {
+        // Skip autosave when payload has no meaningful content to prevent wiping drafts
+        setStatus('idle');
+        return;
+      }
       if (!navigator.onLine) {
-        enqueue(payload);
+        enqueue(sanitized);
         setStatus('saved');
         setLastSavedAt(Date.now());
         toast.dismiss('autosave');
@@ -58,7 +64,7 @@ export function useAutosave({ applicationId, getPayload, enabled = true, debounc
       }
       // Replay any queued changes first
       await drainQueue();
-      await patch(payload);
+      await patch(sanitized);
       setStatus('saved');
       setLastSavedAt(Date.now());
       toast.dismiss('autosave');
@@ -125,6 +131,44 @@ export function useAutosave({ applicationId, getPayload, enabled = true, debounc
   };
 
   return { schedule, saveNow, status, lastSavedAt };
+}
+
+// --- Helpers to avoid blank-overwrites ---
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+function isDeepEmpty(value: unknown): boolean {
+  if (value == null) return true;
+  if (typeof value === 'string') return value.trim() === '';
+  if (typeof value === 'number') return false;
+  if (typeof value === 'boolean') return false;
+  if (Array.isArray(value)) return value.length === 0 || value.every(isDeepEmpty);
+  if (isPlainObject(value)) return Object.values(value).every(isDeepEmpty);
+  return false;
+}
+
+function sanitizePayload<T>(payload: T): T {
+  const recur = (val: unknown): unknown => {
+    if (val == null) return undefined;
+    if (typeof val === 'string') return val.trim() === '' ? undefined : val;
+    if (typeof val === 'number' || typeof val === 'boolean') return val;
+    if (Array.isArray(val)) {
+      const arr = val.map(recur).filter((v) => v !== undefined);
+      return arr.length > 0 ? arr : undefined;
+    }
+    if (isPlainObject(val)) {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(val)) {
+        const processed = recur(v);
+        if (processed !== undefined) out[k] = processed;
+      }
+      return Object.keys(out).length > 0 ? out : undefined;
+    }
+    return val;
+  };
+  const cleaned = recur(payload);
+  return (cleaned === undefined ? ({} as T) : (cleaned as T));
 }
 
 

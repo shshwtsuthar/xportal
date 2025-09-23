@@ -46,9 +46,6 @@ export default function RootLayout({
               <AppSidebar />
               <SidebarInset>
                 <main className="min-h-screen bg-background" aria-live="polite">
-                  <div className="p-2">
-                    <SidebarTrigger aria-label="Toggle sidebar" />
-                  </div>
                   {children}
                 </main>
               </SidebarInset>

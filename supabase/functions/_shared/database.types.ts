@@ -3,7 +3,12 @@
  * Please do not edit it manually.
  */
 
-import { type ColumnType } from "npm:kysely";
+import type { ColumnType } from "kysely";
+
+// Fix Buffer type for Deno
+declare global {
+  type Buffer = any;
+}
 
 export type AuthAalLevel = "aal1" | "aal2" | "aal3";
 
@@ -36,6 +41,8 @@ export type JsonPrimitive = boolean | number | string | null;
 export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Numeric = ColumnType<string, number | string, number | string>;
+
+export type SmsOpInstalmentAnchor = "commencement_date" | "custom_date" | "enrolment_date";
 
 export type StorageBuckettype = "ANALYTICS" | "STANDARD";
 
@@ -516,6 +523,10 @@ export interface CoreLocations {
   address_id: string;
   created_at: Generated<Timestamp | null>;
   id: Generated<string>;
+  /**
+   * Indicates if the location is active for training delivery
+   */
+  is_active: Generated<boolean | null>;
   location_identifier: string;
   location_name: string;
   organisation_id: string;
@@ -523,11 +534,31 @@ export interface CoreLocations {
 }
 
 export interface CoreOrganisations {
+  /**
+   * Reference to core.addresses table for NAT00010 address information
+   */
+  address_id: string | null;
+  /**
+   * NAT00010: Contact name (A, 60)
+   */
+  contact_name: string | null;
   created_at: Generated<Timestamp | null>;
+  /**
+   * NAT00010: Email address (A, 80)
+   */
+  email_address: string | null;
+  /**
+   * NAT00010: Facsimile number (A, 20)
+   */
+  fax_number: string | null;
   id: Generated<string>;
   organisation_identifier: string;
   organisation_name: string;
   organisation_type_identifier: string | null;
+  /**
+   * NAT00010: Telephone number (A, 20)
+   */
+  phone_number: string | null;
   /**
    * AVETMISS State Identifier (e.g., VIC, NSW). Governs state-specific reporting logic.
    */
@@ -535,14 +566,90 @@ export interface CoreOrganisations {
   updated_at: Generated<Timestamp | null>;
 }
 
+export interface CoreProgramCoursePlans {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  is_active: Generated<boolean>;
+  name: string;
+  program_id: string;
+  version: Generated<number>;
+}
+
+export interface CoreProgramCoursePlanSubjects {
+  /**
+   * Difficulty level of the subject content
+   */
+  complexity_level: Generated<string | null>;
+  /**
+   * Duration of the unit in weeks for this program plan template
+   */
+  duration_weeks: Generated<number>;
+  /**
+   * Estimated time to complete this subject in weeks
+   */
+  estimated_duration_weeks: Generated<number | null>;
+  plan_id: string;
+  sort_order: Generated<number>;
+  subject_id: string;
+  unit_type: string;
+}
+
 export interface CorePrograms {
+  /**
+   * NAT00030: ANZSCO occupation code (6 chars) - optional, not all programs have occupation link
+   */
+  anzsco_identifier: string | null;
+  /**
+   * NAT00030: ANZSIC industry code (4 chars) - optional, not all programs have industry link
+   */
+  anzsic_identifier: string | null;
   created_at: Generated<Timestamp | null>;
   id: Generated<string>;
+  /**
+   * NAT00030: Program nominal hours (4 digits) - total program duration
+   */
+  nominal_hours: Generated<number>;
+  /**
+   * NAT00030: ASCED field of education identifier (4 chars) - e.g., 0809 for Business
+   */
+  program_field_of_education_identifier: Generated<string>;
   program_identifier: string;
+  /**
+   * NAT00030: AQF level identifier (3 chars) - e.g., 405 for Certificate IV
+   */
+  program_level_of_education_identifier: Generated<string>;
   program_name: string;
+  /**
+   * NAT00030: Program recognition status (2 chars) - 01=Nationally Recognised, 02=State Recognised, etc
+   */
+  program_recognition_identifier: Generated<string>;
   status: Generated<string>;
   tga_url: string | null;
   updated_at: Generated<Timestamp | null>;
+  /**
+   * NAT00030: VET flag indicator (1 char) - Y=Yes, N=No
+   */
+  vet_flag: Generated<string>;
+}
+
+export interface CoreProgramSchedules {
+  created_at: Generated<Timestamp>;
+  cycle_anchor_date: Timestamp;
+  id: Generated<string>;
+  name: Generated<string>;
+  program_id: string;
+  timezone: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface CoreProgramScheduleUnits {
+  created_at: Generated<Timestamp>;
+  duration_days: number;
+  id: Generated<string>;
+  order_index: number;
+  schedule_id: string;
+  subject_id: string;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface CoreProgramSubjects {
@@ -551,6 +658,17 @@ export interface CoreProgramSubjects {
   program_id: string;
   subject_id: string;
   unit_type: string;
+}
+
+export interface CoreSubjectPrerequisites {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  prerequisite_subject_id: string;
+  /**
+   * Required: Must be completed before subject can start. Recommended: Suggested but not mandatory
+   */
+  prerequisite_type: string;
+  subject_id: string;
 }
 
 export interface CoreSubjects {
@@ -656,8 +774,8 @@ export interface ExtensionsPgStatStatementsInfo {
 }
 
 export interface NetHttpRequestQueue {
-  body: Uint8Array | null;
-  headers: Json | null;
+  body: Buffer | null;
+  headers: Json;
   id: Generated<Int8>;
   method: string;
   timeout_milliseconds: number;
@@ -729,14 +847,31 @@ export interface SmsOpAgentCommissions {
   status: Generated<string>;
 }
 
+export interface SmsOpApplicationDocuments {
+  application_id: string;
+  created_at: Generated<Timestamp>;
+  doc_type: string;
+  id: Generated<string>;
+  mime_type: string | null;
+  path: string;
+  size_bytes: Int8 | null;
+  version: string | null;
+}
+
 export interface SmsOpApplications {
+  agent_commission_rate_snapshot: Numeric | null;
   application_payload: Json | null;
   created_at: Generated<Timestamp>;
   created_by_staff_id: string | null;
   created_client_id: string | null;
   created_enrolment_id: string | null;
   id: Generated<string>;
+  payment_anchor: string | null;
+  payment_anchor_date: Timestamp | null;
+  payment_snapshot: Json | null;
+  selected_payment_template_id: string | null;
   status: Generated<string>;
+  tuition_fee_snapshot: Numeric | null;
   updated_at: Generated<Timestamp>;
 }
 
@@ -764,13 +899,17 @@ export interface SmsOpAssessmentTasks {
 
 export interface SmsOpCourseOfferings {
   created_at: Generated<Timestamp | null>;
+  default_plan_id: string | null;
   delivery_location_id: string | null;
-  end_date: Timestamp;
+  end_date: Timestamp | null;
   id: Generated<string>;
+  is_rolling: Generated<boolean>;
   max_students: number | null;
   program_id: string;
-  start_date: Timestamp;
+  schedule_id: string | null;
+  start_date: Timestamp | null;
   status: Generated<string>;
+  term_index: number | null;
   trainer_id: string | null;
 }
 
@@ -781,17 +920,22 @@ export interface SmsOpEnrolments {
   agent_commission_rate_snapshot: Numeric | null;
   agent_id: string | null;
   client_id: string;
+  client_identifier_apprenticeships: string | null;
   course_offering_id: string;
   created_at: Generated<Timestamp | null>;
   deferral_end_date: Timestamp | null;
   deferral_start_date: Timestamp | null;
   enrolment_date: Generated<Timestamp>;
   id: Generated<string>;
+  school_type_identifier: string | null;
+  specific_funding_identifier: string | null;
   status: Generated<string>;
+  training_contract_identifier: string | null;
   /**
    * The total tuition fee for this enrolment at the moment it was created, frozen in time.
    */
   tuition_fee_snapshot: Numeric | null;
+  vet_in_schools_flag: Generated<boolean>;
   withdrawal_reason: string | null;
 }
 
@@ -867,6 +1011,31 @@ export interface SmsOpPaymentPlans {
   start_date: Timestamp;
   status: Generated<string>;
   total_amount: Numeric;
+}
+
+export interface SmsOpPaymentPlanTemplateInstalments {
+  amount: Numeric;
+  description: string;
+  id: Generated<string>;
+  offset_days: Generated<number>;
+  sort_order: Generated<number>;
+  template_id: string;
+}
+
+export interface SmsOpPaymentPlanTemplates {
+  /**
+   * Defines what date the offset_days in instalments are calculated from
+   */
+  anchor_type: Generated<SmsOpInstalmentAnchor>;
+  created_at: Generated<Timestamp>;
+  /**
+   * Custom date to use when anchor_type is custom_date
+   */
+  custom_anchor_date: Timestamp | null;
+  id: Generated<string>;
+  is_default: Generated<boolean>;
+  name: string;
+  program_id: string;
 }
 
 export interface SmsOpPayments {
@@ -1049,6 +1218,11 @@ export interface SupabaseMigrationsSchemaMigrations {
   version: string;
 }
 
+export interface SupabaseMigrationsSeedFiles {
+  hash: string;
+  path: string;
+}
+
 export interface VaultDecryptedSecrets {
   created_at: Timestamp | null;
   decrypted_secret: string | null;
@@ -1056,7 +1230,7 @@ export interface VaultDecryptedSecrets {
   id: string | null;
   key_id: string | null;
   name: string | null;
-  nonce: Uint8Array | null;
+  nonce: Buffer | null;
   secret: string | null;
   updated_at: Timestamp | null;
 }
@@ -1067,7 +1241,7 @@ export interface VaultSecrets {
   id: Generated<string>;
   key_id: string | null;
   name: string | null;
-  nonce: Generated<Uint8Array | null>;
+  nonce: Generated<Buffer | null>;
   secret: string;
   updated_at: Generated<Timestamp>;
 }
@@ -1113,8 +1287,13 @@ export interface DB {
   "core.clients_audit": CoreClientsAudit;
   "core.locations": CoreLocations;
   "core.organisations": CoreOrganisations;
+  "core.program_course_plan_subjects": CoreProgramCoursePlanSubjects;
+  "core.program_course_plans": CoreProgramCoursePlans;
+  "core.program_schedule_units": CoreProgramScheduleUnits;
+  "core.program_schedules": CoreProgramSchedules;
   "core.program_subjects": CoreProgramSubjects;
   "core.programs": CorePrograms;
+  "core.subject_prerequisites": CoreSubjectPrerequisites;
   "core.subjects": CoreSubjects;
   "cricos.client_details": CricosClientDetails;
   "cricos.confirmations_of_enrolment": CricosConfirmationsOfEnrolment;
@@ -1129,6 +1308,7 @@ export interface DB {
   "security.user_roles": SecurityUserRoles;
   "security.users": SecurityUsers;
   "sms_op.agent_commissions": SmsOpAgentCommissions;
+  "sms_op.application_documents": SmsOpApplicationDocuments;
   "sms_op.applications": SmsOpApplications;
   "sms_op.assessment_submissions": SmsOpAssessmentSubmissions;
   "sms_op.assessment_tasks": SmsOpAssessmentTasks;
@@ -1140,6 +1320,8 @@ export interface DB {
   "sms_op.invoices": SmsOpInvoices;
   "sms_op.outcomes_audit": SmsOpOutcomesAudit;
   "sms_op.payment_plan_instalments": SmsOpPaymentPlanInstalments;
+  "sms_op.payment_plan_template_instalments": SmsOpPaymentPlanTemplateInstalments;
+  "sms_op.payment_plan_templates": SmsOpPaymentPlanTemplates;
   "sms_op.payment_plans": SmsOpPaymentPlans;
   "sms_op.payments": SmsOpPayments;
   "sms_op.refunds": SmsOpRefunds;
@@ -1159,6 +1341,7 @@ export interface DB {
   "supabase_functions.hooks": SupabaseFunctionsHooks;
   "supabase_functions.migrations": SupabaseFunctionsMigrations;
   "supabase_migrations.schema_migrations": SupabaseMigrationsSchemaMigrations;
+  "supabase_migrations.seed_files": SupabaseMigrationsSeedFiles;
   "vault.decrypted_secrets": VaultDecryptedSecrets;
   "vault.secrets": VaultSecrets;
 }

@@ -1,35 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { WizardProgress } from '../components/wizard-progress';
+import { SaveDraftButton } from '../components/save-draft-button';
 import { useApplicationWizard } from '@/stores/application-wizard';
-import type { Step5FinancialArrangements } from '@/lib/schemas/application-schemas';
-import { Step5FinancialArrangementsSchema } from '@/lib/schemas/application-schemas';
-import { useAutosave } from '@/hooks/use-autosave';
+import type { Step4AgentReferral } from '@/lib/schemas/application-schemas';
+import { Step4AgentReferralSchema } from '@/lib/schemas/application-schemas';
+import { useAgents, transformAgentsForSelect } from '@/hooks/use-agents';
+import { useEffect } from 'react';
 
 // =============================================================================
-// STEP 5: FINANCIAL ARRANGEMENTS
-// Handles payment plans and fee calculation
+// STEP 4: AGENT & REFERRAL
+// Handles agent selection and marketing attribution
 // =============================================================================
 
-export default function Step5FinancialArrangements() {
+export default function Step4AgentReferral() {
   const router = useRouter();
-  const { updateStep5Data, nextStep, previousStep, draftId } = useApplicationWizard();
+  const { updateStep4Data, nextStep, previousStep, draftId, formData, markDirty } = useApplicationWizard();
+  
+  // Agents query
+  const { data: agentsData, isLoading: agentsLoading } = useAgents();
+  const agents = transformAgentsForSelect(agentsData);
   
   // Form state
-  const [paymentPlan, setPaymentPlan] = useState<string>('');
-  const [installmentCount, setInstallmentCount] = useState<number>(1);
-  const [installmentAmount, setInstallmentAmount] = useState<number>(0);
+  const [hasAgent, setHasAgent] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   
   const {
     register,
@@ -37,151 +44,75 @@ export default function Step5FinancialArrangements() {
     formState: { errors },
     watch,
     setValue,
-  } = useForm<Step5FinancialArrangements>({
+    getValues,
+  } = useForm<Step4AgentReferral>({
+    // Keep runtime field type checks, but do not block Next step
+    // resolver: zodResolver(Step4AgentReferralSchema) as any,
     defaultValues: {
-      financialArrangements: {
-        paymentPlan: 'full-upfront',
-        tuitionFeeSnapshot: 0,
-        agentCommissionRateSnapshot: 0,
-        paymentMethod: 'credit-card',
-        installmentCount: 1,
-        installmentAmount: 0,
-        paymentSchedule: [],
-        specialArrangements: '',
-        financialNotes: '',
+      agentReferral: {
+        agentId: (formData as any)?.agentId ?? null,
+        referralSource: (formData as any)?.referralSource ?? '',
+        marketingAttribution: (formData as any)?.marketingAttribution ?? '',
+        referralNotes: (formData as any)?.referralNotes ?? '',
       },
     },
   });
   
   const watchedValues = watch();
-
-  // Autosave draft (Step 5)
-  const { schedule, saveNow } = useAutosave({
-    applicationId: draftId || '',
-    enabled: Boolean(draftId),
-    debounceMs: 1500,
-    getPayload: () => ({
-      financialArrangements: watchedValues.financialArrangements,
-    }),
-  });
-
-  useEffect(() => {
-    schedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(watchedValues.financialArrangements)]);
   
-  // Calculate installment amount when payment plan or tuition fee changes
+  // Mark store as dirty when form values change
   useEffect(() => {
-    const tuitionFee = watchedValues.financialArrangements?.tuitionFeeSnapshot || 0;
-    const plan = watchedValues.financialArrangements?.paymentPlan;
-    const count = watchedValues.financialArrangements?.installmentCount || 1;
-    
-    if (plan === 'installments' && count > 0) {
-      const amount = tuitionFee / count;
-      setInstallmentAmount(amount);
-      setValue('financialArrangements.installmentAmount', amount);
-    } else if (plan === 'full-upfront') {
-      setInstallmentAmount(tuitionFee);
-      setValue('financialArrangements.installmentAmount', tuitionFee);
-    }
-  }, [
-    watchedValues.financialArrangements?.paymentPlan,
-    watchedValues.financialArrangements?.tuitionFeeSnapshot,
-    watchedValues.financialArrangements?.installmentCount,
-    setValue
-  ]);
-  
-  // Generate payment schedule for installments
-  useEffect(() => {
-    const plan = watchedValues.financialArrangements?.paymentPlan;
-    const count = watchedValues.financialArrangements?.installmentCount || 1;
-    const amount = watchedValues.financialArrangements?.installmentAmount || 0;
-    
-    if (plan === 'installments' && count > 1) {
-      const schedule = [];
-      const today = new Date();
-      
-      for (let i = 0; i < count; i++) {
-        const dueDate = new Date(today);
-        dueDate.setMonth(dueDate.getMonth() + i);
-        
-        schedule.push({
-          dueDate: dueDate.toISOString().split('T')[0],
-          amount: amount,
-          status: 'pending' as const,
-        });
+    const subscription = watch((value, { name, type }) => {
+      if (type === 'change' && name) {
+        markDirty();
       }
-      
-      setValue('financialArrangements.paymentSchedule', schedule);
-    } else {
-      setValue('financialArrangements.paymentSchedule', []);
-    }
-  }, [
-    watchedValues.financialArrangements?.paymentPlan,
-    watchedValues.financialArrangements?.installmentCount,
-    watchedValues.financialArrangements?.installmentAmount,
-    setValue
-  ]);
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, markDirty]);
+
+
+  // Hydrate when formData changes
+  useEffect(() => {
+    setValue('agentReferral.agentId', (formData as any)?.agentId ?? null);
+    setValue('agentReferral.referralSource', (formData as any)?.referralSource ?? '');
+    setValue('agentReferral.marketingAttribution', (formData as any)?.marketingAttribution ?? '');
+    setValue('agentReferral.referralNotes', (formData as any)?.referralNotes ?? '');
+    setHasAgent(Boolean((formData as any)?.agentId));
+  }, [formData, setValue]);
   
-  const onSubmit: SubmitHandler<Step5FinancialArrangements> = async (data) => {
+  const onSubmit: SubmitHandler<Step4AgentReferral> = async (data) => {
     try {
       // Update wizard state
-      updateStep5Data(data);
+      updateStep4Data(data);
       
       // Move to next step
       nextStep();
       
-      // Navigate to review step
-      router.push('/students/new/review');
+      // Navigate to step 5
+      router.push('/students/new/step-6');
     } catch (error) {
-      console.error('Error submitting step 5:', error);
+      console.error('Error submitting step 4:', error);
     }
   };
   
   const handleNext = async () => {
-    await saveNow();
-    handleSubmit(onSubmit)();
+    setIsNavigating(true);
+    await handleSubmit(onSubmit)();
+    setIsNavigating(false);
   };
   
   const handlePrevious = async () => {
-    await saveNow();
     previousStep();
     router.push('/students/new/step-4');
   };
   
-  const handlePaymentPlanChange = (plan: string) => {
-    setPaymentPlan(plan);
-    setValue('financialArrangements.paymentPlan', plan as any);
-    
-    if (plan === 'full-upfront') {
-      setInstallmentCount(1);
-      setValue('financialArrangements.installmentCount', 1);
-    }
-  };
-  
-  const handleInstallmentCountChange = (count: number) => {
-    setInstallmentCount(count);
-    setValue('financialArrangements.installmentCount', count);
-  };
-
-  const formatCurrency = (value: number) => {
-    if (isNaN(value)) return '';
-    return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 2 }).format(value);
-  };
-
-  const handleTuitionBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const num = Number(e.target.value);
-    if (!isNaN(num)) {
-      setValue('financialArrangements.tuitionFeeSnapshot', Number(num.toFixed(2)));
-      e.currentTarget.value = String(Number(num.toFixed(2)));
-    }
-  };
-
-  const handleCommissionBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const num = Number(e.target.value);
-    if (!isNaN(num)) {
-      setValue('financialArrangements.agentCommissionRateSnapshot', Number(num.toFixed(2)));
-      e.currentTarget.value = String(Number(num.toFixed(2)));
+  const handleAgentSelection = (agentId: string) => {
+    if (agentId === 'none') {
+      setHasAgent(false);
+      setValue('agentReferral.agentId', null);
+    } else {
+      setHasAgent(true);
+      setValue('agentReferral.agentId', agentId);
     }
   };
   
@@ -195,136 +126,87 @@ export default function Step5FinancialArrangements() {
         <div className="space-y-8">
           {/* Page Header */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground">Financial Arrangements</h1>
-            <p className="mt-2 text-muted-foreground">Staff: record payment plan and financial arrangements discussed with the client.</p>
+            <h1 className="text-3xl font-bold text-foreground">Agent & Referral</h1>
+            <p className="mt-2 text-muted-foreground">Staff: record agent representation and referral details if applicable.</p>
           </div>
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            {/* Tuition Fee */}
+            {/* Agent Selection */}
             <Card>
               <CardHeader>
-                <CardTitle>Tuition Fee</CardTitle>
+                <CardTitle>Agent Representation</CardTitle>
                 <CardDescription>
-                  Enter the total tuition fee agreed for this enrolment
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label htmlFor="tuitionFee">Total Tuition Fee (AUD) *</Label>
-                  <Input
-                    id="tuitionFee"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    aria-label="Total tuition fee in AUD"
-                    placeholder="e.g., 10000"
-                    {...register('financialArrangements.tuitionFeeSnapshot', { valueAsNumber: true })}
-                    className={`mt-2 ${errors.financialArrangements?.tuitionFeeSnapshot ? 'border-red-500' : ''}`}
-                    onBlur={handleTuitionBlur}
-                  />
-                  {errors.financialArrangements?.tuitionFeeSnapshot && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.tuitionFeeSnapshot.message}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Agent Commission */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Agent Commission</CardTitle>
-                <CardDescription>
-                  Commission rate for the agent (if applicable)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label htmlFor="agentCommission">Agent Commission Rate (%)</Label>
-                  <Input
-                    id="agentCommission"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    aria-label="Agent commission rate in percent"
-                    placeholder="e.g., 10"
-                    {...register('financialArrangements.agentCommissionRateSnapshot', { valueAsNumber: true })}
-                    className={`mt-2 ${errors.financialArrangements?.agentCommissionRateSnapshot ? 'border-red-500' : ''}`}
-                    onBlur={handleCommissionBlur}
-                  />
-                  {errors.financialArrangements?.agentCommissionRateSnapshot && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.agentCommissionRateSnapshot.message}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Payment Plan */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Plan</CardTitle>
-                <CardDescription>
-                  Select how the tuition fees will be paid
+                  Is the applicant represented by an educational agent?
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="paymentPlan">Payment Plan</Label>
-                  <Select onValueChange={handlePaymentPlanChange}>
-                    <SelectTrigger aria-label="Payment Plan" role="combobox" className="mt-2">
-                      <SelectValue placeholder="Select payment plan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="full-upfront">Full Upfront Payment</SelectItem>
-                      <SelectItem value="installments">Installment Payments</SelectItem>
-                      <SelectItem value="deferred">Deferred Payment</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.financialArrangements?.paymentPlan && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.paymentPlan.message}
-                    </p>
-                  )}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="hasAgent"
+                    checked={hasAgent}
+                    onCheckedChange={(checked) => {
+                      setHasAgent(checked as boolean);
+                      if (!checked) {
+                        setValue('agentReferral.agentId', null);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="hasAgent">
+                    Applicant is represented by an educational agent
+                  </Label>
                 </div>
                 
-                {paymentPlan === 'installments' && (
+                {hasAgent && (
                   <div>
-                    <Label htmlFor="installmentCount">Number of Installments</Label>
-                    <Select onValueChange={(value) => handleInstallmentCountChange(parseInt(value))}>
-                      <SelectTrigger aria-label="Installment Count" role="combobox" className="mt-2">
-                        <SelectValue placeholder="Select number of installments" />
+                    <Label htmlFor="agent">Select Agent</Label>
+                    <Select onValueChange={handleAgentSelection}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select an agent" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="2">2 Installments</SelectItem>
-                        <SelectItem value="3">3 Installments</SelectItem>
-                        <SelectItem value="4">4 Installments</SelectItem>
-                        <SelectItem value="6">6 Installments</SelectItem>
-                        <SelectItem value="12">12 Installments</SelectItem>
+                        <SelectItem value="none">No agent selected</SelectItem>
+                        {agentsLoading ? (
+                          <SelectItem value="loading-agents" disabled>Loading agents...</SelectItem>
+                        ) : (
+                          agents.map((agent) => (
+                            <SelectItem key={agent.value} value={agent.value}>
+                              <div className="flex flex-col">
+                                <span>{agent.label}</span>
+                                {agent.description && (
+                                  <span className="text-sm text-muted-foreground">
+                                    {agent.description}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
-                    {errors.financialArrangements?.installmentCount && (
+                    {errors.agentReferral?.agentId && (
                       <p className="text-red-500 text-sm mt-1">
-                        {errors.financialArrangements.installmentCount.message}
+                        {errors.agentReferral.agentId.message}
                       </p>
                     )}
-                  </div>
-                )}
-                
-                {installmentAmount > 0 && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Payment Amount:</span>
-                      <span className="text-lg font-bold text-foreground">
-                        ${installmentAmount.toFixed(2)} AUD
-                      </span>
-                    </div>
-                    {paymentPlan === 'installments' && installmentCount > 1 && (
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        {installmentCount} payments of ${installmentAmount.toFixed(2)} AUD each
+                    
+                    {watchedValues.agentReferral?.agentId && (
+                      <div className="mt-3">
+                        <Label>Selected Agent:</Label>
+                        <div className="mt-1">
+                          {(() => {
+                            const selectedAgent = agents.find(a => a.value === watchedValues.agentReferral?.agentId);
+                            return selectedAgent ? (
+                              <Badge variant="default" className="text-sm">
+                                {selectedAgent.label}
+                                {selectedAgent.description && (
+                                  <span className="ml-2 text-muted-foreground">
+                                    - {selectedAgent.description}
+                                  </span>
+                                )}
+                              </Badge>
+                            ) : null;
+                          })()}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -332,115 +214,29 @@ export default function Step5FinancialArrangements() {
               </CardContent>
             </Card>
             
-            {/* Payment Method */}
+            
+            
+            {/* Additional Notes */}
             <Card>
               <CardHeader>
-                <CardTitle>Payment Method</CardTitle>
+                <CardTitle>Additional Information</CardTitle>
                 <CardDescription>
-                  Select the payment method
+                  Any additional notes about the referral or agent representation
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div>
-                  <Label htmlFor="paymentMethod">Payment Method</Label>
-                  <Select onValueChange={(value) => setValue('financialArrangements.paymentMethod', value as any)}>
-                    <SelectTrigger aria-label="Payment Method" role="combobox" className="mt-2">
-                      <SelectValue placeholder="Select payment method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="credit-card">Credit Card</SelectItem>
-                      <SelectItem value="bank-transfer">Bank Transfer</SelectItem>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.financialArrangements?.paymentMethod && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.paymentMethod.message}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Payment Schedule */}
-            {watchedValues.financialArrangements?.paymentSchedule && 
-             watchedValues.financialArrangements.paymentSchedule.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Schedule</CardTitle>
-                  <CardDescription>
-                    Payment schedule breakdown
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {watchedValues.financialArrangements.paymentSchedule.map((payment, index) => (
-                      <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                        <div>
-                          <span className="font-medium">Payment {index + 1}</span>
-                          <div className="text-sm text-muted-foreground">
-                            Due: {new Date(payment.dueDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <Badge variant="outline">
-                          ${payment.amount.toFixed(2)} AUD
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* Special Arrangements */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Special Arrangements</CardTitle>
-                <CardDescription>
-                  Any special financial arrangements or considerations
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label htmlFor="specialArrangements">Special Arrangements</Label>
+                  <Label htmlFor="referralNotes">Referral Notes</Label>
                   <Textarea
-                    id="specialArrangements"
-                    {...register('financialArrangements.specialArrangements')}
-                    placeholder="Please describe any special financial arrangements..."
-                    rows={3}
-                    className={`mt-2 ${errors.financialArrangements?.specialArrangements ? 'border-red-500' : ''}`}
+                    id="referralNotes"
+                    {...register('agentReferral.referralNotes')}
+                    placeholder="Provide any additional information about how the applicant heard about the institution or agent representation..."
+                    rows={4}
+                    className={(errors.agentReferral?.referralNotes ? 'border-red-500 ' : '') + 'mt-2'}
                   />
-                  {errors.financialArrangements?.specialArrangements && (
+                  {errors.agentReferral?.referralNotes && (
                     <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.specialArrangements.message}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Financial Notes */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Additional Notes</CardTitle>
-                <CardDescription>
-                  Any additional financial notes or comments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label htmlFor="financialNotes">Financial Notes</Label>
-                  <Textarea
-                    id="financialNotes"
-                    {...register('financialArrangements.financialNotes')}
-                    placeholder="Please provide any additional financial notes..."
-                    rows={3}
-                    className={`mt-2 ${errors.financialArrangements?.financialNotes ? 'border-red-500' : ''}`}
-                  />
-                  {errors.financialArrangements?.financialNotes && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.financialArrangements.financialNotes.message}
+                      {errors.agentReferral.referralNotes.message}
                     </p>
                   )}
                 </div>
@@ -450,47 +246,42 @@ export default function Step5FinancialArrangements() {
             {/* Summary */}
             <Card>
               <CardHeader>
-                <CardTitle>Financial Summary</CardTitle>
+                <CardTitle>Summary</CardTitle>
                 <CardDescription>
-                  Review financial arrangements
+                  Review the agent and referral information
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="font-medium">Total Tuition Fee:</span>
+                  <span className="font-medium">Agent Representation:</span>
                   <span className="text-muted-foreground">
-                    {formatCurrency(Number(watchedValues.financialArrangements?.tuitionFeeSnapshot ?? 0))}
+                    {hasAgent ? 'Yes' : 'No'}
                   </span>
                 </div>
                 
-                <div className="flex justify-between">
-                  <span className="font-medium">Payment Plan:</span>
-                  <span className="text-muted-foreground">
-                    {watchedValues.financialArrangements?.paymentPlan?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not selected'}
-                  </span>
-                </div>
-                
-                {watchedValues.financialArrangements?.paymentPlan === 'installments' && (
+                {hasAgent && watchedValues.agentReferral?.agentId && (
                   <div className="flex justify-between">
-                    <span className="font-medium">Installments:</span>
+                    <span className="font-medium">Selected Agent:</span>
                     <span className="text-muted-foreground">
-                      {watchedValues.financialArrangements?.installmentCount} payments
+                      {agents.find(a => a.value === watchedValues.agentReferral?.agentId)?.label || 'Not selected'}
                     </span>
                   </div>
                 )}
                 
-                <div className="flex justify-between">
-                  <span className="font-medium">Payment Method:</span>
-                  <span className="text-muted-foreground">
-                    {watchedValues.financialArrangements?.paymentMethod?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not selected'}
-                  </span>
-                </div>
-                
-                {watchedValues.financialArrangements?.agentCommissionRateSnapshot && (
+                {watchedValues.agentReferral?.referralSource && (
                   <div className="flex justify-between">
-                    <span className="font-medium">Agent Commission:</span>
+                    <span className="font-medium">Referral Source:</span>
                     <span className="text-muted-foreground">
-                      {watchedValues.financialArrangements.agentCommissionRateSnapshot}%
+                      {watchedValues.agentReferral.referralSource}
+                    </span>
+                  </div>
+                )}
+                
+                {watchedValues.agentReferral?.marketingAttribution && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Marketing Attribution:</span>
+                    <span className="text-muted-foreground">
+                      {watchedValues.agentReferral.marketingAttribution}
                     </span>
                   </div>
                 )}
@@ -502,9 +293,12 @@ export default function Step5FinancialArrangements() {
               <Button type="button" variant="outline" onClick={handlePrevious}>
                 Previous Step
               </Button>
-              <Button type="button" onClick={handleNext}>
-                Review Application
-              </Button>
+              <div className="flex gap-2">
+                <SaveDraftButton getFormData={() => getValues()} />
+                <LoadingButton type="button" onClick={handleNext} isLoading={isNavigating} loadingText="Next...">
+                  Next Step
+                </LoadingButton>
+              </div>
             </div>
           </form>
         </div>

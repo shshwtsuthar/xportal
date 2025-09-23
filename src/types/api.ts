@@ -16,66 +16,14 @@ export interface paths {
          * @description Returns a paginated list of all applications with their current status and metadata. Supports filtering by status and pagination for large datasets.
          *
          */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Page number for pagination (1-based) */
-                    page?: number;
-                    /** @description Number of applications per page */
-                    limit?: number;
-                    /** @description Filter applications by status */
-                    status?: "Draft" | "Submitted" | "Approved" | "Rejected";
-                    /** @description Search applications by client name or email */
-                    search?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A paginated list of applications. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ApplicationListResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["listApplications"];
         put?: never;
         /**
          * Start a New Enrolment Application
          * @description Creates a new application in a 'Draft' state. This is the new entry point for the enrolment wizard. Supports an Idempotency-Key header to prevent duplicate application creation on network retries.
          *
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Can be an empty body to create a blank draft, or can contain initial data. */
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["FullEnrolmentPayload"];
-                };
-            };
-            responses: {
-                /** @description Draft application created. */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Application"];
-                    };
-                };
-            };
-        };
+        post: operations["createApplication"];
         delete?: never;
         options?: never;
         head?: never;
@@ -92,39 +40,19 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete an Application
+         * @description Permanently deletes an application from the database. This action is irreversible. The application will be completely removed from the sms_op.applications table. This operation is available for applications in any status (Draft, Submitted, Approved, Rejected).
+         *
+         */
+        delete: operations["deleteApplication"];
         options?: never;
         head?: never;
         /**
          * Update a Draft Application
          * @description Incrementally saves data to a draft application.
          */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    applicationId: components["parameters"]["ApplicationId"];
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["FullEnrolmentPayload"];
-                };
-            };
-            responses: {
-                /** @description Application updated. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Application"];
-                    };
-                };
-            };
-        };
+        patch: operations["updateApplication"];
         trace?: never;
     };
     "/applications/{applicationId}/submit": {
@@ -140,26 +68,7 @@ export interface paths {
          * Submit an Application for Approval
          * @description Transitions the application status to 'Submitted' after validating all required data is present.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    applicationId: components["parameters"]["ApplicationId"];
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Application submitted for review. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post: operations["submitApplication"];
         delete?: never;
         options?: never;
         head?: never;
@@ -180,32 +89,7 @@ export interface paths {
          * @description A protected, administrative endpoint. Takes a 'Submitted' application and executes the master transaction to create the official client, enrolment, and all associated records. This payload MUST now include the financial contract terms.
          *
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    applicationId: components["parameters"]["ApplicationId"];
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["ApprovalPayload"];
-                };
-            };
-            responses: {
-                /** @description Application approved and enrolment created. */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["FullEnrolmentResponse"];
-                    };
-                };
-            };
-        };
+        post: operations["approveApplication"];
         delete?: never;
         options?: never;
         head?: never;
@@ -226,35 +110,67 @@ export interface paths {
          * @description Rejects a submitted application with a reason. This transitions the application status to 'Rejected' and prevents further processing.
          *
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    applicationId: components["parameters"]["ApplicationId"];
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** @description Reason for rejection */
-                        reason: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Application rejected successfully. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Application"];
-                    };
-                };
-            };
+        post: operations["rejectApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/offer-letter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Offer Letter
+         * @description Renders an offer letter PDF from the current application snapshot and stores it in Supabase Storage.
+         */
+        post: operations["generateOfferLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/send-offer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Offer Letter
+         * @description Sends the previously generated offer letter to the applicant. On success, transitions status to AwaitingPayment.
+         */
+        post: operations["sendOfferLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark an application as Accepted
+         * @description Captures student acceptance (recorded by staff or callback) and transitions status to Accepted.
+         */
+        post: operations["acceptApplication"];
         delete?: never;
         options?: never;
         head?: never;
@@ -273,33 +189,7 @@ export interface paths {
          * @description Returns a paginated list of all draft applications. This endpoint is optimized for the draft management interface.
          *
          */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Page number for pagination (1-based) */
-                    page?: number;
-                    /** @description Number of applications per page */
-                    limit?: number;
-                    /** @description Search applications by client name or email */
-                    search?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A paginated list of draft applications. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ApplicationListResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["listDraftApplications"];
         put?: never;
         post?: never;
         delete?: never;
@@ -320,33 +210,7 @@ export interface paths {
          * @description Returns a paginated list of all submitted applications awaiting approval. This endpoint is optimized for the approval workflow interface.
          *
          */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Page number for pagination (1-based) */
-                    page?: number;
-                    /** @description Number of applications per page */
-                    limit?: number;
-                    /** @description Search applications by client name or email */
-                    search?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A paginated list of submitted applications. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ApplicationListResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["listSubmittedApplications"];
         put?: never;
         post?: never;
         delete?: never;
@@ -367,33 +231,7 @@ export interface paths {
          * @description Returns a paginated list of all approved applications. These applications have been processed and converted to enrolments.
          *
          */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Page number for pagination (1-based) */
-                    page?: number;
-                    /** @description Number of applications per page */
-                    limit?: number;
-                    /** @description Search applications by client name or email */
-                    search?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A paginated list of approved applications. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ApplicationListResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["listApprovedApplications"];
         put?: never;
         post?: never;
         delete?: never;
@@ -414,43 +252,7 @@ export interface paths {
          * @description Returns aggregated statistics about applications including counts by status, recent activity, and performance metrics.
          *
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Application statistics. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description Total number of applications */
-                            totalApplications?: number;
-                            /** @description Number of draft applications */
-                            draftCount?: number;
-                            /** @description Number of submitted applications */
-                            submittedCount?: number;
-                            /** @description Number of approved applications */
-                            approvedCount?: number;
-                            /** @description Number of rejected applications */
-                            rejectedCount?: number;
-                            /** @description Applications submitted in the last 7 days */
-                            recentSubmissions?: number;
-                            /** @description Average time from submission to approval in hours */
-                            averageProcessingTime?: number;
-                            /** @description Percentage of applications that reach approved status */
-                            completionRate?: number;
-                        };
-                    };
-                };
-            };
-        };
+        get: operations["getApplicationStats"];
         put?: never;
         post?: never;
         delete?: never;
@@ -472,37 +274,7 @@ export interface paths {
          * @description Manages the lifecycle of an enrolment (Withdraw, Defer, Suspend). This is a critical, auditable state transition endpoint with compliance implications.
          *
          */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    enrolmentId: components["parameters"]["EnrolmentId"];
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["EnrolmentStateChangePayload"];
-                };
-            };
-            responses: {
-                /** @description Enrolment state successfully changed. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Enrolment not found. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        put: operations["changeEnrolmentState"];
         post?: never;
         delete?: never;
         options?: never;
@@ -518,30 +290,7 @@ export interface paths {
             cookie?: never;
         };
         /** List and Search Clients */
-        get: {
-            parameters: {
-                query?: {
-                    search?: string;
-                    page?: number;
-                    limit?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A list of clients. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ClientSummary"][];
-                    };
-                };
-            };
-        };
+        get: operations["listClients"];
         put?: never;
         post?: never;
         delete?: never;
@@ -562,37 +311,7 @@ export interface paths {
          * @description Retrieves the complete, aggregated record for a single client. The response MUST include an ETag header for concurrency control.
          *
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    clientId: components["parameters"]["ClientId"];
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The full client record. */
-                200: {
-                    headers: {
-                        /** @description The current version identifier for the client record. */
-                        ETag?: string;
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ClientFull"];
-                    };
-                };
-                /** @description Client not found. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        get: operations["getClient"];
         put?: never;
         post?: never;
         delete?: never;
@@ -603,49 +322,7 @@ export interface paths {
          * @description Updates a subset of a client's details. Must include the If-Match header with the latest ETag to prevent lost updates. Changes to sensitive PII are auto-audited by the database.
          *
          */
-        patch: {
-            parameters: {
-                query?: never;
-                header: {
-                    /** @description The ETag value from the last GET request. */
-                    "If-Match": string;
-                };
-                path: {
-                    clientId: components["parameters"]["ClientId"];
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["ClientPersonalDetails"];
-                };
-            };
-            responses: {
-                /** @description Client updated successfully. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ClientFull"];
-                    };
-                };
-                /** @description Client not found. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Precondition Failed. The client record was modified by someone else. */
-                412: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        patch: operations["updateClient"];
         trace?: never;
     };
     "/clients/merge": {
@@ -661,33 +338,7 @@ export interface paths {
          * Merge Two Duplicate Client Records
          * @description A protected, administrative endpoint to merge a duplicate client record into a surviving record. This is a delicate, irreversible transaction.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        survivingClientId?: string;
-                        /** Format: uuid */
-                        subsumedClientId?: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Merge successful. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post: operations["mergeClients"];
         delete?: never;
         options?: never;
         head?: never;
@@ -702,35 +353,7 @@ export interface paths {
             cookie?: never;
         };
         /** Check Client Data Completeness */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    clientId: components["parameters"]["ClientId"];
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Health status retrieved successfully. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ClientHealthStatus"];
-                    };
-                };
-                /** @description Client not found. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        get: operations["getClientHealth"];
         put?: never;
         post?: never;
         delete?: never;
@@ -747,52 +370,10 @@ export interface paths {
             cookie?: never;
         };
         /** Get Notes for a Client */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    clientId: components["parameters"]["ClientId"];
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A list of notes. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        get: operations["listClientNotes"];
         put?: never;
         /** Add a Note to a Client Record */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    clientId: components["parameters"]["ClientId"];
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["ClientNotePayload"];
-                };
-            };
-            responses: {
-                /** @description Note created. */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post: operations["createClientNote"];
         delete?: never;
         options?: never;
         head?: never;
@@ -812,28 +393,7 @@ export interface paths {
          * Create a Confirmation of Enrolment (CoE)
          * @description Creates a new CoE record against an enrolment, typically in a 'Draft' state before submission to PRISMS.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["CoEPayload"];
-                };
-            };
-            responses: {
-                /** @description CoE created. */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post: operations["createCoE"];
         delete?: never;
         options?: never;
         head?: never;
@@ -853,30 +413,7 @@ export interface paths {
          * Cancel a Confirmation of Enrolment (CoE)
          * @description A dedicated, auditable event to cancel a CoE, with a reason code for compliance.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    coeId: components["parameters"]["CoEId"];
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["CoECancelPayload"];
-                };
-            };
-            responses: {
-                /** @description CoE cancelled. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post: operations["cancelCoE"];
         delete?: never;
         options?: never;
         head?: never;
@@ -896,30 +433,7 @@ export interface paths {
          * Grant Credit Transfer or RPL
          * @description Formally records the granting of a credit transfer or RPL for a specific unit within an enrolment.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    enrolmentId: components["parameters"]["EnrolmentId"];
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["CreditTransferPayload"];
-                };
-            };
-            responses: {
-                /** @description Credit transfer successfully granted and recorded. */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post: operations["createCreditTransfer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -939,45 +453,7 @@ export interface paths {
          * @description A critical compliance endpoint. Records the final, aggregate academic outcome for a student in a specific unit of competency within an enrolment. This action is audited.
          *
          */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    enrolmentId: components["parameters"]["EnrolmentId"];
-                    subjectId: components["parameters"]["SubjectId"];
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["EnrolmentSubjectOutcomePayload"];
-                };
-            };
-            responses: {
-                /** @description Outcome successfully recorded. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request (e.g., invalid outcome code). */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Enrolment or Subject not found. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        put: operations["setEnrolmentSubjectOutcome"];
         post?: never;
         delete?: never;
         options?: never;
@@ -996,28 +472,26 @@ export interface paths {
          * Get Session Roster
          * @description A user-centric endpoint that provides a simple, one-call way for a trainer to get a list of all students enrolled in their upcoming class.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    sessionId: components["parameters"]["SessionId"];
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The class roster. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        get: operations["getSessionRoster"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{sessionId}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit session attendance */
+        post: operations["createAttendanceSubmission"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1035,29 +509,7 @@ export interface paths {
          * Get Staff Member's Schedule
          * @description A user-centric endpoint that returns a clean, aggregated list of all sessions a trainer is assigned to in a given period.
          */
-        get: {
-            parameters: {
-                query: {
-                    startDate: string;
-                    endDate: string;
-                };
-                header?: never;
-                path: {
-                    staffId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The staff member's schedule. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        get: operations["getStaffSchedule"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1079,33 +531,7 @@ export interface paths {
          * Void an Unpaid Invoice
          * @description Transitions an 'Issued' but unpaid invoice to a 'Void' state. This is for correcting errors and is illegal if a payment has been made.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    invoiceId: components["parameters"]["InvoiceId"];
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Invoice successfully voided. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request. Invoice has payments and cannot be voided. */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post: operations["voidInvoice"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1125,30 +551,7 @@ export interface paths {
          * Issue a Refund Against a Payment
          * @description Creates a refund record, ensuring a closed-loop accounting trail.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    paymentId: components["parameters"]["PaymentId"];
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["RefundPayload"];
-                };
-            };
-            responses: {
-                /** @description Refund processed. */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post: operations["refundPayment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1166,28 +569,7 @@ export interface paths {
          * At-Risk Attendance Report
          * @description Returns a list of students whose attendance has fallen below a specified threshold in a given period.
          */
-        get: {
-            parameters: {
-                query: {
-                    minPercentage: number;
-                    startDate?: string;
-                    endDate?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A list of at-risk students. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        get: operations["getAttendanceAtRisk"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1207,29 +589,7 @@ export interface paths {
          * Financial Summary Report
          * @description Returns an aggregated financial summary for a given period.
          */
-        get: {
-            parameters: {
-                query: {
-                    startDate: string;
-                    endDate: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Aggregated financial data. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["FinancialSummary"];
-                    };
-                };
-            };
-        };
+        get: operations["getFinancialSummary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1246,27 +606,27 @@ export interface paths {
             cookie?: never;
         };
         /** List all Programs */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A list of programs. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Program"][];
-                    };
-                };
-            };
-        };
+        get: operations["getPrograms"];
         put?: never;
+        /** Create a new Program */
+        post: operations["createProgram"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a specific Program */
+        get: operations["getProgram"];
+        /** Update a Program */
+        put: operations["updateProgram"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1282,30 +642,303 @@ export interface paths {
             cookie?: never;
         };
         /** List Subjects for a Program */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    programId: components["parameters"]["ProgramId"];
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A list of subjects for the program. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProgramSubject"][];
-                    };
-                };
-            };
-        };
+        get: operations["getProgramSubjects"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List course plans for a program */
+        get: operations["listProgramCoursePlans"];
+        put?: never;
+        /** Create a course plan for a program */
+        post: operations["createProgramCoursePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans/{planId}/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get subjects for a course plan */
+        get: operations["getCoursePlanSubjects"];
+        /** Replace subjects for a course plan */
+        put: operations["replaceCoursePlanSubjects"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans/{planId}/structure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get complete course plan structure with prerequisites
+         * @description Returns the full course plan structure including subjects, prerequisites, and progression validation results.
+         */
+        get: operations["getCoursePlanStructure"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans/{planId}/prerequisites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get prerequisites for a course plan
+         * @description Returns all prerequisite relationships defined for subjects in the course plan.
+         */
+        get: operations["getCoursePlanPrerequisites"];
+        /**
+         * Update prerequisites for a course plan
+         * @description Replaces all prerequisite relationships for subjects in the course plan.
+         */
+        put: operations["updateCoursePlanPrerequisites"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans/{planId}/validate-progression": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate course plan progression rules
+         * @description Validates the prerequisite relationships in a course plan for circular dependencies and other issues.
+         */
+        post: operations["validateCoursePlanProgression"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/course-plans/{planId}/progression-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview course progression for intake models
+         * @description Generates a preview of how students will progress through the course in either Fixed or Rolling intake models. Supports rolling schedule alignment and optional catch-up strategies for late starters.
+         */
+        post: operations["previewCoursePlanProgression"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/course-offerings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a course offering */
+        put: operations["updateCourseOffering"];
+        post?: never;
+        /** Delete a course offering */
+        delete: operations["deleteCourseOffering"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/payment-plan-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List payment plan templates for a program */
+        get: operations["listPaymentPlanTemplates"];
+        put?: never;
+        /** Create a payment plan template for a program */
+        post: operations["createPaymentPlanTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payment-plan-templates/{templateId}/instalments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List instalments in a template */
+        get: operations["getPaymentPlanInstalments"];
+        /** Replace instalments list for a template */
+        put: operations["replacePaymentPlanInstalments"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/derive-payment-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Derive a concrete payment schedule for an application from a template */
+        post: operations["derivePaymentPlanForApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Documents for an Application
+         * @description Returns all documents associated with an application, including uploaded files and generated documents.
+         */
+        get: operations["listApplicationDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/documents/upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Upload URL for Document
+         * @description Generates a signed URL for uploading a document to Supabase Storage with proper validation and security.
+         */
+        post: operations["generateDocumentUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/documents/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Document Upload
+         * @description Confirms that a document has been successfully uploaded to storage and records the metadata.
+         */
+        post: operations["confirmDocumentUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/documents/{documentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Application Document
+         * @description Deletes a document from both storage and database, with proper authorization checks.
+         */
+        delete: operations["deleteApplicationDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/passport-process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Process Passport Document with Mindee API
+         * @description Processes a passport document using Mindee API to extract personal information
+         *     and automatically populate application form fields. This endpoint is called
+         *     automatically when a document with "passport" in the filename is uploaded.
+         *
+         */
+        post: operations["processPassport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1323,29 +956,113 @@ export interface paths {
          * List Course Offerings for a Program
          * @description Returns available course offerings/intakes for a specific program that are open for enrolment.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    programId: components["parameters"]["ProgramId"];
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A list of course offerings for the program. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["CourseOffering"][];
-                    };
-                };
-            };
-        };
+        get: operations["listProgramOfferings"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/rolling-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get rolling schedule definition for a program */
+        get: operations["getProgramRollingSchedule"];
+        /** Create or update rolling schedule for a program */
+        put: operations["upsertProgramRollingSchedule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/rolling-schedule/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate rolling schedule payload */
+        post: operations["validateProgramRollingSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/rolling-schedule/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview rolling schedule windows across cycles */
+        post: operations["previewProgramRollingSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programs/{programId}/derive-catchup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Derive catch-up units based on start unit and schedule */
+        post: operations["deriveCatchupForProgram"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all Units of Competency */
+        get: operations["getUnits"];
+        put?: never;
+        /** Create a new Unit of Competency */
+        post: operations["createUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/units/{unitId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a specific Unit of Competency */
+        get: operations["getUnit"];
+        /** Update a Unit of Competency */
+        put: operations["updateUnit"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1364,26 +1081,7 @@ export interface paths {
          * List Active Educational Agents
          * @description Returns a list of active educational agents available for student referrals.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A list of active agents. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Agent"][];
-                    };
-                };
-            };
-        };
+        get: operations["listAgents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1400,28 +1098,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get AVETMISS Reference Codes */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    codeType: "COUNTRY" | "LANGUAGE" | "DISABILITY_TYPE" | "PRIOR_EDUCATION" | "FUNDING_SOURCE" | "STUDY_REASON";
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A list of code-value pairs. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ReferenceCode"][];
-                    };
-                };
-            };
-        };
+        get: operations["getReferenceData"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1430,10 +1107,291 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/address-autocomplete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Address Autocomplete
+         * @description Provides address autocomplete functionality using the Addressable API. Returns formatted addresses that can be used to populate address forms.
+         *
+         */
+        get: operations["addressAutocomplete"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organisations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Organisations
+         * @description Retrieve all organisations for NAT00010 AVETMISS compliance
+         */
+        get: operations["listOrganisations"];
+        put?: never;
+        /**
+         * Create Organisation
+         * @description Create a new organisation for NAT00010 AVETMISS compliance
+         */
+        post: operations["createOrganisation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organisations/{organisationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Organisation
+         * @description Retrieve a specific organisation by ID
+         */
+        get: operations["getOrganisation"];
+        /**
+         * Update Organisation
+         * @description Update an organisation for NAT00010 AVETMISS compliance
+         */
+        put: operations["updateOrganisation"];
+        post?: never;
+        /**
+         * Delete Organisation
+         * @description Delete an organisation
+         */
+        delete: operations["deleteOrganisation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Locations
+         * @description Retrieve all training delivery locations for NAT00020 AVETMISS compliance
+         */
+        get: operations["listLocations"];
+        put?: never;
+        /**
+         * Create Location
+         * @description Create a new training delivery location for NAT00020 AVETMISS compliance
+         */
+        post: operations["createLocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations/{locationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Location
+         * @description Retrieve a specific location by ID
+         */
+        get: operations["getLocation"];
+        /**
+         * Update Location
+         * @description Update a training delivery location for NAT00020 AVETMISS compliance
+         */
+        put: operations["updateLocation"];
+        post?: never;
+        /**
+         * Delete Location
+         * @description Delete a training delivery location
+         */
+        delete: operations["deleteLocation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations/{locationId}/toggle-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Toggle Location Status
+         * @description Toggle the active status of a training delivery location
+         */
+        patch: operations["toggleLocationStatus"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CoursePlan: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            program_id?: string;
+            name?: string;
+            version?: number;
+            is_active?: boolean;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        CoursePlanCreate: {
+            name: string;
+            /** @default 1 */
+            version: number;
+            /** @default false */
+            is_active: boolean;
+        };
+        CoursePlanSubject: {
+            /** Format: uuid */
+            subject_id?: string;
+            subject_identifier?: string;
+            subject_name?: string;
+            /** @enum {string} */
+            unit_type?: "Core" | "Elective";
+            sort_order?: number;
+            /** @description Duration of the unit in weeks for this program plan template */
+            duration_weeks?: number;
+        };
+        CoursePlanSubjectInput: {
+            /** Format: uuid */
+            subject_id: string;
+            /** @enum {string} */
+            unit_type: "Core" | "Elective";
+            /** @default 0 */
+            sort_order: number;
+            /**
+             * @description Duration of the unit in weeks for this program plan template
+             * @default 1
+             */
+            duration_weeks: number;
+            /**
+             * @default Basic
+             * @enum {string}
+             */
+            complexity_level: "Basic" | "Intermediate" | "Advanced";
+        };
+        CourseOfferingUpdate: {
+            /** Format: uuid */
+            programId?: string;
+            /** Format: date */
+            startDate?: string | null;
+            /** Format: date */
+            endDate?: string | null;
+            /** Format: uuid */
+            deliveryLocationId?: string | null;
+            maxStudents?: number | null;
+            /** @enum {string} */
+            status?: "Scheduled" | "Active" | "Completed" | "Cancelled";
+            isRolling?: boolean;
+            /** Format: uuid */
+            defaultPlanId?: string | null;
+        };
+        PaymentPlanTemplate: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            program_id?: string;
+            name?: string;
+            is_default?: boolean;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        PaymentPlanTemplateCreate: {
+            name: string;
+            /** @default false */
+            is_default: boolean;
+        };
+        PaymentPlanInstalment: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            template_id?: string;
+            description?: string;
+            /** Format: double */
+            amount?: number;
+            offset_days?: number;
+            sort_order?: number;
+        };
+        PaymentPlanInstalmentInput: {
+            description: string;
+            /** Format: double */
+            amount: number;
+            /** @default 0 */
+            offset_days: number;
+            /** @default 0 */
+            sort_order: number;
+        };
+        PaymentPlanDeriveInput: {
+            /** Format: uuid */
+            templateId: string;
+            /**
+             * Format: date
+             * @description Deprecated; prefer anchor+anchorDate.
+             */
+            startDate?: string;
+            /** Format: uuid */
+            enrolmentId?: string | null;
+            /** @enum {string} */
+            anchor?: "OFFER_LETTER" | "COMMENCEMENT" | "CUSTOM";
+            /**
+             * Format: date
+             * @description Required if anchor=CUSTOM; for COMMENCEMENT when no course offering date is set.
+             */
+            anchorDate?: string;
+        };
+        PaymentPlanDerivedInstalment: {
+            description?: string;
+            /** Format: double */
+            amount?: number;
+            /** Format: date */
+            dueDate?: string;
+        };
+        PaymentPlanDerivedSchedule: {
+            items?: components["schemas"]["PaymentPlanDerivedInstalment"][];
+        };
+        OfferLetterResult: {
+            /** @description Storage path where the offer letter PDF is stored. */
+            path?: string;
+            /** @example application/pdf */
+            mimeType?: string;
+            sizeBytes?: number;
+            version?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         /** @description The complete data object for an application. */
         FullEnrolmentPayload: {
             /** Format: uuid */
@@ -1447,6 +1405,18 @@ export interface components {
             cricosDetails?: components["schemas"]["ClientCricosDetails"];
             usi?: components["schemas"]["ClientUSI"];
             enrolmentDetails?: components["schemas"]["EnrolmentDetails"];
+            /** @description Snapshot of the selected payment plan for this draft application. */
+            paymentPlan?: {
+                /** Format: uuid */
+                selectedTemplateId?: string;
+                /** @enum {string} */
+                anchor?: "OFFER_LETTER" | "COMMENCEMENT" | "CUSTOM";
+                /** Format: date */
+                anchorDate?: string | null;
+                schedule?: components["schemas"]["PaymentPlanDerivedInstalment"][];
+                /** Format: double */
+                tuitionFeeSnapshot?: number;
+            };
         };
         /** @description The financial contract terms agreed upon for this enrolment, submitted at the point of approval. */
         ApprovalPayload: {
@@ -1466,17 +1436,33 @@ export interface components {
             programId?: string;
             /**
              * Format: uuid
-             * @description The specific course offering/intake the student is enrolling in
+             * @description The program plan template that defines subjects, structure, and durations
+             */
+            programPlanTemplateId?: string;
+            /**
+             * Format: uuid
+             * @description The specific course offering/intake the student is enrolling in (required for Fixed intake)
              */
             courseOfferingId?: string;
+            /**
+             * @description The intake model for this enrolment
+             * @enum {string}
+             */
+            intakeModel?: "Fixed" | "Rolling";
             /** @description The snapshot of the program structure for this enrolment. */
             subjectStructure?: {
                 coreSubjectIds?: string[];
                 electiveSubjectIds?: string[];
             };
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Start date for the enrolment (required for Fixed intake)
+             */
             startDate?: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Expected completion date (calculated from template durations for Rolling intake)
+             */
             expectedCompletionDate?: string;
             /** Format: uuid */
             deliveryLocationId?: string;
@@ -1799,6 +1785,49 @@ export interface components {
             /** @example 2000 */
             postcode?: string;
         };
+        /** @description Address response from Addressable API */
+        AddressableAddress: {
+            /**
+             * @description Street number
+             * @example 220
+             */
+            streetNumber?: string;
+            /**
+             * @description Street name
+             * @example Queen Street
+             */
+            streetName?: string;
+            /**
+             * @description Unit/apartment details
+             * @example Unit 5
+             */
+            unitDetails?: string | null;
+            /**
+             * @description Building name
+             * @example Central Plaza
+             */
+            buildingName?: string | null;
+            /**
+             * @description Suburb/locality
+             * @example Melbourne
+             */
+            suburb?: string;
+            /**
+             * @description State code
+             * @example VIC
+             */
+            state?: string;
+            /**
+             * @description Postcode
+             * @example 3000
+             */
+            postcode?: string;
+            /**
+             * @description Complete formatted address
+             * @example 220 Queen Street, Melbourne VIC 3000
+             */
+            formatted?: string;
+        };
         ErrorResponse: {
             /** @example Validation failed */
             message?: string;
@@ -1891,9 +1920,127 @@ export interface components {
         Program: {
             /** Format: uuid */
             id?: string;
+            /** @description NAT00030 Program identifier (10 chars max) */
             program_identifier?: string;
+            /** @description NAT00030 Program name (100 chars max) */
             program_name?: string;
-            status?: string;
+            /** @enum {string} */
+            status?: "Current" | "Superseded" | "Archived";
+            /** @description NAT00030 AQF level identifier (3 chars) */
+            program_level_of_education_identifier?: string;
+            /** @description NAT00030 ASCED field identifier (4 chars) */
+            program_field_of_education_identifier?: string;
+            /** @description NAT00030 Program recognition status (2 chars) */
+            program_recognition_identifier?: string;
+            /**
+             * @description NAT00030 VET flag indicator (Y/N)
+             * @enum {string}
+             */
+            vet_flag?: "Y" | "N";
+            /** @description NAT00030 Program nominal hours */
+            nominal_hours?: number;
+            /** @description NAT00030 ANZSCO occupation code (6 chars, optional) */
+            anzsco_identifier?: string | null;
+            /** @description NAT00030 ANZSIC industry code (4 chars, optional) */
+            anzsic_identifier?: string | null;
+            /** @description Training.gov.au URL for the program */
+            tga_url?: string | null;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        ProgramCreate: {
+            /** @description NAT00030 Program identifier (10 chars max) */
+            program_identifier: string;
+            /** @description NAT00030 Program name (100 chars max) */
+            program_name: string;
+            /**
+             * @default Current
+             * @enum {string}
+             */
+            status: "Current" | "Superseded" | "Archived";
+            /** @description NAT00030 AQF level identifier (3 chars) */
+            program_level_of_education_identifier: string;
+            /** @description NAT00030 ASCED field identifier (4 chars) */
+            program_field_of_education_identifier: string;
+            /** @description NAT00030 Program recognition status (2 chars) */
+            program_recognition_identifier: string;
+            /**
+             * @description NAT00030 VET flag indicator (Y/N)
+             * @enum {string}
+             */
+            vet_flag: "Y" | "N";
+            /** @description NAT00030 Program nominal hours */
+            nominal_hours: number;
+            /** @description NAT00030 ANZSCO occupation code (6 chars, optional) */
+            anzsco_identifier?: string | null;
+            /** @description NAT00030 ANZSIC industry code (4 chars, optional) */
+            anzsic_identifier?: string | null;
+            /** @description Training.gov.au URL for the program */
+            tga_url?: string | null;
+        };
+        ProgramUpdate: {
+            /** @description NAT00030 Program name (100 chars max) */
+            program_name?: string;
+            /** @enum {string} */
+            status?: "Current" | "Superseded" | "Archived";
+            /** @description NAT00030 AQF level identifier (3 chars) */
+            program_level_of_education_identifier?: string;
+            /** @description NAT00030 ASCED field identifier (4 chars) */
+            program_field_of_education_identifier?: string;
+            /** @description NAT00030 Program recognition status (2 chars) */
+            program_recognition_identifier?: string;
+            /**
+             * @description NAT00030 VET flag indicator (Y/N)
+             * @enum {string}
+             */
+            vet_flag?: "Y" | "N";
+            /** @description NAT00030 Program nominal hours */
+            nominal_hours?: number;
+            /** @description NAT00030 ANZSCO occupation code (6 chars, optional) */
+            anzsco_identifier?: string | null;
+            /** @description NAT00030 ANZSIC industry code (4 chars, optional) */
+            anzsic_identifier?: string | null;
+            /** @description Training.gov.au URL for the program */
+            tga_url?: string | null;
+        };
+        Unit: {
+            /** Format: uuid */
+            id?: string;
+            /** @description Unit identifier (e.g., BSBLDR411) */
+            subject_identifier?: string;
+            /** @description Unit name */
+            subject_name?: string;
+            /** @enum {string} */
+            status?: "Current" | "Superseded" | "Archived";
+            /** @description Training.gov.au URL for the unit */
+            tga_url?: string | null;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        UnitCreate: {
+            /** @description Unit identifier (e.g., BSBLDR411) */
+            subject_identifier: string;
+            /** @description Unit name */
+            subject_name: string;
+            /**
+             * @default Current
+             * @enum {string}
+             */
+            status: "Current" | "Superseded" | "Archived";
+            /** @description Training.gov.au URL for the unit */
+            tga_url?: string | null;
+        };
+        UnitUpdate: {
+            /** @description Unit name */
+            subject_name?: string;
+            /** @enum {string} */
+            status?: "Current" | "Superseded" | "Archived";
+            /** @description Training.gov.au URL for the unit */
+            tga_url?: string | null;
         };
         ProgramSubject: {
             /** Format: uuid */
@@ -1948,8 +2095,621 @@ export interface components {
             /** @enum {string} */
             status?: "Scheduled" | "Active" | "Completed" | "Cancelled";
         };
+        ApplicationDocument: {
+            /**
+             * Format: uuid
+             * @description Unique identifier for the document
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description ID of the application this document belongs to
+             */
+            application_id?: string;
+            /**
+             * @description Full path to the document in Supabase Storage
+             * @example student-docs/applications/123/uploads/passport.pdf
+             */
+            path?: string;
+            /**
+             * @description Type/category of the document
+             * @enum {string}
+             */
+            doc_type?: "EVIDENCE" | "OFFER_LETTER" | "COE" | "OTHER";
+            /**
+             * @description Version identifier for the document
+             * @example v2024-01-15
+             */
+            version?: string;
+            /**
+             * @description MIME type of the document
+             * @example application/pdf
+             */
+            mime_type?: string;
+            /** @description Size of the document in bytes */
+            size_bytes?: number;
+            /**
+             * Format: date-time
+             * @description When the document was uploaded
+             */
+            created_at?: string;
+            /**
+             * Format: date-time
+             * @description When the document was last modified
+             */
+            updated_at?: string;
+        };
+        DocumentUploadRequest: {
+            /**
+             * @description Original filename of the document
+             * @example passport.pdf
+             */
+            filename: string;
+            /**
+             * @description MIME type of the document
+             * @example application/pdf
+             */
+            contentType: string;
+            /**
+             * @description Category/type of the document
+             * @example EVIDENCE
+             * @enum {string}
+             */
+            category: "EVIDENCE" | "OFFER_LETTER" | "COE" | "OTHER";
+        };
+        DocumentUploadUrlResponse: {
+            /**
+             * Format: uri
+             * @description Signed URL for uploading the document
+             */
+            uploadUrl?: string;
+            /** @description Required headers for the upload request */
+            headers?: {
+                [key: string]: string;
+            };
+            /**
+             * @description Path where the document will be stored
+             * @example applications/123/uploads/1640995200000_passport.pdf
+             */
+            objectPath?: string;
+            /**
+             * Format: date-time
+             * @description When the upload URL expires
+             */
+            expiresAt?: string;
+        };
+        DocumentConfirmRequest: {
+            /**
+             * @description Path of the uploaded document in storage
+             * @example applications/123/uploads/1640995200000_passport.pdf
+             */
+            objectPath: string;
+            /** @description Size of the uploaded file in bytes */
+            size: number;
+            /** @description Optional file hash for integrity verification */
+            hash?: string | null;
+        };
+        DocumentConfirmResponse: {
+            /**
+             * Format: uuid
+             * @description Unique identifier of the created document record
+             */
+            id?: string;
+            /**
+             * @description Success message
+             * @example Document uploaded successfully
+             */
+            message?: string;
+            /**
+             * @description Full path to the document in storage
+             * @example student-docs/applications/123/uploads/1640995200000_passport.pdf
+             */
+            path?: string;
+            /** @description Size of the uploaded file in bytes */
+            size?: number;
+            /**
+             * @description MIME type of the document
+             * @example application/pdf
+             */
+            contentType?: string;
+        };
+        PassportProcessRequest: {
+            /**
+             * Format: uuid
+             * @description ID of the application to update with extracted data
+             */
+            applicationId: string;
+            /**
+             * Format: uuid
+             * @description ID of the document being processed
+             */
+            documentId: string;
+            /**
+             * @description Path to the document in Supabase Storage
+             * @example student-docs/applications/123/uploads/passport.pdf
+             */
+            documentPath: string;
+        };
+        PassportProcessResponse: {
+            /**
+             * @description Success message
+             * @example Passport processed successfully
+             */
+            message?: string;
+            extractedData?: components["schemas"]["ExtractedPassportData"];
+            /**
+             * @description List of field names that were successfully extracted
+             * @example [
+             *       "firstName",
+             *       "lastName",
+             *       "gender",
+             *       "dateOfBirth"
+             *     ]
+             */
+            fieldsExtracted?: string[];
+        };
+        /** @description Personal information extracted from passport document */
+        ExtractedPassportData: {
+            /**
+             * @description Extracted first name
+             * @example SIMRAN
+             */
+            firstName?: string | null;
+            /**
+             * @description Extracted last name
+             * @example KAUR
+             */
+            lastName?: string | null;
+            /**
+             * @description Extracted gender
+             * @example Female
+             * @enum {string|null}
+             */
+            gender?: "Male" | "Female" | "Other" | null;
+            /**
+             * Format: date
+             * @description Extracted date of birth in YYYY-MM-DD format
+             * @example 1997-06-12
+             */
+            dateOfBirth?: string | null;
+            /**
+             * @description Extracted nationality
+             * @example INDIAN
+             */
+            nationality?: string | null;
+            /**
+             * @description Extracted place of birth
+             * @example PUNJAB
+             */
+            placeOfBirth?: string | null;
+            /**
+             * @description Extracted passport number
+             * @example N6975116
+             */
+            passportNumber?: string | null;
+            /**
+             * @description Extracted issuing country code
+             * @example IND
+             */
+            issuingCountry?: string | null;
+            /**
+             * Format: date
+             * @description Extracted date of issue in YYYY-MM-DD format
+             * @example 2016-02-01
+             */
+            dateOfIssue?: string | null;
+            /**
+             * Format: date
+             * @description Extracted date of expiry in YYYY-MM-DD format
+             * @example 2026-02-09
+             */
+            dateOfExpiry?: string | null;
+            /** @description Extracted MRZ line 1 */
+            mrzLine1?: string | null;
+            /** @description Extracted MRZ line 2 */
+            mrzLine2?: string | null;
+        };
+        /** @description Complete course plan structure with subjects, prerequisites, and validation results */
+        CoursePlanStructure: {
+            plan?: components["schemas"]["CoursePlan"];
+            /** @description Subjects in the plan with additional metadata */
+            subjects?: (components["schemas"]["CoursePlanSubject"] & {
+                estimated_duration_weeks?: number;
+                /** @enum {string} */
+                complexity_level?: "Basic" | "Intermediate" | "Advanced";
+                /** @description Number of prerequisites for this subject */
+                prerequisites_count?: number;
+                /** @description Number of subjects that depend on this subject */
+                dependents_count?: number;
+            })[];
+            /** @description All prerequisite relationships in the plan */
+            prerequisites?: components["schemas"]["SubjectPrerequisite"][];
+            progression_validation?: components["schemas"]["ProgressionValidationResult"];
+        };
+        /** @description A prerequisite relationship between two subjects */
+        SubjectPrerequisite: {
+            /** Format: uuid */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description The subject that requires the prerequisite
+             */
+            subject_id?: string;
+            /**
+             * Format: uuid
+             * @description The subject that must be completed first
+             */
+            prerequisite_subject_id?: string;
+            /** @enum {string} */
+            prerequisite_type?: "Required" | "Recommended";
+            /** @description Name of the subject requiring the prerequisite */
+            subject_name?: string;
+            /** @description Name of the prerequisite subject */
+            prerequisite_subject_name?: string;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        SubjectPrerequisiteInput: {
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            prerequisite_subject_id: string;
+            /** @enum {string} */
+            prerequisite_type: "Required" | "Recommended";
+        };
+        /** @description Results of validating course plan progression rules */
+        ProgressionValidationResult: {
+            /** @description Whether the progression rules are valid */
+            is_valid?: boolean;
+            /** @description List of validation errors */
+            errors?: {
+                /** @description Error type (e.g. */
+                type?: string;
+                /** @description Human-readable error message */
+                message?: string;
+                /** @description IDs of subjects involved in the error */
+                subject_ids?: string[];
+            }[];
+            /** @description List of validation warnings */
+            warnings?: Record<string, never>[];
+        };
+        ProgressionPreviewRequest: {
+            /**
+             * @description The intake model to preview
+             * @enum {string}
+             */
+            intake_model: "Fixed" | "Rolling";
+            /**
+             * Format: date
+             * @description Start date for Fixed intake preview
+             */
+            start_date?: string | null;
+            /**
+             * @description Duration to simulate in weeks
+             * @default 52
+             */
+            simulation_duration_weeks: number;
+        };
+        ProgramSchedule: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            program_id?: string;
+            name?: string;
+            /**
+             * Format: date
+             * @description The anchor date for cycle calculations (inclusive start)
+             */
+            cycle_anchor_date?: string;
+            /** @description IANA timezone (default Australia/Melbourne) */
+            timezone?: string;
+            units?: components["schemas"]["ProgramScheduleUnit"][];
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        ProgramScheduleUnit: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            schedule_id?: string;
+            /** Format: uuid */
+            subject_id?: string;
+            order_index?: number;
+            duration_days?: number;
+        };
+        ProgramScheduleUpsert: {
+            name?: string;
+            /** Format: date */
+            cycleAnchorDate: string;
+            /** @default Australia/Melbourne */
+            timezone: string;
+            units: {
+                /** Format: uuid */
+                subjectId: string;
+                orderIndex: number;
+                durationDays: number;
+            }[];
+        };
+        RollingSchedulePreview: {
+            /** Format: date */
+            cycle_anchor_date?: string;
+            timezone?: string;
+            cycles?: number;
+            windows?: {
+                term_index?: number;
+                /** Format: uuid */
+                subject_id?: string;
+                subject_name?: string;
+                /** Format: date */
+                start_date?: string;
+                /** Format: date */
+                end_date?: string;
+            }[];
+        };
+        /** @description Results of course progression preview for different intake models */
+        ProgressionPreviewResult: {
+            /** @enum {string} */
+            intake_model?: "Fixed" | "Rolling";
+            /** @description Total estimated duration of the course */
+            total_duration_weeks?: number;
+            /** @description Phases of progression through the course */
+            progression_phases?: components["schemas"]["ProgressionPhase"][];
+            /** @description Timeline for Fixed intake model */
+            fixed_intake_timeline?: components["schemas"]["FixedIntakeTimelineEntry"][];
+            /** @description Sequence for Rolling intake model */
+            rolling_intake_sequence?: components["schemas"]["RollingIntakeSequenceEntry"][];
+        };
+        /** @description A phase in the course progression */
+        ProgressionPhase: {
+            /** @description Sequential phase number */
+            phase_number?: number;
+            /** @description Subjects that can be taken in this phase */
+            subject_ids?: string[];
+            /** @description Week when this phase begins */
+            estimated_start_week?: number;
+            /** @description Week when this phase ends */
+            estimated_end_week?: number;
+        };
+        /** @description Timeline entry for Fixed intake model */
+        FixedIntakeTimelineEntry: {
+            /** Format: uuid */
+            subject_id?: string;
+            subject_name?: string;
+            /** @description Week when this subject begins */
+            start_week?: number;
+            /** @description Week when this subject ends */
+            end_week?: number;
+            /** @description Duration of this subject in weeks */
+            duration_weeks?: number;
+            /** @description Week by which prerequisites must be completed */
+            prerequisites_completed_by_week?: number;
+            /**
+             * Format: date
+             * @description Actual start date of this subject
+             */
+            start_date?: string;
+            /**
+             * Format: date
+             * @description Actual end date of this subject
+             */
+            end_date?: string;
+        };
+        /** @description Sequence entry for Rolling intake model */
+        RollingIntakeSequenceEntry: {
+            /** @description What triggers unlocking these subjects (Enrolment */
+            unlock_trigger?: string;
+            /** @description Subjects unlocked by this trigger */
+            subjects_unlocked?: {
+                /** Format: uuid */
+                subject_id?: string;
+                subject_name?: string;
+                estimated_duration_weeks?: number;
+                /** @description Subject IDs that must be completed first */
+                prerequisite_subjects?: string[];
+                /**
+                 * Format: date
+                 * @description Date when this subject becomes available
+                 */
+                available_from_date?: string;
+                /**
+                 * Format: date
+                 * @description Estimated completion date if started immediately
+                 */
+                estimated_completion_date?: string;
+            }[];
+        };
+        Organisation: {
+            /** Format: uuid */
+            id?: string;
+            /** @description NAT00010: Training organisation identifier (A, 10) - Your RTO code */
+            organisation_identifier?: string;
+            /** @description NAT00010: Training organisation name (A, 100) - Organisation legal name */
+            organisation_name?: string;
+            /** @description NAT00010: Training organisation type identifier (A, 2) */
+            organisation_type_identifier?: string;
+            /** @description NAT00010: State identifier (A, 2) */
+            state_identifier?: string;
+            /**
+             * Format: uuid
+             * @description Reference to address table
+             */
+            address_id?: string | null;
+            /** @description NAT00010: Telephone number (A, 20) */
+            phone_number?: string | null;
+            /** @description NAT00010: Facsimile number (A, 20) */
+            fax_number?: string | null;
+            /** @description NAT00010: Email address (A, 80) */
+            email_address?: string | null;
+            /** @description NAT00010: Contact name (A, 60) */
+            contact_name?: string | null;
+            address?: components["schemas"]["OrganisationAddress"];
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        CreateOrganisationRequest: {
+            /** @description RTO code from training.gov.au */
+            organisation_identifier: string;
+            /** @description Legal organisation name */
+            organisation_name: string;
+            /** @enum {string} */
+            organisation_type_identifier: "21" | "25" | "27" | "31" | "41" | "43" | "45" | "51" | "53" | "61" | "91" | "93" | "95" | "97" | "99";
+            /** @enum {string} */
+            state_identifier: "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08";
+            address?: components["schemas"]["CreateOrganisationAddressRequest"];
+            phone_number?: string;
+            fax_number?: string;
+            /** Format: email */
+            email_address?: string;
+            contact_name?: string;
+        };
+        UpdateOrganisationRequest: {
+            organisation_identifier?: string;
+            organisation_name?: string;
+            /** @enum {string} */
+            organisation_type_identifier?: "21" | "25" | "27" | "31" | "41" | "43" | "45" | "51" | "53" | "61" | "91" | "93" | "95" | "97" | "99";
+            /** @enum {string} */
+            state_identifier?: "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08";
+            address?: components["schemas"]["UpdateOrganisationAddressRequest"];
+            phone_number?: string;
+            fax_number?: string;
+            /** Format: email */
+            email_address?: string;
+            contact_name?: string;
+        };
+        Location: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            organisation_id?: string;
+            /** @description NAT00020: Training organisation delivery location identifier (A, 10) */
+            location_identifier?: string;
+            /** @description NAT00020: Training organisation delivery location name (A, 100) */
+            location_name?: string;
+            /** Format: uuid */
+            address_id?: string;
+            address?: components["schemas"]["OrganisationAddress"];
+            /** @description Whether this location is active for training delivery */
+            is_active?: boolean;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        CreateLocationRequest: {
+            /** Format: uuid */
+            organisation_id: string;
+            location_identifier: string;
+            location_name: string;
+            address: components["schemas"]["CreateOrganisationAddressRequest"];
+            /** @default true */
+            is_active: boolean;
+        };
+        UpdateLocationRequest: {
+            location_identifier?: string;
+            location_name?: string;
+            address?: components["schemas"]["UpdateOrganisationAddressRequest"];
+            is_active?: boolean;
+        };
+        OrganisationAddress: {
+            /** Format: uuid */
+            id?: string;
+            /** @description NAT00010/00020: Address building/property name (A, 50) */
+            building_property_name?: string | null;
+            /** @description NAT00010/00020: Address flat/unit details (A, 30) */
+            flat_unit_details?: string | null;
+            /** @description NAT00010/00020: Address street number (A, 15) */
+            street_number?: string | null;
+            /** @description NAT00010/00020: Address street name (A, 70) */
+            street_name?: string | null;
+            /** @description NAT00010/00020: Address suburb, locality or town (A, 50) */
+            suburb?: string;
+            /** @description NAT00010/00020: Postcode (A, 4) */
+            postcode?: string;
+            /** @description NAT00010/00020: State identifier (A, 2) */
+            state_identifier?: string;
+            /** @description Country identifier */
+            country_identifier?: string;
+            /** @description NAT00010: Statistical area level 1 identifier (A, 11) */
+            sa1_identifier?: string | null;
+            /** @description NAT00010: Statistical area level 2 identifier (A, 9) */
+            sa2_identifier?: string | null;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        CreateOrganisationAddressRequest: {
+            building_property_name?: string;
+            flat_unit_details?: string;
+            street_number?: string;
+            street_name?: string;
+            suburb: string;
+            /** @description 4-digit postcode or 'OSPC' for overseas */
+            postcode: string;
+            /** @enum {string} */
+            state_identifier: "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08";
+            /**
+             * @description Australia
+             * @default 1101
+             */
+            country_identifier: string;
+            sa1_identifier?: string;
+            sa2_identifier?: string;
+        };
+        UpdateOrganisationAddressRequest: {
+            building_property_name?: string;
+            flat_unit_details?: string;
+            street_number?: string;
+            street_name?: string;
+            suburb?: string;
+            postcode?: string;
+            /** @enum {string} */
+            state_identifier?: "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08";
+            country_identifier?: string;
+            sa1_identifier?: string;
+            sa2_identifier?: string;
+        };
     };
-    responses: never;
+    responses: {
+        /** @description Bad Request */
+        BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Unauthorized */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content?: never;
+        };
+        /** @description Not Found */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Internal Server Error */
+        InternalServerError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+    };
     parameters: {
         ApplicationId: string;
         EnrolmentId: string;
@@ -1967,4 +2727,2300 @@ export interface components {
     pathItems: never;
 }
 export type $defs = Record<string, never>;
-export type operations = Record<string, never>;
+export interface operations {
+    listApplications: {
+        parameters: {
+            query?: {
+                /** @description Page number for pagination (1-based) */
+                page?: number;
+                /** @description Number of applications per page */
+                limit?: number;
+                /** @description Filter applications by status */
+                status?: "Draft" | "Submitted" | "Approved" | "Rejected";
+                /** @description Search applications by client name or email */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A paginated list of applications. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Can be an empty body to create a blank draft, or can contain initial data. */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["FullEnrolmentPayload"];
+            };
+        };
+        responses: {
+            /** @description Draft application created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    deleteApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Application successfully deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["FullEnrolmentPayload"];
+            };
+        };
+        responses: {
+            /** @description Application updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    submitApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Application submitted for review. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    approveApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovalPayload"];
+            };
+        };
+        responses: {
+            /** @description Application approved and enrolment created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FullEnrolmentResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    rejectApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Reason for rejection */
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Application rejected successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    generateOfferLetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Offer letter generated and stored. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferLetterResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    sendOfferLetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Offer letter sent and status transitioned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    acceptApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Application accepted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listDraftApplications: {
+        parameters: {
+            query?: {
+                /** @description Page number for pagination (1-based) */
+                page?: number;
+                /** @description Number of applications per page */
+                limit?: number;
+                /** @description Search applications by client name or email */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A paginated list of draft applications. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listSubmittedApplications: {
+        parameters: {
+            query?: {
+                /** @description Page number for pagination (1-based) */
+                page?: number;
+                /** @description Number of applications per page */
+                limit?: number;
+                /** @description Search applications by client name or email */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A paginated list of submitted applications. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listApprovedApplications: {
+        parameters: {
+            query?: {
+                /** @description Page number for pagination (1-based) */
+                page?: number;
+                /** @description Number of applications per page */
+                limit?: number;
+                /** @description Search applications by client name or email */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A paginated list of approved applications. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getApplicationStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Application statistics. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    changeEnrolmentState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: components["parameters"]["EnrolmentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnrolmentStateChangePayload"];
+            };
+        };
+        responses: {
+            /** @description Enrolment state successfully changed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listClients: {
+        parameters: {
+            query?: {
+                search?: string;
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of clients. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientSummary"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getClient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clientId: components["parameters"]["ClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The full client record. */
+            200: {
+                headers: {
+                    /** @description The current version identifier for the client record. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientFull"];
+                };
+            };
+            /** @description Client not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateClient: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag value from the last GET request. */
+                "If-Match": string;
+            };
+            path: {
+                clientId: components["parameters"]["ClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientPersonalDetails"];
+            };
+        };
+        responses: {
+            /** @description Client updated successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientFull"];
+                };
+            };
+            /** @description Client not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Precondition Failed. The client record was modified by someone else. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mergeClients: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    survivingClientId?: string;
+                    /** Format: uuid */
+                    subsumedClientId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Merge successful. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getClientHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clientId: components["parameters"]["ClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Health status retrieved successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientHealthStatus"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Client not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listClientNotes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clientId: components["parameters"]["ClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of notes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createClientNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clientId: components["parameters"]["ClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientNotePayload"];
+            };
+        };
+        responses: {
+            /** @description Note created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createCoE: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoEPayload"];
+            };
+        };
+        responses: {
+            /** @description CoE created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    cancelCoE: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                coeId: components["parameters"]["CoEId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoECancelPayload"];
+            };
+        };
+        responses: {
+            /** @description CoE cancelled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createCreditTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: components["parameters"]["EnrolmentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreditTransferPayload"];
+            };
+        };
+        responses: {
+            /** @description Credit transfer successfully granted and recorded. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setEnrolmentSubjectOutcome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: components["parameters"]["EnrolmentId"];
+                subjectId: components["parameters"]["SubjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnrolmentSubjectOutcomePayload"] | components["schemas"]["GradePayload"];
+            };
+        };
+        responses: {
+            /** @description Outcome successfully recorded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSessionRoster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: components["parameters"]["SessionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The class roster. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createAttendanceSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: components["parameters"]["SessionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttendanceSubmission"];
+            };
+        };
+        responses: {
+            /** @description Attendance recorded. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getStaffSchedule: {
+        parameters: {
+            query: {
+                startDate: string;
+                endDate: string;
+            };
+            header?: never;
+            path: {
+                staffId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The staff member's schedule. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    voidInvoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoiceId: components["parameters"]["InvoiceId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invoice successfully voided. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    refundPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                paymentId: components["parameters"]["PaymentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundPayload"] | components["schemas"]["PaymentPayload"];
+            };
+        };
+        responses: {
+            /** @description Refund processed. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getAttendanceAtRisk: {
+        parameters: {
+            query: {
+                minPercentage: number;
+                startDate?: string;
+                endDate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of at-risk students. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getFinancialSummary: {
+        parameters: {
+            query: {
+                startDate: string;
+                endDate: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated financial data. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getPrograms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of programs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramCreate"];
+            };
+        };
+        responses: {
+            /** @description Program created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Program identifier already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Program details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramUpdate"];
+            };
+        };
+        responses: {
+            /** @description Program updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getProgramSubjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of subjects for the program. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgramSubject"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listProgramCoursePlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of course plans */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoursePlan"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createProgramCoursePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoursePlanCreate"];
+            };
+        };
+        responses: {
+            /** @description Course plan created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoursePlan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCoursePlanSubjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subjects in the plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoursePlanSubject"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    replaceCoursePlanSubjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoursePlanSubjectInput"][];
+            };
+        };
+        responses: {
+            /** @description Plan subjects updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCoursePlanStructure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Complete course plan structure */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoursePlanStructure"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCoursePlanPrerequisites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Prerequisites for the course plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectPrerequisite"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateCoursePlanPrerequisites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectPrerequisiteInput"][];
+            };
+        };
+        responses: {
+            /** @description Prerequisites updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example Prerequisites updated */
+                        message?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    validateCoursePlanProgression: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Progression validation results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressionValidationResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    previewCoursePlanProgression: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgressionPreviewRequest"] & {
+                    /**
+                     * Format: date
+                     * @description Optional requested start date to align with rolling schedule windows
+                     */
+                    requestedStartDate?: string;
+                    /**
+                     * @description Strategy for allocating catch-up units in the next term
+                     * @enum {string}
+                     */
+                    catchupMode?: "SequentialNextTerm" | "ParallelNextTerm";
+                    /** @default 2 */
+                    cycles?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Progression preview results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressionPreviewResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateCourseOffering: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CourseOfferingUpdate"];
+            };
+        };
+        responses: {
+            /** @description Offering updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteCourseOffering: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Offering deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listPaymentPlanTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of payment plan templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanTemplate"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createPaymentPlanTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentPlanTemplateCreate"];
+            };
+        };
+        responses: {
+            /** @description Template created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getPaymentPlanInstalments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Instalments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanInstalment"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    replacePaymentPlanInstalments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentPlanInstalmentInput"][];
+            };
+        };
+        responses: {
+            /** @description Instalments updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    derivePaymentPlanForApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentPlanDeriveInput"];
+            };
+        };
+        responses: {
+            /** @description Derived schedule */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanDerivedSchedule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listApplicationDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of documents */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["ApplicationDocument"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    generateDocumentUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Upload URL generated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentUploadUrlResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description File too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirmDocumentUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Document upload confirmed */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentConfirmResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description File too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteApplicationDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: components["parameters"]["ApplicationId"];
+                /** @description Unique identifier of the document to delete */
+                documentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Document deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example Document deleted successfully */
+                        message?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    processPassport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PassportProcessRequest"];
+            };
+        };
+        responses: {
+            /** @description Passport processed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PassportProcessResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Internal server error during passport processing */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listProgramOfferings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of course offerings for the program. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseOffering"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getProgramRollingSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The current rolling schedule for the program */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgramSchedule"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    upsertProgramRollingSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramScheduleUpsert"];
+            };
+        };
+        responses: {
+            /** @description Schedule updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgramSchedule"];
+                };
+            };
+            /** @description Schedule created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgramSchedule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    validateProgramRollingSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramScheduleUpsert"];
+            };
+        };
+        responses: {
+            /** @description Validation result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        isValid?: boolean;
+                        errors?: {
+                            field?: string;
+                            message?: string;
+                        }[];
+                        warnings?: string[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    previewProgramRollingSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @default 2 */
+                    cycles?: number;
+                    /** Format: date */
+                    requestedStartDate?: string | null;
+                    /** @enum {string|null} */
+                    catchupMode?: "SequentialNextTerm" | "ParallelNextTerm" | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Rolling schedule preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RollingSchedulePreview"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deriveCatchupForProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    startUnitId: string;
+                    /** @enum {string} */
+                    catchupMode?: "SequentialNextTerm" | "ParallelNextTerm";
+                };
+            };
+        };
+        responses: {
+            /** @description Derived catch-up units */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        catchupUnits?: {
+                            /** Format: uuid */
+                            subjectId?: string;
+                            targetTermIndex?: number;
+                            /** Format: date */
+                            startDate?: string;
+                            /** Format: date */
+                            endDate?: string;
+                        }[];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getUnits: {
+        parameters: {
+            query?: {
+                /** @description Search units by name or identifier */
+                search?: string;
+                /** @description Filter by unit status */
+                status?: "Current" | "Superseded" | "Archived";
+                /** @description Filter by unit type */
+                unit_type?: "Core" | "Elective";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of units */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unit"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitCreate"];
+            };
+        };
+        responses: {
+            /** @description Unit created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Unit identifier already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unit ID */
+                unitId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unit details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unit"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unit ID */
+                unitId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitUpdate"];
+            };
+        };
+        responses: {
+            /** @description Unit updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAgents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of active agents. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Agent"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getReferenceData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codeType: "COUNTRY" | "LANGUAGE" | "DISABILITY_TYPE" | "PRIOR_EDUCATION" | "FUNDING_SOURCE" | "STUDY_REASON";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of code-value pairs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceCode"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    addressAutocomplete: {
+        parameters: {
+            query: {
+                /** @description The partial address query string (4-6 characters recommended) */
+                query: string;
+                /** @description The country code for address lookup */
+                country: "AU" | "NZ";
+                /** @description Maximum number of results to return */
+                maxResults?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of matching addresses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressableAddress"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listOrganisations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        organisations?: components["schemas"]["Organisation"][];
+                    };
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createOrganisation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrganisationRequest"];
+            };
+        };
+        responses: {
+            /** @description Organisation created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organisation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getOrganisation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organisationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organisation"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateOrganisation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organisationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOrganisationRequest"];
+            };
+        };
+        responses: {
+            /** @description Organisation updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organisation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteOrganisation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organisationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Organisation deleted successfully */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listLocations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        locations?: components["schemas"]["Location"][];
+                    };
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description Location created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Location"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Location"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description Location updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Location"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Location deleted successfully */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    toggleLocationStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Location status updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Location"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+}

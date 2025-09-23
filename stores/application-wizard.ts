@@ -1,6 +1,7 @@
 import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 import { Step1PersonalInfo, Step2AcademicInfo, Step3ProgramSelection, Step4AgentReferral, Step5FinancialArrangements, FullEnrolmentPayload } from '@/lib/schemas/application-schemas';
 
 // =============================================================================
@@ -38,6 +39,9 @@ interface ApplicationWizardState {
   updateStep4Data: (data: Step4AgentReferral) => void;
   updateStep5Data: (data: Step5FinancialArrangements) => void;
   
+  // Passport processing
+  updateFromPassportData: (passportData: any) => void;
+  
   // Validation
   setValidationErrors: (errors: Record<string, string[]>) => void;
   clearValidationErrors: () => void;
@@ -58,7 +62,7 @@ interface ApplicationWizardState {
 
 const initialState = {
   currentStep: 1,
-  totalSteps: 6,
+  totalSteps: 7,
   isDirty: false,
   isLoading: false,
   formData: {
@@ -122,6 +126,11 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
           formData: {
             ...state.formData,
             avetmissDetails: data.avetmissDetails,
+            // Persist USI and CRICOS alongside AVETMISS so hydration works across navigation
+            // @ts-ignore
+            usi: (data as any).usi,
+            // @ts-ignore
+            cricosDetails: (data as any).cricosDetails,
           },
           isDirty: true,
         }));
@@ -151,7 +160,7 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
         }));
       },
       
-      updateStep5Data: (data: Step5FinancialArrangements) => {
+      updateStep5Data: (data: Step5FinancialArrangements & { selectedTemplateId?: string; anchor?: string; anchorDate?: string }) => {
         set((state) => ({
           formData: {
             ...state.formData,
@@ -165,9 +174,65 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
             paymentSchedule: data.financialArrangements.paymentSchedule,
             specialArrangements: data.financialArrangements.specialArrangements,
             financialNotes: data.financialArrangements.financialNotes,
+            // Store template selection data for backend
+            selectedTemplateId: data.selectedTemplateId,
+            anchor: data.anchor,
+            anchorDate: data.anchorDate,
           },
           isDirty: true,
         }));
+      },
+      
+      // Passport processing
+      updateFromPassportData: (passportData: any) => {
+        set((state) => {
+          const currentFormData = state.formData;
+          const updates: Partial<FullEnrolmentPayload> = {};
+          
+          // Update personal details if available
+          if (passportData.firstName || passportData.lastName || passportData.gender || passportData.dateOfBirth) {
+            updates.personalDetails = {
+              ...currentFormData.personalDetails,
+              ...(passportData.firstName && { firstName: passportData.firstName }),
+              ...(passportData.lastName && { lastName: passportData.lastName }),
+              ...(passportData.gender && { gender: passportData.gender }),
+              ...(passportData.dateOfBirth && { dateOfBirth: passportData.dateOfBirth }),
+            };
+          }
+          
+          // Update CRICOS details if international student and passport data available
+          if (currentFormData.isInternationalStudent && (passportData.passportNumber || passportData.issuingCountry || passportData.dateOfExpiry)) {
+            updates.cricosDetails = {
+              ...currentFormData.cricosDetails,
+              ...(passportData.passportNumber && { passportNumber: passportData.passportNumber }),
+              ...(passportData.issuingCountry && { countryOfCitizenshipId: passportData.issuingCountry }),
+              ...(passportData.dateOfExpiry && { passportExpiryDate: passportData.dateOfExpiry }),
+            };
+          }
+          
+          // Update AVETMISS details if nationality available
+          if (passportData.nationality) {
+            (updates as any).avetmissDetails = {
+              ...currentFormData.avetmissDetails,
+              countryOfBirthId: passportData.nationality,
+            };
+          }
+          
+          // Store raw passport data for reference
+          (updates as any).passportExtractionData = {
+            ...(currentFormData as any).passportExtractionData,
+            extractedAt: new Date().toISOString(),
+            rawData: passportData,
+          };
+          
+          return {
+            formData: {
+              ...currentFormData,
+              ...updates,
+            },
+            isDirty: true,
+          };
+        });
       },
       
       // Validation
@@ -183,20 +248,25 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
       createDraft: async (): Promise<string> => {
         set({ isLoading: true });
         try {
-          const BASE_URL = 'http://127.0.0.1:54321/functions/v1';
-          const { getFunctionHeaders } = await import('@/lib/utils');
+          // Check if we're in browser environment
+          if (typeof window === 'undefined') {
+            set({ isLoading: false });
+            throw new Error('Cannot create draft in server environment');
+          }
+          
           const idempotencyKey = crypto.randomUUID();
-          const res = await fetch(`${BASE_URL}/applications`, {
+          const { formData } = get();
+          const res = await fetch(`${FUNCTIONS_URL}/applications`, {
             method: 'POST',
             headers: { ...getFunctionHeaders(), 'Idempotency-Key': idempotencyKey },
-            body: JSON.stringify({}),
+            body: JSON.stringify(formData),
           });
           if (!res.ok) throw new Error('Failed to create draft application');
           const etag = res.headers.get('ETag');
           const data = await res.json();
           const draftId: string = data?.id;
           if (!draftId) throw new Error('No application id returned');
-          if (typeof window !== 'undefined' && etag) {
+          if (etag) {
             window.localStorage.setItem(`app-etag:${draftId}`, etag);
           }
           set({
@@ -217,15 +287,39 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
           throw new Error('No draft ID available');
         }
         
+        // Check if we're in browser environment
+        if (typeof window === 'undefined') {
+          throw new Error('Cannot save draft in server environment');
+        }
+        
         set({ isLoading: true });
         try {
-          // TODO: Implement API call to update draft
-          // await api.patch(`/applications/${draftId}`, {
-          //   application_payload: formData
-          // });
+          // Get ETag for optimistic concurrency control
+          const etag = window.localStorage.getItem(`app-etag:${draftId}`);
           
-          // Mock implementation for now
-          console.log('Saving draft:', { draftId, formData });
+          const headers = { ...getFunctionHeaders() };
+          if (etag) {
+            headers['If-Match'] = etag;
+          }
+          
+          const res = await fetch(`${FUNCTIONS_URL}/applications/${draftId}`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify(formData),
+          });
+          
+          if (!res.ok) {
+            if (res.status === 412) {
+              throw new Error('Draft is out of date. Please refresh the page.');
+            }
+            throw new Error(`Failed to save draft: ${res.statusText}`);
+          }
+          
+          // Update ETag for next save
+          const newEtag = res.headers.get('ETag');
+          if (newEtag) {
+            window.localStorage.setItem(`app-etag:${draftId}`, newEtag);
+          }
           
           set({ 
             lastSaved: new Date(),
@@ -241,15 +335,28 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
       loadDraft: async (draftId: string): Promise<void> => {
         set({ isLoading: true });
         try {
-          // TODO: Implement API call to load draft
-          // const response = await api.get(`/applications/${draftId}`);
-          // const draftData = response.data.application_payload;
+          // Check if we're in browser environment
+          if (typeof window === 'undefined') {
+            set({ isLoading: false });
+            return;
+          }
           
-          // Mock implementation for now
-          console.log('Loading draft:', draftId);
-          
+          const res = await fetch(`${FUNCTIONS_URL}/applications/${draftId}`, {
+            headers: getFunctionHeaders(),
+          });
+          if (!res.ok) {
+            if (res.status === 404) {
+              console.warn(`Draft ${draftId} not found, treating as new draft`);
+              set({ isLoading: false });
+              return;
+            }
+            throw new Error(`Failed to load draft: ${res.status} ${res.statusText}`);
+          }
+          const data = await res.json();
+          const payload = (data?.application_payload ?? {}) as Partial<FullEnrolmentPayload>;
           set({ 
             draftId,
+            formData: { ...(payload as any) },
             isLoading: false 
           });
         } catch (error) {
@@ -305,18 +412,22 @@ export const useApplicationWizard = create<ApplicationWizardState>()(
   )
 );
 
-// Auto-save hook
-export const useAutoSave = () => {
-  const { saveDraft, isDirty, draftId } = useApplicationWizard();
+// Hook for unsaved changes warning
+export const useUnsavedChangesWarning = () => {
+  const { isDirty } = useApplicationWizard();
   
-  // Auto-save every 30 seconds if there are changes
   React.useEffect(() => {
-    if (!isDirty || !draftId) return;
+    // Only add event listener in browser environment
+    if (typeof window === 'undefined') return;
     
-    const interval = setInterval(() => {
-      saveDraft().catch(console.error);
-    }, 30000); // 30 seconds
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    };
     
-    return () => clearInterval(interval);
-  }, [isDirty, draftId, saveDraft]);
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 };

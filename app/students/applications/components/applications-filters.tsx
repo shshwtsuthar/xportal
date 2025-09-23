@@ -25,8 +25,8 @@ interface ApplicationsFiltersProps {
   onSearchChange: (query: string) => void;
   onClearSearch: () => void;
   onRefresh: () => void;
-  currentView: 'drafts' | 'submitted' | 'approved' | 'all';
-  onViewChange: (view: 'drafts' | 'submitted' | 'approved' | 'all') => void;
+  currentView: 'drafts' | 'submitted' | 'awaiting' | 'accepted' | 'approved' | 'rejected' | 'all';
+  onViewChange: (view: 'drafts' | 'submitted' | 'awaiting' | 'accepted' | 'approved' | 'rejected' | 'all') => void;
   totalCount?: number;
   isLoading?: boolean;
 }
@@ -48,7 +48,10 @@ export function ApplicationsFilters({
   const viewOptions = [
     { value: 'drafts', label: 'Drafts', count: 0 },
     { value: 'submitted', label: 'Submitted', count: 0 },
+    { value: 'awaiting', label: 'Awaiting Payment', count: 0 },
+    { value: 'accepted', label: 'Accepted', count: 0 },
     { value: 'approved', label: 'Approved', count: 0 },
+    { value: 'rejected', label: 'Rejected', count: 0 },
     { value: 'all', label: 'All', count: totalCount || 0 },
   ];
 

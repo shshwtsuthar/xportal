@@ -31,6 +31,13 @@ export default function ApplicationsPage() {
     handleRejectApplication,
     handleApproveApplication,
     handleSubmitApplication,
+    handleAcceptApplication,
+    handleGenerateOfferLetter,
+    handleDownloadOfferLetter,
+    handleSendOfferAndAwaiting,
+    handleSendOfferLetterEmail,
+    handleDownloadOfferAndAwaiting,
+    handleDeleteApplication,
     refreshData,
   } = useApplicationsManagement();
 
@@ -78,6 +85,13 @@ export default function ApplicationsPage() {
             onReject={handleRejectApplication}
             onApprove={handleApproveApplication}
             onSubmit={handleSubmitApplication}
+            onAccept={handleAcceptApplication}
+            onGenerateOfferLetter={handleGenerateOfferLetter}
+            onDownloadOfferLetter={handleDownloadOfferLetter}
+            onSendOfferAndAwaiting={handleSendOfferAndAwaiting}
+            onSendOfferLetterEmail={handleSendOfferLetterEmail}
+            onDownloadOfferAndAwaiting={handleDownloadOfferAndAwaiting}
+            onDelete={handleDeleteApplication}
           />
 
           {/* Pagination */}

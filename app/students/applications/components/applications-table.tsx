@@ -8,11 +8,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   FileText, 
+  FilePlus,
   CheckCircle, 
   XCircle, 
-  Clock,
   Eye,
-  MoreHorizontal
+  MoreHorizontal,
+  Trash2,
+  Mail
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -21,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { ApplicationSummary } from '@/hooks/use-applications-status';
+import { FUNCTIONS_URL, getFunctionHeaders } from '@/lib/functions';
 
 interface ApplicationsTableProps {
   applications: ApplicationSummary[];
@@ -31,29 +34,40 @@ interface ApplicationsTableProps {
   onReject?: (applicationId: string, reason: string) => Promise<{ success: boolean; error?: string }>;
   onApprove?: (applicationId: string, payload: any) => Promise<{ success: boolean; error?: string }>;
   onSubmit?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onAccept?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onGenerateOfferLetter?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onDownloadOfferLetter?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onSendOfferAndAwaiting?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onDownloadOfferAndAwaiting?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
+  onSendOfferLetterEmail?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
   onView?: (applicationId: string) => void;
+  onDelete?: (applicationId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const statusConfig = {
   Draft: {
-    variant: 'secondary' as const,
-    icon: <Clock className="h-3 w-3" />,
-    color: 'text-muted-foreground',
+    variant: 'destructive' as const,
+    className: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
   },
   Submitted: {
-    variant: 'default' as const,
-    icon: <FileText className="h-3 w-3" />,
-    color: 'text-primary',
+    variant: 'outline' as const,
+    className: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
+  },
+  'Awaiting Payment': {
+    variant: 'outline' as const,
+    className: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800',
+  },
+  Accepted: {
+    variant: 'outline' as const,
+    className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800',
   },
   Approved: {
-    variant: 'default' as const,
-    icon: <CheckCircle className="h-3 w-3" />,
-    color: 'text-foreground',
+    variant: 'outline' as const,
+    className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800',
   },
   Rejected: {
     variant: 'destructive' as const,
-    icon: <XCircle className="h-3 w-3" />,
-    color: 'text-destructive',
+    className: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
   },
 };
 
@@ -66,7 +80,14 @@ export function ApplicationsTable({
   onReject,
   onApprove,
   onSubmit,
+  onAccept,
+  onGenerateOfferLetter,
+  onDownloadOfferLetter,
+  onSendOfferAndAwaiting,
+  onDownloadOfferAndAwaiting,
+  onSendOfferLetterEmail,
   onView,
+  onDelete,
 }: ApplicationsTableProps) {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
@@ -138,6 +159,33 @@ export function ApplicationsTable({
     return statusConfig[status as keyof typeof statusConfig] || statusConfig.Draft;
   };
 
+  const openCoeFilePickerAndUpload = (applicationId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf';
+    input.onchange = async () => {
+      const file = (input.files && input.files[0]) || null;
+      if (!file) return;
+      try {
+        const buf = new Uint8Array(await file.arrayBuffer());
+        const res = await fetch(`${FUNCTIONS_URL}/applications/${applicationId}/coe`, {
+          method: 'POST',
+          headers: { ...getFunctionHeaders(), 'Content-Type': 'application/pdf' },
+          body: buf,
+        });
+        if (!res.ok) {
+          const err = await res.text();
+          alert(`Failed to upload CoE: ${err || res.statusText}`);
+          return;
+        }
+        alert('CoE uploaded successfully.');
+      } catch (e: any) {
+        alert(`Failed to upload CoE: ${e?.message || 'Unknown error'}`);
+      }
+    };
+    input.click();
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -178,17 +226,18 @@ export function ApplicationsTable({
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="w-[100px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
           {applications.map((app) => {
             const statusConfig = getStatusConfig(app.status || 'Draft');
             const isProcessing = processingId === app.id;
@@ -207,9 +256,8 @@ export function ApplicationsTable({
                 </TableCell>
                 <TableCell className="text-muted-foreground">{app.clientEmail}</TableCell>
                 <TableCell>
-                  <Badge variant={statusConfig.variant} className="flex items-center space-x-1">
-                    {statusConfig.icon}
-                    <span>{app.status}</span>
+                  <Badge variant={statusConfig.variant} className={statusConfig.className}>
+                    {app.status}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
@@ -240,6 +288,88 @@ export function ApplicationsTable({
                         </DropdownMenuItem>
                       )}
                       
+                      {(app.status || 'Draft') === 'Submitted' && (
+                        <>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onGenerateOfferLetter) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                await onGenerateOfferLetter(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <FilePlus className="h-4 w-4 mr-2" />
+                            Generate Offer Letter
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onDownloadOfferLetter) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                await onDownloadOfferLetter(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Download Offer Letter
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onDownloadOfferAndAwaiting) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                const { downloadLatestOffer } = await import('@/hooks/use-application-actions');
+                                await downloadLatestOffer(app.id || '');
+                                await onDownloadOfferAndAwaiting(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Download Offer Letter & mark as Awaiting Payment
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onSendOfferAndAwaiting) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                await onSendOfferAndAwaiting(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Send Offer Letter & mark as Awaiting Payment
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onSendOfferLetterEmail) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                await onSendOfferLetterEmail(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            Send Offer Letter Email
+                          </DropdownMenuItem>
+                        </>
+                      )}
+
                       {(app.status || 'Draft') === 'Submitted' && onReject && (
                         <DropdownMenuItem 
                           onClick={() => setShowRejectDialog(app.id || '')}
@@ -250,13 +380,90 @@ export function ApplicationsTable({
                         </DropdownMenuItem>
                       )}
                       
-                      {(app.status || 'Draft') === 'Submitted' && onApprove && (
+                      {/* No Approve on Submitted per flow */}
+
+                      {String(app.status || '') === 'AwaitingPayment' && (
+                        <>
+                          <DropdownMenuItem 
+                            onClick={async () => {
+                              if (!onAccept) return;
+                              setProcessingId(app.id || null);
+                              try {
+                                await onAccept(app.id || '');
+                              } finally {
+                                setProcessingId(null);
+                              }
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Accept
+                          </DropdownMenuItem>
+                          {onReject && (
+                            <DropdownMenuItem 
+                              onClick={() => setShowRejectDialog(app.id || '')}
+                              disabled={isProcessing}
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Reject
+                            </DropdownMenuItem>
+                          )}
+                        </>
+                      )}
+
+                      {String(app.status || '') === 'Accepted' && (
+                        <>
+                          {onApprove && (
+                            <DropdownMenuItem 
+                              onClick={() => setShowApproveDialog(app.id || '')}
+                              disabled={isProcessing}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Approve
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem 
+                            onClick={() => openCoeFilePickerAndUpload(app.id || '')}
+                            disabled={isProcessing}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Upload CoE (PDF)
+                          </DropdownMenuItem>
+                          {onReject && (
+                            <DropdownMenuItem 
+                              onClick={() => setShowRejectDialog(app.id || '')}
+                              disabled={isProcessing}
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Reject
+                            </DropdownMenuItem>
+                          )}
+                        </>
+                      )}
+
+                      {/* Delete button - available for all statuses */}
+                      {onDelete && (
                         <DropdownMenuItem 
-                          onClick={() => setShowApproveDialog(app.id || '')}
+                          variant="destructive"
+                          onClick={async () => {
+                            if (!onDelete) return;
+                            setProcessingId(app.id || null);
+                            try {
+                              const result = await onDelete(app.id || '');
+                              if (!result.success) {
+                                alert(`Failed to delete application: ${result.error || 'Unknown error'}`);
+                              }
+                            } catch (error: any) {
+                              alert(`Failed to delete application: ${error?.message || 'Unknown error'}`);
+                            } finally {
+                              setProcessingId(null);
+                            }
+                          }}
                           disabled={isProcessing}
+                          className="mt-1 pt-1"
                         >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Approve
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Application
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
@@ -266,7 +473,8 @@ export function ApplicationsTable({
             );
           })}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
 
       {/* Reject Dialog */}
       {showRejectDialog && (

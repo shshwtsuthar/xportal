@@ -17,6 +17,9 @@ info:
   title: XPortal SMS API
   description: The complete API for managing students, enrolments, academic delivery, finance, and compliance for Australian RTOs.
   version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 
 # -----------------------------------------------------------------------------
 # SERVER DEFINITION
@@ -24,6 +27,10 @@ info:
 servers:
   - url: https://{your-supabase-project-ref}.supabase.co/functions/v1
     description: Supabase Edge Functions Production Server
+    variables:
+      your-supabase-project-ref:
+        default: change-me
+        description: Supabase project ref slug
 
 # -----------------------------------------------------------------------------
 # SECURITY DEFINITIONS
@@ -63,6 +70,7 @@ paths:
   # ---------------------------------------------------------------------------
   /applications:
     get:
+      operationId: listApplications
       summary: List All Applications
       description: >
         Returns a paginated list of all applications with their current status and metadata.
@@ -104,7 +112,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApplicationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     post:
+      operationId: createApplication
       summary: Start a New Enrolment Application
       description: >
         Creates a new application in a 'Draft' state. This is the new entry point for the enrolment wizard.
@@ -125,9 +138,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Application'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /applications/{applicationId}:
     patch:
+      operationId: updateApplication
       summary: Update a Draft Application
       description: Incrementally saves data to a draft application.
       tags: [Applications & Enrolments]
@@ -147,9 +165,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Application'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteApplication
+      summary: Delete an Application
+      description: >
+        Permanently deletes an application from the database. This action is irreversible.
+        The application will be completely removed from the sms_op.applications table.
+        This operation is available for applications in any status (Draft, Submitted, Approved, Rejected).
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '204':
+          description: Application successfully deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /applications/{applicationId}/submit:
     post:
+      operationId: submitApplication
       summary: Submit an Application for Approval
       description: Transitions the application status to 'Submitted' after validating all required data is present.
       tags: [Applications & Enrolments]
@@ -160,9 +206,16 @@ paths:
       responses:
         '200':
           description: Application submitted for review.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /applications/{applicationId}/approve:
     post:
+      operationId: approveApplication
       summary: Approve an Application and Create Enrolment
       description: >
         A protected, administrative endpoint. Takes a 'Submitted' application and executes the
@@ -186,9 +239,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FullEnrolmentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /applications/{applicationId}/reject:
     post:
+      operationId: rejectApplication
       summary: Reject a Submitted Application
       description: >
         Rejects a submitted application with a reason. This transitions the application
@@ -215,13 +275,98 @@ paths:
       responses:
         '200':
           description: Application rejected successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Application'
 
+  /applications/{applicationId}/offer-letter:
+    post:
+      operationId: generateOfferLetter
+      summary: Generate Offer Letter
+      description: Renders an offer letter PDF from the current application snapshot and stores it in Supabase Storage.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '201':
+          description: Offer letter generated and stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferLetterResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /applications/{applicationId}/send-offer:
+    post:
+      operationId: sendOfferLetter
+      summary: Send Offer Letter
+      description: Sends the previously generated offer letter to the applicant. On success, transitions status to AwaitingPayment.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Offer letter sent and status transitioned.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /applications/{applicationId}/accept:
+    post:
+      operationId: acceptApplication
+      summary: Mark an application as Accepted
+      description: Captures student acceptance (recorded by staff or callback) and transitions status to Accepted.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Application accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /applications/drafts:
     get:
+      operationId: listDraftApplications
       summary: List Draft Applications
       description: >
         Returns a paginated list of all draft applications. This endpoint is optimized
@@ -253,6 +398,10 @@ paths:
       responses:
         '200':
           description: A paginated list of draft applications.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
           content:
             application/json:
               schema:
@@ -260,6 +409,7 @@ paths:
 
   /applications/submitted:
     get:
+      operationId: listSubmittedApplications
       summary: List Submitted Applications
       description: >
         Returns a paginated list of all submitted applications awaiting approval.
@@ -291,6 +441,10 @@ paths:
       responses:
         '200':
           description: A paginated list of submitted applications.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
           content:
             application/json:
               schema:
@@ -298,6 +452,7 @@ paths:
 
   /applications/approved:
     get:
+      operationId: listApprovedApplications
       summary: List Approved Applications
       description: >
         Returns a paginated list of all approved applications. These applications
@@ -329,6 +484,10 @@ paths:
       responses:
         '200':
           description: A paginated list of approved applications.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
           content:
             application/json:
               schema:
@@ -336,6 +495,7 @@ paths:
 
   /applications/stats:
     get:
+      operationId: getApplicationStats
       summary: Get Application Statistics
       description: >
         Returns aggregated statistics about applications including counts by status,
@@ -346,6 +506,10 @@ paths:
       responses:
         '200':
           description: Application statistics.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
           content:
             application/json:
               schema:
@@ -380,6 +544,7 @@ paths:
 
   /enrolments/{enrolmentId}/state:
     put:
+      operationId: changeEnrolmentState
       summary: Change Enrolment State
       description: >
         Manages the lifecycle of an enrolment (Withdraw, Defer, Suspend). This is a critical,
@@ -398,14 +563,19 @@ paths:
       responses:
         '200':
           description: Enrolment state successfully changed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Enrolment not found.
+          $ref: '#/components/responses/NotFound'
 
   # ---------------------------------------------------------------------------
   # == CLIENTS ==
   # ---------------------------------------------------------------------------
   /clients:
     get:
+      operationId: listClients
       summary: List and Search Clients
       tags: [Clients]
       security:
@@ -434,9 +604,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ClientSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /clients/{clientId}:
     get:
+      operationId: getClient
       summary: Get a Single Client's Full Details
       description: >
         Retrieves the complete, aggregated record for a single client. The response MUST include
@@ -461,6 +636,7 @@ paths:
         '404':
           description: Client not found.
     patch:
+      operationId: updateClient
       summary: Update Client Details
       description: >
         Updates a subset of a client's details. Must include the If-Match header with the latest
@@ -496,6 +672,7 @@ paths:
 
   /clients/merge:
     post:
+      operationId: mergeClients
       summary: Merge Two Duplicate Client Records
       description: A protected, administrative endpoint to merge a duplicate client record into a surviving record. This is a delicate, irreversible transaction.
       tags: [Clients]
@@ -517,9 +694,14 @@ paths:
       responses:
         '200':
           description: Merge successful.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /clients/{clientId}/health-check:
     get:
+      operationId: getClientHealth
       summary: Check Client Data Completeness
       tags: [Clients]
       security:
@@ -535,9 +717,14 @@ paths:
                 $ref: '#/components/schemas/ClientHealthStatus'
         '404':
           description: Client not found.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /clients/{clientId}/notes:
     get:
+      operationId: listClientNotes
       summary: Get Notes for a Client
       tags: [Clients]
       security:
@@ -547,7 +734,12 @@ paths:
       responses:
         '200':
           description: A list of notes.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     post:
+      operationId: createClientNote
       summary: Add a Note to a Client Record
       tags: [Clients]
       security:
@@ -563,12 +755,17 @@ paths:
       responses:
         '201':
           description: Note created.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   # ---------------------------------------------------------------------------
   # == CRICOS ==
   # ---------------------------------------------------------------------------
   /cricos/coes:
     post:
+      operationId: createCoE
       summary: Create a Confirmation of Enrolment (CoE)
       description: Creates a new CoE record against an enrolment, typically in a 'Draft' state before submission to PRISMS.
       tags: [CRICOS]
@@ -583,9 +780,14 @@ paths:
       responses:
         '201':
           description: CoE created.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /cricos/coes/{coeId}/cancel:
     post:
+      operationId: cancelCoE
       summary: Cancel a Confirmation of Enrolment (CoE)
       description: A dedicated, auditable event to cancel a CoE, with a reason code for compliance.
       tags: [CRICOS]
@@ -602,12 +804,19 @@ paths:
       responses:
         '200':
           description: CoE cancelled.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   # ---------------------------------------------------------------------------
   # == ACADEMIC DELIVERY ==
   # ---------------------------------------------------------------------------
   /enrolments/{enrolmentId}/credit-transfer:
     post:
+      operationId: createCreditTransfer
       summary: Grant Credit Transfer or RPL
       description: Formally records the granting of a credit transfer or RPL for a specific unit within an enrolment.
       tags: [Academic Delivery]
@@ -624,9 +833,16 @@ paths:
       responses:
         '201':
           description: Credit transfer successfully granted and recorded.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /enrolments/{enrolmentId}/subjects/{subjectId}/outcome:
     put:
+      operationId: setEnrolmentSubjectOutcome
       summary: Record a Final Subject Outcome
       description: >
         A critical compliance endpoint. Records the final, aggregate academic outcome for a
@@ -642,17 +858,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EnrolmentSubjectOutcomePayload'
+              oneOf:
+                - $ref: '#/components/schemas/EnrolmentSubjectOutcomePayload'
+                - $ref: '#/components/schemas/GradePayload'
       responses:
         '200':
           description: Outcome successfully recorded.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '400':
-          description: Bad Request (e.g., invalid outcome code).
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Enrolment or Subject not found.
+          $ref: '#/components/responses/NotFound'
 
   /sessions/{sessionId}/roster:
     get:
+      operationId: getSessionRoster
       summary: Get Session Roster
       description: A user-centric endpoint that provides a simple, one-call way for a trainer to get a list of all students enrolled in their upcoming class.
       tags: [Academic Delivery]
@@ -663,9 +884,41 @@ paths:
       responses:
         '200':
           description: The class roster.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/attendance:
+    post:
+      operationId: createAttendanceSubmission
+      summary: Submit session attendance
+      tags: [Academic Delivery]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceSubmission'
+      responses:
+        '201':
+          description: Attendance recorded.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /staff/{staffId}/schedule:
     get:
+      operationId: getStaffSchedule
       summary: Get Staff Member's Schedule
       description: A user-centric endpoint that returns a clean, aggregated list of all sessions a trainer is assigned to in a given period.
       tags: [Academic Delivery]
@@ -693,12 +946,19 @@ paths:
       responses:
         '200':
           description: The staff member's schedule.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   # ---------------------------------------------------------------------------
   # == FINANCE ==
   # ---------------------------------------------------------------------------
   /invoices/{invoiceId}/void:
     post:
+      operationId: voidInvoice
       summary: Void an Unpaid Invoice
       description: Transitions an 'Issued' but unpaid invoice to a 'Void' state. This is for correcting errors and is illegal if a payment has been made.
       tags: [Finance]
@@ -709,11 +969,16 @@ paths:
       responses:
         '200':
           description: Invoice successfully voided.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '400':
-          description: Bad Request. Invoice has payments and cannot be voided.
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /payments/{paymentId}/refund:
     post:
+      operationId: refundPayment
       summary: Issue a Refund Against a Payment
       description: Creates a refund record, ensuring a closed-loop accounting trail.
       tags: [Finance]
@@ -726,16 +991,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RefundPayload'
+              anyOf:
+                - $ref: '#/components/schemas/RefundPayload'
+                - $ref: '#/components/schemas/PaymentPayload'
       responses:
         '201':
           description: Refund processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   # ---------------------------------------------------------------------------
   # == REPORTS ==
   # ---------------------------------------------------------------------------
   /reports/attendance-at-risk:
     get:
+      operationId: getAttendanceAtRisk
       summary: At-Risk Attendance Report
       description: Returns a list of students whose attendance has fallen below a specified threshold in a given period.
       tags: [Reports]
@@ -761,9 +1037,14 @@ paths:
       responses:
         '200':
           description: A list of at-risk students.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /reports/financial-summary:
     get:
+      operationId: getFinancialSummary
       summary: Financial Summary Report
       description: Returns an aggregated financial summary for a given period.
       tags: [Reports]
@@ -789,12 +1070,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FinancialSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   # ---------------------------------------------------------------------------
   # == REFERENCE DATA & CATALOG MANAGEMENT ==
   # ---------------------------------------------------------------------------
   /programs:
     get:
+      operationId: getPrograms
       summary: List all Programs
       tags: [Program & Subject Management]
       security:
@@ -808,9 +1094,91 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Program'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      operationId: createProgram
+      summary: Create a new Program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramCreate'
+      responses:
+        '201':
+          description: Program created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Program identifier already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /programs/{programId}:
+    get:
+      operationId: getProgram
+      summary: Get a specific Program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, agent, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: Program details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateProgram
+      summary: Update a Program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramUpdate'
+      responses:
+        '200':
+          description: Program updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /programs/{programId}/subjects:
     get:
+      operationId: getProgramSubjects
       summary: List Subjects for a Program
       tags: [Program & Subject Management]
       security:
@@ -826,9 +1194,672 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ProgramSubject'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /programs/{programId}/course-plans:
+    get:
+      operationId: listProgramCoursePlans
+      summary: List course plans for a program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: A list of course plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CoursePlan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createProgramCoursePlan
+      summary: Create a course plan for a program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoursePlanCreate'
+      responses:
+        '201':
+          description: Course plan created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoursePlan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/course-plans/{planId}/subjects:
+    get:
+      operationId: getCoursePlanSubjects
+      summary: Get subjects for a course plan
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subjects in the plan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CoursePlanSubject'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: replaceCoursePlanSubjects
+      summary: Replace subjects for a course plan
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CoursePlanSubjectInput'
+      responses:
+        '200':
+          description: Plan subjects updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/course-plans/{planId}/structure:
+    get:
+      operationId: getCoursePlanStructure
+      summary: Get complete course plan structure with prerequisites
+      description: Returns the full course plan structure including subjects, prerequisites, and progression validation results.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Complete course plan structure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoursePlanStructure'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/course-plans/{planId}/prerequisites:
+    get:
+      operationId: getCoursePlanPrerequisites
+      summary: Get prerequisites for a course plan
+      description: Returns all prerequisite relationships defined for subjects in the course plan.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Prerequisites for the course plan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectPrerequisite'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateCoursePlanPrerequisites
+      summary: Update prerequisites for a course plan
+      description: Replaces all prerequisite relationships for subjects in the course plan.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/SubjectPrerequisiteInput'
+      responses:
+        '200':
+          description: Prerequisites updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Prerequisites updated"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/course-plans/{planId}/validate-progression:
+    post:
+      operationId: validateCoursePlanProgression
+      summary: Validate course plan progression rules
+      description: Validates the prerequisite relationships in a course plan for circular dependencies and other issues.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Progression validation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressionValidationResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/course-plans/{planId}/progression-preview:
+    post:
+      operationId: previewCoursePlanProgression
+      summary: Preview course progression for intake models
+      description: Generates a preview of how students will progress through the course in either Fixed or Rolling intake models. Supports rolling schedule alignment and optional catch-up strategies for late starters.
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/ProgressionPreviewRequest'
+                - type: object
+                  properties:
+                    requestedStartDate:
+                      type: string
+                      format: date
+                      description: Optional requested start date to align with rolling schedule windows
+                    catchupMode:
+                      type: string
+                      enum: [SequentialNextTerm, ParallelNextTerm]
+                      description: Strategy for allocating catch-up units in the next term
+                    cycles:
+                      type: integer
+                      minimum: 1
+                      default: 2
+      responses:
+        '200':
+          description: Progression preview results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressionPreviewResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /course-offerings/{id}:
+    put:
+      operationId: updateCourseOffering
+      summary: Update a course offering
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseOfferingUpdate'
+      responses:
+        '200':
+          description: Offering updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteCourseOffering
+      summary: Delete a course offering
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Offering deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/payment-plan-templates:
+    get:
+      operationId: listPaymentPlanTemplates
+      summary: List payment plan templates for a program
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin, finance]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: A list of payment plan templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentPlanTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      operationId: createPaymentPlanTemplate
+      summary: Create a payment plan template for a program
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin, finance]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentPlanTemplateCreate'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentPlanTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /payment-plan-templates/{templateId}/instalments:
+    get:
+      operationId: getPaymentPlanInstalments
+      summary: List instalments in a template
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin, finance]
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Instalments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentPlanInstalment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    put:
+      operationId: replacePaymentPlanInstalments
+      summary: Replace instalments list for a template
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin, finance]
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/PaymentPlanInstalmentInput'
+      responses:
+        '200':
+          description: Instalments updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /applications/{applicationId}/derive-payment-plan:
+    post:
+      operationId: derivePaymentPlanForApplication
+      summary: Derive a concrete payment schedule for an application from a template
+      tags: [Finance]
+      security:
+        - bearerAuth: [admin, finance]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentPlanDeriveInput'
+      responses:
+        '200':
+          description: Derived schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentPlanDerivedSchedule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------------------
+  # == DOCUMENT MANAGEMENT ==
+  # ---------------------------------------------------------------------------
+  /applications/{applicationId}/documents:
+    get:
+      operationId: listApplicationDocuments
+      summary: List Documents for an Application
+      description: Returns all documents associated with an application, including uploaded files and generated documents.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent, finance]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApplicationDocument'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /applications/{applicationId}/documents/upload-url:
+    post:
+      operationId: generateDocumentUploadUrl
+      summary: Generate Upload URL for Document
+      description: Generates a signed URL for uploading a document to Supabase Storage with proper validation and security.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent, finance]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentUploadRequest'
+      responses:
+        '200':
+          description: Upload URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUploadUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /applications/{applicationId}/documents/confirm:
+    post:
+      operationId: confirmDocumentUpload
+      summary: Confirm Document Upload
+      description: Confirms that a document has been successfully uploaded to storage and records the metadata.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent, finance]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentConfirmRequest'
+      responses:
+        '201':
+          description: Document upload confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentConfirmResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /applications/{applicationId}/documents/{documentId}:
+    delete:
+      operationId: deleteApplicationDocument
+      summary: Delete Application Document
+      description: Deletes a document from both storage and database, with proper authorization checks.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent, finance]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - name: documentId
+          in: path
+          required: true
+          description: Unique identifier of the document to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Document deleted successfully"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------------------
+  # == PASSPORT PROCESSING ==
+  # ---------------------------------------------------------------------------
+  /passport-process:
+    post:
+      operationId: processPassport
+      summary: Process Passport Document with Mindee API
+      description: |
+        Processes a passport document using Mindee API to extract personal information
+        and automatically populate application form fields. This endpoint is called
+        automatically when a document with "passport" in the filename is uploaded.
+      tags: [Applications & Enrolments]
+      security:
+        - bearerAuth: [admin, agent, finance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassportProcessRequest'
+      responses:
+        '200':
+          description: Passport processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassportProcessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Internal server error during passport processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /programs/{programId}/offerings:
     get:
+      operationId: listProgramOfferings
       summary: List Course Offerings for a Program
       description: Returns available course offerings/intakes for a specific program that are open for enrolment.
       tags: [Program & Subject Management]
@@ -845,9 +1876,317 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CourseOffering'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/rolling-schedule:
+    get:
+      operationId: getProgramRollingSchedule
+      summary: Get rolling schedule definition for a program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: The current rolling schedule for the program
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramSchedule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: upsertProgramRollingSchedule
+      summary: Create or update rolling schedule for a program
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramScheduleUpsert'
+      responses:
+        '200':
+          description: Schedule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramSchedule'
+        '201':
+          description: Schedule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramSchedule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /programs/{programId}/rolling-schedule/validate:
+    post:
+      operationId: validateProgramRollingSchedule
+      summary: Validate rolling schedule payload
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramScheduleUpsert'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isValid:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /programs/{programId}/rolling-schedule/preview:
+    post:
+      operationId: previewProgramRollingSchedule
+      summary: Preview rolling schedule windows across cycles
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cycles:
+                  type: integer
+                  minimum: 1
+                  default: 2
+                requestedStartDate:
+                  type: string
+                  format: date
+                  nullable: true
+                catchupMode:
+                  type: string
+                  enum: [SequentialNextTerm, ParallelNextTerm]
+                  nullable: true
+      responses:
+        '200':
+          description: Rolling schedule preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RollingSchedulePreview'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /programs/{programId}/derive-catchup:
+    post:
+      operationId: deriveCatchupForProgram
+      summary: Derive catch-up units based on start unit and schedule
+      tags: [Program & Subject Management]
+      security:
+        - bearerAuth: [admin, trainer]
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startUnitId]
+              properties:
+                startUnitId:
+                  type: string
+                  format: uuid
+                catchupMode:
+                  type: string
+                  enum: [SequentialNextTerm, ParallelNextTerm]
+      responses:
+        '200':
+          description: Derived catch-up units
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  catchupUnits:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        subjectId: { type: string, format: uuid }
+                        targetTermIndex: { type: integer }
+                        startDate: { type: string, format: date }
+                        endDate: { type: string, format: date }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------------------
+  # == UNITS MANAGEMENT ==
+  # ---------------------------------------------------------------------------
+  /units:
+    get:
+      operationId: getUnits
+      summary: List all Units of Competency
+      tags: [Units Management]
+      security:
+        - bearerAuth: [admin, agent, trainer]
+      parameters:
+        - name: search
+          in: query
+          description: Search units by name or identifier
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by unit status
+          schema:
+            type: string
+            enum: [Current, Superseded, Archived]
+        - name: unit_type
+          in: query
+          description: Filter by unit type
+          schema:
+            type: string
+            enum: [Core, Elective]
+      responses:
+        '200':
+          description: A list of units
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Unit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      operationId: createUnit
+      summary: Create a new Unit of Competency
+      tags: [Units Management]
+      security:
+        - bearerAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitCreate'
+      responses:
+        '201':
+          description: Unit created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Unit identifier already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /units/{unitId}:
+    get:
+      operationId: getUnit
+      summary: Get a specific Unit of Competency
+      tags: [Units Management]
+      security:
+        - bearerAuth: [admin, agent, trainer]
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          description: The unit ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Unit details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateUnit
+      summary: Update a Unit of Competency
+      tags: [Units Management]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          description: The unit ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitUpdate'
+      responses:
+        '200':
+          description: Unit updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /agents:
     get:
+      operationId: listAgents
       summary: List Active Educational Agents
       description: Returns a list of active educational agents available for student referrals.
       tags: [Agents]
@@ -862,9 +2201,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Agent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /reference-data/{codeType}:
     get:
+      operationId: getReferenceData
       summary: Get AVETMISS Reference Codes
       tags: [Reference Data]
       security:
@@ -885,6 +2229,359 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ReferenceCode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ---------------------------------------------------------------------------
+  # == ADDRESS AUTOCOMPLETE ==
+  # ---------------------------------------------------------------------------
+  /address-autocomplete:
+    get:
+      operationId: addressAutocomplete
+      summary: Address Autocomplete
+      description: >
+        Provides address autocomplete functionality using the Addressable API.
+        Returns formatted addresses that can be used to populate address forms.
+      tags: [Reference Data]
+      security:
+        - bearerAuth: [admin, agent, trainer]
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: The partial address query string (4-6 characters recommended)
+          schema:
+            type: string
+            example: "220 Queen St Auc"
+        - name: country
+          in: query
+          required: true
+          description: The country code for address lookup
+          schema:
+            type: string
+            enum: [AU, NZ]
+            default: AU
+        - name: maxResults
+          in: query
+          required: false
+          description: Maximum number of results to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 5
+      responses:
+        '200':
+          description: A list of matching addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AddressableAddress'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ---------------------------------------------------------------------------
+  # == ORGANISATION MANAGEMENT (NAT00010) ==
+  # ---------------------------------------------------------------------------
+  /organisations:
+    get:
+      operationId: listOrganisations
+      summary: List Organisations
+      description: Retrieve all organisations for NAT00010 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  organisations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Organisation'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      operationId: createOrganisation
+      summary: Create Organisation
+      description: Create a new organisation for NAT00010 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganisationRequest'
+      responses:
+        '201':
+          description: Organisation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organisation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organisations/{organisationId}:
+    get:
+      operationId: getOrganisation
+      summary: Get Organisation
+      description: Retrieve a specific organisation by ID
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: organisationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organisation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      operationId: updateOrganisation
+      summary: Update Organisation
+      description: Update an organisation for NAT00010 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: organisationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganisationRequest'
+      responses:
+        '200':
+          description: Organisation updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organisation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      operationId: deleteOrganisation
+      summary: Delete Organisation
+      description: Delete an organisation
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: organisationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Organisation deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ---------------------------------------------------------------------------
+  # == LOCATION MANAGEMENT (NAT00020) ==
+  # ---------------------------------------------------------------------------
+  /locations:
+    get:
+      operationId: listLocations
+      summary: List Locations
+      description: Retrieve all training delivery locations for NAT00020 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Location'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      operationId: createLocation
+      summary: Create Location
+      description: Create a new training delivery location for NAT00020 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLocationRequest'
+      responses:
+        '201':
+          description: Location created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /locations/{locationId}:
+    get:
+      operationId: getLocation
+      summary: Get Location
+      description: Retrieve a specific location by ID
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      operationId: updateLocation
+      summary: Update Location
+      description: Update a training delivery location for NAT00020 AVETMISS compliance
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocationRequest'
+      responses:
+        '200':
+          description: Location updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      operationId: deleteLocation
+      summary: Delete Location
+      description: Delete a training delivery location
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Location deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /locations/{locationId}/toggle-status:
+    patch:
+      operationId: toggleLocationStatus
+      summary: Toggle Location Status
+      description: Toggle the active status of a training delivery location
+      tags: [Settings]
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Location status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
 # =============================================================================
 # REUSABLE COMPONENTS
@@ -896,6 +2593,28 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: "Supabase-issued JSON Web Token (JWT)"
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
 
   parameters:
     ApplicationId:
@@ -970,6 +2689,138 @@ components:
         format: uuid
 
   schemas:
+    CoursePlan:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        program_id: { type: string, format: uuid }
+        name: { type: string }
+        version: { type: integer }
+        is_active: { type: boolean }
+        created_at: { type: string, format: 'date-time' }
+
+    CoursePlanCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        version: { type: integer, default: 1 }
+        is_active: { type: boolean, default: false }
+
+    CoursePlanSubject:
+      type: object
+      properties:
+        subject_id: { type: string, format: uuid }
+        subject_identifier: { type: string }
+        subject_name: { type: string }
+        unit_type: { type: string, enum: [Core, Elective] }
+        sort_order: { type: integer }
+        duration_weeks: { type: integer, minimum: 1, description: "Duration of the unit in weeks for this program plan template" }
+
+    CoursePlanSubjectInput:
+      type: object
+      required: [subject_id, unit_type]
+      properties:
+        subject_id: { type: string, format: uuid }
+        unit_type: { type: string, enum: [Core, Elective] }
+        sort_order: { type: integer, default: 0 }
+        duration_weeks: { type: integer, minimum: 1, default: 1, description: "Duration of the unit in weeks for this program plan template" }
+        complexity_level: { type: string, enum: [Basic, Intermediate, Advanced], default: Basic }
+
+    CourseOfferingUpdate:
+      type: object
+      properties:
+        programId: { type: string, format: uuid }
+        startDate: { type: string, format: date, nullable: true }
+        endDate: { type: string, format: date, nullable: true }
+        deliveryLocationId: { type: string, format: uuid, nullable: true }
+        maxStudents: { type: integer, nullable: true }
+        status: { type: string, enum: [Scheduled, Active, Completed, Cancelled] }
+        isRolling: { type: boolean }
+        defaultPlanId: { type: string, format: uuid, nullable: true }
+
+    PaymentPlanTemplate:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        program_id: { type: string, format: uuid }
+        name: { type: string }
+        is_default: { type: boolean }
+        created_at: { type: string, format: 'date-time' }
+
+    PaymentPlanTemplateCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        is_default: { type: boolean, default: false }
+
+    PaymentPlanInstalment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        template_id: { type: string, format: uuid }
+        description: { type: string }
+        amount: { type: number, format: double }
+        offset_days: { type: integer }
+        sort_order: { type: integer }
+
+    PaymentPlanInstalmentInput:
+      type: object
+      required: [description, amount]
+      properties:
+        description: { type: string }
+        amount: { type: number, format: double }
+        offset_days: { type: integer, default: 0 }
+        sort_order: { type: integer, default: 0 }
+
+    PaymentPlanDeriveInput:
+      type: object
+      required: [templateId]
+      properties:
+        templateId: { type: string, format: uuid }
+        startDate:
+          type: string
+          format: date
+          description: Deprecated; prefer anchor+anchorDate.
+        enrolmentId: { type: string, format: uuid, nullable: true }
+        anchor:
+          type: string
+          enum: [OFFER_LETTER, COMMENCEMENT, CUSTOM]
+        anchorDate:
+          type: string
+          format: date
+          description: Required if anchor=CUSTOM; for COMMENCEMENT when no course offering date is set.
+
+    PaymentPlanDerivedInstalment:
+      type: object
+      properties:
+        description: { type: string }
+        amount: { type: number, format: double }
+        dueDate: { type: string, format: date }
+
+    PaymentPlanDerivedSchedule:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/PaymentPlanDerivedInstalment' }
+    OfferLetterResult:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Storage path where the offer letter PDF is stored.
+        mimeType:
+          type: string
+          example: application/pdf
+        sizeBytes:
+          type: integer
+        version:
+          type: string
+        createdAt:
+          type: string
+          format: 'date-time'
     # --- CORE WORKFLOW PAYLOADS & RESPONSES ---
     FullEnrolmentPayload:
       type: object
@@ -997,6 +2848,27 @@ components:
           $ref: '#/components/schemas/ClientUSI'
         enrolmentDetails:
           $ref: '#/components/schemas/EnrolmentDetails'
+        paymentPlan:
+          type: object
+          description: Snapshot of the selected payment plan for this draft application.
+          properties:
+            selectedTemplateId:
+              type: string
+              format: uuid
+            anchor:
+              type: string
+              enum: [OFFER_LETTER, COMMENCEMENT, CUSTOM]
+            anchorDate:
+              type: string
+              format: date
+              nullable: true
+            schedule:
+              type: array
+              items:
+                $ref: '#/components/schemas/PaymentPlanDerivedInstalment'
+            tuitionFeeSnapshot:
+              type: number
+              format: double
 
     ApprovalPayload:
       type: object
@@ -1018,10 +2890,18 @@ components:
         programId:
           type: string
           format: uuid
+        programPlanTemplateId:
+          type: string
+          format: uuid
+          description: The program plan template that defines subjects, structure, and durations
         courseOfferingId:
           type: string
           format: uuid
-          description: The specific course offering/intake the student is enrolling in
+          description: The specific course offering/intake the student is enrolling in (required for Fixed intake)
+        intakeModel:
+          type: string
+          enum: [Fixed, Rolling]
+          description: The intake model for this enrolment
         subjectStructure:
           type: object
           description: The snapshot of the program structure for this enrolment.
@@ -1039,9 +2919,11 @@ components:
         startDate:
           type: string
           format: date
+          description: Start date for the enrolment (required for Fixed intake)
         expectedCompletionDate:
           type: string
           format: date
+          description: Expected completion date (calculated from template durations for Rolling intake)
         deliveryLocationId:
           type: string
           format: uuid
@@ -1474,6 +3356,45 @@ components:
           type: string
           example: "2000"
 
+    AddressableAddress:
+      type: object
+      description: Address response from Addressable API
+      properties:
+        streetNumber:
+          type: string
+          description: Street number
+          example: "220"
+        streetName:
+          type: string
+          description: Street name
+          example: "Queen Street"
+        unitDetails:
+          type: string
+          nullable: true
+          description: Unit/apartment details
+          example: "Unit 5"
+        buildingName:
+          type: string
+          nullable: true
+          description: Building name
+          example: "Central Plaza"
+        suburb:
+          type: string
+          description: Suburb/locality
+          example: "Melbourne"
+        state:
+          type: string
+          description: State code
+          example: "VIC"
+        postcode:
+          type: string
+          description: Postcode
+          example: "3000"
+        formatted:
+          type: string
+          description: Complete formatted address
+          example: "220 Queen Street, Melbourne VIC 3000"
+
     ErrorResponse:
       type: object
       properties:
@@ -1660,10 +3581,233 @@ components:
           format: uuid
         program_identifier:
           type: string
+          description: NAT00030 Program identifier (10 chars max)
+          maxLength: 10
         program_name:
           type: string
+          description: NAT00030 Program name (100 chars max)
+          maxLength: 100
         status:
           type: string
+          enum: [Current, Superseded, Archived]
+        # NAT00030 MANDATORY FIELDS
+        program_level_of_education_identifier:
+          type: string
+          description: NAT00030 AQF level identifier (3 chars)
+          pattern: '^[0-9]{3}$'
+        program_field_of_education_identifier:
+          type: string
+          description: NAT00030 ASCED field identifier (4 chars)
+          pattern: '^[0-9]{4}$'
+        program_recognition_identifier:
+          type: string
+          description: NAT00030 Program recognition status (2 chars)
+          pattern: '^[0-9]{2}$'
+        vet_flag:
+          type: string
+          description: NAT00030 VET flag indicator (Y/N)
+          enum: [Y, N]
+        nominal_hours:
+          type: integer
+          description: NAT00030 Program nominal hours
+          minimum: 0
+          maximum: 9999
+        # NAT00030 OPTIONAL FIELDS
+        anzsco_identifier:
+          type: string
+          description: NAT00030 ANZSCO occupation code (6 chars, optional)
+          pattern: '^[0-9]{6}$'
+          nullable: true
+        anzsic_identifier:
+          type: string
+          description: NAT00030 ANZSIC industry code (4 chars, optional)
+          pattern: '^[0-9]{4}$'
+          nullable: true
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the program
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProgramCreate:
+      type: object
+      required:
+        - program_identifier
+        - program_name
+        - program_level_of_education_identifier
+        - program_field_of_education_identifier
+        - program_recognition_identifier
+        - vet_flag
+        - nominal_hours
+      properties:
+        program_identifier:
+          type: string
+          description: NAT00030 Program identifier (10 chars max)
+          maxLength: 10
+        program_name:
+          type: string
+          description: NAT00030 Program name (100 chars max)
+          maxLength: 100
+        status:
+          type: string
+          enum: [Current, Superseded, Archived]
+          default: Current
+        # NAT00030 MANDATORY FIELDS
+        program_level_of_education_identifier:
+          type: string
+          description: NAT00030 AQF level identifier (3 chars)
+          pattern: '^[0-9]{3}$'
+        program_field_of_education_identifier:
+          type: string
+          description: NAT00030 ASCED field identifier (4 chars)
+          pattern: '^[0-9]{4}$'
+        program_recognition_identifier:
+          type: string
+          description: NAT00030 Program recognition status (2 chars)
+          pattern: '^[0-9]{2}$'
+        vet_flag:
+          type: string
+          description: NAT00030 VET flag indicator (Y/N)
+          enum: [Y, N]
+        nominal_hours:
+          type: integer
+          description: NAT00030 Program nominal hours
+          minimum: 0
+          maximum: 9999
+        # NAT00030 OPTIONAL FIELDS
+        anzsco_identifier:
+          type: string
+          description: NAT00030 ANZSCO occupation code (6 chars, optional)
+          pattern: '^[0-9]{6}$'
+          nullable: true
+        anzsic_identifier:
+          type: string
+          description: NAT00030 ANZSIC industry code (4 chars, optional)
+          pattern: '^[0-9]{4}$'
+          nullable: true
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the program
+          nullable: true
+
+    ProgramUpdate:
+      type: object
+      properties:
+        program_name:
+          type: string
+          description: NAT00030 Program name (100 chars max)
+          maxLength: 100
+        status:
+          type: string
+          enum: [Current, Superseded, Archived]
+        # NAT00030 MANDATORY FIELDS
+        program_level_of_education_identifier:
+          type: string
+          description: NAT00030 AQF level identifier (3 chars)
+          pattern: '^[0-9]{3}$'
+        program_field_of_education_identifier:
+          type: string
+          description: NAT00030 ASCED field identifier (4 chars)
+          pattern: '^[0-9]{4}$'
+        program_recognition_identifier:
+          type: string
+          description: NAT00030 Program recognition status (2 chars)
+          pattern: '^[0-9]{2}$'
+        vet_flag:
+          type: string
+          description: NAT00030 VET flag indicator (Y/N)
+          enum: [Y, N]
+        nominal_hours:
+          type: integer
+          description: NAT00030 Program nominal hours
+          minimum: 0
+          maximum: 9999
+        # NAT00030 OPTIONAL FIELDS
+        anzsco_identifier:
+          type: string
+          description: NAT00030 ANZSCO occupation code (6 chars, optional)
+          pattern: '^[0-9]{6}$'
+          nullable: true
+        anzsic_identifier:
+          type: string
+          description: NAT00030 ANZSIC industry code (4 chars, optional)
+          pattern: '^[0-9]{4}$'
+          nullable: true
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the program
+          nullable: true
+
+    Unit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject_identifier:
+          type: string
+          description: Unit identifier (e.g., BSBLDR411)
+          maxLength: 20
+        subject_name:
+          type: string
+          description: Unit name
+          maxLength: 200
+        status:
+          type: string
+          enum: [Current, Superseded, Archived]
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the unit
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UnitCreate:
+      type: object
+      required:
+        - subject_identifier
+        - subject_name
+      properties:
+        subject_identifier:
+          type: string
+          description: Unit identifier (e.g., BSBLDR411)
+          maxLength: 20
+        subject_name:
+          type: string
+          description: Unit name
+          maxLength: 200
+        status:
+          type: string
+          enum: [Current, Superseded, Archived]
+          default: Current
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the unit
+          nullable: true
+
+    UnitUpdate:
+      type: object
+      properties:
+        subject_name:
+          type: string
+          description: Unit name
+          maxLength: 200
+        status:
+          type: string
+          enum: [Current, Superseded, Archived]
+        tga_url:
+          type: string
+          description: Training.gov.au URL for the unit
+          nullable: true
 
     ProgramSubject:
       type: object
@@ -1747,3 +3891,553 @@ components:
         status:
           type: string
           enum: [Scheduled, Active, Completed, Cancelled]
+
+    # --- DOCUMENT MANAGEMENT SCHEMAS ---
+    ApplicationDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the document
+        application_id:
+          type: string
+          format: uuid
+          description: ID of the application this document belongs to
+        path:
+          type: string
+          description: Full path to the document in Supabase Storage
+          example: "student-docs/applications/123/uploads/passport.pdf"
+        doc_type:
+          type: string
+          enum: [EVIDENCE, OFFER_LETTER, COE, OTHER]
+          description: Type/category of the document
+        version:
+          type: string
+          description: Version identifier for the document
+          example: "v2024-01-15"
+        mime_type:
+          type: string
+          description: MIME type of the document
+          example: "application/pdf"
+        size_bytes:
+          type: integer
+          description: Size of the document in bytes
+        created_at:
+          type: string
+          format: date-time
+          description: When the document was uploaded
+        updated_at:
+          type: string
+          format: date-time
+          description: When the document was last modified
+
+    DocumentUploadRequest:
+      type: object
+      required: [filename, contentType, category]
+      properties:
+        filename:
+          type: string
+          description: Original filename of the document
+          example: "passport.pdf"
+        contentType:
+          type: string
+          description: MIME type of the document
+          example: "application/pdf"
+        category:
+          type: string
+          enum: [EVIDENCE, OFFER_LETTER, COE, OTHER]
+          description: Category/type of the document
+          example: "EVIDENCE"
+
+    DocumentUploadUrlResponse:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+          description: Signed URL for uploading the document
+        headers:
+          type: object
+          description: Required headers for the upload request
+          additionalProperties:
+            type: string
+        objectPath:
+          type: string
+          description: Path where the document will be stored
+          example: "applications/123/uploads/1640995200000_passport.pdf"
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the upload URL expires
+
+    DocumentConfirmRequest:
+      type: object
+      required: [objectPath, size]
+      properties:
+        objectPath:
+          type: string
+          description: Path of the uploaded document in storage
+          example: "applications/123/uploads/1640995200000_passport.pdf"
+        size:
+          type: integer
+          description: Size of the uploaded file in bytes
+          minimum: 1
+          maximum: 20971520  # 20MB
+        hash:
+          type: string
+          description: Optional file hash for integrity verification
+          nullable: true
+
+    DocumentConfirmResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the created document record
+        message:
+          type: string
+          description: Success message
+          example: "Document uploaded successfully"
+        path:
+          type: string
+          description: Full path to the document in storage
+          example: "student-docs/applications/123/uploads/1640995200000_passport.pdf"
+        size:
+          type: integer
+          description: Size of the uploaded file in bytes
+        contentType:
+          type: string
+          description: MIME type of the document
+          example: "application/pdf"
+
+    # --- PASSPORT PROCESSING SCHEMAS ---
+    PassportProcessRequest:
+      type: object
+      required: [applicationId, documentId, documentPath]
+      properties:
+        applicationId:
+          type: string
+          format: uuid
+          description: ID of the application to update with extracted data
+        documentId:
+          type: string
+          format: uuid
+          description: ID of the document being processed
+        documentPath:
+          type: string
+          description: Path to the document in Supabase Storage
+          example: "student-docs/applications/123/uploads/passport.pdf"
+
+    PassportProcessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message
+          example: "Passport processed successfully"
+        extractedData:
+          $ref: '#/components/schemas/ExtractedPassportData'
+        fieldsExtracted:
+          type: array
+          items:
+            type: string
+          description: List of field names that were successfully extracted
+          example: ["firstName", "lastName", "gender", "dateOfBirth"]
+
+    ExtractedPassportData:
+      type: object
+      description: Personal information extracted from passport document
+      properties:
+        firstName:
+          type: string
+          nullable: true
+          description: Extracted first name
+          example: "SIMRAN"
+        lastName:
+          type: string
+          nullable: true
+          description: Extracted last name
+          example: "KAUR"
+        gender:
+          type: string
+          enum: [Male, Female, Other]
+          nullable: true
+          description: Extracted gender
+          example: "Female"
+        dateOfBirth:
+          type: string
+          format: date
+          nullable: true
+          description: Extracted date of birth in YYYY-MM-DD format
+          example: "1997-06-12"
+        nationality:
+          type: string
+          nullable: true
+          description: Extracted nationality
+          example: "INDIAN"
+        placeOfBirth:
+          type: string
+          nullable: true
+          description: Extracted place of birth
+          example: "PUNJAB"
+        passportNumber:
+          type: string
+          nullable: true
+          description: Extracted passport number
+          example: "N6975116"
+        issuingCountry:
+          type: string
+          nullable: true
+          description: Extracted issuing country code
+          example: "IND"
+        dateOfIssue:
+          type: string
+          format: date
+          nullable: true
+          description: Extracted date of issue in YYYY-MM-DD format
+          example: "2016-02-01"
+        dateOfExpiry:
+          type: string
+          format: date
+          nullable: true
+          description: Extracted date of expiry in YYYY-MM-DD format
+          example: "2026-02-09"
+        mrzLine1:
+          type: string
+          nullable: true
+          description: Extracted MRZ line 1
+        mrzLine2:
+          type: string
+          nullable: true
+          description: Extracted MRZ line 2
+
+    # --- COURSE PLAN PREREQUISITE SCHEMAS ---
+    CoursePlanStructure:
+      type: object
+      description: Complete course plan structure with subjects, prerequisites, and validation results
+      properties:
+        plan:
+          $ref: '#/components/schemas/CoursePlan'
+        subjects:
+          type: array
+          description: Subjects in the plan with additional metadata
+          items:
+            allOf:
+              - $ref: '#/components/schemas/CoursePlanSubject'
+              - type: object
+                properties:
+                  estimated_duration_weeks: { type: integer }
+                  complexity_level: { type: string, enum: [Basic, Intermediate, Advanced] }
+                  prerequisites_count: { type: integer, description: Number of prerequisites for this subject }
+                  dependents_count: { type: integer, description: Number of subjects that depend on this subject }
+        prerequisites:
+          type: array
+          description: All prerequisite relationships in the plan
+          items:
+            $ref: '#/components/schemas/SubjectPrerequisite'
+        progression_validation:
+          $ref: '#/components/schemas/ProgressionValidationResult'
+
+    SubjectPrerequisite:
+      type: object
+      description: A prerequisite relationship between two subjects
+      properties:
+        id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid, description: The subject that requires the prerequisite }
+        prerequisite_subject_id: { type: string, format: uuid, description: The subject that must be completed first }
+        prerequisite_type: { type: string, enum: [Required, Recommended] }
+        subject_name: { type: string, description: Name of the subject requiring the prerequisite }
+        prerequisite_subject_name: { type: string, description: Name of the prerequisite subject }
+        created_at: { type: string, format: 'date-time' }
+
+    SubjectPrerequisiteInput:
+      type: object
+      required: [subject_id, prerequisite_subject_id, prerequisite_type]
+      properties:
+        subject_id: { type: string, format: uuid }
+        prerequisite_subject_id: { type: string, format: uuid }
+        prerequisite_type: { type: string, enum: [Required, Recommended] }
+
+    ProgressionValidationResult:
+      type: object
+      description: Results of validating course plan progression rules
+      properties:
+        is_valid: { type: boolean, description: Whether the progression rules are valid }
+        errors:
+          type: array
+          description: List of validation errors
+          items:
+            type: object
+            properties:
+              type: { type: string, description: Error type (e.g., CircularDependency, OrphanedSubject) }
+              message: { type: string, description: Human-readable error message }
+              subject_ids: { type: array, items: { type: string, format: uuid }, description: IDs of subjects involved in the error }
+        warnings:
+          type: array
+          description: List of validation warnings
+          items:
+            type: object
+
+    ProgressionPreviewRequest:
+      type: object
+      required: [intake_model]
+      properties:
+        intake_model: { type: string, enum: [Fixed, Rolling], description: The intake model to preview }
+        start_date: { type: string, format: date, nullable: true, description: Start date for Fixed intake preview }
+        simulation_duration_weeks: { type: integer, minimum: 1, default: 52, description: Duration to simulate in weeks }
+
+    ProgramSchedule:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        program_id: { type: string, format: uuid }
+        name: { type: string }
+        cycle_anchor_date:
+          type: string
+          format: date
+          description: The anchor date for cycle calculations (inclusive start)
+        timezone:
+          type: string
+          description: IANA timezone (default Australia/Melbourne)
+        units:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgramScheduleUnit'
+        created_at: { type: string, format: 'date-time' }
+        updated_at: { type: string, format: 'date-time' }
+
+    ProgramScheduleUnit:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        schedule_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        order_index: { type: integer }
+        duration_days: { type: integer, minimum: 1 }
+
+    ProgramScheduleUpsert:
+      type: object
+      required: [cycleAnchorDate, units]
+      properties:
+        name: { type: string }
+        cycleAnchorDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+          default: Australia/Melbourne
+        units:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [subjectId, orderIndex, durationDays]
+            properties:
+              subjectId: { type: string, format: uuid }
+              orderIndex: { type: integer, minimum: 0 }
+              durationDays: { type: integer, minimum: 1 }
+
+    RollingSchedulePreview:
+      type: object
+      properties:
+        cycle_anchor_date: { type: string, format: date }
+        timezone: { type: string }
+        cycles: { type: integer }
+        windows:
+          type: array
+          items:
+            type: object
+            properties:
+              term_index: { type: integer }
+              subject_id: { type: string, format: uuid }
+              subject_name: { type: string }
+              start_date: { type: string, format: date }
+              end_date: { type: string, format: date }
+
+    ProgressionPreviewResult:
+      type: object
+      description: Results of course progression preview for different intake models
+      properties:
+        intake_model: { type: string, enum: [Fixed, Rolling] }
+        total_duration_weeks: { type: integer, description: Total estimated duration of the course }
+        progression_phases:
+          type: array
+          description: Phases of progression through the course
+          items:
+            $ref: '#/components/schemas/ProgressionPhase'
+        fixed_intake_timeline:
+          type: array
+          description: Timeline for Fixed intake model
+          items:
+            $ref: '#/components/schemas/FixedIntakeTimelineEntry'
+        rolling_intake_sequence:
+          type: array
+          description: Sequence for Rolling intake model
+          items:
+            $ref: '#/components/schemas/RollingIntakeSequenceEntry'
+
+    ProgressionPhase:
+      type: object
+      description: A phase in the course progression
+      properties:
+        phase_number: { type: integer, description: Sequential phase number }
+        subject_ids: { type: array, items: { type: string, format: uuid }, description: Subjects that can be taken in this phase }
+        estimated_start_week: { type: integer, description: Week when this phase begins }
+        estimated_end_week: { type: integer, description: Week when this phase ends }
+
+    FixedIntakeTimelineEntry:
+      type: object
+      description: Timeline entry for Fixed intake model
+      properties:
+        subject_id: { type: string, format: uuid }
+        subject_name: { type: string }
+        start_week: { type: integer, description: Week when this subject begins }
+        end_week: { type: integer, description: Week when this subject ends }
+        duration_weeks: { type: integer, description: Duration of this subject in weeks }
+        prerequisites_completed_by_week: { type: integer, description: Week by which prerequisites must be completed }
+        start_date: { type: string, format: date, description: Actual start date of this subject }
+        end_date: { type: string, format: date, description: Actual end date of this subject }
+
+    RollingIntakeSequenceEntry:
+      type: object
+      description: Sequence entry for Rolling intake model
+      properties:
+        unlock_trigger: { type: string, description: What triggers unlocking these subjects (Enrolment, SubjectCompletion) }
+        subjects_unlocked:
+          type: array
+          description: Subjects unlocked by this trigger
+          items:
+            type: object
+            properties:
+              subject_id: { type: string, format: uuid }
+              subject_name: { type: string }
+              estimated_duration_weeks: { type: integer }
+              prerequisite_subjects: { type: array, items: { type: string, format: uuid }, description: Subject IDs that must be completed first }
+              available_from_date: { type: string, format: date, description: Date when this subject becomes available }
+              estimated_completion_date: { type: string, format: date, description: Estimated completion date if started immediately }
+
+    # --- ORGANISATION MANAGEMENT SCHEMAS (NAT00010) ---
+    Organisation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        organisation_identifier: { type: string, description: "NAT00010: Training organisation identifier (A, 10) - Your RTO code" }
+        organisation_name: { type: string, description: "NAT00010: Training organisation name (A, 100) - Organisation legal name" }
+        organisation_type_identifier: { type: string, description: "NAT00010: Training organisation type identifier (A, 2)" }
+        state_identifier: { type: string, description: "NAT00010: State identifier (A, 2)" }
+        address_id: { type: string, format: uuid, nullable: true, description: "Reference to address table" }
+        phone_number: { type: string, nullable: true, description: "NAT00010: Telephone number (A, 20)" }
+        fax_number: { type: string, nullable: true, description: "NAT00010: Facsimile number (A, 20)" }
+        email_address: { type: string, nullable: true, description: "NAT00010: Email address (A, 80)" }
+        contact_name: { type: string, nullable: true, description: "NAT00010: Contact name (A, 60)" }
+        address: { $ref: '#/components/schemas/OrganisationAddress' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateOrganisationRequest:
+      type: object
+      required: [organisation_identifier, organisation_name, organisation_type_identifier, state_identifier]
+      properties:
+        organisation_identifier: { type: string, maxLength: 10, description: "RTO code from training.gov.au" }
+        organisation_name: { type: string, maxLength: 100, description: "Legal organisation name" }
+        organisation_type_identifier: { type: string, enum: ["21", "25", "27", "31", "41", "43", "45", "51", "53", "61", "91", "93", "95", "97", "99"] }
+        state_identifier: { type: string, enum: ["01", "02", "03", "04", "05", "06", "07", "08"] }
+        address: { $ref: '#/components/schemas/CreateOrganisationAddressRequest' }
+        phone_number: { type: string, maxLength: 20 }
+        fax_number: { type: string, maxLength: 20 }
+        email_address: { type: string, format: email, maxLength: 80 }
+        contact_name: { type: string, maxLength: 60 }
+
+    UpdateOrganisationRequest:
+      type: object
+      properties:
+        organisation_identifier: { type: string, maxLength: 10 }
+        organisation_name: { type: string, maxLength: 100 }
+        organisation_type_identifier: { type: string, enum: ["21", "25", "27", "31", "41", "43", "45", "51", "53", "61", "91", "93", "95", "97", "99"] }
+        state_identifier: { type: string, enum: ["01", "02", "03", "04", "05", "06", "07", "08"] }
+        address: { $ref: '#/components/schemas/UpdateOrganisationAddressRequest' }
+        phone_number: { type: string, maxLength: 20 }
+        fax_number: { type: string, maxLength: 20 }
+        email_address: { type: string, format: email, maxLength: 80 }
+        contact_name: { type: string, maxLength: 60 }
+
+    # --- LOCATION MANAGEMENT SCHEMAS (NAT00020) ---
+    Location:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        organisation_id: { type: string, format: uuid }
+        location_identifier: { type: string, description: "NAT00020: Training organisation delivery location identifier (A, 10)" }
+        location_name: { type: string, description: "NAT00020: Training organisation delivery location name (A, 100)" }
+        address_id: { type: string, format: uuid }
+        address: { $ref: '#/components/schemas/OrganisationAddress' }
+        is_active: { type: boolean, description: "Whether this location is active for training delivery" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateLocationRequest:
+      type: object
+      required: [organisation_id, location_identifier, location_name, address]
+      properties:
+        organisation_id: { type: string, format: uuid }
+        location_identifier: { type: string, maxLength: 10 }
+        location_name: { type: string, maxLength: 100 }
+        address: { $ref: '#/components/schemas/CreateOrganisationAddressRequest' }
+        is_active: { type: boolean, default: true }
+
+    UpdateLocationRequest:
+      type: object
+      properties:
+        location_identifier: { type: string, maxLength: 10 }
+        location_name: { type: string, maxLength: 100 }
+        address: { $ref: '#/components/schemas/UpdateOrganisationAddressRequest' }
+        is_active: { type: boolean }
+
+    # --- ORGANISATION & LOCATION ADDRESS SCHEMAS ---
+    OrganisationAddress:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        building_property_name: { type: string, nullable: true, description: "NAT00010/00020: Address building/property name (A, 50)" }
+        flat_unit_details: { type: string, nullable: true, description: "NAT00010/00020: Address flat/unit details (A, 30)" }
+        street_number: { type: string, nullable: true, description: "NAT00010/00020: Address street number (A, 15)" }
+        street_name: { type: string, nullable: true, description: "NAT00010/00020: Address street name (A, 70)" }
+        suburb: { type: string, description: "NAT00010/00020: Address suburb, locality or town (A, 50)" }
+        postcode: { type: string, description: "NAT00010/00020: Postcode (A, 4)" }
+        state_identifier: { type: string, description: "NAT00010/00020: State identifier (A, 2)" }
+        country_identifier: { type: string, description: "Country identifier" }
+        sa1_identifier: { type: string, nullable: true, description: "NAT00010: Statistical area level 1 identifier (A, 11)" }
+        sa2_identifier: { type: string, nullable: true, description: "NAT00010: Statistical area level 2 identifier (A, 9)" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateOrganisationAddressRequest:
+      type: object
+      required: [suburb, postcode, state_identifier]
+      properties:
+        building_property_name: { type: string, maxLength: 50 }
+        flat_unit_details: { type: string, maxLength: 30 }
+        street_number: { type: string, maxLength: 15 }
+        street_name: { type: string, maxLength: 70 }
+        suburb: { type: string, maxLength: 50 }
+        postcode: { type: string, pattern: "^\\d{4}$|^OSPC$", description: "4-digit postcode or 'OSPC' for overseas" }
+        state_identifier: { type: string, enum: ["01", "02", "03", "04", "05", "06", "07", "08"] }
+        country_identifier: { type: string, default: "1101", description: "Australia" }
+        sa1_identifier: { type: string, maxLength: 11 }
+        sa2_identifier: { type: string, maxLength: 9 }
+
+    UpdateOrganisationAddressRequest:
+      type: object
+      properties:
+        building_property_name: { type: string, maxLength: 50 }
+        flat_unit_details: { type: string, maxLength: 30 }
+        street_number: { type: string, maxLength: 15 }
+        street_name: { type: string, maxLength: 70 }
+        suburb: { type: string, maxLength: 50 }
+        postcode: { type: string, pattern: "^\\d{4}$|^OSPC$" }
+        state_identifier: { type: string, enum: ["01", "02", "03", "04", "05", "06", "07", "08"] }
+        country_identifier: { type: string }
+        sa1_identifier: { type: string, maxLength: 11 }
+        sa2_identifier: { type: string, maxLength: 9 }

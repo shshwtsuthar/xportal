@@ -51,11 +51,9 @@ const students: NavItem[] = [
 ];
 
 const programs: NavItem[] = [
-  { title: "Catalog", href: "/programs", icon: BookOpenText },
-];
-
-const offerings: NavItem[] = [
-  { title: "Offerings", href: "/course-offerings", icon: CalendarDays },
+  { title: "Programs & Courses", href: "/programs", icon: BookOpenText },
+  { title: "Units", href: "/units", icon: BookOpenText },
+  { title: "Program Plan Templates", href: "/programs/program-plan-templates", icon: CalendarDays },
 ];
 
 const staff: NavItem[] = [
@@ -69,7 +67,7 @@ const agents: NavItem[] = [
 const finance: NavItem[] = [
   { title: "Invoices", href: "/finance/invoices", icon: FileText },
   { title: "Payments", href: "/finance/payments", icon: BadgeDollarSign },
-  { title: "Payment Plans", href: "/finance/payment-plans", icon: BadgeDollarSign },
+  { title: "Payment Plans", href: "/finance/payment-plans", icon: CalendarDays },
   { title: "Commissions", href: "/finance/commissions", icon: BadgeDollarSign },
   { title: "Reports", href: "/finance/reports", icon: BarChart3 },
 ];
@@ -119,11 +117,7 @@ function Group({ label, items, defaultOpen = false }: { label: string; items: Na
               {items.map((item) => (
                 <SidebarMenuSubItem key={item.title}>
                   <SidebarMenuSubButton asChild isActive={pathname === item.href}>
-                    <Link href={item.href} aria-label={item.title} onClick={() => {
-                      if (item.href === '/students/new') {
-                        clearApplicationWizardStorage();
-                      }
-                    }}>
+                    <Link href={item.href} aria-label={item.title}>
                       {item.title}
                     </Link>
                   </SidebarMenuSubButton>
@@ -163,7 +157,6 @@ export function AppSidebar() {
           <Group label="Dashboard" items={dashboard} defaultOpen />
           <Group label="Students" items={students} defaultOpen />
           <Group label="Programs" items={programs} />
-          <Group label="Course Offerings" items={offerings} />
           <Group label="Staff" items={staff} />
           <Group label="Agents" items={agents} />
           <Group label="Finance" items={finance} />

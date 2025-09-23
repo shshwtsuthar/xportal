@@ -27,7 +27,7 @@ interface ListApplicationsParams {
 
 // Generic function to fetch applications by status
 const fetchApplicationsByStatus = async (
-  status: 'drafts' | 'submitted' | 'approved',
+  status: 'drafts' | 'submitted' | 'approved' | 'awaiting' | 'accepted' | 'rejected',
   params: ListApplicationsParams = {}
 ): Promise<ApplicationListResponse> => {
   const searchParams = new URLSearchParams();
@@ -90,6 +90,34 @@ export const useApprovedApplications = (params: ListApplicationsParams = {}) => 
     queryKey: ['applications', 'approved', params],
     queryFn: () => fetchApplicationsByStatus('approved', params),
     staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: false,
+  });
+};
+
+// New views
+export const useAwaitingPaymentApplications = (params: ListApplicationsParams = {}) => {
+  return useQuery({
+    queryKey: ['applications', 'awaiting', params],
+    queryFn: () => fetchApplicationsByStatus('awaiting', params),
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useAcceptedApplications = (params: ListApplicationsParams = {}) => {
+  return useQuery({
+    queryKey: ['applications', 'accepted', params],
+    queryFn: () => fetchApplicationsByStatus('accepted', params),
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useRejectedApplications = (params: ListApplicationsParams = {}) => {
+  return useQuery({
+    queryKey: ['applications', 'rejected', params],
+    queryFn: () => fetchApplicationsByStatus('rejected', params),
+    staleTime: 30000,
     refetchOnWindowFocus: false,
   });
 };

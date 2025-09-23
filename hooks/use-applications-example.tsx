@@ -172,14 +172,14 @@ export function ApplicationsManagementExample() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {new Date(app.createdAt).toLocaleDateString()}
+                          {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '-'}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             {app.status === 'Draft' && (
                               <Button
                                 size="sm"
-                                onClick={() => handleSubmitApplication(app.id)}
+                                onClick={() => app.id && handleSubmitApplication(app.id)}
                               >
                                 Submit
                               </Button>
@@ -191,7 +191,7 @@ export function ApplicationsManagementExample() {
                                   variant="outline"
                                   onClick={() => {
                                     const reason = prompt('Rejection reason:');
-                                    if (reason) handleRejectApplication(app.id, reason);
+                                    if (reason && app.id) handleRejectApplication(app.id, reason);
                                   }}
                                 >
                                   Reject
@@ -202,6 +202,7 @@ export function ApplicationsManagementExample() {
                                     const tuitionFee = prompt('Tuition fee:');
                                     const commission = prompt('Commission rate:');
                                     if (tuitionFee && commission) {
+                                      if (!app.id) return;
                                       handleApproveApplication(app.id, {
                                         tuitionFeeSnapshot: parseFloat(tuitionFee),
                                         agentCommissionRateSnapshot: parseFloat(commission),

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offer Letter - {{student_full_name}}</title>
+    <style>
+        @page {
+            margin: 20mm;
+            size: A4;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #000;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .page {
+            max-width: 210mm;
+            margin: 0 auto;
+            background: white;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .header-left {
+            flex: 1;
+        }
+        
+        .college-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 0;
+        }
+        
+        .contact-info {
+            font-size: 10px;
+            margin: 5px 0;
+            line-height: 1.3;
+        }
+        
+        .codes-info {
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .header-right {
+            text-align: right;
+            font-size: 9px;
+        }
+        
+        .offer-title {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            text-decoration: underline;
+        }
+        
+        .offer-details {
+            margin: 15px 0;
+            font-size: 11px;
+        }
+        
+        .student-address {
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        .agency-info {
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .greeting {
+            margin: 20px 0;
+        }
+        
+        .intro-text {
+            margin: 15px 0;
+            text-align: justify;
+            line-height: 1.5;
+        }
+        
+        .section-header {
+            font-weight: bold;
+            font-size: 12px;
+            margin: 25px 0 10px 0;
+            text-decoration: underline;
+        }
+        
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        .details-table td {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            vertical-align: top;
+        }
+        
+        .details-table td:first-child {
+            font-weight: bold;
+            background-color: #f5f5f5;
+            width: 25%;
+        }
+        
+        .course-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 10px;
+        }
+        
+        .course-table th,
+        .course-table td {
+            border: 1px solid #333;
+            padding: 6px;
+            text-align: center;
+        }
+        
+        .course-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        
+        .payment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10px;
+        }
+        
+        .payment-table th,
+        .payment-table td {
+            border: 1px solid #333;
+            padding: 6px;
+            text-align: left;
+        }
+        
+        .payment-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .payment-table td:last-child {
+            text-align: right;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            background-color: #f5f5f5;
+        }
+        
+        .closing {
+            margin: 30px 0;
+        }
+        
+        .signature-line {
+            margin-top: 50px;
+            border-bottom: 1px solid #333;
+            width: 200px;
+            display: inline-block;
+        }
+        
+        .page-footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 8px;
+            border-top: 1px solid #ccc;
+            padding-top: 5px;
+        }
+        
+        .important-note {
+            font-weight: bold;
+            margin: 15px 0;
+            text-transform: uppercase;
+        }
+        
+        .conditions-section {
+            margin: 20px 0;
+        }
+        
+        .hours-info {
+            margin: 10px 0;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Header Section -->
+        <div class="header">
+            <div class="header-left">
+                <h1 class="college-name">Ashford College</h1>
+                <div class="contact-info">
+                    Level 3/65 Brougham Street, Geelong VIC - 3220<br>
+                    E: info@ashford.edu.au | T: 0423513282<br>
+                    W: www.ashford.edu.au
+                </div>
+                <div class="codes-info">
+                    RTO Code: 46296 | CRICOS Code: 04304G
+                </div>
+            </div>
+            <div class="header-right">
+                Offer Letter and International Student Agreement | Page 1 of 1<br>
+                V2.1: {{date}}, Approved: PEO, Next Review: November 2025
+            </div>
+        </div>
+        
+        <!-- Offer Title -->
+        <h2 class="offer-title">Letter of Offer</h2>
+        
+        <!-- Offer Details -->
+        <div class="offer-details">
+            <strong>Offer Letter ID:</strong> {{offer_letter_id}}<br><br>
+            <strong>Date:</strong> {{date}}
+        </div>
+        
+        <!-- Student Address -->
+        <div class="student-address">
+            {{#if student_gender}}
+                {{#if student_gender == "M"}}Mr{{else}}Ms{{/if}}
+            {{/if}} {{student_full_name}}<br>
+            {{student_address_line_1}}<br>
+            {{student_address_line_2}}
+        </div>
+        
+        <!-- Agency Information -->
+        {{#if agency_name}}
+        <div class="agency-info">
+            Agency: {{agency_name}}
+        </div>
+        {{/if}}
+        
+        <!-- Greeting -->
+        <div class="greeting">
+            <p>Dear {{student_first_name}},</p>
+        </div>
+        
+        <!-- Introduction Text -->
+        <div class="intro-text">
+            <p>We are delighted to inform you that your application to enroll with us has been accepted.</p>
+            <p>Please carefully check all the details of your enrolment and the terms and conditions. If there is any changes to be made to your details or any information that you are unsure about, please contact us.</p>
+            <p>Once you are satisfied that all of the information is correct and you understand and agree the terms and conditions, please complete the declaration at the end and return it to us.</p>
+            <p>Once we receive your declaration, we will send you a tax invoice which you should pay immediately to secure your place.</p>
+            <p>Upon completion of all of the above, your <strong>Electronic Confirmation of Enrolment</strong> will be sent to you.</p>
+            <p>We look forward to welcoming you.</p>
+        </div>
+        
+        <!-- Closing -->
+        <div class="closing">
+            <p><strong>Kind regards,</strong><br>
+            Administration Team<br><br>
+            E: info@ashford.edu.au<br>
+            P: 0423 513 282</p>
+        </div>
+        
+        <!-- Page Break for Second Page -->
+        <div style="page-break-before: always;"></div>
+        
+        <!-- Second Page Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1 class="college-name">Ashford College</h1>
+                <div class="contact-info">
+                    Level 3/65 Brougham Street, Geelong VIC - 3220<br>
+                    E: info@ashford.edu.au | T: 0423513282<br>
+                    W: www.ashford.edu.au
+                </div>
+                <div class="codes-info">
+                    RTO Code: 46296 | CRICOS Code: 04304G
+                </div>
+            </div>
+            <div class="header-right">
+                Offer Letter and International Student Agreement | Page 2 of 2<br>
+                V2.1: {{date}}, Approved: PEO, Next Review: November 2025
+            </div>
+        </div>
+        
+        <!-- Student Details Section -->
+        <h3 class="section-header">* carefully check all of the details below to make sure they are correct</h3>
+        
+        <h4 style="font-weight: bold; margin: 20px 0 10px 0;">Student Details</h4>
+        <table class="details-table">
+            <tr><td>Student ID</td><td>{{student_id}}</td></tr>
+            <tr><td>First Name</td><td>{{student_first_name}}</td></tr>
+            <tr><td>Surname</td><td>{{student_last_name}}</td></tr>
+            <tr><td>Date of Birth</td><td>{{student_dob}}</td></tr>
+            <tr><td>Nationality</td><td>{{student_nationality}}</td></tr>
+            <tr><td>Gender</td><td>{{student_gender}}</td></tr>
+            <tr><td>Passport No</td><td>{{student_passport}}</td></tr>
+            <tr><td>Phone</td><td>{{student_phone}}</td></tr>
+            <tr><td>Email</td><td>{{student_email}}</td></tr>
+        </table>
+        
+        <!-- Course Details Section -->
+        <h4 style="font-weight: bold; margin: 20px 0 10px 0;">Course Details</h4>
+        <table class="course-table">
+            <thead>
+                <tr>
+                    <th>Proposal #</th>
+                    <th>CRICOS Course Code</th>
+                    <th>Course Name</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Location</th>
+                    <th>Hrs/Week</th>
+                    <th>Total Duration Weeks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{course_proposal_id}}</td>
+                    <td>{{course_cricos_code}} ({{course_code}})</td>
+                    <td>{{course_name}}</td>
+                    <td>{{course_start_date}}</td>
+                    <td>{{course_end_date}}</td>
+                    <td>{{course_location}}</td>
+                    <td>{{course_hours_per_week}}</td>
+                    <td>{{course_duration_weeks}}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Agreed Dates -->
+        <div style="margin: 15px 0;">
+            <p><strong>Agreed Start Date:</strong> {{agreed_start_date}}</p>
+            <p><strong>Expected End Date:</strong> {{expected_end_date}}</p>
+        </div>
+        
+        <!-- Important Note -->
+        <div class="important-note">
+            NOTE: YOU MUST ADVISE THE COLLEGE OF ANY CHANGE IN ADDRESS WHILE ENROLLED IN THE COURSE
+        </div>
+        
+        <!-- Conditions Section -->
+        <div class="conditions-section">
+            <h4 style="font-weight: bold;">Condition(s) of the Offer:</h4>
+            <div class="hours-info">
+                <p><strong>Hours per week:</strong> {{course_hours_per_week}} hours a week in the classroom</p>
+                <p><strong>Entry Requirement:</strong> For the entry requirement for each course please refer to the course information brochure or follow the information on https://ashford.edu.au/</p>
+            </div>
+        </div>
+        
+        <!-- Payment Section -->
+        <h4 style="font-weight: bold; margin: 25px 0 10px 0;">Payment of Fees:</h4>
+        <p>Payment must include the following: All fees are in Australian dollars (AUD)</p>
+        
+        <h4 style="font-weight: bold; margin: 15px 0 10px 0;">Payment Plans</h4>
+        <p><strong>Course Name:</strong> {{course_name}}<br>
+        <strong>Enrol ID:</strong> {{enrol_id}}</p>
+        
+        <table class="payment-table">
+            <thead>
+                <tr>
+                    <th>Due Date</th>
+                    <th>Fees</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each schedule}}
+                <tr>
+                    <td>{{payment.due_date}}</td>
+                    <td>{{payment.description}}</td>
+                    <td>${{payment.amount}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="2"><strong>Total Course Fees:</strong></td>
+                    <td><strong>${{total_course_fees}}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+        
+        <!-- Terms and Conditions -->
+        {{#if offer_conditions}}
+        <div style="margin: 30px 0;">
+            <h4 style="font-weight: bold;">Terms and Conditions:</h4>
+            <p>{{offer_conditions}}</p>
+        </div>
+        {{/if}}
+        
+        <!-- Signature Section -->
+        <div style="margin-top: 50px;">
+            <p><strong>Student Declaration</strong></p>
+            <p>By signing below, I confirm that the details in this Student Agreement are correct and that I accept all terms and conditions documented in this agreement.</p>
+            <br>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 20px 0; border-bottom: 1px solid #333; width: 40%;">Student name: {{student_full_name}}</td>
+                    <td style="padding: 20px 0; border-bottom: 1px solid #333; width: 30%;">Signature:</td>
+                    <td style="padding: 20px 0; border-bottom: 1px solid #333; width: 30%;">Date:</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
