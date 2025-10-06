@@ -54,8 +54,8 @@ async function seedFirstAdmin() {
         // Continue with creating admin user only
         const { data: user, error: createUserError } =
           await supabase.auth.admin.createUser({
-            email: 'shshwtsuthar@gmail.com',
-            password: '$ha$hw1T$uthar',
+            email: process.env.XPORTAL_EMAIL,
+            password: process.env.XPORTAL_PASSWORD,
             email_confirm: true,
             user_metadata: {
               first_name: 'Shashwat',
