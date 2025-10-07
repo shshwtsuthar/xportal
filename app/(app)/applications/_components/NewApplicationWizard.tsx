@@ -23,6 +23,8 @@ import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
 import { Step1_PersonalDetails } from './steps/Step1_PersonalDetails';
 import { Step2_AvetmissDetails } from './steps/Step2_AvetmissDetails';
 import { Step3_AdditionalInfo } from './steps/Step3_AdditionalInfo';
+import { DocumentsPane } from './DocumentsPane';
+import { useUploadApplicationFile } from '@/src/hooks/useApplicationFiles';
 import { toast } from 'sonner';
 import { useSubmitApplication } from '@/src/hooks/useSubmitApplication';
 
@@ -32,6 +34,7 @@ const steps = [
   { id: 1, label: 'Personal Details' },
   { id: 2, label: 'AVETMISS' },
   { id: 3, label: 'Additional Info' },
+  { id: 4, label: 'Documents' },
 ];
 
 export function NewApplicationWizard({ applicationId }: Props) {
@@ -44,6 +47,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
 
   const updateMutation = useUpdateApplication();
   const submitMutation = useSubmitApplication();
+  const uploadFileMutation = useUploadApplicationFile();
 
   const form = useForm({
     resolver: zodResolver(draftApplicationSchema), // Use draft schema for form validation
@@ -332,11 +336,13 @@ export function NewApplicationWizard({ applicationId }: Props) {
   const StepContent = useMemo(() => {
     if (activeStep === 0) return <Step1_PersonalDetails />;
     if (activeStep === 1) return <Step2_AvetmissDetails />;
-    return <Step3_AdditionalInfo application={currentApplication} />;
+    if (activeStep === 2)
+      return <Step3_AdditionalInfo application={currentApplication} />;
+    return <DocumentsPane applicationId={currentApplication?.id} />;
   }, [activeStep, currentApplication]);
 
   return (
-    <div className="container p-4 md:p-6 lg:p-8">
+    <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -403,6 +409,50 @@ export function NewApplicationWizard({ applicationId }: Props) {
               </Button>
             </div>
             <div className="flex gap-2">
+              {/* Inline uploader */}
+              <label className="relative inline-flex">
+                <input
+                  type="file"
+                  className="hidden"
+                  aria-label="Upload file"
+                  onChange={async (e) => {
+                    try {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (!currentApplication?.id) {
+                        toast.error('Save draft to enable uploads.');
+                        return;
+                      }
+                      if (file.size > 10 * 1024 * 1024) {
+                        toast.error('File too large (max 10MB).');
+                        return;
+                      }
+                      await uploadFileMutation.mutateAsync({
+                        applicationId: currentApplication.id,
+                        file,
+                      });
+                      toast.success('File uploaded');
+                      e.currentTarget.value = '';
+                    } catch (err) {
+                      toast.error(
+                        `Upload failed: ${String((err as Error).message || err)}`
+                      );
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={(e) => {
+                    const input = e.currentTarget
+                      .previousSibling as HTMLInputElement | null;
+                    input?.click();
+                  }}
+                  disabled={!currentApplication?.id}
+                >
+                  Upload file
+                </Button>
+              </label>
               <Button
                 type="button"
                 variant="outline"
