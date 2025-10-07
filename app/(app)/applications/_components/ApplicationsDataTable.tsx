@@ -145,7 +145,7 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
         <TableHeader>
           <TableRow className="divide-x">
             <TableHead>Student Name</TableHead>
-            <TableHead>Qualification</TableHead>
+            <TableHead>Program</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Updated At</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -158,7 +158,7 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
                 {[app.first_name, app.last_name].filter(Boolean).join(' ') ||
                   '—'}
               </TableCell>
-              <TableCell>{app.qualification_id ? 'Selected' : '—'}</TableCell>
+              <TableCell>{app.program_id ? 'Selected' : '—'}</TableCell>
               <TableCell>
                 <Badge
                   variant={
