@@ -82,10 +82,10 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-hidden rounded-md border">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="divide-x">
             <TableHead>Student Name</TableHead>
             <TableHead>Qualification</TableHead>
             <TableHead>Status</TableHead>
@@ -93,9 +93,9 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="divide-y">
           {rows.map((app) => (
-            <TableRow key={app.id}>
+            <TableRow key={app.id} className="divide-x">
               <TableCell>
                 {[app.first_name, app.last_name].filter(Boolean).join(' ') ||
                   '—'}
@@ -121,7 +121,7 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
             </TableRow>
           ))}
           {rows.length === 0 && (
-            <TableRow>
+            <TableRow className="divide-x">
               <TableCell colSpan={5}>
                 <p className="text-muted-foreground text-sm">
                   No applications found.
