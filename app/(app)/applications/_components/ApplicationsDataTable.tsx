@@ -16,12 +16,26 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tables } from '@/database.types';
+import { toast } from 'sonner';
+import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
 
 import type { Database } from '@/database.types';
 type ApplicationStatus = Database['public']['Enums']['application_status'];
@@ -32,8 +46,16 @@ type Props = {
 
 export function ApplicationsDataTable({ statusFilter }: Props) {
   const { data, isLoading, isError } = useGetApplications(statusFilter);
+  const deleteMutation = useDeleteApplication();
 
   const rows = useMemo(() => data ?? [], [data]);
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id, {
+      onSuccess: () => toast.success('Application deleted successfully'),
+      onError: (error) => toast.error(`Failed to delete: ${error.message}`),
+    });
+  };
 
   if (isLoading) {
     return (
@@ -75,6 +97,40 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
             </DropdownMenuItem>
           ) : (
             <DropdownMenuItem disabled>Continue</DropdownMenuItem>
+          )}
+          {app.status === 'DRAFT' && (
+            <>
+              <DropdownMenuSeparator />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Application</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure? This will permanently delete this
+                      application. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleDelete(app.id)}
+                      className="bg-destructive hover:bg-destructive/90 text-white"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

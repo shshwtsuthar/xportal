@@ -4,14 +4,6 @@ import { useState } from 'react';
 import type { Database } from '@/database.types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { ApplicationsDataTable } from './_components/ApplicationsDataTable';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
@@ -34,35 +26,12 @@ export default function ApplicationsPage() {
             View and manage student applications
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              onValueChange={(v) =>
-                setStatus(v === 'all' ? undefined : (v as ApplicationStatus))
-              }
-            >
-              <SelectTrigger id="status" className="w-40">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                <SelectItem value="OFFER_GENERATED">Offer Generated</SelectItem>
-                <SelectItem value="OFFER_SENT">Offer Sent</SelectItem>
-                <SelectItem value="ACCEPTED">Accepted</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button asChild>
-            <Link href="/applications/new">
-              <Plus className="mr-2 h-4 w-4" />
-              New Application
-            </Link>
-          </Button>
-        </div>
+        <Button asChild>
+          <Link href="/applications/new">
+            <Plus className="mr-2 h-4 w-4" />
+            New Application
+          </Link>
+        </Button>
       </div>
 
       <Card>
@@ -70,6 +39,57 @@ export default function ApplicationsPage() {
           <CardTitle className="text-xl font-semibold tracking-tight">
             All Applications
           </CardTitle>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              variant={status === undefined ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatus(undefined)}
+            >
+              All
+            </Button>
+            <Button
+              variant={status === 'DRAFT' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatus('DRAFT')}
+            >
+              Draft
+            </Button>
+            <Button
+              variant={status === 'SUBMITTED' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatus('SUBMITTED')}
+            >
+              Submitted
+            </Button>
+            <Button
+              variant={status === 'OFFER_GENERATED' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatus('OFFER_GENERATED')}
+            >
+              Offer Generated
+            </Button>
+            <Button
+              variant={status === 'OFFER_SENT' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatus('OFFER_SENT')}
+            >
+              Offer Sent
+            </Button>
+            <Button
+              variant={status === 'ACCEPTED' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatus('ACCEPTED')}
+            >
+              Accepted
+            </Button>
+            <Button
+              variant={status === 'REJECTED' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatus('REJECTED')}
+            >
+              Rejected
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <ApplicationsDataTable
