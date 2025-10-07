@@ -370,19 +370,15 @@ export function NewApplicationWizard({ applicationId }: Props) {
           <CardTitle className="text-xl font-semibold tracking-tight">
             <div className="flex items-center gap-2">
               {steps.map((s, i) => (
-                <button
+                <Button
                   key={s.id}
-                  className={
-                    'rounded-md px-3 py-1 text-sm ' +
-                    (i === activeStep
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted')
-                  }
+                  size="sm"
+                  variant={i === activeStep ? 'default' : 'outline'}
                   onClick={() => goStep(i)}
                   aria-label={`Go to ${s.label}`}
                 >
                   {s.label}
-                </button>
+                </Button>
               ))}
             </div>
           </CardTitle>
