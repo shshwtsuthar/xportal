@@ -4,6 +4,7 @@ import './globals.css';
 import { createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 import { QueryProvider } from './_providers/QueryProvider';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'XPortal - RTO Management System',
@@ -18,14 +19,10 @@ export default async function RootLayout({
   const supabase = await createClient();
 
   // Check if user is logged in
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  await supabase.auth.getSession();
 
   // Get the current path from headers
-  const headersList = await headers();
-  const pathname = headersList.get('x-pathname');
-  const path = pathname || '/';
+  await headers();
 
   return (
     <html lang="en">
@@ -33,6 +30,7 @@ export default async function RootLayout({
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
         <QueryProvider>{children}</QueryProvider>
+        <Toaster />
       </body>
     </html>
   );

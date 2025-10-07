@@ -9,6 +9,7 @@
 //
 
 import { serve } from 'std/http/server.ts';
+import { z } from 'https://esm.sh/zod@3.23.8';
 import { createClient } from '@supabase/supabase-js';
 
 // --- Type Imports ---
@@ -16,9 +17,6 @@ import { createClient } from '@supabase/supabase-js';
 // For this to work, you must have a copy of your `database.types.ts` file
 // in the `supabase/functions/_shared/` directory.
 import { Database } from '../_shared/database.types.ts';
-
-// Define a specific type for an application row for cleaner code.
-type Application = Database['public']['Tables']['applications']['Row'];
 
 // --- CORS Configuration ---
 // Define CORS headers to allow requests from your web application.
@@ -34,52 +32,31 @@ const corsHeaders = {
  * @param application - The full application object to validate.
  * @returns An array of human-readable error strings. An empty array signifies a valid application.
  */
-function validateApplication(application: Application): string[] {
-  const errors: string[] = [];
+// Build a Zod schema mirroring the client-side applicationSchema for required fields
+// Note: This server schema enforces mandatory AVETMISS fields only.
+const serverApplicationSchema = z.object({
+  first_name: z.string().min(1),
+  last_name: z.string().min(1),
+  date_of_birth: z.union([z.string().min(1), z.date()]),
+  suburb: z.string().min(1),
+  state: z.string().min(1),
+  postcode: z.string().min(1),
+  gender: z.string().min(1),
+  highest_school_level_id: z.string().min(1),
+  indigenous_status_id: z.string().min(1),
+  labour_force_status_id: z.string().min(1),
+  country_of_birth_id: z.string().min(1),
+  language_code: z.string().min(1),
+  citizenship_status_code: z.string().min(1),
+  at_school_flag: z.string().min(1),
+  // optional fields permitted
+  address_line_1: z.string().optional().or(z.literal('')),
+});
 
-  // Helper to check for null, undefined, or empty string values.
-  const checkRequired = (value: unknown, fieldName: string) => {
-    if (value === null || value === undefined || value === '') {
-      errors.push(`${fieldName} is a required field.`);
-    }
-  };
-
-  // --- NAT00080 & NAT00085 Field Validation ---
-  checkRequired(application.first_name, 'First Name');
-  checkRequired(application.last_name, 'Last Name');
-  checkRequired(application.date_of_birth, 'Date of Birth');
-  checkRequired(application.address_line_1, 'Address Line 1');
-  checkRequired(application.suburb, 'Suburb');
-  checkRequired(application.state, 'State');
-  checkRequired(application.postcode, 'Postcode');
-  checkRequired(application.gender, 'Gender');
-  checkRequired(application.highest_school_level_id, 'Highest School Level');
-  checkRequired(application.indigenous_status_id, 'Indigenous Status');
-  checkRequired(application.labour_force_status_id, 'Labour Force Status');
-  checkRequired(application.country_of_birth_id, 'Country of Birth');
-  checkRequired(application.language_code, 'Main Language Spoken at Home');
-  checkRequired(application.citizenship_status_code, 'Citizenship Status');
-  checkRequired(application.at_school_flag, 'At School Status');
-
-  // --- Conditional Validation based on student type ---
-  if (application.is_international) {
-    checkRequired(
-      application.passport_number,
-      'Passport Number (for international students)'
-    );
-    checkRequired(
-      application.visa_type,
-      'Visa Type (for international students)'
-    );
-  } else {
-    // Domestic students require a USI.
-    checkRequired(
-      application.usi,
-      'Unique Student Identifier (USI) (for domestic students)'
-    );
-  }
-
-  return errors;
+function validateApplication(application: unknown): string[] {
+  const result = serverApplicationSchema.safeParse(application);
+  if (result.success) return [];
+  return result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
 }
 
 /**
@@ -160,7 +137,7 @@ serve(async (req: Request) => {
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400, // Bad Request
+          status: 400,
         }
       );
     }

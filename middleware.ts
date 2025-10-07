@@ -26,6 +26,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/auth-error', request.url));
   }
 
+  // If session exists, verify user has proper metadata
+  if (session) {
+    const { data: userRes, error: userError } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.error('User verification error in middleware:', userError);
+      return NextResponse.redirect(new URL('/auth/auth-error', request.url));
+    }
+
+    // Check if user has required metadata (rto_id)
+    const rtoId = (
+      userRes.user?.app_metadata as Record<string, unknown> | undefined
+    )?.rto_id;
+    if (!rtoId) {
+      console.error('User missing RTO metadata, redirecting to auth error');
+      return NextResponse.redirect(
+        new URL('/auth/auth-error?error=missing_rto', request.url)
+      );
+    }
+  }
+
   // If on a public path (login/auth pages) and logged in, redirect to dashboard
   if (isPublicPath && session && path !== '/auth/callback') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
