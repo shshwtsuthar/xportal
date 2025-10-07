@@ -78,7 +78,6 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
   };
 
   const renderActions = (app: Tables<'applications'>) => {
-    const canContinue = app.status === 'DRAFT';
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -91,12 +90,15 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {canContinue ? (
+          {app.status === 'DRAFT' && (
             <DropdownMenuItem asChild>
               <Link href={`/applications/edit/${app.id}`}>Continue</Link>
             </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem disabled>Continue</DropdownMenuItem>
+          )}
+          {app.status === 'SUBMITTED' && (
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              Generate Offer
+            </DropdownMenuItem>
           )}
           {app.status === 'DRAFT' && (
             <>
