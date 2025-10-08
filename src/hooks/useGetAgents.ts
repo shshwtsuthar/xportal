@@ -3,8 +3,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Tables } from '@/database.types';
 
 /**
- * Fetch list of agents for the current RTO context.
- * @returns TanStack Query result of agents ordered by name
+ * Fetch list of agents.
  */
 export const useGetAgents = () => {
   return useQuery({
@@ -15,9 +14,7 @@ export const useGetAgents = () => {
         .from('agents')
         .select('*')
         .order('name', { ascending: true });
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
       return data ?? [];
     },
   });

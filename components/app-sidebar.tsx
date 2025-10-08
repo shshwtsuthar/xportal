@@ -14,6 +14,7 @@ import {
   LayoutTemplate,
   Users,
   BookOpen,
+  UserCheck,
 } from 'lucide-react';
 
 import {
@@ -64,6 +65,15 @@ const NAV: NavItem[] = [
     items: [
       { title: 'All Subjects', url: '/subjects' },
       { title: 'New Subject', url: '/subjects/new' },
+    ],
+  },
+  {
+    title: 'Agents',
+    url: '/agents',
+    icon: UserCheck,
+    items: [
+      { title: 'All Agents', url: '/agents' },
+      { title: 'New Agent', url: '/agents/new' },
     ],
   },
   {
