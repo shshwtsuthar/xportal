@@ -23,6 +23,7 @@ import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
 import { Step1_PersonalDetails } from './steps/Step1_PersonalDetails';
 import { Step2_AvetmissDetails } from './steps/Step2_AvetmissDetails';
 import { Step3_AdditionalInfo } from './steps/Step3_AdditionalInfo';
+import { Step3_Cricos } from './steps/Step3_Cricos';
 import { EnrollmentStep } from './steps/Step4_Enrollment';
 import { DocumentsPane } from './DocumentsPane';
 import { PaymentStep } from './PaymentStep';
@@ -35,10 +36,11 @@ type Props = { applicationId?: string };
 const steps = [
   { id: 1, label: 'Personal Details' },
   { id: 2, label: 'AVETMISS' },
-  { id: 3, label: 'Additional Info' },
-  { id: 4, label: 'Enrollment' },
-  { id: 5, label: 'Documents' },
+  { id: 3, label: 'CRICOS' },
+  { id: 4, label: 'Additional Info' },
+  { id: 5, label: 'Enrollment' },
   { id: 6, label: 'Payment' },
+  { id: 7, label: 'Documents' },
 ];
 
 export function NewApplicationWizard({ applicationId }: Props) {
@@ -357,13 +359,14 @@ export function NewApplicationWizard({ applicationId }: Props) {
   const StepContent = useMemo(() => {
     if (activeStep === 0) return <Step1_PersonalDetails />;
     if (activeStep === 1) return <Step2_AvetmissDetails />;
-    if (activeStep === 2)
+    if (activeStep === 2) return <Step3_Cricos />;
+    if (activeStep === 3)
       return <Step3_AdditionalInfo application={currentApplication} />;
-    if (activeStep === 3) return <EnrollmentStep form={form} />;
-    if (activeStep === 4)
-      return <DocumentsPane applicationId={currentApplication?.id} />;
-    if (!!currentApplication)
+    if (activeStep === 4) return <EnrollmentStep form={form} />;
+    if (activeStep === 5 && !!currentApplication)
       return <PaymentStep application={currentApplication} form={form} />;
+    if (activeStep === 6)
+      return <DocumentsPane applicationId={currentApplication?.id} />;
     return null;
   }, [activeStep, currentApplication, form]);
 

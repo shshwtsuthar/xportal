@@ -228,7 +228,11 @@ export const Step2_AvetmissDetails = () => {
           <FormItem>
             <FormLabel>USI (domestic students)</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Enter USI if known" />
+              <Input
+                {...field}
+                placeholder="Enter USI if known"
+                className="md:max-w-xs"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>

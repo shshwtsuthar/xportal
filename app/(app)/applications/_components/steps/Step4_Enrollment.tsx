@@ -402,31 +402,43 @@ export function EnrollmentStep({ form }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {!selectedPlanId ? (
-            <div className="text-muted-foreground text-sm">
-              Select a program plan to preview schedule
-            </div>
-          ) : psubLoading ? (
-            <div className="text-muted-foreground text-sm">
-              Loading schedule...
-            </div>
-          ) : previewSubjects.length === 0 ? (
-            <div className="text-muted-foreground text-sm">
-              No scheduled subjects in this plan
-            </div>
-          ) : (
-            <div className="grid gap-3">
-              <Table>
-                <TableHeader>
+          <div className="w-full overflow-hidden rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="divide-x">
+                  <TableHead>Start</TableHead>
+                  <TableHead>Median</TableHead>
+                  <TableHead>End</TableHead>
+                  <TableHead>Prerequisite</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y">
+                {!selectedPlanId ? (
                   <TableRow className="divide-x">
-                    <TableHead>Start</TableHead>
-                    <TableHead>Median</TableHead>
-                    <TableHead>End</TableHead>
-                    <TableHead>Prerequisite</TableHead>
+                    <TableCell colSpan={4}>
+                      <p className="text-muted-foreground text-sm">
+                        No preview to generated
+                      </p>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y">
-                  {previewSubjects.map((s) => (
+                ) : psubLoading ? (
+                  <TableRow className="divide-x">
+                    <TableCell colSpan={4}>
+                      <p className="text-muted-foreground text-sm">
+                        Loading schedule...
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ) : previewSubjects.length === 0 ? (
+                  <TableRow className="divide-x">
+                    <TableCell colSpan={4}>
+                      <p className="text-muted-foreground text-sm">
+                        No preview to generated
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  previewSubjects.map((s) => (
                     <TableRow key={s.id as string} className="divide-x">
                       <TableCell>
                         {format(new Date(s.start_date as string), 'PPP')}
@@ -439,15 +451,14 @@ export function EnrollmentStep({ form }: Props) {
                       </TableCell>
                       <TableCell>{s.is_prerequisite ? 'Yes' : 'No'}</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {/* NAT rule: Median date as cut-off for current subject */}
-              <p className="text-muted-foreground text-sm">
-                Enrollment into an ongoing subject closes on the median date.
-              </p>
-            </div>
-          )}
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-muted-foreground mt-3 text-sm">
+            Enrollment into an ongoing subject closes on the median date.
+          </p>
         </CardContent>
       </Card>
 

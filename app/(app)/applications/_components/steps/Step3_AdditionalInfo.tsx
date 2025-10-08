@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { ApplicationFormValues } from '@/lib/validators/application';
 import {
@@ -37,7 +36,7 @@ type Props = {
 
 export const Step3_AdditionalInfo = ({ application }: Props) => {
   const form = useFormContext<ApplicationFormValues>();
-  const isInternational = form.watch('is_international');
+  // International fields moved to CRICOS step
 
   const applicationId = application?.id;
 
@@ -105,107 +104,7 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
 
   return (
     <div className="grid gap-6">
-      <div className="grid gap-4 md:grid-cols-2">
-        <FormField
-          control={form.control}
-          name="is_international"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>International student</FormLabel>
-              <FormControl>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={!!field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {isInternational && (
-          <>
-            <FormField
-              control={form.control}
-              name="passport_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Passport number</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="visa_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Visa type</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="visa_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Visa number</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="country_of_citizenship"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Country of citizenship</FormLabel>
-                  <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="AUS">Australia</SelectItem>
-                        <SelectItem value="NZL">New Zealand</SelectItem>
-                        <SelectItem value="CHN">China</SelectItem>
-                        <SelectItem value="IND">India</SelectItem>
-                        <SelectItem value="OTH">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="ielts_score"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>IELTS score</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="e.g., 6.5" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </>
-        )}
-      </div>
+      {/* International fields moved to CRICOS step */}
 
       {/* NAT00090: Client Disability - one record per disability type */}
       <div className="grid gap-2">
