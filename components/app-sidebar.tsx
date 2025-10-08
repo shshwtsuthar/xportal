@@ -1,5 +1,19 @@
+'use client';
+
 import * as React from 'react';
-import { GalleryVerticalEnd } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  GalleryVerticalEnd,
+  Home,
+  FilePlus2,
+  ListTree,
+  GraduationCap,
+  Layers3,
+  ReceiptText,
+  LayoutTemplate,
+  Users,
+} from 'lucide-react';
 
 import {
   Sidebar,
@@ -15,163 +29,79 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 
-// This is sample data.
-const data = {
-  navMain: [
-    {
-      title: 'Getting Started',
-      url: '#',
-      items: [
-        {
-          title: 'Installation',
-          url: '#',
-        },
-        {
-          title: 'Project Structure',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Building Your Application',
-      url: '#',
-      items: [
-        {
-          title: 'Routing',
-          url: '#',
-        },
-        {
-          title: 'Data Fetching',
-          url: '#',
-          isActive: true,
-        },
-        {
-          title: 'Rendering',
-          url: '#',
-        },
-        {
-          title: 'Caching',
-          url: '#',
-        },
-        {
-          title: 'Styling',
-          url: '#',
-        },
-        {
-          title: 'Optimizing',
-          url: '#',
-        },
-        {
-          title: 'Configuring',
-          url: '#',
-        },
-        {
-          title: 'Testing',
-          url: '#',
-        },
-        {
-          title: 'Authentication',
-          url: '#',
-        },
-        {
-          title: 'Deploying',
-          url: '#',
-        },
-        {
-          title: 'Upgrading',
-          url: '#',
-        },
-        {
-          title: 'Examples',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'API Reference',
-      url: '#',
-      items: [
-        {
-          title: 'Components',
-          url: '#',
-        },
-        {
-          title: 'File Conventions',
-          url: '#',
-        },
-        {
-          title: 'Functions',
-          url: '#',
-        },
-        {
-          title: 'next.config.js Options',
-          url: '#',
-        },
-        {
-          title: 'CLI',
-          url: '#',
-        },
-        {
-          title: 'Edge Runtime',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Architecture',
-      url: '#',
-      items: [
-        {
-          title: 'Accessibility',
-          url: '#',
-        },
-        {
-          title: 'Fast Refresh',
-          url: '#',
-        },
-        {
-          title: 'Next.js Compiler',
-          url: '#',
-        },
-        {
-          title: 'Supported Browsers',
-          url: '#',
-        },
-        {
-          title: 'Turbopack',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Community',
-      url: '#',
-      items: [
-        {
-          title: 'Contribution Guide',
-          url: '#',
-        },
-      ],
-    },
-  ],
+type NavItem = {
+  title: string;
+  url: string;
+  icon?: React.ElementType;
+  items?: Array<{ title: string; url: string }>;
 };
 
+const NAV: NavItem[] = [
+  { title: 'Dashboard', url: '/dashboard', icon: Home },
+  {
+    title: 'Applications',
+    url: '/applications',
+    icon: ListTree,
+    items: [
+      { title: 'All Applications', url: '/applications' },
+      { title: 'New Application', url: '/applications/new' },
+    ],
+  },
+  {
+    title: 'Programs',
+    url: '/programs',
+    icon: GraduationCap,
+    items: [
+      { title: 'All Programs', url: '/programs' },
+      { title: 'New Program', url: '/programs/new' },
+    ],
+  },
+  {
+    title: 'Program Plans',
+    url: '/program-plans',
+    icon: Layers3,
+    items: [
+      { title: 'All Program Plans', url: '/program-plans' },
+      { title: 'New Program Plan', url: '/program-plans/new' },
+    ],
+  },
+  {
+    title: 'Financial',
+    url: '/financial',
+    icon: ReceiptText,
+    items: [
+      { title: 'Invoices', url: '/financial/invoices' },
+      { title: 'Payment Templates', url: '/financial/templates' },
+      { title: 'New Template', url: '/financial/templates/new' },
+    ],
+  },
+  { title: 'Users', url: '/users', icon: Users },
+];
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
+
+  const isActive = (href: string) => pathname === href;
+  const isParentActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+            <SidebarMenuButton size="lg" asChild tooltip="XPortal">
+              <Link href="/dashboard" aria-label="XPortal Home">
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                   <GalleryVerticalEnd className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-medium">Documentation</span>
-                  <span className="">v1.0.0</span>
+                  <span className="font-medium">XPortal</span>
+                  <span className="text-muted-foreground text-xs">
+                    RTO Management
+                  </span>
                 </div>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -179,26 +109,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {data.navMain.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <a href={item.url} className="font-medium">
-                    {item.title}
-                  </a>
-                </SidebarMenuButton>
-                {item.items?.length ? (
-                  <SidebarMenuSub>
-                    {item.items.map((item) => (
-                      <SidebarMenuSubItem key={item.title}>
-                        <SidebarMenuSubButton asChild isActive={item.isActive}>
-                          <a href={item.url}>{item.title}</a>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                ) : null}
-              </SidebarMenuItem>
-            ))}
+            {NAV.map((section) => {
+              const Icon = section.icon;
+              return (
+                <SidebarMenuItem key={section.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isParentActive(section.url)}
+                  >
+                    <Link
+                      href={section.url}
+                      className="font-medium"
+                      aria-label={section.title}
+                    >
+                      {Icon ? <Icon /> : null}
+                      <span>{section.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                  {section.items?.length ? (
+                    <SidebarMenuSub>
+                      {section.items.map((sub) => (
+                        <SidebarMenuSubItem key={sub.title}>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={isActive(sub.url)}
+                          >
+                            <Link href={sub.url} aria-label={sub.title}>
+                              {sub.title}
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  ) : null}
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
