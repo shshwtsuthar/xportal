@@ -23,7 +23,9 @@ import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
 import { Step1_PersonalDetails } from './steps/Step1_PersonalDetails';
 import { Step2_AvetmissDetails } from './steps/Step2_AvetmissDetails';
 import { Step3_AdditionalInfo } from './steps/Step3_AdditionalInfo';
+import { EnrollmentStep } from './steps/Step4_Enrollment';
 import { DocumentsPane } from './DocumentsPane';
+import { PaymentStep } from './PaymentStep';
 import { useUploadApplicationFile } from '@/src/hooks/useApplicationFiles';
 import { toast } from 'sonner';
 import { useSubmitApplication } from '@/src/hooks/useSubmitApplication';
@@ -34,7 +36,9 @@ const steps = [
   { id: 1, label: 'Personal Details' },
   { id: 2, label: 'AVETMISS' },
   { id: 3, label: 'Additional Info' },
-  { id: 4, label: 'Documents' },
+  { id: 4, label: 'Enrollment' },
+  { id: 5, label: 'Documents' },
+  { id: 6, label: 'Payment' },
 ];
 
 export function NewApplicationWizard({ applicationId }: Props) {
@@ -58,6 +62,9 @@ export function NewApplicationWizard({ applicationId }: Props) {
       last_name: '',
       preferred_name: '',
       date_of_birth: '',
+      program_id: '',
+      payment_plan_template_id: '',
+      payment_anchor_date: '',
       agent_id: 'none',
       email: '',
       work_phone: '',
@@ -114,6 +121,10 @@ export function NewApplicationWizard({ applicationId }: Props) {
         last_name: currentApplication.last_name ?? '',
         preferred_name: currentApplication.preferred_name ?? '',
         date_of_birth: currentApplication.date_of_birth ?? '',
+        program_id: currentApplication.program_id ?? '',
+        payment_plan_template_id:
+          currentApplication.payment_plan_template_id ?? '',
+        payment_anchor_date: currentApplication.payment_anchor_date ?? '',
         agent_id: currentApplication.agent_id
           ? currentApplication.agent_id
           : 'none',
@@ -338,8 +349,13 @@ export function NewApplicationWizard({ applicationId }: Props) {
     if (activeStep === 1) return <Step2_AvetmissDetails />;
     if (activeStep === 2)
       return <Step3_AdditionalInfo application={currentApplication} />;
-    return <DocumentsPane applicationId={currentApplication?.id} />;
-  }, [activeStep, currentApplication]);
+    if (activeStep === 3) return <EnrollmentStep form={form} />;
+    if (activeStep === 4)
+      return <DocumentsPane applicationId={currentApplication?.id} />;
+    if (!!currentApplication)
+      return <PaymentStep application={currentApplication} form={form} />;
+    return null;
+  }, [activeStep, currentApplication, form]);
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">

@@ -14,6 +14,13 @@ export const applicationSchema = z.object({
     z.date(),
   ]),
 
+  // Program Selection
+  program_id: z.string().min(1, 'Program selection is required'),
+
+  // Payment Plan
+  payment_plan_template_id: z.string().optional(),
+  payment_anchor_date: z.string().optional(),
+
   // Agent
   agent_id: z
     .string()
@@ -103,6 +110,9 @@ export const draftApplicationSchema = z.object({
   last_name: z.string().optional(),
   preferred_name: z.string().optional(),
   date_of_birth: z.union([z.string(), z.date()]).optional(),
+  program_id: z.string().optional(),
+  payment_plan_template_id: z.string().optional(),
+  payment_anchor_date: z.string().optional(),
   agent_id: z.string().optional(),
   email: z
     .string()
