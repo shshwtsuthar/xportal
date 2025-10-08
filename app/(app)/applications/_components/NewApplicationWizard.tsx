@@ -63,6 +63,8 @@ export function NewApplicationWizard({ applicationId }: Props) {
       preferred_name: '',
       date_of_birth: '',
       program_id: '',
+      program_plan_id: '',
+      proposed_commencement_date: '',
       payment_plan_template_id: '',
       payment_anchor_date: '',
       agent_id: 'none',
@@ -122,6 +124,9 @@ export function NewApplicationWizard({ applicationId }: Props) {
         preferred_name: currentApplication.preferred_name ?? '',
         date_of_birth: currentApplication.date_of_birth ?? '',
         program_id: currentApplication.program_id ?? '',
+        program_plan_id: currentApplication.program_plan_id ?? '',
+        proposed_commencement_date:
+          currentApplication.proposed_commencement_date ?? '',
         payment_plan_template_id:
           currentApplication.payment_plan_template_id ?? '',
         payment_anchor_date: currentApplication.payment_anchor_date ?? '',
@@ -229,10 +234,15 @@ export function NewApplicationWizard({ applicationId }: Props) {
             ? values.date_of_birth
             : values.date_of_birth.toISOString()
           : null,
+        proposed_commencement_date: values.proposed_commencement_date || null,
+        payment_anchor_date: values.payment_anchor_date || null,
         email: values.email || null,
         alternative_email: values.alternative_email || null,
         g_email: values.g_email || null,
         agent_id: values.agent_id === 'none' ? null : values.agent_id || null,
+        program_plan_id: values.program_plan_id || null,
+        program_id: values.program_id || null,
+        payment_plan_template_id: values.payment_plan_template_id || null,
       };
 
       // If we have an application ID, update it
