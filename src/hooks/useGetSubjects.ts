@@ -3,8 +3,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Tables } from '@/database.types';
 
 /**
- * Fetch list of subjects (formerly units_of_competency).
- * NAT00060: Subjects (Units of Competency) reference data.
+ * Fetch list of subjects.
  */
 export const useGetSubjects = () => {
   return useQuery({
@@ -14,7 +13,7 @@ export const useGetSubjects = () => {
       const { data, error } = await supabase
         .from('subjects')
         .select('*')
-        .order('code', { ascending: true });
+        .order('name', { ascending: true });
       if (error) throw new Error(error.message);
       return data ?? [];
     },

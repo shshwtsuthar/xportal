@@ -24,6 +24,6 @@ export const useGetProgramPlans = (programId?: string) => {
       console.log('useGetProgramPlans: Retrieved plans:', data?.length || 0);
       return data ?? [];
     },
-    enabled: !!programId, // Only run query when programId is truthy
+    // Always enabled - fetch all plans when no programId, filtered plans when programId provided
   });
 };

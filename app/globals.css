@@ -46,57 +46,59 @@
 :root {
   --radius: 0.625rem;
 
-  /* Base earthy tones */
-  --background: oklch(0.965 0.03 140); /* soft off-white with warm green tint */
-  --foreground: oklch(0.18 0.05 140); /* deep forest green text */
+  /* Base neutrals — warm but neutral */
+  --background: oklch(0.97 0.015 25); /* soft neutral off-white with faint warmth */
+  --foreground: oklch(0.18 0.05 27);  /* dark neutral red-brown text */
 
-  --card: oklch(0.97 0.03 140);
-  --card-foreground: oklch(0.22 0.05 140);
+  --card: oklch(0.98 0.015 25);
+  --card-foreground: oklch(0.22 0.05 27);
 
-  --popover: oklch(0.97 0.03 140);
-  --popover-foreground: oklch(0.22 0.05 140);
+  --popover: oklch(0.98 0.015 25);
+  --popover-foreground: oklch(0.22 0.05 27);
 
-  /* Deep earthy primary */
-  --primary: oklch(0.32 0.09 145); /* moss green */
-  --primary-foreground: oklch(0.985 0.02 140); /* light sage */
+  /* Primary — pure crimson red */
+  --primary: oklch(0.42 0.21 25); /* strong crimson */
+  --primary-foreground: oklch(0.99 0.015 25); /* near-white text */
 
-  /* Muted warm secondary */
-  --secondary: oklch(0.88 0.04 140); /* light sage/olive */
-  --secondary-foreground: oklch(0.26 0.05 145); /* darker complementary */
+  /* Secondary — warm desaturated red-gray */
+  --secondary: oklch(0.82 0.04 25); /* muted warm beige-red */
+  --secondary-foreground: oklch(0.25 0.06 27); /* dark maroon text */
 
-  --muted: oklch(0.91 0.03 140);
-  --muted-foreground: oklch(0.46 0.05 140);
+  /* Muted neutral */
+  --muted: oklch(0.88 0.03 25);
+  --muted-foreground: oklch(0.48 0.04 27);
 
-  /* Accents for highlights (leafy green glow) */
-  --accent: oklch(0.86 0.07 135);
-  --accent-foreground: oklch(0.22 0.05 145);
+  /* Accent — rich ruby highlight */
+  --accent: oklch(0.55 0.17 25); /* ruby red */
+  --accent-foreground: oklch(0.99 0.015 25);
 
-  /* Destructive stays red but muted */
-  --destructive: oklch(0.55 0.18 25); 
-  --destructive-foreground: oklch(0.98 0.02 140);
+  /* Destructive — dark blood red */
+  --destructive: oklch(0.38 0.20 25); 
+  --destructive-foreground: oklch(0.99 0.015 25);
 
   /* Borders & rings */
-  --border: oklch(0.84 0.03 140);
-  --input: oklch(0.84 0.03 140);
-  --ring: oklch(0.72 0.07 140);
+  --border: oklch(0.83 0.03 25);
+  --input: oklch(0.83 0.03 25);
+  --ring: oklch(0.63 0.12 25);
 
-  /* Chart tones — earthy complementary palette */
-  --chart-1: oklch(0.52 0.12 145); /* moss green */
-  --chart-2: oklch(0.68 0.09 95);  /* warm olive */
-  --chart-3: oklch(0.62 0.09 165); /* cool forest green */
-  --chart-4: oklch(0.78 0.12 80);  /* muted yellow-green */
-  --chart-5: oklch(0.42 0.08 160); /* deep pine */
+  /* Chart tones — earthy red spectrum */
+  --chart-1: oklch(0.42 0.21 25); /* crimson */
+  --chart-2: oklch(0.58 0.15 25); /* red */
+  --chart-3: oklch(0.70 0.10 30); /* muted red-orange */
+  --chart-4: oklch(0.50 0.18 20); /* deep scarlet */
+  --chart-5: oklch(0.35 0.15 25); /* dark oxblood */
 
-  /* Sidebar neutral natural stone tones */
-  --sidebar: hsl(60 10% 97%);
-  --sidebar-foreground: hsl(140 10% 25%);
-  --sidebar-primary: hsl(140 20% 20%);
-  --sidebar-primary-foreground: hsl(60 20% 96%);
-  --sidebar-accent: hsl(140 15% 92%);
-  --sidebar-accent-foreground: hsl(140 20% 20%);
-  --sidebar-border: hsl(140 10% 85%);
-  --sidebar-ring: hsl(140 30% 40%);
+  /* Sidebar — warm stone with crimson accent */
+  --sidebar: hsl(0 10% 97%);
+  --sidebar-foreground: hsl(0 15% 25%);
+  --sidebar-primary: hsl(0 65% 30%);
+  --sidebar-primary-foreground: hsl(0 30% 98%);
+  --sidebar-accent: hsl(0 20% 92%);
+  --sidebar-accent-foreground: hsl(0 30% 25%);
+  --sidebar-border: hsl(0 10% 85%);
+  --sidebar-ring: hsl(0 55% 40%);
 }
+
 
 
 .dark {

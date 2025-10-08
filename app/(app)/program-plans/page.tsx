@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { useRouter } from 'next/navigation';
 import { useGetProgramPlans } from '@/src/hooks/useGetProgramPlans';
+import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import { useDeleteProgramPlan } from '@/src/hooks/useDeleteProgramPlan';
 import {
   DropdownMenu,
@@ -21,11 +22,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useMemo } from 'react';
 
 export default function ProgramPlansPage() {
   const router = useRouter();
-  const { data: plans = [] } = useGetProgramPlans();
+  const { data: plans = [], isLoading: plansLoading } = useGetProgramPlans();
+  const { data: programs = [], isLoading: programsLoading } = useGetPrograms();
   const del = useDeleteProgramPlan();
+
+  const programMap = useMemo(() => {
+    const map = new Map<string, string>();
+    programs.forEach((p) => map.set(p.id as string, p.name as string));
+    return map;
+  }, [programs]);
+
+  const isLoading = plansLoading || programsLoading;
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -60,7 +71,15 @@ export default function ProgramPlansPage() {
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y">
-                {plans.length === 0 ? (
+                {isLoading ? (
+                  <TableRow className="divide-x">
+                    <TableCell colSpan={3}>
+                      <p className="text-muted-foreground text-sm">
+                        Loading plans…
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ) : plans.length === 0 ? (
                   <TableRow className="divide-x">
                     <TableCell colSpan={3}>
                       <p className="text-muted-foreground text-sm">
@@ -72,7 +91,9 @@ export default function ProgramPlansPage() {
                   plans.map((pl) => (
                     <TableRow key={pl.id as string} className="divide-x">
                       <TableCell>{pl.name}</TableCell>
-                      <TableCell>{pl.program_id}</TableCell>
+                      <TableCell>
+                        {programMap.get(pl.program_id as string) ?? '—'}
+                      </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

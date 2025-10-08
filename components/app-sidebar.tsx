@@ -13,6 +13,7 @@ import {
   ReceiptText,
   LayoutTemplate,
   Users,
+  BookOpen,
 } from 'lucide-react';
 
 import {
@@ -54,6 +55,15 @@ const NAV: NavItem[] = [
     items: [
       { title: 'All Programs', url: '/programs' },
       { title: 'New Program', url: '/programs/new' },
+    ],
+  },
+  {
+    title: 'Subjects',
+    url: '/subjects',
+    icon: BookOpen,
+    items: [
+      { title: 'All Subjects', url: '/subjects' },
+      { title: 'New Subject', url: '/subjects/new' },
     ],
   },
   {
