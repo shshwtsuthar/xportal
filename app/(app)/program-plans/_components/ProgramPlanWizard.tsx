@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import { useGetSubjects } from '@/src/hooks/useGetSubjects';
 import { useGetProgramPlanSubjects } from '@/src/hooks/useGetProgramPlanSubjects';
+import { ClassesManager } from './ClassesManager';
 import { Tables } from '@/database.types';
 import { useUpsertProgramPlan } from '@/src/hooks/useUpsertProgramPlan';
 import { useUpsertProgramPlanSubject } from '@/src/hooks/useUpsertProgramPlanSubject';
@@ -105,6 +106,14 @@ export function ProgramPlanWizard({
   const addRow = () => setRows((r) => [...r, {}]);
   const removeRow = (idx: number) =>
     setRows((r) => r.filter((_, i) => i !== idx));
+
+  const updateRow = (
+    idx: number,
+    field: keyof PlanRow,
+    value: string | Date | number | boolean | undefined
+  ) => {
+    setRows((r) => r.map((x, i) => (i === idx ? { ...x, [field]: value } : x)));
+  };
 
   const handleSave = async () => {
     try {
@@ -212,146 +221,140 @@ export function ProgramPlanWizard({
                   </TableRow>
                 ) : (
                   rows.map((row, idx) => (
-                    <TableRow key={idx} className="divide-x">
-                      <TableCell>
-                        <Select
-                          value={row.subject_id}
-                          onValueChange={(v) =>
-                            setRows((r) =>
-                              r.map((x, i) =>
-                                i === idx ? { ...x, subject_id: v } : x
-                              )
-                            )
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select subject" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {subjects.map((s) => (
-                              <SelectItem key={s.id} value={s.id as string}>
-                                {(s.code ?? '') + ' - ' + s.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full justify-start text-left font-normal',
-                                !row.start_date && 'text-muted-foreground'
-                              )}
+                    <React.Fragment key={idx}>
+                      <TableRow className="divide-x">
+                        <TableCell>
+                          <Select
+                            value={row.subject_id}
+                            onValueChange={(v) =>
+                              updateRow(idx, 'subject_id', v)
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select subject" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {subjects.map((s) => (
+                                <SelectItem key={s.id} value={s.id as string}>
+                                  {(s.code ?? '') + ' - ' + s.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'w-full justify-start text-left font-normal',
+                                  !row.start_date && 'text-muted-foreground'
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {row.start_date
+                                  ? format(row.start_date, 'PPP')
+                                  : 'Pick date'}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
                             >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {row.start_date
-                                ? format(row.start_date, 'PPP')
-                                : 'Pick date'}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={row.start_date}
-                              onSelect={(d) =>
-                                setRows((r) =>
-                                  r.map((x, i) =>
-                                    i === idx
-                                      ? { ...x, start_date: d ?? undefined }
-                                      : x
-                                  )
-                                )
-                              }
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </TableCell>
-                      <TableCell>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full justify-start text-left font-normal',
-                                !row.end_date && 'text-muted-foreground'
-                              )}
+                              <Calendar
+                                mode="single"
+                                selected={row.start_date}
+                                onSelect={(d) =>
+                                  updateRow(idx, 'start_date', d ?? undefined)
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </TableCell>
+                        <TableCell>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'w-full justify-start text-left font-normal',
+                                  !row.end_date && 'text-muted-foreground'
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {row.end_date
+                                  ? format(row.end_date, 'PPP')
+                                  : 'Pick date'}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
                             >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {row.end_date
-                                ? format(row.end_date, 'PPP')
-                                : 'Pick date'}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={row.end_date}
-                              onSelect={(d) =>
-                                setRows((r) =>
-                                  r.map((x, i) =>
-                                    i === idx
-                                      ? { ...x, end_date: d ?? undefined }
-                                      : x
-                                  )
-                                )
+                              <Calendar
+                                mode="single"
+                                selected={row.end_date}
+                                onSelect={(d) =>
+                                  updateRow(idx, 'end_date', d ?? undefined)
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={Boolean(row.is_prerequisite)}
+                              onCheckedChange={(v) =>
+                                updateRow(idx, 'is_prerequisite', Boolean(v))
                               }
-                              initialFocus
                             />
-                          </PopoverContent>
-                        </Popover>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            checked={Boolean(row.is_prerequisite)}
-                            onCheckedChange={(v) =>
-                              setRows((r) =>
-                                r.map((x, i) =>
-                                  i === idx
-                                    ? { ...x, is_prerequisite: Boolean(v) }
-                                    : x
-                                )
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={row.sequence_order ?? ''}
+                            onChange={(e) =>
+                              updateRow(
+                                idx,
+                                'sequence_order',
+                                e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined
                               )
                             }
                           />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={row.sequence_order ?? ''}
-                          onChange={(e) =>
-                            setRows((r) =>
-                              r.map((x, i) =>
-                                i === idx
-                                  ? {
-                                      ...x,
-                                      sequence_order: e.target.value
-                                        ? Number(e.target.value)
-                                        : undefined,
-                                    }
-                                  : x
-                              )
-                            )
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          aria-label="Remove"
-                          onClick={() => removeRow(idx)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            aria-label="Remove"
+                            onClick={() => removeRow(idx)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      {row.id && row.start_date && row.end_date && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="p-0">
+                            <div className="px-4 py-2">
+                              <ClassesManager
+                                programPlanSubjectId={row.id}
+                                subjectStartDate={row.start_date}
+                                subjectEndDate={row.end_date}
+                              />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   ))
                 )}
               </TableBody>
