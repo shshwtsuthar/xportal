@@ -15,6 +15,7 @@ import {
   Users,
   BookOpen,
   UserCheck,
+  MapPin,
 } from 'lucide-react';
 
 import {
@@ -74,6 +75,15 @@ const NAV: NavItem[] = [
     items: [
       { title: 'All Agents', url: '/agents' },
       { title: 'New Agent', url: '/agents/new' },
+    ],
+  },
+  {
+    title: 'Locations',
+    url: '/locations',
+    icon: MapPin,
+    items: [
+      { title: 'All Locations', url: '/locations' },
+      { title: 'New Location', url: '/locations/new' },
     ],
   },
   {
