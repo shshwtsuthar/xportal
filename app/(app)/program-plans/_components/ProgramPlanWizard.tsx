@@ -69,11 +69,6 @@ export function ProgramPlanWizard({
   const { data: programs = [] } = useGetPrograms();
   const { data: subjects = [] } = useGetSubjects();
 
-  // Load existing plan subjects if editing
-  const { data: existingSubjects = [] } = useGetProgramPlanSubjects(
-    plan?.id as string
-  );
-
   const form = useForm<{
     name: string;
     program_id: string;
@@ -85,6 +80,11 @@ export function ProgramPlanWizard({
       program_plan_id: plan?.id as string | undefined,
     },
   });
+
+  // Load existing plan subjects if editing
+  const { data: existingSubjects = [] } = useGetProgramPlanSubjects(
+    plan?.id as string
+  );
 
   const [rows, setRows] = useState<PlanRow[]>([]);
 
@@ -166,7 +166,9 @@ export function ProgramPlanWizard({
             <Label>Program *</Label>
             <Select
               value={form.watch('program_id')}
-              onValueChange={(v) => form.setValue('program_id', v)}
+              onValueChange={(v) => {
+                form.setValue('program_id', v);
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a program" />

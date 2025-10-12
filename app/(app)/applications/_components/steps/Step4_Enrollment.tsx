@@ -17,17 +17,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
-import { useGetProgramPlans } from '@/src/hooks/useGetProgramPlans';
-import { useGetProgramPlanSubjects } from '@/src/hooks/useGetProgramPlanSubjects';
+import { useGetTimetables } from '@/src/hooks/useGetTimetables';
+import { EnrollmentPreview } from '../EnrollmentPreview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -38,7 +30,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatDateToLocal } from '@/lib/utils/date';
 
 // Union type that can handle both draft and final application forms
@@ -46,7 +38,7 @@ type FlexibleFormValues =
   | ApplicationFormValues
   | {
       program_id?: string;
-      program_plan_id?: string;
+      timetable_id?: string;
       proposed_commencement_date?: string;
       [key: string]: unknown; // Allow other fields for flexibility
     };
@@ -60,40 +52,38 @@ export function EnrollmentStep({ form }: Props) {
 
   // Use local state for immediate reactivity
   const [localProgramId, setLocalProgramId] = useState<string>('');
-  const [localSelectedPlanId, setLocalSelectedPlanId] = useState<string>('');
+  const [localSelectedTimetableId, setLocalSelectedTimetableId] =
+    useState<string>('');
   const [localSelectedDate, setLocalSelectedDate] = useState<Date | undefined>(
     undefined
   );
 
   const programId = form.watch('program_id') || localProgramId;
-  const { data: plans = [], isLoading: plansLoading } =
-    useGetProgramPlans(programId);
+  const { data: timetables = [], isLoading: timetablesLoading } =
+    useGetTimetables(programId);
 
-  const selectedPlanId = form.watch('program_plan_id') || localSelectedPlanId;
-  const { data: planSubjects = [], isLoading: psubLoading } =
-    useGetProgramPlanSubjects(selectedPlanId);
+  const selectedTimetableId =
+    form.watch('timetable_id') || localSelectedTimetableId;
 
   // Debug logging
   console.log('EnrollmentStep Debug:', {
     programId,
     programIdType: typeof programId,
     programIdTruthy: !!programId,
-    plansCount: plans.length,
-    plansLoading,
-    selectedPlanId,
-    selectedPlanIdType: typeof selectedPlanId,
-    selectedPlanIdTruthy: !!selectedPlanId,
-    planSubjectsCount: planSubjects.length,
-    psubLoading,
+    timetablesCount: timetables.length,
+    timetablesLoading,
+    selectedTimetableId,
+    selectedTimetableIdType: typeof selectedTimetableId,
+    selectedTimetableIdTruthy: !!selectedTimetableId,
   });
 
-  // Clear program plan selection when program changes
+  // Clear timetable selection when program changes
   useEffect(() => {
     if (programId) {
-      console.log('Clearing program plan due to program change');
-      form.setValue('program_plan_id', '');
+      console.log('Clearing timetable due to program change');
+      form.setValue('timetable_id', '');
       form.setValue('proposed_commencement_date', '');
-      setLocalSelectedPlanId(''); // Clear local state too
+      setLocalSelectedTimetableId(''); // Clear local state too
       setLocalSelectedDate(undefined); // Clear local date too
     }
   }, [programId, form]);
@@ -123,10 +113,10 @@ export function EnrollmentStep({ form }: Props) {
     console.log('programId changed to:', programId);
   }, [programId]);
 
-  // Watch for changes in selectedPlanId
+  // Watch for changes in selectedTimetableId
   useEffect(() => {
-    console.log('selectedPlanId changed to:', selectedPlanId);
-  }, [selectedPlanId]);
+    console.log('selectedTimetableId changed to:', selectedTimetableId);
+  }, [selectedTimetableId]);
 
   // Sync local state with form when form is reset/loaded
   useEffect(() => {
@@ -139,10 +129,13 @@ export function EnrollmentStep({ form }: Props) {
       setLocalProgramId(formProgramId);
     }
 
-    const formPlanId = form.getValues('program_plan_id');
-    if (formPlanId && formPlanId !== localSelectedPlanId) {
-      console.log('Syncing local plan state with form value:', formPlanId);
-      setLocalSelectedPlanId(formPlanId);
+    const formTimetableId = form.getValues('timetable_id');
+    if (formTimetableId && formTimetableId !== localSelectedTimetableId) {
+      console.log(
+        'Syncing local timetable state with form value:',
+        formTimetableId
+      );
+      setLocalSelectedTimetableId(formTimetableId);
     }
 
     const formDateString = form.getValues('proposed_commencement_date');
@@ -154,96 +147,13 @@ export function EnrollmentStep({ form }: Props) {
       console.log('Syncing local date state with form value:', formDateString);
       try {
         setLocalSelectedDate(new Date(formDateString));
-      } catch (error) {
+      } catch {
         console.error('Invalid date string:', formDateString);
       }
     }
-  }, [form, localProgramId, localSelectedPlanId, selectedDateString]);
+  }, [form, localProgramId, localSelectedTimetableId, selectedDateString]);
 
-  // Build enrollment preview: current subject (if any) + next 2 upcoming subjects; never include past
-  const { currentSubject, upcomingSubjects, previewSubjects } = useMemo(() => {
-    console.log(
-      'Preview calculation - planSubjects:',
-      planSubjects.length,
-      'data:',
-      planSubjects
-    );
-    if (!planSubjects || planSubjects.length === 0) {
-      console.log('Preview calculation - no subjects, returning empty');
-      return {
-        currentSubject: undefined,
-        upcomingSubjects: [] as typeof planSubjects,
-        previewSubjects: [] as typeof planSubjects,
-      };
-    }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    console.log('Preview calculation - today:', today.toISOString());
-
-    const sorted = [...planSubjects].sort(
-      (a, b) =>
-        new Date(a.start_date as string).getTime() -
-        new Date(b.start_date as string).getTime()
-    );
-    console.log(
-      'Preview calculation - sorted subjects:',
-      sorted.map((s) => ({
-        id: s.id,
-        start_date: s.start_date,
-        end_date: s.end_date,
-        name: 'subject', // We don't have subject name in this table
-      }))
-    );
-
-    const current = sorted.find((s) => {
-      const start = new Date(s.start_date as string);
-      const end = new Date(s.end_date as string);
-      const isCurrent = today >= start && today <= end;
-      console.log(
-        `Preview calculation - checking subject ${s.id}: start=${start.toISOString()}, end=${end.toISOString()}, isCurrent=${isCurrent}`
-      );
-      return isCurrent;
-    });
-    console.log('Preview calculation - current subject:', current?.id);
-
-    const upcoming = sorted
-      .filter((s) => new Date(s.start_date as string) > today)
-      .slice(0, 3);
-    console.log(
-      'Preview calculation - upcoming subjects:',
-      upcoming.map((s) => s.id)
-    );
-
-    const preview: typeof planSubjects = [];
-    if (current) preview.push(current);
-    for (const s of upcoming) {
-      if (!current || s.id !== current.id) preview.push(s);
-    }
-    console.log(
-      'Preview calculation - final preview:',
-      preview.map((s) => s.id)
-    );
-    return {
-      currentSubject: current,
-      upcomingSubjects: upcoming,
-      previewSubjects: preview,
-    };
-  }, [planSubjects]);
-
-  const nextSubject = useMemo(() => {
-    if (upcomingSubjects.length > 0) return upcomingSubjects[0];
-    // If no upcoming by filter, try to find strictly next by start_date >= today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const future = [...planSubjects]
-      .filter((s) => new Date(s.start_date as string) >= today)
-      .sort(
-        (a, b) =>
-          new Date(a.start_date as string).getTime() -
-          new Date(b.start_date as string).getTime()
-      );
-    return future[0];
-  }, [upcomingSubjects, planSubjects]);
+  // Note: Preview logic is now handled by EnrollmentPreview component
 
   const disableDate = (date: Date) => {
     const d = new Date(date);
@@ -251,43 +161,11 @@ export function EnrollmentStep({ form }: Props) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Never allow past dates
+    // Disable dates before today
     if (d < today) return true;
 
-    // If we have a current subject and we are before/equal to its median, allow dates up to median
-    if (currentSubject) {
-      const currentMedian = new Date(currentSubject.median_date as string);
-      currentMedian.setHours(0, 0, 0, 0);
-      const currentEnd = new Date(currentSubject.end_date as string);
-      currentEnd.setHours(0, 0, 0, 0);
-
-      const inCurrentWindow = d >= today && d <= currentMedian;
-      if (today <= currentEnd && today <= currentMedian) {
-        // During current subject before cutoff: allow [today, median]
-        if (inCurrentWindow) return false;
-        // Otherwise, only allow from next subject start to its median
-        if (nextSubject) {
-          const nextStart = new Date(nextSubject.start_date as string);
-          nextStart.setHours(0, 0, 0, 0);
-          const nextMedian = new Date(nextSubject.median_date as string);
-          nextMedian.setHours(0, 0, 0, 0);
-          return !(d >= nextStart && d <= nextMedian);
-        }
-        return true;
-      }
-    }
-
-    // Otherwise (no current or past the cutoff), allow from next subject start to its median
-    if (nextSubject) {
-      const nextStart = new Date(nextSubject.start_date as string);
-      nextStart.setHours(0, 0, 0, 0);
-      const nextMedian = new Date(nextSubject.median_date as string);
-      nextMedian.setHours(0, 0, 0, 0);
-      return !(d >= nextStart && d <= nextMedian);
-    }
-
-    // If no information, disable selection
-    return true;
+    // Allow any future date for timetable-based enrollment
+    return false;
   };
 
   return (
@@ -345,24 +223,26 @@ export function EnrollmentStep({ form }: Props) {
 
         <FormField
           control={form.control}
-          name="program_plan_id"
+          name="timetable_id"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Program Plan *</FormLabel>
+              <FormLabel>Timetable *</FormLabel>
               <FormControl>
                 <Select
-                  value={field.value || localSelectedPlanId}
+                  value={field.value || localSelectedTimetableId}
                   onValueChange={(value) => {
-                    console.log('Program plan selected:', value);
+                    console.log('Timetable selected:', value);
                     field.onChange(value);
-                    form.setValue('program_plan_id', value);
-                    setLocalSelectedPlanId(value); // Update local state immediately
+                    form.setValue('timetable_id', value);
+                    setLocalSelectedTimetableId(value); // Update local state immediately
                   }}
                 >
                   <SelectTrigger>
                     <SelectValue
                       placeholder={
-                        programId ? 'Select a plan' : 'Select a program first'
+                        programId
+                          ? 'Select a timetable'
+                          : 'Select a program first'
                       }
                     />
                   </SelectTrigger>
@@ -371,18 +251,22 @@ export function EnrollmentStep({ form }: Props) {
                       <div className="text-muted-foreground px-2 py-1.5 text-sm">
                         Select a program first
                       </div>
-                    ) : plansLoading ? (
+                    ) : timetablesLoading ? (
                       <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                        Loading plans...
+                        Loading timetables...
                       </div>
-                    ) : plans.length === 0 ? (
+                    ) : timetables.length === 0 ? (
                       <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                        No plans for selected program (programId: {programId})
+                        No timetables for selected program (programId:{' '}
+                        {programId})
                       </div>
                     ) : (
-                      plans.map((pl) => (
-                        <SelectItem key={pl.id} value={pl.id as string}>
-                          {pl.name}
+                      timetables.map((timetable) => (
+                        <SelectItem
+                          key={timetable.id}
+                          value={timetable.id as string}
+                        >
+                          {timetable.name}
                         </SelectItem>
                       ))
                     )}
@@ -395,74 +279,13 @@ export function EnrollmentStep({ form }: Props) {
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold tracking-tight">
-            Enrollment Preview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="w-full overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="divide-x">
-                  <TableHead>Start</TableHead>
-                  <TableHead>Median</TableHead>
-                  <TableHead>End</TableHead>
-                  <TableHead>Prerequisite</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y">
-                {!selectedPlanId ? (
-                  <TableRow className="divide-x">
-                    <TableCell colSpan={4}>
-                      <p className="text-muted-foreground text-sm">
-                        No preview to generated
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : psubLoading ? (
-                  <TableRow className="divide-x">
-                    <TableCell colSpan={4}>
-                      <p className="text-muted-foreground text-sm">
-                        Loading schedule...
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : previewSubjects.length === 0 ? (
-                  <TableRow className="divide-x">
-                    <TableCell colSpan={4}>
-                      <p className="text-muted-foreground text-sm">
-                        No preview to generated
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  previewSubjects.map((s) => (
-                    <TableRow key={s.id as string} className="divide-x">
-                      <TableCell>
-                        {format(new Date(s.start_date as string), 'PPP')}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(s.median_date as string), 'PPP')}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(s.end_date as string), 'PPP')}
-                      </TableCell>
-                      <TableCell>{s.is_prerequisite ? 'Yes' : 'No'}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="text-muted-foreground mt-3 text-sm">
-            Enrollment into an ongoing subject closes on the median date.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Enrollment Preview */}
+      <EnrollmentPreview
+        timetableId={selectedTimetableId}
+        commencementDate={selectedDate}
+      />
 
-      {!!selectedPlanId && previewSubjects.length > 0 && (
+      {!!selectedTimetableId && (
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-semibold tracking-tight">

@@ -6,14 +6,10 @@ import { usePathname } from 'next/navigation';
 import {
   GalleryVerticalEnd,
   Home,
-  FilePlus2,
   ListTree,
-  GraduationCap,
-  Layers3,
   ReceiptText,
   LayoutTemplate,
   Users,
-  BookOpen,
   UserCheck,
   MapPin,
 } from 'lucide-react';
@@ -51,19 +47,16 @@ const NAV: NavItem[] = [
     ],
   },
   {
-    title: 'Programs',
-    url: '/programs',
-    icon: GraduationCap,
+    title: 'Academic Planning',
+    url: '/timetables',
+    icon: LayoutTemplate,
     items: [
+      { title: 'Timetables', url: '/timetables' },
+      { title: 'New Timetable', url: '/timetables/new' },
       { title: 'All Programs', url: '/programs' },
       { title: 'New Program', url: '/programs/new' },
-    ],
-  },
-  {
-    title: 'Subjects',
-    url: '/subjects',
-    icon: BookOpen,
-    items: [
+      { title: 'All Program Plans', url: '/program-plans' },
+      { title: 'New Program Plan', url: '/program-plans/new' },
       { title: 'All Subjects', url: '/subjects' },
       { title: 'New Subject', url: '/subjects/new' },
     ],
@@ -84,15 +77,6 @@ const NAV: NavItem[] = [
     items: [
       { title: 'All Locations', url: '/locations' },
       { title: 'New Location', url: '/locations/new' },
-    ],
-  },
-  {
-    title: 'Program Plans',
-    url: '/program-plans',
-    icon: Layers3,
-    items: [
-      { title: 'All Program Plans', url: '/program-plans' },
-      { title: 'New Program Plan', url: '/program-plans/new' },
     ],
   },
   {

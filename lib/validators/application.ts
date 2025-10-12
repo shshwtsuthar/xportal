@@ -16,10 +16,12 @@ export const applicationSchema = z.object({
 
   // Program Selection
   program_id: z.string().min(1, 'Program selection is required'),
-  // Program Plan Selection
-  program_plan_id: z.string().min(1, 'Program plan selection is required'),
+  // Timetable Selection
+  timetable_id: z.string().min(1, 'Timetable selection is required'),
   // Commencement Date
-  proposed_commencement_date: z.string().optional(),
+  proposed_commencement_date: z
+    .string()
+    .min(1, 'Commencement date is required'),
 
   // Payment Plan
   payment_plan_template_id: z.string().optional(),
@@ -115,7 +117,7 @@ export const draftApplicationSchema = z.object({
   preferred_name: z.string().optional(),
   date_of_birth: z.union([z.string(), z.date()]).optional(),
   program_id: z.string().optional(),
-  program_plan_id: z.string().optional(),
+  timetable_id: z.string().optional(),
   proposed_commencement_date: z.string().optional(),
   payment_plan_template_id: z.string().optional(),
   payment_anchor_date: z.string().optional(),

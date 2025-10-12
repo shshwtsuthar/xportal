@@ -65,7 +65,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       preferred_name: '',
       date_of_birth: '',
       program_id: '',
-      program_plan_id: '',
+      timetable_id: '',
       proposed_commencement_date: '',
       payment_plan_template_id: '',
       payment_anchor_date: '',
@@ -126,7 +126,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
         preferred_name: currentApplication.preferred_name ?? '',
         date_of_birth: currentApplication.date_of_birth ?? '',
         program_id: currentApplication.program_id ?? '',
-        program_plan_id: currentApplication.program_plan_id ?? '',
+        timetable_id: currentApplication.timetable_id ?? '',
         proposed_commencement_date:
           currentApplication.proposed_commencement_date ?? '',
         payment_plan_template_id:
@@ -242,7 +242,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
         alternative_email: values.alternative_email || null,
         g_email: values.g_email || null,
         agent_id: values.agent_id === 'none' ? null : values.agent_id || null,
-        program_plan_id: values.program_plan_id || null,
+        timetable_id: values.timetable_id || null,
         program_id: values.program_id || null,
         payment_plan_template_id: values.payment_plan_template_id || null,
       };
