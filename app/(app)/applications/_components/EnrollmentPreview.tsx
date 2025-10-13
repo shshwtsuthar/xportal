@@ -43,28 +43,12 @@ export function EnrollmentPreview({
     );
   }
 
-  const { allSubjects, currentCycleSubjects, catchUpSubjects, prerequisites } =
-    progression;
+  const { allSubjects } = progression;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">Enrollment Preview</CardTitle>
-        <div className="text-muted-foreground text-sm">
-          <p>Commencement Date: {format(commencementDate, 'MMM dd, yyyy')}</p>
-          <p>Total Subjects: {allSubjects.length}</p>
-          {currentCycleSubjects.length > 0 && (
-            <p>Current Cycle: {currentCycleSubjects.length} subjects</p>
-          )}
-          {catchUpSubjects.length > 0 && (
-            <p>Catch-up Required: {catchUpSubjects.length} subjects</p>
-          )}
-          {prerequisites.length > 0 && (
-            <p>
-              Prerequisites: {prerequisites.length} subjects (concurrent study)
-            </p>
-          )}
-        </div>
       </CardHeader>
       <CardContent>
         <div className="w-full overflow-hidden rounded-md border">
@@ -134,35 +118,6 @@ export function EnrollmentPreview({
             </TableBody>
           </Table>
         </div>
-
-        {/* Prerequisites Note */}
-        {prerequisites.length > 0 && (
-          <div className="mt-4 rounded-lg bg-blue-50 p-3">
-            <h4 className="mb-1 text-sm font-medium text-blue-900">
-              Prerequisites Note
-            </h4>
-            <p className="text-xs text-blue-700">
-              Subjects marked as &quot;Prerequisite&quot; will be studied
-              concurrently with your first subject, regardless of their normal
-              sequence order. This ensures you meet all requirements for your
-              qualification.
-            </p>
-          </div>
-        )}
-
-        {/* Catch-up Note */}
-        {catchUpSubjects.length > 0 && (
-          <div className="mt-4 rounded-lg bg-orange-50 p-3">
-            <h4 className="mb-1 text-sm font-medium text-orange-900">
-              Catch-up Required
-            </h4>
-            <p className="text-xs text-orange-700">
-              You will need to complete {catchUpSubjects.length} subjects from
-              previous cycles to fulfill your qualification requirements. These
-              will be scheduled in the next available program plan cycle.
-            </p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

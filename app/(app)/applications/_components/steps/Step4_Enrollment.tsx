@@ -19,6 +19,7 @@ import {
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import { useGetTimetables } from '@/src/hooks/useGetTimetables';
 import { EnrollmentPreview } from '../EnrollmentPreview';
+import { OngoingSubjectPreview } from '../OngoingSubjectPreview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -279,12 +280,6 @@ export function EnrollmentStep({ form }: Props) {
         />
       </div>
 
-      {/* Enrollment Preview */}
-      <EnrollmentPreview
-        timetableId={selectedTimetableId}
-        commencementDate={selectedDate}
-      />
-
       {!!selectedTimetableId && (
         <Card>
           <CardHeader>
@@ -334,6 +329,15 @@ export function EnrollmentStep({ form }: Props) {
           </CardContent>
         </Card>
       )}
+
+      {/* Ongoing Subject Card */}
+      <OngoingSubjectPreview timetableId={selectedTimetableId} />
+
+      {/* Enrollment Preview */}
+      <EnrollmentPreview
+        timetableId={selectedTimetableId}
+        commencementDate={selectedDate}
+      />
     </div>
   );
 }

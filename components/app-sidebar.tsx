@@ -52,13 +52,9 @@ const NAV: NavItem[] = [
     icon: LayoutTemplate,
     items: [
       { title: 'Timetables', url: '/timetables' },
-      { title: 'New Timetable', url: '/timetables/new' },
-      { title: 'All Programs', url: '/programs' },
-      { title: 'New Program', url: '/programs/new' },
-      { title: 'All Program Plans', url: '/program-plans' },
-      { title: 'New Program Plan', url: '/program-plans/new' },
-      { title: 'All Subjects', url: '/subjects' },
-      { title: 'New Subject', url: '/subjects/new' },
+      { title: 'Programs', url: '/programs' },
+      { title: 'Program Plans', url: '/program-plans' },
+      { title: 'Subjects', url: '/subjects' },
     ],
   },
   {
