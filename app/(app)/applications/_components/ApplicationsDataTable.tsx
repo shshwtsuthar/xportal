@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { Tables } from '@/database.types';
 import { toast } from 'sonner';
@@ -78,6 +79,25 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
   };
 
   const renderActions = (app: Tables<'applications'>) => {
+    const handleGenerateOffer = async () => {
+      try {
+        const res = await fetch('/api/generate-offer-letter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ applicationId: app.id }),
+        });
+        if (!res.ok) throw new Error('Failed to generate');
+        const { signedUrl } = await res.json();
+        if (signedUrl) {
+          window.open(signedUrl, '_blank', 'noopener,noreferrer');
+        }
+        toast.success('Offer generated');
+      } catch (e) {
+        toast.error(
+          `Failed to generate offer: ${String((e as Error).message || e)}`
+        );
+      }
+    };
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -96,7 +116,12 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
             </DropdownMenuItem>
           )}
           {app.status === 'SUBMITTED' && (
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                handleGenerateOffer();
+              }}
+            >
               Generate Offer
             </DropdownMenuItem>
           )}

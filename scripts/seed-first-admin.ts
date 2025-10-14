@@ -77,16 +77,16 @@ async function seedFirstAdmin() {
     const { data: rto, error: createRTOError } = await supabase
       .from('rtos')
       .insert({
-        name: 'Default RTO',
-        rto_code: 'RTO001',
-        address_line_1: '123 Main Street',
-        suburb: 'Sydney',
-        state: 'NSW',
-        postcode: '2000',
+        name: 'Ashford College',
+        rto_code: '46296',
+        address_line_1: 'Level 3/65 Brougham Street',
+        suburb: 'Geelong',
+        state: 'VIC',
+        postcode: '3220',
         type_identifier: 'RTO',
         phone_number: '+61 2 1234 5678',
-        email_address: 'admin@defaultrto.edu.au',
-        contact_name: 'System Administrator',
+        email_address: 'admin@ashford.edu.au',
+        contact_name: 'Admin',
       })
       .select()
       .single();

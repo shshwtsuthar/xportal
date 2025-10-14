@@ -1,0 +1,13 @@
+{
+  "imports": {
+    "std/": "https://deno.land/std@0.168.0/",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "react": "https://esm.sh/react@18.2.0?target=deno",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime?target=deno"
+  },
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.window"]
+  }
+}
+
+
