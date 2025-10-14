@@ -30,6 +30,7 @@ import { PaymentStep } from './PaymentStep';
 import { useUploadApplicationFile } from '@/src/hooks/useApplicationFiles';
 import { toast } from 'sonner';
 import { useSubmitApplication } from '@/src/hooks/useSubmitApplication';
+import { createClient } from '@/lib/supabase/client';
 
 type Props = { applicationId?: string };
 
@@ -247,12 +248,41 @@ export function NewApplicationWizard({ applicationId }: Props) {
         payment_plan_template_id: values.payment_plan_template_id || null,
       };
 
+      const afterPersistLearningPlan = async (applicationId: string) => {
+        try {
+          // Persist draft learning plan only if both drivers exist
+          if (
+            cleanedValues.timetable_id &&
+            cleanedValues.proposed_commencement_date
+          ) {
+            const supabase = createClient();
+            const { error } = await supabase.rpc(
+              'upsert_application_learning_plan_draft',
+              { app_id: applicationId }
+            );
+            if (error) {
+              console.error('Draft plan RPC error:', error.message);
+              toast.error('Saved draft, but failed to persist learning plan');
+              return;
+            }
+            toast.success('Draft saved and learning plan updated');
+          } else {
+            toast.success('Draft saved');
+          }
+        } catch (e) {
+          console.error('Draft learning plan error:', e);
+          toast.error('Saved draft, but failed to persist learning plan');
+        }
+      };
+
       // If we have an application ID, update it
       if (currentApplication?.id) {
         updateMutation.mutate(
           { id: currentApplication.id, ...cleanedValues },
           {
-            onSuccess: () => toast.success('Draft saved'),
+            onSuccess: async () => {
+              await afterPersistLearningPlan(currentApplication.id);
+            },
             onError: (error) =>
               toast.error(`Failed to save draft: ${error.message}`),
           }
@@ -265,7 +295,9 @@ export function NewApplicationWizard({ applicationId }: Props) {
         updateMutation.mutate(
           { id: createMutation.data.id, ...cleanedValues },
           {
-            onSuccess: () => toast.success('Draft saved'),
+            onSuccess: async () => {
+              await afterPersistLearningPlan(createMutation.data.id);
+            },
             onError: (error) =>
               toast.error(`Failed to save draft: ${error.message}`),
           }
@@ -274,14 +306,14 @@ export function NewApplicationWizard({ applicationId }: Props) {
         // Only create if we're not already pending and haven't succeeded
         // Pass the form data directly to create the application with the filled-in values
         createMutation.mutate(cleanedValues, {
-          onSuccess: (created) => {
+          onSuccess: async (created) => {
             // Redirect to edit page
             window.history.replaceState(
               null,
               '',
               `/applications/edit/${created.id}`
             );
-            toast.success('Draft saved');
+            await afterPersistLearningPlan(created.id);
           },
           onError: (err) =>
             toast.error(`Failed to create application: ${err.message}`),

@@ -78,16 +78,7 @@ export function EnrollmentStep({ form }: Props) {
     selectedTimetableIdTruthy: !!selectedTimetableId,
   });
 
-  // Clear timetable selection when program changes
-  useEffect(() => {
-    if (programId) {
-      console.log('Clearing timetable due to program change');
-      form.setValue('timetable_id', '');
-      form.setValue('proposed_commencement_date', '');
-      setLocalSelectedTimetableId(''); // Clear local state too
-      setLocalSelectedDate(undefined); // Clear local date too
-    }
-  }, [programId, form]);
+  // Do not auto-clear timetable/date on initial load; we clear explicitly on user-driven program change
 
   // Sync local program state with form when form is reset/loaded
   useEffect(() => {
@@ -171,6 +162,10 @@ export function EnrollmentStep({ form }: Props) {
 
   return (
     <div className="grid gap-6">
+      <div className="text-muted-foreground text-sm">
+        Your Learning Plan will be frozen when you submit the application.
+        Changes after submit aren&rsquo;t allowed.
+      </div>
       <div>
         <h3 className="text-lg font-medium">Program Selection</h3>
         <p className="text-muted-foreground text-sm">
@@ -193,6 +188,11 @@ export function EnrollmentStep({ form }: Props) {
                     field.onChange(value);
                     form.setValue('program_id', value);
                     setLocalProgramId(value); // Update local state immediately
+                    // Explicitly clear dependent selections on program change
+                    form.setValue('timetable_id', '');
+                    form.setValue('proposed_commencement_date', '');
+                    setLocalSelectedTimetableId('');
+                    setLocalSelectedDate(undefined);
                   }}
                 >
                   <SelectTrigger>

@@ -142,7 +142,24 @@ serve(async (req: Request) => {
       );
     }
 
-    // 5. If all validation passes, update the application status to 'SUBMITTED'.
+    // 5. Freeze learning plan snapshot before changing status
+    const { error: freezeError } = await supabaseClient.rpc(
+      'freeze_application_learning_plan',
+      { app_id: applicationId }
+    );
+
+    if (freezeError) {
+      console.error('Freeze learning plan failed:', freezeError.message);
+      return new Response(
+        JSON.stringify({ error: 'Failed to freeze learning plan' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
+    // 6. If all validation passes, update the application status to 'SUBMITTED'.
     const { error: updateError } = await supabaseClient
       .from('applications')
       .update({ status: 'SUBMITTED' })
@@ -157,7 +174,7 @@ serve(async (req: Request) => {
       throw new Error('Failed to update application status in the database.');
     }
 
-    // 6. Return a success response to the client.
+    // 7. Return a success response to the client.
     return new Response(
       JSON.stringify({ message: 'Application submitted successfully' }),
       {
