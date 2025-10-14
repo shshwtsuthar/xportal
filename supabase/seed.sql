@@ -28,6 +28,7 @@ DECLARE
   v_program_plan_2026_id UUID;
   v_subject_id UUID;
   v_program_plan_subject_id UUID;
+  v_payment_plan_template_id UUID;
 BEGIN
   -- Get first RTO
   SELECT id INTO v_rto_id FROM public.rtos LIMIT 1;
@@ -222,37 +223,37 @@ BEGIN
     data.code LIKE '%*' -- Mark subjects with * as prerequisites
   FROM (VALUES
     ('CPCCWHS2001*', '2025-02-03', '2025-02-09', 1),
-    ('CPCWHS3001', '2025-02-10', '2025-02-16', 2),
-    ('CPCCCA2011*', '2025-02-17', '2025-02-23', 3),
-    ('CPCCCA2002*', '2025-02-24', '2025-03-16', 4),
+    ('CPCWHS3001*', '2025-02-10', '2025-02-16', 2),
+    ('CPCCCA2011', '2025-02-17', '2025-02-23', 3),
+    ('CPCCCA2002', '2025-02-24', '2025-03-16', 4),
     ('CPCCOM1012', '2025-03-17', '2025-03-23', 5),
-    ('CPCCCA3002*', '2025-03-24', '2025-03-30', 6),
-    ('CPCCCA3003*', '2025-03-31', '2025-04-06', 7),
-    ('CPCCCA3004*', '2025-04-07', '2025-04-20', 8),
-    ('CPCCCA3005*', '2025-04-21', '2025-04-27', 9),
-    ('CPCCCA3006*', '2025-05-05', '2025-05-11', 10),
-    ('CPCCCA3007*', '2025-05-12', '2025-05-25', 11),
-    ('CPCCCA3008*', '2025-05-26', '2025-06-01', 12),
-    ('CPCCCA3010*', '2025-06-02', '2025-06-22', 13),
-    ('CPCCCA3016*', '2025-06-23', '2025-06-29', 14),
-    ('CPCCCA3017*', '2025-06-30', '2025-07-06', 15),
-    ('CPCCCA3024*', '2025-07-07', '2025-07-20', 16),
-    ('CPCCCA3025*', '2025-07-21', '2025-07-27', 17),
-    ('CPCCCA3028*', '2025-08-04', '2025-08-17', 18),
+    ('CPCCCA3002', '2025-03-24', '2025-03-30', 6),
+    ('CPCCCA3003', '2025-03-31', '2025-04-06', 7),
+    ('CPCCCA3004', '2025-04-07', '2025-04-20', 8),
+    ('CPCCCA3005', '2025-04-21', '2025-04-27', 9),
+    ('CPCCCA3006', '2025-05-05', '2025-05-11', 10),
+    ('CPCCCA3007', '2025-05-12', '2025-05-25', 11),
+    ('CPCCCA3008', '2025-05-26', '2025-06-01', 12),
+    ('CPCCCA3010', '2025-06-02', '2025-06-22', 13),
+    ('CPCCCA3016', '2025-06-23', '2025-06-29', 14),
+    ('CPCCCA3017', '2025-06-30', '2025-07-06', 15),
+    ('CPCCCA3024', '2025-07-07', '2025-07-20', 16),
+    ('CPCCCA3025', '2025-07-21', '2025-07-27', 17),
+    ('CPCCCA3028', '2025-08-04', '2025-08-17', 18),
     ('CPCCCM2006', '2025-08-18', '2025-08-24', 19),
-    ('CPCCCM2008*', '2025-08-25', '2025-08-31', 20),
-    ('CPCCCO2013*', '2025-09-01', '2025-09-07', 21),
+    ('CPCCCM2008', '2025-08-25', '2025-08-31', 20),
+    ('CPCCCO2013', '2025-09-01', '2025-09-07', 21),
     ('CPCCOM1014', '2025-09-08', '2025-09-14', 22),
     ('CPCCOM3001', '2025-09-15', '2025-09-21', 23),
     ('CPCCOM1015', '2025-09-22', '2025-09-28', 24),
     ('CPCCOM3006', '2025-09-29', '2025-10-05', 25),
     ('CPCCCM3005', '2025-10-06', '2025-10-12', 26),
-    ('CPCCCA3012*', '2025-10-13', '2025-10-19', 27),
-    ('CPCCCM2002*', '2025-10-20', '2025-10-26', 28),
-    ('CPCCCA3014*', '2025-11-03', '2025-11-16', 29),
+    ('CPCCCA3012', '2025-10-13', '2025-10-19', 27),
+    ('CPCCCM2002', '2025-10-20', '2025-10-26', 28),
+    ('CPCCCA3014', '2025-11-03', '2025-11-16', 29),
     ('CPCCJN3003', '2025-11-17', '2025-12-07', 30),
     ('CPCCSF2004', '2025-12-08', '2025-12-21', 31),
-    ('CPCCCA3001*', '2025-12-29', '2026-01-11', 32),
+    ('CPCCCA3001', '2025-12-29', '2026-01-11', 32),
     ('CPCCCM2012', '2026-01-12', '2026-01-25', 33),
     ('CPCCOM1013', '2026-01-26', '2026-02-01', 34)
   ) AS data(code, start_date, end_date, seq)
@@ -318,37 +319,37 @@ BEGIN
     data.code LIKE '%*' -- Mark subjects with * as prerequisites
   FROM (VALUES
     ('CPCCWHS2001*', '2026-02-02', '2026-02-08', 1),
-    ('CPCWHS3001', '2026-02-09', '2026-02-15', 2),
-    ('CPCCCA2011*', '2026-02-16', '2026-02-22', 3),
-    ('CPCCCA2002*', '2026-02-23', '2026-03-15', 4),
+    ('CPCWHS3001*', '2026-02-09', '2026-02-15', 2),
+    ('CPCCCA2011', '2026-02-16', '2026-02-22', 3),
+    ('CPCCCA2002', '2026-02-23', '2026-03-15', 4),
     ('CPCCOM1012', '2026-03-16', '2026-03-22', 5),
-    ('CPCCCA3002*', '2026-03-23', '2026-03-29', 6),
-    ('CPCCCA3003*', '2026-03-30', '2026-04-05', 7),
-    ('CPCCCA3004*', '2026-04-06', '2026-04-19', 8),
-    ('CPCCCA3005*', '2026-04-20', '2026-04-26', 9),
-    ('CPCCCA3006*', '2026-05-04', '2026-05-10', 10),
-    ('CPCCCA3007*', '2026-05-11', '2026-05-24', 11),
-    ('CPCCCA3008*', '2026-05-25', '2026-05-31', 12),
-    ('CPCCCA3010*', '2026-06-01', '2026-06-21', 13),
-    ('CPCCCA3016*', '2026-06-22', '2026-06-28', 14),
-    ('CPCCCA3017*', '2026-06-29', '2026-07-05', 15),
-    ('CPCCCA3024*', '2026-07-06', '2026-07-19', 16),
-    ('CPCCCA3025*', '2026-07-20', '2026-07-26', 17),
-    ('CPCCCA3028*', '2026-08-03', '2026-08-16', 18),
+    ('CPCCCA3002', '2026-03-23', '2026-03-29', 6),
+    ('CPCCCA3003', '2026-03-30', '2026-04-05', 7),
+    ('CPCCCA3004', '2026-04-06', '2026-04-19', 8),
+    ('CPCCCA3005', '2026-04-20', '2026-04-26', 9),
+    ('CPCCCA3006', '2026-05-04', '2026-05-10', 10),
+    ('CPCCCA3007', '2026-05-11', '2026-05-24', 11),
+    ('CPCCCA3008', '2026-05-25', '2026-05-31', 12),
+    ('CPCCCA3010', '2026-06-01', '2026-06-21', 13),
+    ('CPCCCA3016', '2026-06-22', '2026-06-28', 14),
+    ('CPCCCA3017', '2026-06-29', '2026-07-05', 15),
+    ('CPCCCA3024', '2026-07-06', '2026-07-19', 16),
+    ('CPCCCA3025', '2026-07-20', '2026-07-26', 17),
+    ('CPCCCA3028', '2026-08-03', '2026-08-16', 18),
     ('CPCCCM2006', '2026-08-17', '2026-08-23', 19),
-    ('CPCCCM2008*', '2026-08-24', '2026-08-30', 20),
-    ('CPCCCO2013*', '2026-08-31', '2026-09-06', 21),
+    ('CPCCCM2008', '2026-08-24', '2026-08-30', 20),
+    ('CPCCCO2013', '2026-08-31', '2026-09-06', 21),
     ('CPCCOM1014', '2026-09-07', '2026-09-13', 22),
     ('CPCCOM3001', '2026-09-14', '2026-09-20', 23),
     ('CPCCOM1015', '2026-09-21', '2026-09-27', 24),
     ('CPCCOM3006', '2026-09-28', '2026-10-04', 25),
     ('CPCCCM3005', '2026-10-05', '2026-10-11', 26),
-    ('CPCCCA3012*', '2026-10-12', '2026-10-18', 27),
-    ('CPCCCM2002*', '2026-10-19', '2026-10-25', 28),
-    ('CPCCCA3014*', '2026-11-02', '2026-11-15', 29),
+    ('CPCCCA3012', '2026-10-12', '2026-10-18', 27),
+    ('CPCCCM2002', '2026-10-19', '2026-10-25', 28),
+    ('CPCCCA3014', '2026-11-02', '2026-11-15', 29),
     ('CPCCJN3003', '2026-11-16', '2026-12-06', 30),
     ('CPCCSF2004', '2026-12-07', '2026-12-20', 31),
-    ('CPCCCA3001*', '2026-12-28', '2027-01-10', 32),
+    ('CPCCCA3001', '2026-12-28', '2027-01-10', 32),
     ('CPCCCM2012', '2027-01-11', '2027-01-24', 33),
     ('CPCCOM1013', '2027-01-25', '2027-01-31', 34)
   ) AS data(code, start_date, end_date, seq)
@@ -385,6 +386,53 @@ BEGIN
   ON CONFLICT (timetable_id, program_plan_id) DO NOTHING;
 
   RAISE NOTICE 'Program plans linked to timetable';
+
+  -- Step 13: Create Payment Plan Template for Certificate III in Carpentry
+  INSERT INTO public.payment_plan_templates (
+    id,
+    rto_id,
+    program_id,
+    name,
+    is_default
+  ) VALUES (
+    extensions.uuid_generate_v4(),
+    v_rto_id,
+    v_program_id,
+    'Standard Payment Plan',
+    true
+  )
+  ON CONFLICT (rto_id, program_id) WHERE is_default = true DO UPDATE SET
+    name = EXCLUDED.name
+  RETURNING id INTO v_payment_plan_template_id;
+
+  RAISE NOTICE 'Payment Plan Template created: %', v_payment_plan_template_id;
+
+  -- Step 14: Add installments to payment plan template
+  INSERT INTO public.payment_plan_template_installments (
+    template_id,
+    name,
+    amount_cents,
+    due_date_rule_days
+  ) VALUES
+    (v_payment_plan_template_id, '1st Installment', 75000, 0),
+    (v_payment_plan_template_id, 'Enrolment Fee', 25000, 0),
+    (v_payment_plan_template_id, 'Promotional Material Price 1 CPC', 50000, 0),
+    (v_payment_plan_template_id, '2nd installment', 75000, 35),
+    (v_payment_plan_template_id, 'Promotional Material Fees 2 CPC', 50000, 35),
+    (v_payment_plan_template_id, '3rd Installment', 90000, 63),
+    (v_payment_plan_template_id, 'Promotional Material Price 3 CPC', 50000, 63),
+    (v_payment_plan_template_id, '4th Installment', 90000, 94),
+    (v_payment_plan_template_id, 'Promotional Material Price 4 CPC', 25000, 94),
+    (v_payment_plan_template_id, '5th Installment', 90000, 124),
+    (v_payment_plan_template_id, '6th Installment', 90000, 155),
+    (v_payment_plan_template_id, '7th Installment', 90000, 185),
+    (v_payment_plan_template_id, '8th Installment', 90000, 216),
+    (v_payment_plan_template_id, '9th Installment', 90000, 247),
+    (v_payment_plan_template_id, '10th Installment', 90000, 277),
+    (v_payment_plan_template_id, '11th Installment', 90000, 308),
+    (v_payment_plan_template_id, '12th Installment', 90000, 338);
+
+  RAISE NOTICE 'Payment Plan Template installments added: 17 installments';
 
   -- Cleanup
   DROP TABLE temp_subjects;
