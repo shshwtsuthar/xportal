@@ -275,6 +275,38 @@ export function NewApplicationWizard({ applicationId }: Props) {
         }
       };
 
+      const afterPersistPaymentSchedule = async (applicationId: string) => {
+        try {
+          // Persist draft payment schedule only when template AND anchor date exist
+          if (
+            cleanedValues.payment_plan_template_id &&
+            cleanedValues.payment_anchor_date
+          ) {
+            const supabase = createClient();
+            const { error } = await supabase.rpc(
+              'upsert_application_payment_schedule_draft',
+              { app_id: applicationId }
+            );
+            if (error) {
+              console.error('Draft payment schedule RPC error:', error.message);
+              toast.error(
+                'Saved draft, but failed to persist payment schedule'
+              );
+              return;
+            }
+          } else if (
+            cleanedValues.payment_plan_template_id &&
+            !cleanedValues.payment_anchor_date
+          ) {
+            // Soft guidance: no RPC call without anchor date
+            // Keep silent success for draft save; preview will prompt for date
+          }
+        } catch (e) {
+          console.error('Draft payment schedule error:', e);
+          toast.error('Saved draft, but failed to persist payment schedule');
+        }
+      };
+
       // If we have an application ID, update it
       if (currentApplication?.id) {
         updateMutation.mutate(
@@ -282,6 +314,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
           {
             onSuccess: async () => {
               await afterPersistLearningPlan(currentApplication.id);
+              await afterPersistPaymentSchedule(currentApplication.id);
             },
             onError: (error) =>
               toast.error(`Failed to save draft: ${error.message}`),
@@ -297,6 +330,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
           {
             onSuccess: async () => {
               await afterPersistLearningPlan(createMutation.data.id);
+              await afterPersistPaymentSchedule(createMutation.data.id);
             },
             onError: (error) =>
               toast.error(`Failed to save draft: ${error.message}`),
@@ -314,6 +348,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
               `/applications/edit/${created.id}`
             );
             await afterPersistLearningPlan(created.id);
+            await afterPersistPaymentSchedule(created.id);
           },
           onError: (err) =>
             toast.error(`Failed to create application: ${err.message}`),

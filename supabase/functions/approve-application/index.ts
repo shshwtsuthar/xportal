@@ -64,7 +64,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // Determine anchor date according to template.anchor_type
+    // Determine anchor date with precedence: user-selected first, then template rule
     if (!app.payment_plan_template_id) {
       return new Response(
         JSON.stringify({
@@ -79,7 +79,7 @@ serve(async (req: Request) => {
 
     const { data: template, error: tplErr } = await supabase
       .from('payment_plan_templates')
-      .select('id, anchor_type')
+      .select('id')
       .eq('id', app.payment_plan_template_id)
       .single();
     if (tplErr || !template) {
@@ -92,15 +92,16 @@ serve(async (req: Request) => {
       );
     }
 
+    // Anchor precedence: user-selected > commencement > offer
     let anchorDate: string | null = null;
-    if (template.anchor_type === 'COMMENCEMENT_DATE') {
-      anchorDate = app.proposed_commencement_date as string | null;
-    } else if (template.anchor_type === 'OFFER_DATE') {
-      anchorDate = app.offer_generated_at
-        ? new Date(app.offer_generated_at as string).toISOString().slice(0, 10)
-        : null;
-    } else if (template.anchor_type === 'CUSTOM_DATE') {
-      anchorDate = app.payment_anchor_date as string | null;
+    if (app.payment_anchor_date) {
+      anchorDate = app.payment_anchor_date as string;
+    } else if (app.proposed_commencement_date) {
+      anchorDate = app.proposed_commencement_date as string;
+    } else if (app.offer_generated_at) {
+      anchorDate = new Date(app.offer_generated_at as string)
+        .toISOString()
+        .slice(0, 10);
     }
 
     if (!anchorDate) {
@@ -163,41 +164,68 @@ serve(async (req: Request) => {
       );
     }
 
-    // 3) Fetch installments for template
-    const { data: installments, error: instErr } = await supabase
-      .from('payment_plan_template_installments')
-      .select('id, name, amount_cents, due_date_rule_days')
-      .eq('template_id', template.id)
-      .order('due_date_rule_days', { ascending: true });
-    if (instErr) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to read installments' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
+    // 3) Use application_payment_schedule snapshot if present; fallback to on-the-fly calc
+    const { data: snapshot, error: snapErr } = await supabase
+      .from('application_payment_schedule')
+      .select('name, amount_cents, due_date')
+      .eq('application_id', app.id)
+      .order('sequence_order', { ascending: true })
+      .order('due_date', { ascending: true })
+      .order('name', { ascending: true });
 
-    const anchor = new Date(anchorDate);
-    const invoiceRows = (installments ?? []).map((i, idx) => {
-      const due = new Date(anchor);
-      due.setDate(due.getDate() + Number(i.due_date_rule_days));
-      const dueDateStr = due.toISOString().slice(0, 10);
-      const isFirst = idx === 0;
-      return {
-        enrollment_id: enrollment.id,
-        rto_id: app.rto_id,
-        status: isFirst ? 'SENT' : 'SCHEDULED',
-        invoice_number: crypto.randomUUID(),
-        issue_date: isFirst
-          ? new Date().toISOString().slice(0, 10)
-          : dueDateStr,
-        due_date: dueDateStr,
-        amount_due_cents: i.amount_cents,
-        amount_paid_cents: 0,
-      } as Db['public']['Tables']['invoices']['Insert'];
-    });
+    let invoiceRows: Db['public']['Tables']['invoices']['Insert'][] = [];
+    if (!snapErr && snapshot && snapshot.length > 0) {
+      invoiceRows = snapshot.map((row, idx) => {
+        const isFirst = idx === 0;
+        return {
+          enrollment_id: enrollment.id,
+          rto_id: app.rto_id,
+          status: isFirst ? 'SENT' : 'SCHEDULED',
+          invoice_number: crypto.randomUUID(),
+          issue_date: isFirst
+            ? new Date().toISOString().slice(0, 10)
+            : (row.due_date as string),
+          due_date: row.due_date as string,
+          amount_due_cents: row.amount_cents as number,
+          amount_paid_cents: 0,
+        } as Db['public']['Tables']['invoices']['Insert'];
+      });
+    } else {
+      // Fallback: compute based on template installments and anchor
+      const { data: installments, error: instErr } = await supabase
+        .from('payment_plan_template_installments')
+        .select('id, name, amount_cents, due_date_rule_days')
+        .eq('template_id', template.id)
+        .order('due_date_rule_days', { ascending: true });
+      if (instErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to read installments' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+      const anchor = new Date(anchorDate);
+      invoiceRows = (installments ?? []).map((i, idx) => {
+        const due = new Date(anchor);
+        due.setDate(due.getDate() + Number(i.due_date_rule_days));
+        const dueDateStr = due.toISOString().slice(0, 10);
+        const isFirst = idx === 0;
+        return {
+          enrollment_id: enrollment.id,
+          rto_id: app.rto_id,
+          status: isFirst ? 'SENT' : 'SCHEDULED',
+          invoice_number: crypto.randomUUID(),
+          issue_date: isFirst
+            ? new Date().toISOString().slice(0, 10)
+            : dueDateStr,
+          due_date: dueDateStr,
+          amount_due_cents: i.amount_cents,
+          amount_paid_cents: 0,
+        } as Db['public']['Tables']['invoices']['Insert'];
+      });
+    }
 
     if (invoiceRows.length > 0) {
       const { error: invErr } = await supabase
