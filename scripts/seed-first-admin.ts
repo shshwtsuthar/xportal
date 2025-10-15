@@ -85,7 +85,7 @@ async function seedFirstAdmin() {
         postcode: '3220',
         type_identifier: 'RTO',
         phone_number: '+61 2 1234 5678',
-        email_address: 'admin@ashford.edu.au',
+        email_address: 'offers@ashford.edu.au',
         contact_name: 'Admin',
       })
       .select()

@@ -1,37 +1,29 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
 
-type Params = { applicationId: string };
+type Payload = { applicationId: string };
 
 /**
- * Calls the approve-application edge function to:
- * - Create student and enrollment
- * - Generate invoices from payment plan template
- * - Update application status to APPROVED
+ * Approves an ACCEPTED application by invoking the approve-application Edge Function.
+ * On success: invalidates application and applications queries.
  */
 export const useApproveApplication = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ applicationId }: Params) => {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/approve-application`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ applicationId }),
-        }
+    mutationFn: async ({ applicationId }: Payload) => {
+      const supabase = createClient();
+      const { data, error } = await supabase.functions.invoke(
+        'approve-application',
+        { body: { applicationId } }
       );
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Approval failed');
-      }
-      return response.json();
+      if (error) throw new Error(error.message);
+      return data as { studentId: string; enrollmentId: string };
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['application', variables.applicationId],
+      });
       queryClient.invalidateQueries({ queryKey: ['applications'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
     },
   });
 };

@@ -83,6 +83,13 @@ export default function ApplicationsPage() {
               Accepted
             </Button>
             <Button
+              variant={status === 'APPROVED' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatus('APPROVED')}
+            >
+              Approved
+            </Button>
+            <Button
               variant={status === 'REJECTED' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setStatus('REJECTED')}

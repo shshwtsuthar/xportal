@@ -146,7 +146,7 @@ serve(async (req: Request) => {
       .from('enrollments')
       .insert({
         student_id: student.id,
-        qualification_id: app.program_id ?? app.qualification_id, // compatibility with rename
+        program_id: app.program_id, // align with current schema
         rto_id: app.rto_id,
         status: 'ACTIVE',
         commencement_date: anchorDate,
@@ -239,6 +239,235 @@ serve(async (req: Request) => {
             status: 500,
           }
         );
+      }
+    }
+
+    // --- Extended copy: student domain normalization ---
+    // 3b) Addresses (street + postal)
+    {
+      const street = {
+        student_id: student.id,
+        rto_id: app.rto_id,
+        type: 'street',
+        building_name: app.street_building_name,
+        unit_details: app.street_unit_details,
+        number_name: app.street_number_name,
+        po_box: app.street_po_box,
+        suburb: app.suburb,
+        state: app.state,
+        postcode: app.postcode,
+        country: app.street_country,
+        is_primary: true,
+      } as const;
+      const postal = app.postal_is_same_as_street
+        ? null
+        : {
+            student_id: student.id,
+            rto_id: app.rto_id,
+            type: 'postal',
+            building_name: app.postal_building_name,
+            unit_details: app.postal_unit_details,
+            number_name: app.postal_number_name,
+            po_box: app.postal_po_box,
+            suburb: app.postal_suburb,
+            state: app.postal_state,
+            postcode: app.postal_postcode,
+            country: app.postal_country,
+            is_primary: false,
+          };
+      const addrRows = [street, postal].filter(
+        Boolean
+      ) as Db['public']['Tables']['student_addresses']['Insert'][];
+      if (addrRows.length > 0) {
+        const { error: addrErr } = await supabase
+          .from('student_addresses')
+          .insert(addrRows);
+        if (addrErr) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to copy student addresses' }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+      }
+    }
+
+    // 3c) AVETMISS snapshot
+    {
+      const { error: avErr } = await supabase.from('student_avetmiss').insert({
+        student_id: student.id,
+        rto_id: app.rto_id,
+        gender: app.gender,
+        highest_school_level_id: app.highest_school_level_id,
+        indigenous_status_id: app.indigenous_status_id,
+        labour_force_status_id: app.labour_force_status_id,
+        country_of_birth_id: app.country_of_birth_id,
+        language_code: app.language_code,
+        citizenship_status_code: app.citizenship_status_code,
+        at_school_flag: app.at_school_flag,
+      });
+      if (avErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to copy AVETMISS details' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+
+    // 3d) CRICOS snapshot
+    {
+      const { error: crErr } = await supabase.from('student_cricos').insert({
+        student_id: student.id,
+        rto_id: app.rto_id,
+        is_international: Boolean(app.is_international),
+        passport_number: app.passport_number,
+        visa_type: app.visa_type,
+        visa_number: app.visa_number,
+        country_of_citizenship: app.country_of_citizenship,
+        ielts_score: app.ielts_score,
+      });
+      if (crErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to copy CRICOS details' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+
+    // 3e) Emergency and guardian contacts
+    {
+      const inserts: Db['public']['Tables']['student_contacts_emergency']['Insert'][] =
+        [];
+      if (app.ec_name || app.ec_phone_number || app.ec_relationship) {
+        inserts.push({
+          student_id: student.id,
+          rto_id: app.rto_id,
+          name: app.ec_name,
+          relationship: app.ec_relationship,
+          phone_number: app.ec_phone_number,
+        });
+      }
+      if (inserts.length > 0) {
+        const { error: ecErr } = await supabase
+          .from('student_contacts_emergency')
+          .insert(inserts);
+        if (ecErr) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to copy emergency contacts' }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+      }
+      if (app.g_name || app.g_email || app.g_phone_number) {
+        const { error: gErr } = await supabase
+          .from('student_contacts_guardians')
+          .insert({
+            student_id: student.id,
+            rto_id: app.rto_id,
+            name: app.g_name,
+            email: app.g_email,
+            phone_number: app.g_phone_number,
+          });
+        if (gErr) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to copy guardian contact' }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+      }
+    }
+
+    // 3f) Learning plan subjects → enrollment_subjects
+    {
+      const { data: subjects, error: subjErr } = await supabase
+        .from('application_learning_subjects')
+        .select(
+          'program_plan_subject_id, subject_id, planned_start_date, planned_end_date, is_catch_up, is_prerequisite'
+        )
+        .eq('application_id', app.id)
+        .order('sequence_order', { ascending: true });
+      if (!subjErr && subjects && subjects.length > 0) {
+        const rows = subjects.map(
+          (
+            s: Db['public']['Tables']['application_learning_subjects']['Row']
+          ) => ({
+            enrollment_id: enrollment.id,
+            program_plan_subject_id: s.program_plan_subject_id,
+            outcome_code: null,
+            start_date: s.planned_start_date,
+            end_date: s.planned_end_date,
+            is_catch_up: s.is_catch_up,
+            delivery_location_id: null,
+            delivery_mode_id: null,
+            scheduled_hours: null,
+          })
+        );
+        const { error: insErr } = await supabase
+          .from('enrollment_subjects')
+          .insert(rows);
+        if (insErr) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to copy enrollment subjects' }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+      }
+    }
+
+    // 3g) Learning plan classes → enrollment_classes
+    {
+      const { data: classes, error: clsErr } = await supabase
+        .from('application_learning_classes')
+        .select(
+          'program_plan_class_id, class_date, start_time, end_time, trainer_id, location_id, classroom_id, class_type'
+        )
+        .eq('application_id', app.id);
+      if (!clsErr && classes && classes.length > 0) {
+        const rows = classes.map(
+          (
+            c: Db['public']['Tables']['application_learning_classes']['Row']
+          ) => ({
+            enrollment_id: enrollment.id,
+            program_plan_class_id: c.program_plan_class_id,
+            class_date: c.class_date,
+            start_time: c.start_time,
+            end_time: c.end_time,
+            trainer_id: c.trainer_id,
+            location_id: c.location_id,
+            classroom_id: c.classroom_id,
+            class_type: c.class_type,
+            notes: null,
+          })
+        );
+        const { error: insErr } = await supabase
+          .from('enrollment_classes')
+          .insert(rows);
+        if (insErr) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to copy enrollment classes' }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
       }
     }
 

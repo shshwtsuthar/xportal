@@ -33,13 +33,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Trash2, Check, X } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { Tables } from '@/database.types';
 import { toast } from 'sonner';
 import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
 import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
 import { SendOfferDialog } from './SendOfferDialog';
+import { useApproveApplication } from '@/src/hooks/useApproveApplication';
 
 import type { Database } from '@/database.types';
 type ApplicationStatus = Database['public']['Enums']['application_status'];
@@ -58,6 +58,7 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
   }>({ open: false, application: null });
 
   const rows = useMemo(() => data ?? [], [data]);
+  const approveMutation = useApproveApplication();
 
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id, {
@@ -157,14 +158,21 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            // TODO: Implement approve functionality
-            toast.info('Approve functionality coming soon');
+          onClick={async () => {
+            try {
+              await approveMutation.mutateAsync({ applicationId: app.id });
+              toast.success('Application approved');
+            } catch (e) {
+              toast.error(
+                `Approve failed: ${String((e as Error).message || e)}`
+              );
+            }
           }}
+          disabled={approveMutation.isPending}
           aria-label="Approve application"
         >
           <Check className="mr-2 h-4 w-4" />
-          Approve
+          {approveMutation.isPending ? 'Approving...' : 'Approve'}
         </Button>
       );
     }
