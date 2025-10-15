@@ -58,6 +58,11 @@ const NAV: NavItem[] = [
     ],
   },
   {
+    title: 'Students',
+    url: '/students',
+    icon: Users,
+  },
+  {
     title: 'Agents',
     url: '/agents',
     icon: UserCheck,

@@ -128,6 +128,7 @@ serve(async (req: Request) => {
         last_name: app.last_name!,
         email: app.email!,
         date_of_birth: app.date_of_birth!,
+        status: 'ACTIVE',
       })
       .select('*')
       .single();
