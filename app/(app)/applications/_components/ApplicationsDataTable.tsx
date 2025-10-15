@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
@@ -31,12 +32,14 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Trash2, Check, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { Tables } from '@/database.types';
 import { toast } from 'sonner';
 import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
+import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
+import { SendOfferDialog } from './SendOfferDialog';
 
 import type { Database } from '@/database.types';
 type ApplicationStatus = Database['public']['Enums']['application_status'];
@@ -48,6 +51,11 @@ type Props = {
 export function ApplicationsDataTable({ statusFilter }: Props) {
   const { data, isLoading, isError } = useGetApplications(statusFilter);
   const deleteMutation = useDeleteApplication();
+  const updateMutation = useUpdateApplication();
+  const [sendOfferDialog, setSendOfferDialog] = useState<{
+    open: boolean;
+    application: Tables<'applications'> | null;
+  }>({ open: false, application: null });
 
   const rows = useMemo(() => data ?? [], [data]);
 
@@ -56,6 +64,26 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
       onSuccess: () => toast.success('Application deleted successfully'),
       onError: (error) => toast.error(`Failed to delete: ${error.message}`),
     });
+  };
+
+  const handleAccept = (id: string) => {
+    updateMutation.mutate(
+      { id, status: 'ACCEPTED' },
+      {
+        onSuccess: () => toast.success('Application accepted successfully'),
+        onError: (error) => toast.error(`Failed to accept: ${error.message}`),
+      }
+    );
+  };
+
+  const handleReject = (id: string) => {
+    updateMutation.mutate(
+      { id, status: 'REJECTED' },
+      {
+        onSuccess: () => toast.success('Application rejected successfully'),
+        onError: (error) => toast.error(`Failed to reject: ${error.message}`),
+      }
+    );
   };
 
   if (isLoading) {
@@ -98,6 +126,55 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
         );
       }
     };
+
+    // For OFFER_SENT status, show Accept/Reject buttons
+    if (app.status === 'OFFER_SENT') {
+      return (
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleAccept(app.id)}
+            aria-label="Accept application"
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="destructive"
+            size="icon"
+            onClick={() => handleReject(app.id)}
+            aria-label="Reject application"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    }
+
+    // For ACCEPTED status, show Approve button
+    if (app.status === 'ACCEPTED') {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            // TODO: Implement approve functionality
+            toast.info('Approve functionality coming soon');
+          }}
+          aria-label="Approve application"
+        >
+          <Check className="mr-2 h-4 w-4" />
+          Approve
+        </Button>
+      );
+    }
+
+    // For REJECTED status, show no actions
+    if (app.status === 'REJECTED') {
+      return <span className="text-muted-foreground">—</span>;
+    }
+
+    // For other statuses, show dropdown menu
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -123,6 +200,16 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
               }}
             >
               Generate Offer
+            </DropdownMenuItem>
+          )}
+          {app.status === 'OFFER_GENERATED' && (
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                setSendOfferDialog({ open: true, application: app });
+              }}
+            >
+              Send Offer Letter
             </DropdownMenuItem>
           )}
           {app.status === 'DRAFT' && (
@@ -165,55 +252,84 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
   };
 
   return (
-    <div className="w-full overflow-hidden rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow className="divide-x">
-            <TableHead>Student Name</TableHead>
-            <TableHead>Program</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Updated At</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="divide-y">
-          {rows.map((app) => (
-            <TableRow key={app.id} className="divide-x">
-              <TableCell>
-                {[app.first_name, app.last_name].filter(Boolean).join(' ') ||
-                  '—'}
-              </TableCell>
-              <TableCell>{app.program_id ? 'Selected' : '—'}</TableCell>
-              <TableCell>
-                <Badge
-                  variant={
-                    app.status === 'REJECTED'
-                      ? 'destructive'
-                      : app.status === 'SUBMITTED'
-                        ? 'default'
-                        : 'secondary'
-                  }
-                >
-                  {app.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {formatDate(app.updated_at as unknown as string)}
-              </TableCell>
-              <TableCell className="text-right">{renderActions(app)}</TableCell>
-            </TableRow>
-          ))}
-          {rows.length === 0 && (
+    <>
+      <div className="w-full overflow-hidden rounded-md border">
+        <Table>
+          <TableHeader>
             <TableRow className="divide-x">
-              <TableCell colSpan={5}>
-                <p className="text-muted-foreground text-sm">
-                  No applications found.
-                </p>
-              </TableCell>
+              <TableHead>Student Name</TableHead>
+              <TableHead>Program</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Updated At</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody className="divide-y">
+            {rows.map((app) => (
+              <TableRow key={app.id} className="divide-x">
+                <TableCell>
+                  {[app.first_name, app.last_name].filter(Boolean).join(' ') ||
+                    '—'}
+                </TableCell>
+                <TableCell>{app.program_id ? 'Selected' : '—'}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      app.status === 'REJECTED'
+                        ? 'destructive'
+                        : app.status === 'SUBMITTED'
+                          ? 'default'
+                          : 'secondary'
+                    }
+                  >
+                    {app.status === 'OFFER_GENERATED'
+                      ? 'Offer Generated'
+                      : app.status === 'OFFER_SENT'
+                        ? 'Offer Sent'
+                        : app.status === 'ACCEPTED'
+                          ? 'Accepted'
+                          : app.status === 'DRAFT'
+                            ? 'Draft'
+                            : app.status === 'SUBMITTED'
+                              ? 'Submitted'
+                              : app.status === 'REJECTED'
+                                ? 'Rejected'
+                                : app.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {formatDate(app.updated_at as unknown as string)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {renderActions(app)}
+                </TableCell>
+              </TableRow>
+            ))}
+            {rows.length === 0 && (
+              <TableRow className="divide-x">
+                <TableCell colSpan={5}>
+                  <p className="text-muted-foreground text-sm">
+                    No applications found.
+                  </p>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {sendOfferDialog.application && (
+        <SendOfferDialog
+          application={sendOfferDialog.application}
+          open={sendOfferDialog.open}
+          onOpenChange={(open) =>
+            setSendOfferDialog({
+              open,
+              application: open ? sendOfferDialog.application : null,
+            })
+          }
+        />
+      )}
+    </>
   );
 }

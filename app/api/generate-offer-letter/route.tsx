@@ -93,6 +93,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Update application status to OFFER_GENERATED
+    const { error: statusErr } = await admin
+      .from('applications')
+      .update({ status: 'OFFER_GENERATED' })
+      .eq('id', applicationId);
+    if (statusErr) {
+      return new Response(
+        JSON.stringify({ error: `Status update failed: ${statusErr.message}` }),
+        { status: 500 }
+      );
+    }
+
     const { data: signed, error: signErr } = await admin.storage
       .from('applications')
       .createSignedUrl(filePath, 60 * 5);
