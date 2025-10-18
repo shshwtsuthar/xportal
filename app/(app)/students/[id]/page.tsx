@@ -42,15 +42,42 @@ export default function StudentPage({ params }: PageProps) {
     switch (activeTab) {
       case 0: // Details
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Student Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Profile Section */}
-              <div>
-                <h3 className="mb-3 text-lg font-medium">Profile</h3>
+          <div className="space-y-4">
+            {/* Personal Information Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Personal Information</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
+                  <div>
+                    <div className="text-muted-foreground">Full Name</div>
+                    <div>{fullName}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Student ID</div>
+                    <div>{student.student_id_display}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Status</div>
+                    <div>
+                      <Badge
+                        variant={
+                          student.status === 'WITHDRAWN'
+                            ? 'destructive'
+                            : student.status === 'ACTIVE'
+                              ? 'default'
+                              : 'secondary'
+                        }
+                      >
+                        {student.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Email</div>
+                    <div>{student.email || '—'}</div>
+                  </div>
                   <div>
                     <div className="text-muted-foreground">Date of Birth</div>
                     <div>
@@ -65,15 +92,21 @@ export default function StudentPage({ params }: PageProps) {
                     </div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Email</div>
-                    <div>{student.email || '—'}</div>
+                    <div className="text-muted-foreground">Account Created</div>
+                    <div>
+                      {format(new Date(student.created_at), 'dd MMM yyyy')}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* Addresses Section */}
-              <div>
-                <h3 className="mb-3 text-lg font-medium">Addresses</h3>
+            {/* Address Information Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Address Information</CardTitle>
+              </CardHeader>
+              <CardContent>
                 {addresses && addresses.length > 0 ? (
                   <div className="grid gap-3">
                     {addresses.map((a) => (
@@ -99,11 +132,15 @@ export default function StudentPage({ params }: PageProps) {
                 ) : (
                   <p className="text-muted-foreground text-sm">No addresses.</p>
                 )}
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* AVETMISS Section */}
-              <div>
-                <h3 className="mb-3 text-lg font-medium">AVETMISS</h3>
+            {/* AVETMISS Compliance Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>AVETMISS Compliance</CardTitle>
+              </CardHeader>
+              <CardContent>
                 {avetmiss ? (
                   <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
                     <div>
@@ -160,12 +197,16 @@ export default function StudentPage({ params }: PageProps) {
                     No AVETMISS data.
                   </p>
                 )}
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* CRICOS Section */}
-              <div>
-                <h3 className="mb-3 text-lg font-medium">CRICOS</h3>
-                {cricos && cricos.is_international ? (
+            {/* CRICOS Data Card */}
+            {cricos && cricos.is_international && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>CRICOS Data</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
                     <div>
                       <div className="text-muted-foreground">
@@ -192,16 +233,16 @@ export default function StudentPage({ params }: PageProps) {
                       <div>{cricos.ielts_score ?? '—'}</div>
                     </div>
                   </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">
-                    No CRICOS data.
-                  </p>
-                )}
-              </div>
+                </CardContent>
+              </Card>
+            )}
 
-              {/* Contacts Section */}
-              <div>
-                <h3 className="mb-3 text-lg font-medium">Contacts</h3>
+            {/* Contacts Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Contacts</CardTitle>
+              </CardHeader>
+              <CardContent>
                 {contacts &&
                 (contacts.emergency.length > 0 ||
                   contacts.guardians.length > 0) ? (
@@ -252,9 +293,9 @@ export default function StudentPage({ params }: PageProps) {
                 ) : (
                   <p className="text-muted-foreground text-sm">No contacts.</p>
                 )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         );
 
       case 1: // Course Progression
