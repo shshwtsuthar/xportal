@@ -9,6 +9,7 @@ type ProgramPlanSubject = Tables<'program_plan_subjects'>;
 export type StudentEnrollmentSubjectRow = EnrollmentSubject & {
   subjects: Subject | null;
   program_plan_subjects: ProgramPlanSubject | null;
+  enrollment_id: string;
 };
 
 /**
@@ -64,6 +65,7 @@ export const useGetStudentEnrollmentSubjects = (studentId?: string) => {
           )?.subjects ?? null,
         program_plan_subjects:
           es.program_plan_subjects as ProgramPlanSubject | null,
+        enrollment_id: es.enrollment_id,
       }));
     },
   });
