@@ -11,6 +11,7 @@ import { useGetStudentCricos } from '@/src/hooks/useGetStudentCricos';
 import { useGetStudentContacts } from '@/src/hooks/useGetStudentContacts';
 import { CourseProgressionCard } from '../_components/CourseProgressionCard';
 import { StudentDocumentsPane } from '../_components/StudentDocumentsPane';
+import { AssignmentsPane } from '../_components/AssignmentsPane';
 import { format } from 'date-fns';
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -25,7 +26,7 @@ export default function StudentPage({ params }: PageProps) {
   const { data: cricos } = useGetStudentCricos(id);
   const { data: contacts } = useGetStudentContacts(id);
 
-  const tabs = ['Details', 'Course Progression', 'Documents'];
+  const tabs = ['Details', 'Course Progression', 'Documents', 'Assignments'];
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">Loading…</p>;
@@ -303,6 +304,9 @@ export default function StudentPage({ params }: PageProps) {
 
       case 2: // Documents
         return <StudentDocumentsPane studentId={id} />;
+
+      case 3: // Assignments
+        return <AssignmentsPane studentId={id} />;
 
       default:
         return null;
