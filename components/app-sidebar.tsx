@@ -12,6 +12,7 @@ import {
   Users,
   UserCheck,
   MapPin,
+  Building2,
 } from 'lucide-react';
 
 import {
@@ -37,6 +38,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
+  { title: 'RTO', url: '/rto', icon: Building2 },
   {
     title: 'Applications',
     url: '/applications',
