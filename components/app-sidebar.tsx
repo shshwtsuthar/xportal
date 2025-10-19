@@ -62,6 +62,7 @@ const NAV: NavItem[] = [
     url: '/students',
     icon: Users,
   },
+  { title: 'Attendance', url: '/attendance', icon: UserCheck },
   {
     title: 'Agents',
     url: '/agents',

@@ -1,6 +1,5 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -11,6 +10,10 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useGetEnrollmentSubjectClasses } from '@/src/hooks/useGetEnrollmentSubjectClasses';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { useUpsertEnrollmentClassAttendance } from '@/src/hooks/useUpsertEnrollmentClassAttendance';
+import { toast } from 'sonner';
 import { calculateDateRangeStatus } from '@/lib/utils/status';
 import { format } from 'date-fns';
 
@@ -23,13 +26,29 @@ type SubjectClassesTableProps = {
 export function SubjectClassesTable({
   enrollmentId,
   programPlanSubjectId,
-  subjectName,
 }: SubjectClassesTableProps) {
   const {
     data: classes,
     isLoading,
     isError,
   } = useGetEnrollmentSubjectClasses(enrollmentId, programPlanSubjectId);
+
+  const { mutateAsync: upsertAttendance, isPending } =
+    useUpsertEnrollmentClassAttendance();
+
+  const handleToggleAttendance = async (
+    enrollmentClassId: string,
+    present: boolean | null
+  ) => {
+    try {
+      await upsertAttendance({ enrollmentClassId, present });
+      toast.success('Attendance updated');
+    } catch (e: unknown) {
+      toast.error(
+        e instanceof Error ? e.message : 'Failed to update attendance'
+      );
+    }
+  };
 
   if (isLoading) {
     return (
@@ -56,19 +75,20 @@ export function SubjectClassesTable({
   }
 
   return (
-    <div className="bg-muted/30">
+    <div className="bg-background w-full overflow-hidden rounded-md border">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="divide-x">
             <TableHead className="text-sm font-medium">Date</TableHead>
             <TableHead className="text-sm font-medium">Start Time</TableHead>
             <TableHead className="text-sm font-medium">End Time</TableHead>
             <TableHead className="text-sm font-medium">Location</TableHead>
             <TableHead className="text-sm font-medium">Classroom</TableHead>
             <TableHead className="text-sm font-medium">Status</TableHead>
+            <TableHead className="text-sm font-medium">Attendance</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="divide-y">
           {classes.map((classItem) => {
             const status = calculateDateRangeStatus(
               classItem.class_date,
@@ -76,7 +96,7 @@ export function SubjectClassesTable({
             );
 
             return (
-              <TableRow key={classItem.id}>
+              <TableRow key={classItem.id} className="divide-x">
                 <TableCell className="text-sm">
                   {classItem.class_date
                     ? format(new Date(classItem.class_date), 'dd MMM yyyy')
@@ -116,6 +136,33 @@ export function SubjectClassesTable({
                   >
                     {status}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      aria-label="Mark present"
+                      checked={
+                        classItem.enrollment_class_attendances?.present ?? false
+                      }
+                      onCheckedChange={(val) =>
+                        handleToggleAttendance(
+                          classItem.id,
+                          val === true ? true : false
+                        )
+                      }
+                      disabled={isPending}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      aria-label="Reset attendance to unmarked"
+                      onClick={() => handleToggleAttendance(classItem.id, null)}
+                      disabled={isPending}
+                    >
+                      Reset
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );

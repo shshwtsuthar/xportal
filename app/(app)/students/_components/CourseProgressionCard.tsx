@@ -171,15 +171,17 @@ export function CourseProgressionCard({
                         subject.program_plan_subjects?.id && (
                           <TableRow>
                             <TableCell colSpan={6} className="p-0">
-                              <SubjectClassesTable
-                                enrollmentId={enrollmentId}
-                                programPlanSubjectId={
-                                  subject.program_plan_subjects.id
-                                }
-                                subjectName={
-                                  subject.subjects?.name ?? 'Unknown Subject'
-                                }
-                              />
+                              <div className="px-2 py-2">
+                                <SubjectClassesTable
+                                  enrollmentId={enrollmentId}
+                                  programPlanSubjectId={
+                                    subject.program_plan_subjects.id
+                                  }
+                                  subjectName={
+                                    subject.subjects?.name ?? 'Unknown Subject'
+                                  }
+                                />
+                              </div>
                             </TableCell>
                           </TableRow>
                         )}

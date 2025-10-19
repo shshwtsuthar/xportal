@@ -6,11 +6,13 @@ type EnrollmentClass = Tables<'enrollment_classes'>;
 type ProgramPlanClass = Tables<'program_plan_classes'>;
 type DeliveryLocation = Tables<'delivery_locations'>;
 type Classroom = Tables<'classrooms'>;
+type Attendance = Tables<'enrollment_class_attendances'>;
 
 export type EnrollmentClassWithDetails = EnrollmentClass & {
   program_plan_classes: ProgramPlanClass;
   delivery_locations: DeliveryLocation | null;
   classrooms: Classroom | null;
+  enrollment_class_attendances?: Pick<Attendance, 'id' | 'present'> | null;
 };
 
 /**
@@ -50,6 +52,9 @@ export const useGetEnrollmentSubjectClasses = (
           ),
           classrooms(
             name
+          ),
+          enrollment_class_attendances(
+            id, present
           )
         `
         )
@@ -69,6 +74,11 @@ export const useGetEnrollmentSubjectClasses = (
         program_plan_classes: ec.program_plan_classes as ProgramPlanClass,
         delivery_locations: ec.delivery_locations as DeliveryLocation | null,
         classrooms: ec.classrooms as Classroom | null,
+        enrollment_class_attendances: Array.isArray(
+          ec.enrollment_class_attendances
+        )
+          ? (ec.enrollment_class_attendances[0] ?? null)
+          : (ec.enrollment_class_attendances ?? null),
       }));
     },
   });

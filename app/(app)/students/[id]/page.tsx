@@ -25,7 +25,7 @@ export default function StudentPage({ params }: PageProps) {
   const { data: cricos } = useGetStudentCricos(id);
   const { data: contacts } = useGetStudentContacts(id);
 
-  const tabs = ['Details', 'Course Progression', 'Attendance', 'Documents'];
+  const tabs = ['Details', 'Course Progression', 'Documents'];
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">Loading…</p>;
@@ -301,19 +301,7 @@ export default function StudentPage({ params }: PageProps) {
       case 1: // Course Progression
         return <CourseProgressionCard studentId={id} />;
 
-      case 2: // Attendance
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Attendance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">Coming soon.</p>
-            </CardContent>
-          </Card>
-        );
-
-      case 3: // Documents
+      case 2: // Documents
         return <StudentDocumentsPane studentId={id} />;
 
       default:
