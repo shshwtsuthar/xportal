@@ -28,6 +28,7 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
+import { useGetRto } from '@/src/hooks/useGetRto';
 
 type NavItem = {
   title: string;
@@ -98,6 +99,7 @@ const NAV: NavItem[] = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const { data: rto } = useGetRto();
 
   const isActive = (href: string) => pathname === href;
   const isParentActive = (href: string) =>
@@ -116,7 +118,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-medium">XPortal</span>
                   <span className="text-muted-foreground text-xs">
-                    RTO Management
+                    {rto?.name || 'RTO Management'}
                   </span>
                 </div>
               </Link>
