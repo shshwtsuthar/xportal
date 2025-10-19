@@ -170,7 +170,7 @@ export function CourseProgressionCard({
                         enrollmentId &&
                         subject.program_plan_subjects?.id && (
                           <TableRow>
-                            <TableCell colSpan={6} className="p-0">
+                            <TableCell colSpan={6} className="border-t p-0">
                               <div className="px-2 py-2">
                                 <SubjectClassesTable
                                   enrollmentId={enrollmentId}

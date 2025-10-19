@@ -52,7 +52,7 @@ export function SubjectClassesTable({
 
   if (isLoading) {
     return (
-      <div className="bg-muted/30 p-4">
+      <div className="bg-muted/30 rounded-md border p-4">
         <p className="text-muted-foreground text-sm">Loading classes...</p>
       </div>
     );
@@ -60,7 +60,7 @@ export function SubjectClassesTable({
 
   if (isError) {
     return (
-      <div className="bg-muted/30 p-4">
+      <div className="bg-muted/30 rounded-md border p-4">
         <p className="text-destructive text-sm">Failed to load classes.</p>
       </div>
     );
@@ -68,7 +68,7 @@ export function SubjectClassesTable({
 
   if (!classes || classes.length === 0) {
     return (
-      <div className="bg-muted/30 p-4">
+      <div className="bg-muted/30 rounded-md border p-4">
         <p className="text-muted-foreground text-sm">No classes scheduled.</p>
       </div>
     );
@@ -76,9 +76,9 @@ export function SubjectClassesTable({
 
   return (
     <div className="bg-background w-full overflow-hidden rounded-md border">
-      <Table>
+      <Table className="divide-y">
         <TableHeader>
-          <TableRow className="divide-x">
+          <TableRow className="divide-x border-b">
             <TableHead className="text-sm font-medium">Date</TableHead>
             <TableHead className="text-sm font-medium">Start Time</TableHead>
             <TableHead className="text-sm font-medium">End Time</TableHead>
