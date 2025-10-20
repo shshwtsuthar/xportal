@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 import { QueryProvider } from './_providers/QueryProvider';
 import { Toaster } from 'sonner';
+import { ThemeProvider } from 'next-themes';
 
 export const metadata: Metadata = {
   title: 'XPortal - RTO Management System',
@@ -25,12 +26,26 @@ export default async function RootLayout({
   await headers();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
-        <QueryProvider>{children}</QueryProvider>
-        <Toaster />
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="red-light"
+          themes={[
+            'red-light',
+            'green-light',
+            'blue-light',
+            'red-dark',
+            'green-dark',
+            'blue-dark',
+          ]}
+          enableSystem={false}
+        >
+          <QueryProvider>{children}</QueryProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
