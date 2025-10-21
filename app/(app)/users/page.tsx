@@ -1,38 +1,37 @@
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-import { UserList } from './_components/UserList';
+'use client';
+
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus } from 'lucide-react';
+import { UsersDataTable } from './_components/UsersDataTable';
 import { InviteUserDialog } from './_components/InviteUserDialog';
 
-export default async function UsersPage() {
-  const supabase = await createClient();
-
-  // Check if user is admin
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
-  if (sessionError || !session) {
-    redirect('/login');
-  }
-
-  // Use verified user from Auth server
-  const { data: userRes } = await supabase.auth.getUser();
-  const role = (
-    userRes.user?.app_metadata as Record<string, unknown> | undefined
-  )?.role;
-  if (role !== 'ADMIN') {
-    redirect('/dashboard');
-  }
-
+export default function UsersPage() {
   return (
-    <div className="container py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          User Management
-        </h1>
+    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            User Management
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Manage staff members and their access
+          </p>
+        </div>
         <InviteUserDialog />
       </div>
-      <UserList />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold tracking-tight">
+            All Users
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <UsersDataTable />
+        </CardContent>
+      </Card>
     </div>
   );
 }
