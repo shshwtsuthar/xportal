@@ -22,6 +22,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 async function seedFirstAdmin() {
   try {
+    // Ensure initial RTO exists (idempotent)
+    const { error: seedErr } = await supabase.rpc('seed_initial_data');
+    if (seedErr) throw seedErr;
+
     // Check if any RTOs exist
     const { data: existingRTOs, error: rtoError } = await supabase
       .from('rtos')
@@ -73,28 +77,16 @@ async function seedFirstAdmin() {
       }
     }
 
-    // Create the first RTO
-    const { data: rto, error: createRTOError } = await supabase
+    // If no RTOs found, seed_initial_data should have created one
+    const { data: rto, error: rtoFetchErr } = await supabase
       .from('rtos')
-      .insert({
-        name: 'Ashford College',
-        rto_code: '46296',
-        address_line_1: 'Level 3/65 Brougham Street',
-        suburb: 'Geelong',
-        state: 'VIC',
-        postcode: '3220',
-        type_identifier: 'RTO',
-        phone_number: '+61 2 1234 5678',
-        email_address: 'offers@ashford.edu.au',
-        contact_name: 'Admin',
-      })
-      .select()
+      .select('id, name')
+      .limit(1)
       .single();
 
-    if (createRTOError) throw createRTOError;
-    if (!rto) throw new Error('Failed to create RTO');
-
-    console.log('Created RTO:', rto.id);
+    if (rtoFetchErr) throw rtoFetchErr;
+    if (!rto) throw new Error('No RTO found after seed_initial_data');
+    console.log('Using RTO:', rto.id);
 
     // Create the admin user
     const { data: user, error: createUserError } =

@@ -63,33 +63,16 @@ export function InviteUserDialog() {
 
   const { mutate: inviteUser, isPending } = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
-      const supabase = createClient();
-
-      // Get current user's RTO ID from app_metadata (avoid RLS and extra trips)
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      if (sessionError || !session) throw new Error('Not authenticated');
-      const rtoId = (session.user.app_metadata as Record<string, unknown>)
-        ?.rto_id as string | undefined;
-      if (!rtoId) throw new Error('Missing RTO context');
-
-      // Invite the user using admin API
-      const { error } = await supabase.auth.admin.createUser({
-        email: values.email,
-        email_confirm: true,
-        user_metadata: {
-          first_name: values.first_name,
-          last_name: values.last_name,
-        },
-        app_metadata: {
-          rto_id: rtoId,
-          role: values.role,
-        },
+      const res = await fetch('/api/users/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
       });
-
-      if (error) throw error;
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? 'Failed to invite user');
+      }
+      return res.json();
     },
     onSuccess: () => {
       toast.success('User invited successfully');

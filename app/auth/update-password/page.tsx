@@ -15,7 +15,10 @@ export default function UpdatePasswordPage() {
           <CardTitle className="text-2xl font-semibold tracking-tight">
             Update Password
           </CardTitle>
-          <CardDescription>Enter your new password below.</CardDescription>
+          <CardDescription>
+            Enter your new password below. If you get stuck in a redirect loop,
+            try clearing site data and re-opening your invitation link.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <UpdatePasswordForm />

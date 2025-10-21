@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,27 @@ import { toast } from 'sonner';
 export function UpdatePasswordForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Also support hash tokens if user landed directly with fragment
+  useEffect(() => {
+    async function maybeSetSessionFromHash() {
+      if (typeof window === 'undefined' || !window.location.hash) return;
+      const hash = new URLSearchParams(window.location.hash.substring(1));
+      const access_token = hash.get('access_token');
+      const refresh_token = hash.get('refresh_token');
+      const token_type = hash.get('token_type');
+      if (access_token && refresh_token && token_type) {
+        const supabase = createClient();
+        const { error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+        if (error) setError(error.message);
+      }
+    }
+    maybeSetSessionFromHash();
+     
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,9 +49,7 @@ export function UpdatePasswordForm() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({
-        password,
-      });
+      const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
         throw error;
@@ -46,6 +65,7 @@ export function UpdatePasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <div className="text-destructive text-sm">{error}</div>}
       <div className="space-y-2">
         <Label htmlFor="password">New Password</Label>
         <Input

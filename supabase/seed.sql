@@ -3,20 +3,8 @@ BEGIN;
 -- This seed file populates the database with Certificate III in Carpentry program data
 -- including program, subjects, timetable, program plans (2025 & 2026), and classes
 
--- Check if RTO exists before proceeding
-DO $$
-DECLARE
-    rto_exists boolean;
-BEGIN
-    -- Check if any RTO exists
-    SELECT EXISTS(SELECT 1 FROM public.rtos LIMIT 1) INTO rto_exists;
-    
-    IF NOT rto_exists THEN
-        RAISE EXCEPTION 'No RTO found. Please run seed-first-admin.ts first or create an RTO manually.';
-    END IF;
-    
-    RAISE NOTICE 'Found existing RTO, proceeding with data seeding...';
-END $$;
+-- Ensure an initial RTO exists even with RLS enabled
+SELECT public.seed_initial_data();
 
 -- Step 1: Get the RTO ID (assumes first RTO in the system)
 DO $$

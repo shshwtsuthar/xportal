@@ -14,14 +14,24 @@ export async function middleware(request: NextRequest) {
   // Public paths that don't require authentication
   const isPublicPath = path.startsWith('/login') || path.startsWith('/auth/');
 
-  // Refresh session if expired
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
+  // For public auth pages, avoid forcing a session refresh before token exchange
+  let session = null as Awaited<
+    ReturnType<typeof supabase.auth.getSession>
+  >['data']['session'];
+  let error: unknown = null;
+  // Skip forcing token refresh on auth pages (callback/update-password) to avoid refresh_token_not_found
+  if (!isPublicPath) {
+    try {
+      const result = await supabase.auth.getSession();
+      session = result.data.session;
+      error = result.error;
+    } catch (e) {
+      error = e;
+    }
+  }
 
-  // Handle errors
-  if (error) {
+  // Handle errors: allow auth pages to proceed so they can complete token exchange
+  if (error && !isPublicPath) {
     console.error('Auth error in middleware:', error);
     return NextResponse.redirect(new URL('/auth/auth-error', request.url));
   }
@@ -31,6 +41,15 @@ export async function middleware(request: NextRequest) {
     const { data: userRes, error: userError } = await supabase.auth.getUser();
 
     if (userError) {
+      // Auto-recover from stale/invalid session (e.g., user deleted, DB reset)
+      // Supabase returns 403 user_not_found when JWT sub does not exist in auth.users
+      // In that case, clear session and send user to login instead of auth error loop
+      if (userError.status === 403) {
+        await supabase.auth.signOut();
+        const redirectUrl = new URL('/login', request.url);
+        redirectUrl.searchParams.set('redirectTo', path);
+        return NextResponse.redirect(redirectUrl);
+      }
       console.error('User verification error in middleware:', userError);
       return NextResponse.redirect(new URL('/auth/auth-error', request.url));
     }
@@ -48,7 +67,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // If on a public path (login/auth pages) and logged in, redirect to dashboard
-  if (isPublicPath && session && path !== '/auth/callback') {
+  // Allow staying on update-password so new invite/recovery users can set a password
+  if (
+    isPublicPath &&
+    session &&
+    path !== '/auth/callback' &&
+    path !== '/auth/update-password'
+  ) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
