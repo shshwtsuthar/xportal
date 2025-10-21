@@ -41,7 +41,15 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
-  { title: 'RTO', url: '/rto', icon: Building2 },
+  {
+    title: 'Students',
+    url: '/students',
+    icon: Users,
+    items: [
+      { title: 'All Students', url: '/students' },
+      { title: 'Attendance', url: '/attendance' },
+    ],
+  },
   {
     title: 'Applications',
     url: '/applications',
@@ -62,12 +70,6 @@ const NAV: NavItem[] = [
       { title: 'Subjects', url: '/subjects' },
     ],
   },
-  {
-    title: 'Students',
-    url: '/students',
-    icon: Users,
-  },
-  { title: 'Attendance', url: '/attendance', icon: UserCheck },
   {
     title: 'Agents',
     url: '/agents',
@@ -96,6 +98,7 @@ const NAV: NavItem[] = [
       { title: 'New Template', url: '/financial/templates/new' },
     ],
   },
+  { title: 'RTO', url: '/rto', icon: Building2 },
   { title: 'Users', url: '/users', icon: Users },
 ];
 

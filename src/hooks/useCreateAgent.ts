@@ -29,6 +29,7 @@ export const useCreateAgent = () => {
         contact_person: (payload.contact_person ?? null) as string | null,
         contact_email: (payload.contact_email ?? null) as string | null,
         contact_phone: (payload.contact_phone ?? null) as string | null,
+        slug: payload.slug as string,
       };
 
       const { data, error } = await supabase

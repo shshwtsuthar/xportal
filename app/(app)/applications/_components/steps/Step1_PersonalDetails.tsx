@@ -21,9 +21,43 @@ import { ApplicationFormValues } from '@/lib/validators/application';
 import { useGetAgents } from '@/src/hooks/useGetAgents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export const Step1_PersonalDetails = () => {
+type Props = { hideAgent?: boolean };
+
+export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
   const form = useFormContext<ApplicationFormValues>();
-  const { data: agents = [] } = useGetAgents();
+  const AgentSelector = () => {
+    const { data: agents = [] } = useGetAgents();
+    return (
+      <FormField
+        control={form.control}
+        name="agent_id"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Agent</FormLabel>
+            <FormControl>
+              <Select
+                value={field.value ?? undefined}
+                onValueChange={(v) => field.onChange(v || undefined)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {agents.map((a) => (
+                    <SelectItem key={a.id} value={a.id as string}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  };
   const samePostal = form.watch('postal_is_same_as_street');
   return (
     <div className="grid gap-8">
@@ -120,41 +154,16 @@ export const Step1_PersonalDetails = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-medium">Agent</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="agent_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Agent</FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value ?? undefined}
-                    onValueChange={(v) => field.onChange(v || undefined)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an agent" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {agents.map((a) => (
-                        <SelectItem key={a.id} value={a.id as string}>
-                          {a.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </CardContent>
-      </Card>
+      {!hideAgent && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-medium">Agent</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <AgentSelector />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

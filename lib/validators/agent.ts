@@ -5,6 +5,13 @@ import { z } from 'zod';
  */
 export const agentSchema = z.object({
   name: z.string().min(1, 'Agent name is required'),
+  slug: z
+    .string()
+    .min(1, 'Slug is required')
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      'Lowercase letters, numbers, hyphens only'
+    ),
   contact_person: z.string().optional().or(z.literal('')),
   contact_email: z
     .string()

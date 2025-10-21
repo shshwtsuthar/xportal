@@ -10,12 +10,27 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useEffect } from 'react';
 
 type Props = {
   form: UseFormReturn<AgentFormValues>;
 };
 
 export function AgentForm({ form }: Props) {
+  // Auto-generate slug from name when empty or when user hasn't manually edited
+  const name = form.watch('name');
+  const slug = form.watch('slug') as string | undefined;
+  useEffect(() => {
+    if (!name) return;
+    if (slug && slug.length > 0) return;
+    const next = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-+|-+$)/g, '');
+    form.setValue('slug', next, { shouldDirty: true });
+  }, [name, slug, form]);
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <FormField
@@ -29,6 +44,43 @@ export function AgentForm({ form }: Props) {
                 placeholder="e.g. Global Education Consultants"
                 {...field}
               />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Public link preview */}
+      <div className="md:col-span-2">
+        <FormLabel>Public intake link</FormLabel>
+        <div className="mt-1 flex items-center gap-2">
+          <Input
+            readOnly
+            value={`${typeof window !== 'undefined' ? window.location.origin : ''}/apply/agent/${form.getValues('slug') || ''}`}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const url = `${window.location.origin}/apply/agent/${form.getValues('slug') || ''}`;
+              navigator.clipboard.writeText(url);
+            }}
+            aria-label="Copy public link"
+          >
+            Copy
+          </Button>
+        </div>
+      </div>
+
+      {/* Slug for public link */}
+      <FormField
+        control={form.control}
+        name="slug"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Public link slug *</FormLabel>
+            <FormControl>
+              <Input placeholder="e.g. global-education" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>

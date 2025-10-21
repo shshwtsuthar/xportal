@@ -12,7 +12,10 @@ export async function middleware(request: NextRequest) {
   newHeaders.set('x-pathname', path);
 
   // Public paths that don't require authentication
-  const isPublicPath = path.startsWith('/login') || path.startsWith('/auth/');
+  const isPublicPath =
+    path.startsWith('/login') ||
+    path.startsWith('/auth/') ||
+    path.startsWith('/apply/');
 
   // For public auth pages, avoid forcing a session refresh before token exchange
   let session = null as Awaited<

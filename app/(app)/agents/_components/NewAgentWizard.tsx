@@ -33,7 +33,7 @@ export function NewAgentWizard({ agentId }: Props) {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(0);
   const createMutation = useCreateAgent();
-  const { data: agent, isLoading } = useGetAgent(agentId);
+  const { data: agent } = useGetAgent(agentId);
 
   // Use created agent data if we just created one
   const currentAgent = agent || createMutation.data;
@@ -45,6 +45,7 @@ export function NewAgentWizard({ agentId }: Props) {
     resolver: zodResolver(agentSchema),
     defaultValues: {
       name: '',
+      slug: '',
       contact_person: '',
       contact_email: '',
       contact_phone: '',
@@ -55,6 +56,7 @@ export function NewAgentWizard({ agentId }: Props) {
     if (currentAgent) {
       const toReset: Partial<AgentFormValues> = {
         name: currentAgent.name ?? '',
+        slug: currentAgent.slug ?? '',
         contact_person: currentAgent.contact_person ?? '',
         contact_email: currentAgent.contact_email ?? '',
         contact_phone: currentAgent.contact_phone ?? '',

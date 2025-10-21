@@ -268,6 +268,7 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
               <TableHead>Student Name</TableHead>
               <TableHead>Program</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Requested Start</TableHead>
               <TableHead>Updated At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -304,6 +305,9 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
                                 ? 'Rejected'
                                 : app.status}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  {formatDate(app.requested_start_date as string | null)}
                 </TableCell>
                 <TableCell>
                   {formatDate(app.updated_at as unknown as string)}
