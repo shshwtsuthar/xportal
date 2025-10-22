@@ -2004,6 +2004,16 @@
 }
 
 @layer utilities {
+  /* Generic scrollbar hiding utility */
+  .scrollbar-none {
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+
   /* Specific scrollbar hiding for sidebar content only */
   [data-sidebar="content"].scrollbar-hide {
     /* Hide scrollbar for Chrome, Safari and Opera */
@@ -2011,22 +2021,6 @@
     scrollbar-width: none;  /* Firefox */
   }
   [data-sidebar="content"].scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari and Opera */
-  }
-
-  /* Hide scrollbars for dropdown components */
-  [data-slot="dropdown-menu-content"],
-  [data-slot="select-content"],
-  [data-slot="context-menu-content"],
-  [data-slot="command"] {
-    /* Hide scrollbar for Chrome, Safari and Opera */
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
-  [data-slot="dropdown-menu-content"]::-webkit-scrollbar,
-  [data-slot="select-content"]::-webkit-scrollbar,
-  [data-slot="context-menu-content"]::-webkit-scrollbar,
-  [data-slot="command"]::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
   }
 
