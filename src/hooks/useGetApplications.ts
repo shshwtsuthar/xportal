@@ -10,14 +10,18 @@ import { Tables } from '@/database.types';
 type ApplicationStatus =
   import('@/database.types').Database['public']['Enums']['application_status'];
 
+type ApplicationWithAgent = Tables<'applications'> & {
+  agents?: Pick<Tables<'agents'>, 'name'> | null;
+};
+
 export const useGetApplications = (status?: ApplicationStatus) => {
   return useQuery({
     queryKey: ['applications', status ?? 'all'],
-    queryFn: async (): Promise<Tables<'applications'>[]> => {
+    queryFn: async (): Promise<ApplicationWithAgent[]> => {
       const supabase = createClient();
       let query = supabase
         .from('applications')
-        .select('*')
+        .select('*, agents(name)')
         .order('updated_at', { ascending: false });
       if (status) {
         query = query.eq('status', status);

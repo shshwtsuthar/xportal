@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import {
   Table,
@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -39,8 +40,56 @@ export function ProgramsDataTable() {
   const { data, isLoading, isError } = useGetPrograms();
   const { data: levels } = useGetProgramLevels();
   const deleteMutation = useDeleteProgram();
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
 
-  const rows = useMemo(() => data ?? [], [data]);
+  const handleSort = (key: string) => {
+    setSortConfig((prevConfig) => {
+      if (prevConfig?.key === key) {
+        return prevConfig.direction === 'asc'
+          ? { key, direction: 'desc' }
+          : null;
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const rows = useMemo(() => {
+    const baseRows = data ?? [];
+    if (!sortConfig) return baseRows;
+
+    return [...baseRows].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+
+      switch (sortConfig.key) {
+        case 'code':
+          aVal = a.code || '';
+          bVal = b.code || '';
+          break;
+        case 'name':
+          aVal = a.name || '';
+          bVal = b.name || '';
+          break;
+        case 'level':
+          aVal = a.level_of_education_id || '';
+          bVal = b.level_of_education_id || '';
+          break;
+        case 'nominal_hours':
+          aVal = a.nominal_hours || 0;
+          bVal = b.nominal_hours || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [data, sortConfig]);
   const levelMap = useMemo(() => {
     const map = new Map<string, string>();
     (levels ?? []).forEach((l) => map.set(l.id as string, l.label as string));
@@ -57,10 +106,40 @@ export function ProgramsDataTable() {
       <Table>
         <TableHeader>
           <TableRow className="divide-x">
-            <TableHead>Program Code</TableHead>
-            <TableHead>Program Name</TableHead>
-            <TableHead>AQF Level</TableHead>
-            <TableHead>Nominal Hours</TableHead>
+            <SortableTableHead
+              onSort={() => handleSort('code')}
+              sortDirection={
+                sortConfig?.key === 'code' ? sortConfig.direction : null
+              }
+            >
+              Program Code
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('name')}
+              sortDirection={
+                sortConfig?.key === 'name' ? sortConfig.direction : null
+              }
+            >
+              Program Name
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('level')}
+              sortDirection={
+                sortConfig?.key === 'level' ? sortConfig.direction : null
+              }
+            >
+              AQF Level
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('nominal_hours')}
+              sortDirection={
+                sortConfig?.key === 'nominal_hours'
+                  ? sortConfig.direction
+                  : null
+              }
+            >
+              Nominal Hours
+            </SortableTableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>

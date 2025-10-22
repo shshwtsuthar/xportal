@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useGetAgents } from '@/src/hooks/useGetAgents';
 import {
   Table,
@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -37,8 +38,56 @@ import { toast } from 'sonner';
 export function AgentsDataTable() {
   const { data, isLoading, isError } = useGetAgents();
   const deleteMutation = useDeleteAgent();
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
 
-  const rows = useMemo(() => data ?? [], [data]);
+  const handleSort = (key: string) => {
+    setSortConfig((prevConfig) => {
+      if (prevConfig?.key === key) {
+        return prevConfig.direction === 'asc'
+          ? { key, direction: 'desc' }
+          : null;
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const rows = useMemo(() => {
+    const baseRows = data ?? [];
+    if (!sortConfig) return baseRows;
+
+    return [...baseRows].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+
+      switch (sortConfig.key) {
+        case 'name':
+          aVal = a.name || '';
+          bVal = b.name || '';
+          break;
+        case 'contact_person':
+          aVal = a.contact_person || '';
+          bVal = b.contact_person || '';
+          break;
+        case 'contact_email':
+          aVal = a.contact_email || '';
+          bVal = b.contact_email || '';
+          break;
+        case 'contact_phone':
+          aVal = a.contact_phone || '';
+          bVal = b.contact_phone || '';
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [data, sortConfig]);
 
   if (isLoading)
     return <p className="text-muted-foreground text-sm">Loading agents…</p>;
@@ -50,10 +99,44 @@ export function AgentsDataTable() {
       <Table>
         <TableHeader>
           <TableRow className="divide-x">
-            <TableHead>Agent Name</TableHead>
-            <TableHead>Contact Person</TableHead>
-            <TableHead>Contact Email</TableHead>
-            <TableHead>Contact Phone</TableHead>
+            <SortableTableHead
+              onSort={() => handleSort('name')}
+              sortDirection={
+                sortConfig?.key === 'name' ? sortConfig.direction : null
+              }
+            >
+              Agent Name
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('contact_person')}
+              sortDirection={
+                sortConfig?.key === 'contact_person'
+                  ? sortConfig.direction
+                  : null
+              }
+            >
+              Contact Person
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('contact_email')}
+              sortDirection={
+                sortConfig?.key === 'contact_email'
+                  ? sortConfig.direction
+                  : null
+              }
+            >
+              Contact Email
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('contact_phone')}
+              sortDirection={
+                sortConfig?.key === 'contact_phone'
+                  ? sortConfig.direction
+                  : null
+              }
+            >
+              Contact Phone
+            </SortableTableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useGetLocations } from '@/src/hooks/useGetLocations';
 import {
   Table,
@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -37,8 +38,64 @@ import { toast } from 'sonner';
 export function LocationsDataTable() {
   const { data, isLoading, isError } = useGetLocations();
   const deleteMutation = useDeleteLocation();
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
 
-  const rows = useMemo(() => data ?? [], [data]);
+  const handleSort = (key: string) => {
+    setSortConfig((prevConfig) => {
+      if (prevConfig?.key === key) {
+        return prevConfig.direction === 'asc'
+          ? { key, direction: 'desc' }
+          : null;
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const rows = useMemo(() => {
+    const baseRows = data ?? [];
+    if (!sortConfig) return baseRows;
+
+    return [...baseRows].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+
+      switch (sortConfig.key) {
+        case 'location_id':
+          aVal = a.location_id_internal || '';
+          bVal = b.location_id_internal || '';
+          break;
+        case 'name':
+          aVal = a.name || '';
+          bVal = b.name || '';
+          break;
+        case 'street':
+          aVal = [a.street_number, a.street_name].filter(Boolean).join(' ');
+          bVal = [b.street_number, b.street_name].filter(Boolean).join(' ');
+          break;
+        case 'suburb':
+          aVal = a.suburb || '';
+          bVal = b.suburb || '';
+          break;
+        case 'state':
+          aVal = a.state || '';
+          bVal = b.state || '';
+          break;
+        case 'postcode':
+          aVal = a.postcode || '';
+          bVal = b.postcode || '';
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [data, sortConfig]);
 
   if (isLoading)
     return <p className="text-muted-foreground text-sm">Loading locations…</p>;
@@ -52,12 +109,54 @@ export function LocationsDataTable() {
       <Table>
         <TableHeader>
           <TableRow className="divide-x">
-            <TableHead>Location ID</TableHead>
-            <TableHead>Location Name</TableHead>
-            <TableHead>Street</TableHead>
-            <TableHead>Suburb</TableHead>
-            <TableHead>State</TableHead>
-            <TableHead>Postcode</TableHead>
+            <SortableTableHead
+              onSort={() => handleSort('location_id')}
+              sortDirection={
+                sortConfig?.key === 'location_id' ? sortConfig.direction : null
+              }
+            >
+              Location ID
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('name')}
+              sortDirection={
+                sortConfig?.key === 'name' ? sortConfig.direction : null
+              }
+            >
+              Location Name
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('street')}
+              sortDirection={
+                sortConfig?.key === 'street' ? sortConfig.direction : null
+              }
+            >
+              Street
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('suburb')}
+              sortDirection={
+                sortConfig?.key === 'suburb' ? sortConfig.direction : null
+              }
+            >
+              Suburb
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('state')}
+              sortDirection={
+                sortConfig?.key === 'state' ? sortConfig.direction : null
+              }
+            >
+              State
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('postcode')}
+              sortDirection={
+                sortConfig?.key === 'postcode' ? sortConfig.direction : null
+              }
+            >
+              Postcode
+            </SortableTableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>

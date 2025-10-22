@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,9 +57,70 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
     open: boolean;
     application: Tables<'applications'> | null;
   }>({ open: false, application: null });
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
 
-  const rows = useMemo(() => data ?? [], [data]);
   const approveMutation = useApproveApplication();
+
+  const handleSort = (key: string) => {
+    setSortConfig((prevConfig) => {
+      if (prevConfig?.key === key) {
+        return prevConfig.direction === 'asc'
+          ? { key, direction: 'desc' }
+          : null;
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const rows = useMemo(() => {
+    const baseRows = data ?? [];
+    if (!sortConfig) return baseRows;
+
+    return [...baseRows].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+
+      switch (sortConfig.key) {
+        case 'student_name':
+          aVal = [a.first_name, a.last_name].filter(Boolean).join(' ');
+          bVal = [b.first_name, b.last_name].filter(Boolean).join(' ');
+          break;
+        case 'agent':
+          aVal = a.agents?.name || '';
+          bVal = b.agents?.name || '';
+          break;
+        case 'program':
+          aVal = a.program_id ? 'Selected' : '';
+          bVal = b.program_id ? 'Selected' : '';
+          break;
+        case 'status':
+          aVal = a.status;
+          bVal = b.status;
+          break;
+        case 'requested_start':
+          aVal = a.requested_start_date
+            ? new Date(a.requested_start_date).getTime()
+            : 0;
+          bVal = b.requested_start_date
+            ? new Date(b.requested_start_date).getTime()
+            : 0;
+          break;
+        case 'updated_at':
+          aVal = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+          bVal = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [data, sortConfig]);
 
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id, {
@@ -265,11 +327,58 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="divide-x">
-              <TableHead>Student Name</TableHead>
-              <TableHead>Program</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Requested Start</TableHead>
-              <TableHead>Updated At</TableHead>
+              <SortableTableHead
+                onSort={() => handleSort('student_name')}
+                sortDirection={
+                  sortConfig?.key === 'student_name'
+                    ? sortConfig.direction
+                    : null
+                }
+              >
+                Student Name
+              </SortableTableHead>
+              <SortableTableHead
+                onSort={() => handleSort('agent')}
+                sortDirection={
+                  sortConfig?.key === 'agent' ? sortConfig.direction : null
+                }
+              >
+                Agent
+              </SortableTableHead>
+              <SortableTableHead
+                onSort={() => handleSort('program')}
+                sortDirection={
+                  sortConfig?.key === 'program' ? sortConfig.direction : null
+                }
+              >
+                Program
+              </SortableTableHead>
+              <SortableTableHead
+                onSort={() => handleSort('status')}
+                sortDirection={
+                  sortConfig?.key === 'status' ? sortConfig.direction : null
+                }
+              >
+                Status
+              </SortableTableHead>
+              <SortableTableHead
+                onSort={() => handleSort('requested_start')}
+                sortDirection={
+                  sortConfig?.key === 'requested_start'
+                    ? sortConfig.direction
+                    : null
+                }
+              >
+                Requested Start
+              </SortableTableHead>
+              <SortableTableHead
+                onSort={() => handleSort('updated_at')}
+                sortDirection={
+                  sortConfig?.key === 'updated_at' ? sortConfig.direction : null
+                }
+              >
+                Updated At
+              </SortableTableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -280,6 +389,7 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
                   {[app.first_name, app.last_name].filter(Boolean).join(' ') ||
                     '—'}
                 </TableCell>
+                <TableCell>{app.agents?.name || '—'}</TableCell>
                 <TableCell>{app.program_id ? 'Selected' : '—'}</TableCell>
                 <TableCell>
                   <Badge
@@ -319,7 +429,7 @@ export function ApplicationsDataTable({ statusFilter }: Props) {
             ))}
             {rows.length === 0 && (
               <TableRow className="divide-x">
-                <TableCell colSpan={5}>
+                <TableCell colSpan={6}>
                   <p className="text-muted-foreground text-sm">
                     No applications found.
                   </p>

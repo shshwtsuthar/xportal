@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -39,7 +40,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Form } from '@/components/ui/form';
-import { CardFooter } from '@/components/ui/card';
 import { Plus, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -74,8 +74,56 @@ export function ClassroomsDataTable({ locationId }: Props) {
   const { data, isLoading, isError } = useGetClassrooms(locationId);
   const createMutation = useCreateClassroom();
   const deleteMutation = useDeleteClassroom();
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
 
-  const rows = useMemo(() => data ?? [], [data]);
+  const handleSort = (key: string) => {
+    setSortConfig((prevConfig) => {
+      if (prevConfig?.key === key) {
+        return prevConfig.direction === 'asc'
+          ? { key, direction: 'desc' }
+          : null;
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const rows = useMemo(() => {
+    const baseRows = data ?? [];
+    if (!sortConfig) return baseRows;
+
+    return [...baseRows].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+
+      switch (sortConfig.key) {
+        case 'name':
+          aVal = a.name || '';
+          bVal = b.name || '';
+          break;
+        case 'type':
+          aVal = a.type || '';
+          bVal = b.type || '';
+          break;
+        case 'capacity':
+          aVal = a.capacity || 0;
+          bVal = b.capacity || 0;
+          break;
+        case 'status':
+          aVal = a.status || '';
+          bVal = b.status || '';
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [data, sortConfig]);
 
   const form = useForm<ClassroomFormValues>({
     resolver: zodResolver(classroomSchema),
@@ -154,10 +202,38 @@ export function ClassroomsDataTable({ locationId }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="divide-x">
-              <TableHead>Classroom Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Capacity</TableHead>
-              <TableHead>Status</TableHead>
+              <SortableTableHead
+                onSort={() => handleSort('name')}
+                sortDirection={
+                  sortConfig?.key === 'name' ? sortConfig.direction : null
+                }
+              >
+                Classroom Name
+              </SortableTableHead>
+              <SortableTableHead
+                onSort={() => handleSort('type')}
+                sortDirection={
+                  sortConfig?.key === 'type' ? sortConfig.direction : null
+                }
+              >
+                Type
+              </SortableTableHead>
+              <SortableTableHead
+                onSort={() => handleSort('capacity')}
+                sortDirection={
+                  sortConfig?.key === 'capacity' ? sortConfig.direction : null
+                }
+              >
+                Capacity
+              </SortableTableHead>
+              <SortableTableHead
+                onSort={() => handleSort('status')}
+                sortDirection={
+                  sortConfig?.key === 'status' ? sortConfig.direction : null
+                }
+              >
+                Status
+              </SortableTableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>

@@ -11,7 +11,6 @@ import {
   LayoutTemplate,
   Users,
   UserCheck,
-  MapPin,
   Building2,
 } from 'lucide-react';
 
@@ -46,7 +45,7 @@ const NAV: NavItem[] = [
     url: '/students',
     icon: Users,
     items: [
-      { title: 'All Students', url: '/students' },
+      { title: 'Students', url: '/students' },
       { title: 'Attendance', url: '/attendance' },
     ],
   },
@@ -54,10 +53,7 @@ const NAV: NavItem[] = [
     title: 'Applications',
     url: '/applications',
     icon: ListTree,
-    items: [
-      { title: 'All Applications', url: '/applications' },
-      { title: 'New Application', url: '/applications/new' },
-    ],
+    items: [{ title: 'Applications', url: '/applications' }],
   },
   {
     title: 'Academic Planning',
@@ -65,8 +61,8 @@ const NAV: NavItem[] = [
     icon: LayoutTemplate,
     items: [
       { title: 'Timetables', url: '/timetables' },
-      { title: 'Programs', url: '/programs' },
       { title: 'Program Plans', url: '/program-plans' },
+      { title: 'Programs', url: '/programs' },
       { title: 'Subjects', url: '/subjects' },
     ],
   },
@@ -74,19 +70,7 @@ const NAV: NavItem[] = [
     title: 'Agents',
     url: '/agents',
     icon: UserCheck,
-    items: [
-      { title: 'All Agents', url: '/agents' },
-      { title: 'New Agent', url: '/agents/new' },
-    ],
-  },
-  {
-    title: 'Locations',
-    url: '/locations',
-    icon: MapPin,
-    items: [
-      { title: 'All Locations', url: '/locations' },
-      { title: 'New Location', url: '/locations/new' },
-    ],
+    items: [{ title: 'Agents', url: '/agents' }],
   },
   {
     title: 'Financial',
@@ -98,7 +82,12 @@ const NAV: NavItem[] = [
       { title: 'New Template', url: '/financial/templates/new' },
     ],
   },
-  { title: 'RTO', url: '/rto', icon: Building2 },
+  {
+    title: 'RTO',
+    url: '/rto',
+    icon: Building2,
+    items: [{ title: 'Locations', url: '/locations' }],
+  },
   { title: 'Users', url: '/users', icon: Users },
 ];
 
@@ -131,7 +120,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="scrollbar-hide">
         <SidebarGroup>
           <SidebarMenu>
             {NAV.map((section) => {

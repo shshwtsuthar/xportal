@@ -5,6 +5,9 @@ import type { Database } from '@/database.types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApplicationsDataTable } from './_components/ApplicationsDataTable';
+import { ApplicationStats } from './_components/ApplicationStats';
+import { ApplicationsChart } from './_components/ApplicationsChart';
+import { useGetApplications } from '@/src/hooks/useGetApplications';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
@@ -14,6 +17,9 @@ export default function ApplicationsPage() {
   const [status, setStatus] = useState<ApplicationStatus | undefined>(
     undefined
   );
+
+  // Fetch all applications for stats and chart
+  const { data: allApplications, isLoading } = useGetApplications();
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -32,6 +38,24 @@ export default function ApplicationsPage() {
             New Application
           </Link>
         </Button>
+      </div>
+
+      {/* Application Statistics Cards */}
+      <div className="mb-6">
+        {isLoading ? (
+          <p className="text-muted-foreground text-sm">Loading statistics...</p>
+        ) : (
+          <ApplicationStats applications={allApplications ?? []} />
+        )}
+      </div>
+
+      {/* Application Trends Chart */}
+      <div className="mb-6">
+        {isLoading ? (
+          <p className="text-muted-foreground text-sm">Loading chart...</p>
+        ) : (
+          <ApplicationsChart applications={allApplications ?? []} />
+        )}
       </div>
 
       <Card>

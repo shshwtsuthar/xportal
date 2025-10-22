@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useGetStudents } from '@/src/hooks/useGetStudents';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { format } from 'date-fns';
 import type { Enums } from '@/database.types';
 
@@ -24,7 +25,60 @@ type Props = {
 
 export function StudentsDataTable({ q, status }: Props) {
   const { data, isLoading, isError } = useGetStudents({ q, status });
-  const rows = useMemo(() => data ?? [], [data]);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
+  const handleSort = (key: string) => {
+    setSortConfig((prevConfig) => {
+      if (prevConfig?.key === key) {
+        return prevConfig.direction === 'asc'
+          ? { key, direction: 'desc' }
+          : null;
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const rows = useMemo(() => {
+    const baseRows = data ?? [];
+    if (!sortConfig) return baseRows;
+
+    return [...baseRows].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+
+      switch (sortConfig.key) {
+        case 'name':
+          aVal = [a.first_name, a.last_name].filter(Boolean).join(' ');
+          bVal = [b.first_name, b.last_name].filter(Boolean).join(' ');
+          break;
+        case 'student_id':
+          aVal = a.student_id_display || '';
+          bVal = b.student_id_display || '';
+          break;
+        case 'email':
+          aVal = a.email || '';
+          bVal = b.email || '';
+          break;
+        case 'status':
+          aVal = a.status;
+          bVal = b.status;
+          break;
+        case 'created_at':
+          aVal = a.created_at ? new Date(a.created_at).getTime() : 0;
+          bVal = b.created_at ? new Date(b.created_at).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [data, sortConfig]);
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">Loading students…</p>;
@@ -47,11 +101,46 @@ export function StudentsDataTable({ q, status }: Props) {
       <Table>
         <TableHeader>
           <TableRow className="divide-x">
-            <TableHead>Name</TableHead>
-            <TableHead>Student ID</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Created At</TableHead>
+            <SortableTableHead
+              onSort={() => handleSort('name')}
+              sortDirection={
+                sortConfig?.key === 'name' ? sortConfig.direction : null
+              }
+            >
+              Name
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('student_id')}
+              sortDirection={
+                sortConfig?.key === 'student_id' ? sortConfig.direction : null
+              }
+            >
+              Student ID
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('email')}
+              sortDirection={
+                sortConfig?.key === 'email' ? sortConfig.direction : null
+              }
+            >
+              Email
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('status')}
+              sortDirection={
+                sortConfig?.key === 'status' ? sortConfig.direction : null
+              }
+            >
+              Status
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('created_at')}
+              sortDirection={
+                sortConfig?.key === 'created_at' ? sortConfig.direction : null
+              }
+            >
+              Created At
+            </SortableTableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>

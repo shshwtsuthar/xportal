@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useGetSubjects } from '@/src/hooks/useGetSubjects';
 import {
   Table,
@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -37,8 +38,60 @@ import { toast } from 'sonner';
 export function SubjectsDataTable() {
   const { data, isLoading, isError } = useGetSubjects();
   const deleteMutation = useDeleteSubject();
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
 
-  const rows = useMemo(() => data ?? [], [data]);
+  const handleSort = (key: string) => {
+    setSortConfig((prevConfig) => {
+      if (prevConfig?.key === key) {
+        return prevConfig.direction === 'asc'
+          ? { key, direction: 'desc' }
+          : null;
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const rows = useMemo(() => {
+    const baseRows = data ?? [];
+    if (!sortConfig) return baseRows;
+
+    return [...baseRows].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+
+      switch (sortConfig.key) {
+        case 'code':
+          aVal = a.code || '';
+          bVal = b.code || '';
+          break;
+        case 'name':
+          aVal = a.name || '';
+          bVal = b.name || '';
+          break;
+        case 'field_of_education':
+          aVal = a.field_of_education_id || '';
+          bVal = b.field_of_education_id || '';
+          break;
+        case 'nominal_hours':
+          aVal = a.nominal_hours || 0;
+          bVal = b.nominal_hours || 0;
+          break;
+        case 'vet_flag':
+          aVal = a.vet_flag || '';
+          bVal = b.vet_flag || '';
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [data, sortConfig]);
 
   if (isLoading)
     return <p className="text-muted-foreground text-sm">Loading subjects…</p>;
@@ -50,11 +103,50 @@ export function SubjectsDataTable() {
       <Table>
         <TableHeader>
           <TableRow className="divide-x">
-            <TableHead>Subject Code</TableHead>
-            <TableHead>Subject Name</TableHead>
-            <TableHead>Field of Education</TableHead>
-            <TableHead>Nominal Hours</TableHead>
-            <TableHead>VET Flag</TableHead>
+            <SortableTableHead
+              onSort={() => handleSort('code')}
+              sortDirection={
+                sortConfig?.key === 'code' ? sortConfig.direction : null
+              }
+            >
+              Subject Code
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('name')}
+              sortDirection={
+                sortConfig?.key === 'name' ? sortConfig.direction : null
+              }
+            >
+              Subject Name
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('field_of_education')}
+              sortDirection={
+                sortConfig?.key === 'field_of_education'
+                  ? sortConfig.direction
+                  : null
+              }
+            >
+              Field of Education
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('nominal_hours')}
+              sortDirection={
+                sortConfig?.key === 'nominal_hours'
+                  ? sortConfig.direction
+                  : null
+              }
+            >
+              Nominal Hours
+            </SortableTableHead>
+            <SortableTableHead
+              onSort={() => handleSort('vet_flag')}
+              sortDirection={
+                sortConfig?.key === 'vet_flag' ? sortConfig.direction : null
+              }
+            >
+              VET Flag
+            </SortableTableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
