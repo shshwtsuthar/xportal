@@ -7,19 +7,41 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApplicationsDataTable } from './_components/ApplicationsDataTable';
 import { ApplicationStats } from './_components/ApplicationStats';
 import { ApplicationsChart } from './_components/ApplicationsChart';
+import { ApplicationsFilter } from './_components/ApplicationsFilter';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
+import { useApplicationsFilters } from '@/src/hooks/useApplicationsFilters';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
 type ApplicationStatus = Database['public']['Enums']['application_status'];
 
 export default function ApplicationsPage() {
-  const [status, setStatus] = useState<ApplicationStatus | undefined>(
-    undefined
+  const { filters, updateFilters, resetFilters, activeFilterCount } =
+    useApplicationsFilters();
+  const [quickStatus, setQuickStatus] = useState<ApplicationStatus | undefined>(
+    filters.statuses?.length === 1 ? filters.statuses[0] : undefined
   );
 
   // Fetch all applications for stats and chart
   const { data: allApplications, isLoading } = useGetApplications();
+
+  // Handle quick status tab clicks
+  const handleStatusClick = (status: ApplicationStatus | undefined) => {
+    setQuickStatus(status);
+    // Update filters to include this status, preserving other filters
+    const newFilters = { ...filters };
+    if (status) {
+      newFilters.statuses = [status];
+    } else {
+      delete newFilters.statuses;
+    }
+    updateFilters(newFilters);
+  };
+
+  // Current effective filters (combining quick status with other filters)
+  const effectiveFilters = quickStatus
+    ? { ...filters, statuses: [quickStatus] }
+    : filters;
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -63,69 +85,77 @@ export default function ApplicationsPage() {
           <CardTitle className="text-xl font-semibold tracking-tight">
             All Applications
           </CardTitle>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button
-              variant={status === undefined ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatus(undefined)}
-            >
-              All
-            </Button>
-            <Button
-              variant={status === 'DRAFT' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatus('DRAFT')}
-            >
-              Draft
-            </Button>
-            <Button
-              variant={status === 'SUBMITTED' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatus('SUBMITTED')}
-            >
-              Submitted
-            </Button>
-            <Button
-              variant={status === 'OFFER_GENERATED' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatus('OFFER_GENERATED')}
-            >
-              Offer Generated
-            </Button>
-            <Button
-              variant={status === 'OFFER_SENT' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatus('OFFER_SENT')}
-            >
-              Offer Sent
-            </Button>
-            <Button
-              variant={status === 'ACCEPTED' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatus('ACCEPTED')}
-            >
-              Accepted
-            </Button>
-            <Button
-              variant={status === 'APPROVED' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatus('APPROVED')}
-            >
-              Approved
-            </Button>
-            <Button
-              variant={status === 'REJECTED' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatus('REJECTED')}
-            >
-              Rejected
-            </Button>
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={quickStatus === undefined ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStatusClick(undefined)}
+              >
+                All
+              </Button>
+              <Button
+                variant={quickStatus === 'DRAFT' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStatusClick('DRAFT')}
+              >
+                Draft
+              </Button>
+              <Button
+                variant={quickStatus === 'SUBMITTED' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStatusClick('SUBMITTED')}
+              >
+                Submitted
+              </Button>
+              <Button
+                variant={
+                  quickStatus === 'OFFER_GENERATED' ? 'default' : 'outline'
+                }
+                size="sm"
+                onClick={() => handleStatusClick('OFFER_GENERATED')}
+              >
+                Offer Generated
+              </Button>
+              <Button
+                variant={quickStatus === 'OFFER_SENT' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStatusClick('OFFER_SENT')}
+              >
+                Offer Sent
+              </Button>
+              <Button
+                variant={quickStatus === 'ACCEPTED' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStatusClick('ACCEPTED')}
+              >
+                Accepted
+              </Button>
+              <Button
+                variant={quickStatus === 'APPROVED' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStatusClick('APPROVED')}
+              >
+                Approved
+              </Button>
+              <Button
+                variant={quickStatus === 'REJECTED' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStatusClick('REJECTED')}
+              >
+                Rejected
+              </Button>
+            </div>
+            <ApplicationsFilter
+              filters={filters}
+              onApply={updateFilters}
+              onReset={resetFilters}
+              activeFilterCount={activeFilterCount}
+            />
           </div>
         </CardHeader>
         <CardContent>
-          <ApplicationsDataTable
-            statusFilter={status && status.length ? status : undefined}
-          />
+          <ApplicationsDataTable filters={effectiveFilters} />
         </CardContent>
       </Card>
     </div>

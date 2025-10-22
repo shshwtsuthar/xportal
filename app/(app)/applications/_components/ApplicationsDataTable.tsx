@@ -42,15 +42,14 @@ import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
 import { SendOfferDialog } from './SendOfferDialog';
 import { useApproveApplication } from '@/src/hooks/useApproveApplication';
 
-import type { Database } from '@/database.types';
-type ApplicationStatus = Database['public']['Enums']['application_status'];
+import type { ApplicationFilters } from '@/src/hooks/useApplicationsFilters';
 
 type Props = {
-  statusFilter?: ApplicationStatus;
+  filters?: ApplicationFilters;
 };
 
-export function ApplicationsDataTable({ statusFilter }: Props) {
-  const { data, isLoading, isError } = useGetApplications(statusFilter);
+export function ApplicationsDataTable({ filters }: Props) {
+  const { data, isLoading, isError } = useGetApplications(filters);
   const deleteMutation = useDeleteApplication();
   const updateMutation = useUpdateApplication();
   const [sendOfferDialog, setSendOfferDialog] = useState<{
