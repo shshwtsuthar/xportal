@@ -389,7 +389,7 @@ export function ApplicationsDataTable({ filters }: Props) {
                     '—'}
                 </TableCell>
                 <TableCell>{app.agents?.name || '—'}</TableCell>
-                <TableCell>{app.program_id ? 'Selected' : '—'}</TableCell>
+                <TableCell>{app.programs?.name || '—'}</TableCell>
                 <TableCell>
                   <Badge
                     variant={

@@ -12,6 +12,7 @@ import { serializeFilters } from './useApplicationsFilters';
 
 type ApplicationWithAgent = Tables<'applications'> & {
   agents?: Pick<Tables<'agents'>, 'name'> | null;
+  programs?: Pick<Tables<'programs'>, 'name'> | null;
 };
 
 export const useGetApplications = (filters?: ApplicationFilters) => {
@@ -21,7 +22,7 @@ export const useGetApplications = (filters?: ApplicationFilters) => {
       const supabase = createClient();
       let query = supabase
         .from('applications')
-        .select('*, agents(name)')
+        .select('*, agents(name), programs(name)')
         .order('updated_at', { ascending: false });
 
       if (!filters) {
