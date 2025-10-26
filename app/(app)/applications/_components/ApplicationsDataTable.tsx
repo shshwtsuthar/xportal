@@ -1,6 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import Link from 'next/link';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
 import { Badge } from '@/components/ui/badge';
@@ -58,7 +65,14 @@ type Props = {
   filters?: ApplicationFilters;
 };
 
-export function ApplicationsDataTable({ filters }: Props) {
+export type ApplicationsDataTableRef = {
+  getRows: () => RowType[];
+};
+
+export const ApplicationsDataTable = forwardRef<
+  ApplicationsDataTableRef,
+  Props
+>(function ApplicationsDataTable({ filters }: Props, ref) {
   const { data, isLoading, isError } = useGetApplications(filters);
   const deleteMutation = useDeleteApplication();
   const updateMutation = useUpdateApplication();
@@ -176,6 +190,14 @@ export function ApplicationsDataTable({ filters }: Props) {
       return 0;
     });
   }, [data, sortConfig, manualOrderIds]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getRows: () => (rows as RowType[]) ?? [],
+    }),
+    [rows]
+  );
 
   const isManualOrderActive = !!(manualOrderIds && manualOrderIds.length > 0);
 
@@ -579,4 +601,4 @@ export function ApplicationsDataTable({ filters }: Props) {
       )}
     </>
   );
-}
+});

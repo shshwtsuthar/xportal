@@ -11,7 +11,7 @@ export default function AppLayout({
 }>) {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar suppressHydrationWarning />
       <SidebarInset>
         <AppTopbar />
         <QueryProvider>

@@ -1,14 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import type { Database } from '@/database.types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ApplicationsDataTable } from './_components/ApplicationsDataTable';
+import {
+  ApplicationsDataTable,
+  type ApplicationsDataTableRef,
+} from './_components/ApplicationsDataTable';
 import { ApplicationStats } from './_components/ApplicationStats';
 import { ApplicationsChart } from './_components/ApplicationsChart';
 import { ApplicationsFilter } from './_components/ApplicationsFilter';
 import { ApplicationsColumnsMenu } from './_components/ApplicationsColumnsMenu';
+import { ExportDialog } from './_components/ExportDialog';
+import { Download } from 'lucide-react';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
 import { useApplicationsFilters } from '@/src/hooks/useApplicationsFilters';
 import Link from 'next/link';
@@ -17,6 +22,11 @@ import { Plus } from 'lucide-react';
 type ApplicationStatus = Database['public']['Enums']['application_status'];
 
 export default function ApplicationsPage() {
+  const tableRef = useRef<ApplicationsDataTableRef>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const getRowsForExport = useCallback(() => {
+    return tableRef.current?.getRows() ?? [];
+  }, []);
   const { filters, updateFilters, resetFilters, activeFilterCount } =
     useApplicationsFilters();
   const [quickStatus, setQuickStatus] = useState<ApplicationStatus | undefined>(
@@ -155,13 +165,28 @@ export default function ApplicationsPage() {
                 activeFilterCount={activeFilterCount}
               />
               <ApplicationsColumnsMenu />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExportOpen(true)}
+                aria-label="Export applications"
+              >
+                <Download className="mr-2 h-4 w-4" /> Export
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <ApplicationsDataTable filters={effectiveFilters} />
+          <ApplicationsDataTable ref={tableRef} filters={effectiveFilters} />
         </CardContent>
       </Card>
+
+      <ExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        getRows={getRowsForExport}
+        filters={effectiveFilters}
+      />
     </div>
   );
 }
