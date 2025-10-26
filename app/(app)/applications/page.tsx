@@ -82,15 +82,6 @@ export default function ApplicationsPage() {
         )}
       </div>
 
-      {/* Application Trends Chart */}
-      <div className="mb-6">
-        {isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading chart...</p>
-        ) : (
-          <ApplicationsChart applications={allApplications ?? []} />
-        )}
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -180,6 +171,15 @@ export default function ApplicationsPage() {
           <ApplicationsDataTable ref={tableRef} filters={effectiveFilters} />
         </CardContent>
       </Card>
+
+      {/* Application Trends Chart */}
+      <div className="mt-6 mb-6">
+        {isLoading ? (
+          <p className="text-muted-foreground text-sm">Loading chart...</p>
+        ) : (
+          <ApplicationsChart applications={allApplications ?? []} />
+        )}
+      </div>
 
       <ExportDialog
         open={exportOpen}

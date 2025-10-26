@@ -45,8 +45,9 @@ export const ApplicationsColumnsMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="Toggle columns">
-          <Plus className="h-4 w-4" />
+        <Button variant="outline" size="sm" aria-label="Toggle columns">
+          <Plus className="mr-2 h-4 w-4" />
+          Columns
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
