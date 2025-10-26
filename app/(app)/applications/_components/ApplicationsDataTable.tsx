@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useMemo } from 'react';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -13,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +31,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, Check, X } from 'lucide-react';
+import { MoreHorizontal, Trash2, Check, X, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tables } from '@/database.types';
 import { toast } from 'sonner';
@@ -41,6 +39,18 @@ import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
 import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
 import { SendOfferDialog } from './SendOfferDialog';
 import { useApproveApplication } from '@/src/hooks/useApproveApplication';
+import {
+  getApplicationsTableKey,
+  useGetTablePreferences,
+  useUpsertTablePreferences,
+  type TablePreferences,
+} from '@/src/hooks/useTablePreferences';
+import {
+  DEFAULT_VISIBLE_COLUMNS,
+  getApplicationsColumns,
+  type ColumnDef,
+  type RowType,
+} from './applicationsTableColumns';
 
 import type { ApplicationFilters } from '@/src/hooks/useApplicationsFilters';
 
@@ -60,6 +70,31 @@ export function ApplicationsDataTable({ filters }: Props) {
     key: string;
     direction: 'asc' | 'desc';
   } | null>(null);
+  const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  // Preferences: visible columns and widths persisted per user
+  const tableKey = getApplicationsTableKey();
+  const { data: prefs } = useGetTablePreferences(tableKey);
+  const upsertPrefs = useUpsertTablePreferences();
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!prefs) return;
+    // Defaults if none set: keep current six columns
+    const defaults = DEFAULT_VISIBLE_COLUMNS;
+    const hasPrefs = prefs.visible_columns.length > 0;
+    const nextVisible = hasPrefs ? prefs.visible_columns : defaults;
+    setVisibleColumns(nextVisible);
+    setColumnWidths(prefs.column_widths || {});
+
+    // Persist defaults once if there are no stored preferences
+    if (!hasPrefs) {
+      persistPrefs({ visible_columns: defaults });
+    }
+  }, [prefs]);
 
   const approveMutation = useApproveApplication();
 
@@ -74,52 +109,93 @@ export function ApplicationsDataTable({ filters }: Props) {
     });
   };
 
+  const persistPrefs = (next: Partial<TablePreferences>) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      upsertPrefs.mutate({
+        tableKey,
+        visible_columns: next.visible_columns ?? visibleColumns,
+        column_widths: next.column_widths ?? columnWidths,
+      });
+    }, 300);
+  };
+
+  const allColumns: ColumnDef[] = getApplicationsColumns();
+
+  const colById = new Map(allColumns.map((c) => [c.id, c] as const));
+
+  const onToggleColumn = (id: string) => {
+    setVisibleColumns((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev, id];
+      persistPrefs({ visible_columns: next });
+      return next;
+    });
+  };
+
+  const startResize = (id: string, startX: number) => {
+    const col = colById.get(id);
+    const base = columnWidths[id] ?? col?.width ?? 160;
+    let latestWidth = base;
+    const onMove = (e: MouseEvent) => {
+      const delta = e.clientX - startX;
+      const next = Math.max(100, Math.min(600, base + delta));
+      latestWidth = next;
+      setColumnWidths((prev) => ({ ...prev, [id]: next }));
+    };
+    const onUp = () => {
+      const updated = { ...columnWidths, [id]: latestWidth };
+      persistPrefs({ column_widths: updated });
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp, { once: true });
+  };
+
   const rows = useMemo(() => {
-    const baseRows = data ?? [];
+    const baseRows = (data ?? []) as RowType[];
+    if (manualOrderIds && manualOrderIds.length > 0) {
+      const orderIndex = new Map<string, number>();
+      manualOrderIds.forEach((id, idx) => orderIndex.set(id, idx));
+      return [...baseRows].sort((a, b) => {
+        const ai = orderIndex.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+        const bi = orderIndex.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+        return ai - bi;
+      });
+    }
     if (!sortConfig) return baseRows;
-
+    const col = colById.get(sortConfig.key);
+    if (!col || !col.sortable || !col.sortAccessor) return baseRows;
     return [...baseRows].sort((a, b) => {
-      let aVal: string | number;
-      let bVal: string | number;
-
-      switch (sortConfig.key) {
-        case 'student_name':
-          aVal = [a.first_name, a.last_name].filter(Boolean).join(' ');
-          bVal = [b.first_name, b.last_name].filter(Boolean).join(' ');
-          break;
-        case 'agent':
-          aVal = a.agents?.name || '';
-          bVal = b.agents?.name || '';
-          break;
-        case 'program':
-          aVal = a.program_id ? 'Selected' : '';
-          bVal = b.program_id ? 'Selected' : '';
-          break;
-        case 'status':
-          aVal = a.status;
-          bVal = b.status;
-          break;
-        case 'requested_start':
-          aVal = a.requested_start_date
-            ? new Date(a.requested_start_date).getTime()
-            : 0;
-          bVal = b.requested_start_date
-            ? new Date(b.requested_start_date).getTime()
-            : 0;
-          break;
-        case 'updated_at':
-          aVal = a.updated_at ? new Date(a.updated_at).getTime() : 0;
-          bVal = b.updated_at ? new Date(b.updated_at).getTime() : 0;
-          break;
-        default:
-          return 0;
-      }
-
+      const aVal = col.sortAccessor!(a);
+      const bVal = col.sortAccessor!(b);
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [data, sortConfig]);
+  }, [data, sortConfig, manualOrderIds]);
+
+  const isManualOrderActive = !!(manualOrderIds && manualOrderIds.length > 0);
+
+  const ensureOrderInitialized = (currentRows: RowType[]) => {
+    if (!manualOrderIds || manualOrderIds.length === 0) {
+      setManualOrderIds(currentRows.map((r) => r.id));
+    }
+  };
+
+  const moveIdBeforeId = (list: string[], fromId: string, toId: string) => {
+    if (fromId === toId) return list;
+    const next = [...list];
+    const fromIdx = next.indexOf(fromId);
+    const toIdx = next.indexOf(toId);
+    if (fromIdx === -1 || toIdx === -1) return list;
+    next.splice(fromIdx, 1);
+    const insertAt = fromIdx < toIdx ? toIdx - 1 : toIdx;
+    next.splice(insertAt, 0, fromId);
+    return next;
+  };
 
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id, {
@@ -158,15 +234,6 @@ export function ApplicationsDataTable({ filters }: Props) {
       <p className="text-destructive text-sm">Failed to load applications.</p>
     );
   }
-
-  const formatDate = (value: string | null) => {
-    if (!value) return '';
-    try {
-      return format(new Date(value), 'dd MMM yyyy');
-    } catch {
-      return String(value);
-    }
-  };
 
   const renderActions = (app: Tables<'applications'>) => {
     const handleGenerateOffer = async () => {
@@ -323,112 +390,171 @@ export function ApplicationsDataTable({ filters }: Props) {
   return (
     <>
       <div className="w-full overflow-hidden rounded-md border">
-        <Table>
+        {isManualOrderActive && (
+          <div className="bg-muted/40 flex items-center justify-between border-b px-3 py-2 text-xs">
+            <span className="text-muted-foreground">
+              Manual row order active. Column sorting is disabled.
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setManualOrderIds(null)}
+              aria-label="Reset manual order"
+            >
+              Reset order
+            </Button>
+          </div>
+        )}
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow className="divide-x">
-              <SortableTableHead
-                onSort={() => handleSort('student_name')}
-                sortDirection={
-                  sortConfig?.key === 'student_name'
-                    ? sortConfig.direction
-                    : null
-                }
-              >
-                Student Name
-              </SortableTableHead>
-              <SortableTableHead
-                onSort={() => handleSort('agent')}
-                sortDirection={
-                  sortConfig?.key === 'agent' ? sortConfig.direction : null
-                }
-              >
-                Agent
-              </SortableTableHead>
-              <SortableTableHead
-                onSort={() => handleSort('program')}
-                sortDirection={
-                  sortConfig?.key === 'program' ? sortConfig.direction : null
-                }
-              >
-                Program
-              </SortableTableHead>
-              <SortableTableHead
-                onSort={() => handleSort('status')}
-                sortDirection={
-                  sortConfig?.key === 'status' ? sortConfig.direction : null
-                }
-              >
-                Status
-              </SortableTableHead>
-              <SortableTableHead
-                onSort={() => handleSort('requested_start')}
-                sortDirection={
-                  sortConfig?.key === 'requested_start'
-                    ? sortConfig.direction
-                    : null
-                }
-              >
-                Requested Start
-              </SortableTableHead>
-              <SortableTableHead
-                onSort={() => handleSort('updated_at')}
-                sortDirection={
-                  sortConfig?.key === 'updated_at' ? sortConfig.direction : null
-                }
-              >
-                Updated At
-              </SortableTableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead
+                className="w-10 px-2 text-center"
+                aria-label="Manual order column"
+              />
+              {visibleColumns.map((id) => {
+                const c = colById.get(id)!;
+                const width = columnWidths[id] ?? c.width ?? 160;
+                const active =
+                  sortConfig?.key === id ? sortConfig.direction : null;
+                return (
+                  <TableHead
+                    key={id}
+                    style={{ width }}
+                    className={`text-muted-foreground group relative h-12 px-0 text-left align-middle font-medium`}
+                  >
+                    <button
+                      type="button"
+                      className={`flex w-full items-center gap-2 px-4 ${c.sortable ? (isManualOrderActive ? 'cursor-not-allowed opacity-50' : 'hover:text-foreground') : ''}`}
+                      onClick={() => {
+                        if (!c.sortable) return;
+                        if (isManualOrderActive) return; // sorting disabled during manual order
+                        handleSort(id);
+                      }}
+                      aria-label={`Sort by ${c.label}`}
+                    >
+                      <span className="truncate">{c.label}</span>
+                      {c.sortable && !isManualOrderActive && (
+                        <span className="text-muted-foreground ml-1 text-[10px]">
+                          {active === 'asc'
+                            ? '▲'
+                            : active === 'desc'
+                              ? '▼'
+                              : ''}
+                        </span>
+                      )}
+                    </button>
+                    <div
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label={`Resize ${c.label}`}
+                      tabIndex={0}
+                      className="hover:bg-border focus-visible:ring-ring absolute top-0 right-0 h-full w-1 cursor-col-resize focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-hidden"
+                      onMouseDown={(e) => startResize(id, e.clientX)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                          e.preventDefault();
+                          const delta = e.key === 'ArrowLeft' ? -8 : 8;
+                          const next = Math.max(
+                            100,
+                            Math.min(
+                              600,
+                              (columnWidths[id] ?? c.width ?? 160) + delta
+                            )
+                          );
+                          const updated = { ...columnWidths, [id]: next };
+                          setColumnWidths(updated);
+                          persistPrefs({ column_widths: updated });
+                        }
+                      }}
+                    />
+                  </TableHead>
+                );
+              })}
+              <TableHead className="px-4 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y">
             {rows.map((app) => (
               <TableRow key={app.id} className="divide-x">
-                <TableCell>
-                  {[app.first_name, app.last_name].filter(Boolean).join(' ') ||
-                    '—'}
-                </TableCell>
-                <TableCell>{app.agents?.name || '—'}</TableCell>
-                <TableCell>{app.programs?.name || '—'}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      app.status === 'REJECTED'
-                        ? 'destructive'
-                        : app.status === 'SUBMITTED'
-                          ? 'default'
-                          : 'secondary'
-                    }
+                <TableCell className="w-10 px-2">
+                  <button
+                    type="button"
+                    className={`hover:bg-muted mx-auto flex h-6 w-6 items-center justify-center rounded ${draggingId === app.id ? 'opacity-50' : ''}`}
+                    aria-label="Drag row to reorder"
+                    aria-roledescription="Draggable row handle"
+                    draggable
+                    onDragStart={() => {
+                      // initialize order from current rows and disable column sorting
+                      ensureOrderInitialized(rows as RowType[]);
+                      setSortConfig(null);
+                      setDraggingId(app.id);
+                    }}
+                    onDragEnd={() => setDraggingId(null)}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (!draggingId) return;
+                      ensureOrderInitialized(rows as RowType[]);
+                      setManualOrderIds((prev) => {
+                        const base =
+                          prev && prev.length > 0
+                            ? prev
+                            : (rows as RowType[]).map((r) => r.id);
+                        return moveIdBeforeId(base, draggingId, app.id);
+                      });
+                      setDraggingId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+                      e.preventDefault();
+                      ensureOrderInitialized(rows as RowType[]);
+                      setSortConfig(null);
+                      setManualOrderIds((prev) => {
+                        const base =
+                          prev && prev.length > 0
+                            ? prev
+                            : (rows as RowType[]).map((r) => r.id);
+                        const currIdx = base.indexOf(app.id);
+                        if (currIdx === -1) return base;
+                        const targetIdx =
+                          e.key === 'ArrowUp'
+                            ? Math.max(0, currIdx - 1)
+                            : Math.min(base.length - 1, currIdx + 1);
+                        if (targetIdx === currIdx) return base;
+                        const next = [...base];
+                        next.splice(currIdx, 1);
+                        next.splice(targetIdx, 0, app.id);
+                        return next;
+                      });
+                    }}
                   >
-                    {app.status === 'OFFER_GENERATED'
-                      ? 'Offer Generated'
-                      : app.status === 'OFFER_SENT'
-                        ? 'Offer Sent'
-                        : app.status === 'ACCEPTED'
-                          ? 'Accepted'
-                          : app.status === 'DRAFT'
-                            ? 'Draft'
-                            : app.status === 'SUBMITTED'
-                              ? 'Submitted'
-                              : app.status === 'REJECTED'
-                                ? 'Rejected'
-                                : app.status}
-                  </Badge>
+                    <GripVertical className="text-muted-foreground h-4 w-4" />
+                  </button>
                 </TableCell>
-                <TableCell>
-                  {formatDate(app.requested_start_date as string | null)}
-                </TableCell>
-                <TableCell>
-                  {formatDate(app.updated_at as unknown as string)}
-                </TableCell>
-                <TableCell className="text-right">
+                {visibleColumns.map((id) => {
+                  const c = colById.get(id)!;
+                  const width = columnWidths[id] ?? c.width ?? 160;
+                  return (
+                    <TableCell
+                      key={`${app.id}-${id}`}
+                      style={{ width }}
+                      className="truncate px-4"
+                    >
+                      {c.render(app as RowType)}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="px-4 text-right">
                   {renderActions(app)}
                 </TableCell>
               </TableRow>
             ))}
             {rows.length === 0 && (
               <TableRow className="divide-x">
-                <TableCell colSpan={6}>
+                <TableCell colSpan={visibleColumns.length + 2}>
                   <p className="text-muted-foreground text-sm">
                     No applications found.
                   </p>

@@ -8,6 +8,7 @@ import { ApplicationsDataTable } from './_components/ApplicationsDataTable';
 import { ApplicationStats } from './_components/ApplicationStats';
 import { ApplicationsChart } from './_components/ApplicationsChart';
 import { ApplicationsFilter } from './_components/ApplicationsFilter';
+import { ApplicationsColumnsMenu } from './_components/ApplicationsColumnsMenu';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
 import { useApplicationsFilters } from '@/src/hooks/useApplicationsFilters';
 import Link from 'next/link';
@@ -146,12 +147,15 @@ export default function ApplicationsPage() {
                 Rejected
               </Button>
             </div>
-            <ApplicationsFilter
-              filters={filters}
-              onApply={updateFilters}
-              onReset={resetFilters}
-              activeFilterCount={activeFilterCount}
-            />
+            <div className="flex items-center gap-2">
+              <ApplicationsFilter
+                filters={filters}
+                onApply={updateFilters}
+                onReset={resetFilters}
+                activeFilterCount={activeFilterCount}
+              />
+              <ApplicationsColumnsMenu />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
