@@ -228,22 +228,23 @@ export const ApplicationsDataTable = forwardRef<
 
   const isManualOrderActive = !!(manualOrderIds && manualOrderIds.length > 0);
 
-  const ensureOrderInitialized = (currentRows: RowType[]) => {
-    if (!manualOrderIds || manualOrderIds.length === 0) {
-      setManualOrderIds(currentRows.map((r) => r.id));
+  const onDragStart = (id: string) => setDraggingId(id);
+  const onDragEnter = (id: string) => setDragOverId(id);
+  const onDragEnd = () => {
+    if (!draggingId || !dragOverId) {
+      setDraggingId(null);
+      setDragOverId(null);
+      return;
     }
-  };
-
-  const moveIdBeforeId = (list: string[], fromId: string, toId: string) => {
-    if (fromId === toId) return list;
-    const next = [...list];
-    const fromIdx = next.indexOf(fromId);
-    const toIdx = next.indexOf(toId);
-    if (fromIdx === -1 || toIdx === -1) return list;
-    next.splice(fromIdx, 1);
-    const insertAt = fromIdx < toIdx ? toIdx - 1 : toIdx;
-    next.splice(insertAt, 0, fromId);
-    return next;
+    const ids = (manualOrderIds ?? rows.map((r) => r.id)).slice();
+    const from = ids.indexOf(draggingId);
+    const to = ids.indexOf(dragOverId);
+    if (from >= 0 && to >= 0 && from !== to) {
+      ids.splice(to, 0, ids.splice(from, 1)[0]);
+      setManualOrderIds(ids);
+    }
+    setDraggingId(null);
+    setDragOverId(null);
   };
 
   const handleDelete = (id: string) => {
@@ -532,69 +533,14 @@ export const ApplicationsDataTable = forwardRef<
             {paginatedRows.map((app) => (
               <TableRow
                 key={app.id}
-                className={`divide-x ${draggingId === app.id ? 'opacity-50' : ''} ${dragOverId === app.id ? 'bg-muted/50' : ''}`}
+                className="divide-x"
+                draggable
+                onDragStart={() => onDragStart(app.id)}
+                onDragEnter={() => onDragEnter(app.id)}
+                onDragEnd={onDragEnd}
               >
-                <TableCell className="w-10 px-2">
-                  <button
-                    type="button"
-                    className="hover:bg-muted mx-auto flex h-6 w-6 items-center justify-center rounded"
-                    aria-label="Drag row to reorder"
-                    aria-roledescription="Draggable row handle"
-                    draggable
-                    onDragStart={() => {
-                      // initialize order from current rows and disable column sorting
-                      ensureOrderInitialized(rows as RowType[]);
-                      setSortConfig(null);
-                      setDraggingId(app.id);
-                    }}
-                    onDragEnd={() => {
-                      setDraggingId(null);
-                      setDragOverId(null);
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOverId(app.id);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (!draggingId) return;
-                      ensureOrderInitialized(rows as RowType[]);
-                      setManualOrderIds((prev) => {
-                        const base =
-                          prev && prev.length > 0
-                            ? prev
-                            : (rows as RowType[]).map((r) => r.id);
-                        return moveIdBeforeId(base, draggingId, app.id);
-                      });
-                      setDraggingId(null);
-                      setDragOverId(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-                      e.preventDefault();
-                      ensureOrderInitialized(rows as RowType[]);
-                      setSortConfig(null);
-                      setManualOrderIds((prev) => {
-                        const base =
-                          prev && prev.length > 0
-                            ? prev
-                            : (rows as RowType[]).map((r) => r.id);
-                        const currIdx = base.indexOf(app.id);
-                        if (currIdx === -1) return base;
-                        const targetIdx =
-                          e.key === 'ArrowUp'
-                            ? Math.max(0, currIdx - 1)
-                            : Math.min(base.length - 1, currIdx + 1);
-                        if (targetIdx === currIdx) return base;
-                        const next = [...base];
-                        next.splice(currIdx, 1);
-                        next.splice(targetIdx, 0, app.id);
-                        return next;
-                      });
-                    }}
-                  >
-                    <GripVertical className="text-muted-foreground h-4 w-4" />
-                  </button>
+                <TableCell className="text-muted-foreground w-8">
+                  <GripVertical className="h-4 w-4" />
                 </TableCell>
                 {visibleColumns.map((id) => {
                   const c = colById.get(id)!;
