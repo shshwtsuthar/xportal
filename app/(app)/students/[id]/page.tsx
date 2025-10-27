@@ -10,6 +10,7 @@ import { useGetStudentAvetmiss } from '@/src/hooks/useGetStudentAvetmiss';
 import { useGetStudentCricos } from '@/src/hooks/useGetStudentCricos';
 import { useGetStudentContacts } from '@/src/hooks/useGetStudentContacts';
 import { CourseProgressionCard } from '../_components/CourseProgressionCard';
+import { FinancePane } from './_components/FinancePane';
 import { StudentDocumentsPane } from '../_components/StudentDocumentsPane';
 import { AssignmentsPane } from '../_components/AssignmentsPane';
 import { format } from 'date-fns';
@@ -26,7 +27,13 @@ export default function StudentPage({ params }: PageProps) {
   const { data: cricos } = useGetStudentCricos(id);
   const { data: contacts } = useGetStudentContacts(id);
 
-  const tabs = ['Details', 'Course Progression', 'Documents', 'Assignments'];
+  const tabs = [
+    'Details',
+    'Course Progression',
+    'Documents',
+    'Assignments',
+    'Finance',
+  ];
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">Loading…</p>;
@@ -307,6 +314,8 @@ export default function StudentPage({ params }: PageProps) {
 
       case 3: // Assignments
         return <AssignmentsPane studentId={id} />;
+      case 4: // Finance
+        return <FinancePane studentId={id} />;
 
       default:
         return null;

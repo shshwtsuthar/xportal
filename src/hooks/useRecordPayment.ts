@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/client';
 
 type Params = {
   invoiceId: string;
-  paymentDate: string;
+  paymentDate: string; // yyyy-mm-dd
   amountCents: number;
   notes?: string;
 };
@@ -25,12 +25,16 @@ export const useRecordPayment = () => {
         p_invoice_id: invoiceId,
         p_payment_date: paymentDate,
         p_amount_cents: amountCents,
-        p_notes: notes,
+        p_notes: notes ?? undefined,
       });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['student-invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['finance-invoices'] }),
+      ]);
     },
   });
 };

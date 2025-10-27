@@ -16,21 +16,28 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RecordPaymentDialog } from './RecordPaymentDialog';
 
-export function StudentInvoicesTable() {
+type Props = { studentId?: string };
+
+export function StudentInvoicesTable({ studentId }: Props) {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<
     string | undefined
   >();
 
   const { data: invoices, isLoading } = useQuery({
-    queryKey: ['invoices'],
+    queryKey: ['invoices', studentId],
     queryFn: async (): Promise<Tables<'invoices'>[]> => {
       const supabase = createClient();
-      const { data, error } = await supabase
+      let query = supabase
         .from('invoices')
-        .select('*')
+        .select('*, enrollments!inner(student_id)')
         .order('due_date', { ascending: true });
+      if (studentId) {
+        query = query.eq('enrollments.student_id', studentId);
+      }
+      const { data, error } = await query;
       if (error) throw new Error(error.message);
-      return data ?? [];
+      // strip join alias fields if present
+      return (data as unknown as Tables<'invoices'>[]) ?? [];
     },
   });
 
@@ -81,7 +88,7 @@ export function StudentInvoicesTable() {
             {rows.map((inv) => (
               <TableRow key={inv.id} className="divide-x">
                 <TableCell className="font-mono text-sm">
-                  {String(inv.invoice_number).slice(0, 8)}
+                  {String(inv.invoice_number)}
                 </TableCell>
                 <TableCell>{inv.issue_date as string}</TableCell>
                 <TableCell>{inv.due_date as string}</TableCell>
