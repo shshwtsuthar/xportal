@@ -8,9 +8,9 @@ import {
   forwardRef,
   useImperativeHandle,
 } from 'react';
+import { useCallback } from 'react';
 import Link from 'next/link';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -54,7 +54,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { MoreHorizontal, Trash2, Check, X, GripVertical } from 'lucide-react';
-import { format } from 'date-fns';
+// removed unused date-fns import
 import { Tables } from '@/database.types';
 import { toast } from 'sonner';
 import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
@@ -141,30 +141,28 @@ export const ApplicationsDataTable = forwardRef<
     });
   };
 
-  const persistPrefs = (next: Partial<TablePreferences>) => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      upsertPrefs.mutate({
-        tableKey,
-        visible_columns: next.visible_columns ?? visibleColumns,
-        column_widths: next.column_widths ?? columnWidths,
-      });
-    }, 300);
-  };
+  const persistPrefs = useCallback(
+    (next: Partial<TablePreferences>) => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        upsertPrefs.mutate({
+          tableKey,
+          visible_columns: next.visible_columns ?? visibleColumns,
+          column_widths: next.column_widths ?? columnWidths,
+        });
+      }, 300);
+    },
+    [tableKey, visibleColumns, columnWidths, upsertPrefs]
+  );
 
   const allColumns: ColumnDef[] = getApplicationsColumns();
 
-  const colById = new Map(allColumns.map((c) => [c.id, c] as const));
+  const colById = useMemo(
+    () => new Map(allColumns.map((c) => [c.id, c] as const)),
+    [allColumns]
+  );
 
-  const onToggleColumn = (id: string) => {
-    setVisibleColumns((prev) => {
-      const next = prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id];
-      persistPrefs({ visible_columns: next });
-      return next;
-    });
-  };
+  // column toggling is handled via external Columns menu
 
   const startResize = (id: string, startX: number) => {
     const col = colById.get(id);
@@ -207,7 +205,7 @@ export const ApplicationsDataTable = forwardRef<
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [data, sortConfig, manualOrderIds]);
+  }, [data, sortConfig, manualOrderIds, colById]);
 
   // Pagination logic
   const totalPages = Math.ceil(rows.length / rowsPerPage);
@@ -630,86 +628,84 @@ export const ApplicationsDataTable = forwardRef<
             )}
           </TableBody>
         </Table>
+        {rows.length > 0 && (
+          <div className="flex flex-col gap-4 border-t px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-sm whitespace-nowrap">
+                Rows per page:
+              </span>
+              <Select
+                value={rowsPerPage.toString()}
+                onValueChange={(value) => {
+                  setRowsPerPage(Number(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-center sm:justify-end">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className={
+                        currentPage === 1
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 7) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 4) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 3) {
+                      pageNum = totalPages - 6 + i;
+                    } else {
+                      pageNum = currentPage - 3 + i;
+                    }
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(pageNum)}
+                          isActive={currentPage === pageNum}
+                          className="cursor-pointer"
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className={
+                        currentPage === totalPages
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Pagination */}
-      {rows.length > 0 && (
-        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-sm whitespace-nowrap">
-              Rows per page:
-            </span>
-            <Select
-              value={rowsPerPage.toString()}
-              onValueChange={(value) => {
-                setRowsPerPage(Number(value));
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-center sm:justify-end">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    className={
-                      currentPage === 1
-                        ? 'pointer-events-none opacity-50'
-                        : 'cursor-pointer'
-                    }
-                  />
-                </PaginationItem>
-                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 7) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 4) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 3) {
-                    pageNum = totalPages - 6 + i;
-                  } else {
-                    pageNum = currentPage - 3 + i;
-                  }
-                  return (
-                    <PaginationItem key={pageNum}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(pageNum)}
-                        isActive={currentPage === pageNum}
-                        className="cursor-pointer"
-                      >
-                        {pageNum}
-                      </PaginationLink>
-                    </PaginationItem>
-                  );
-                })}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    className={
-                      currentPage === totalPages
-                        ? 'pointer-events-none opacity-50'
-                        : 'cursor-pointer'
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-        </div>
-      )}
 
       {sendOfferDialog.application && (
         <SendOfferDialog

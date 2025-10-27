@@ -10,6 +10,9 @@ export type TablePreferences = {
 const TABLE_KEY_APPLICATIONS = 'applications.datatable';
 export const getApplicationsTableKey = () => TABLE_KEY_APPLICATIONS;
 
+const TABLE_KEY_INVOICES = 'invoices.datatable';
+export const getInvoicesTableKey = () => TABLE_KEY_INVOICES;
+
 export const useGetTablePreferences = (tableKey: string) => {
   return useQuery({
     queryKey: ['table-prefs', tableKey],

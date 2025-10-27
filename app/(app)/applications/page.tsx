@@ -9,7 +9,6 @@ import {
   type ApplicationsDataTableRef,
 } from './_components/ApplicationsDataTable';
 import { ApplicationStats } from './_components/ApplicationStats';
-import { ApplicationsChart } from './_components/ApplicationsChart';
 import { ApplicationsFilter } from './_components/ApplicationsFilter';
 import { ApplicationsColumnsMenu } from './_components/ApplicationsColumnsMenu';
 import { ExportDialog } from './_components/ExportDialog';
@@ -33,7 +32,7 @@ export default function ApplicationsPage() {
     filters.statuses?.length === 1 ? filters.statuses[0] : undefined
   );
 
-  // Fetch all applications for stats and chart
+  // Fetch all applications for stats
   const { data: allApplications, isLoading } = useGetApplications();
 
   // Handle quick status tab clicks
@@ -172,14 +171,7 @@ export default function ApplicationsPage() {
         </CardContent>
       </Card>
 
-      {/* Application Trends Chart */}
-      <div className="mt-6 mb-6">
-        {isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading chart...</p>
-        ) : (
-          <ApplicationsChart applications={allApplications ?? []} />
-        )}
-      </div>
+      {/* Chart removed per request */}
 
       <ExportDialog
         open={exportOpen}

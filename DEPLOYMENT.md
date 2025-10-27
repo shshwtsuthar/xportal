@@ -1,0 +1,15 @@
+## Deployment Notes - Invoices DataTable Parity (2025-10-27)
+
+No database migrations required. Ensure the following steps post-deploy:
+
+1. Regenerate types if schema changed elsewhere (not required for this feature):
+   supabase gen types typescript --local > database.types.ts
+2. Verify user table preferences RLS allows selecting/upserting for `invoices.datatable` key.
+3. Confirm scheduled job updating invoice statuses (OVERDUE/SCHEDULED) is active.
+4. Smoke test in production:
+   - Tabs switching and counts
+   - Filters apply and persist in URL
+   - + Columns persists visibility/widths per-user
+   - Export CSV/XLSX contains expected columns and data
+
+
