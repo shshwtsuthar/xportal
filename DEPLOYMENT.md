@@ -1,3 +1,15 @@
+### Compose Email API
+
+- Ensure environment variables are configured:
+  - `RESEND_API_KEY`
+  - `RESEND_FROM` (e.g. `Acme RTO <no-reply@yourdomain.com>`)
+
+- API Route: `POST /api/emails/send`
+  - Body: `{ to: string[], subject: string, html: string }`
+  - Response: `{ id: string | null }`
+
+- UI Integration:
+  - The compose dialog is globally available via the provider `components/providers/compose-email.tsx` and can be opened from the sidebar "Mail" button.
 ## Deployment Notes - Invoices DataTable Parity (2025-10-27)
 
 No database migrations required. Ensure the following steps post-deploy:

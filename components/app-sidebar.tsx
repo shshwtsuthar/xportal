@@ -12,6 +12,7 @@ import {
   Users,
   UserCheck,
   Building2,
+  Mail,
 } from 'lucide-react';
 
 import {
@@ -30,6 +31,8 @@ import {
 } from '@/components/ui/sidebar';
 import { useGetRto } from '@/src/hooks/useGetRto';
 import { ThemeSwitcher } from '@/components/theme-switcher';
+import { Button } from '@/components/ui/button';
+import { useComposeEmail } from '@/components/providers/compose-email';
 
 type NavItem = {
   title: string;
@@ -94,6 +97,7 @@ const NAV: NavItem[] = [
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { data: rto } = useGetRto();
+  const { open } = useComposeEmail();
 
   const isActive = (href: string) => pathname === href;
   const isParentActive = (href: string) =>
@@ -166,6 +170,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <ThemeSwitcher />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full justify-start"
+              onClick={open}
+              aria-label="Compose mail"
+            >
+              <Mail className="size-4" />
+              <span>Mail</span>
+            </Button>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

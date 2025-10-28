@@ -3,6 +3,7 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { AppTopbar } from '@/components/app-topbar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { QueryProvider } from '@/app/_providers/QueryProvider';
+import ComposeEmailProvider from '@/components/providers/compose-email';
 
 export default function AppLayout({
   children,
@@ -10,14 +11,16 @@ export default function AppLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <SidebarProvider>
-      <AppSidebar suppressHydrationWarning />
-      <SidebarInset>
-        <AppTopbar />
-        <QueryProvider>
-          <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
-        </QueryProvider>
-      </SidebarInset>
-    </SidebarProvider>
+    <ComposeEmailProvider>
+      <SidebarProvider>
+        <AppSidebar suppressHydrationWarning />
+        <SidebarInset>
+          <AppTopbar />
+          <QueryProvider>
+            <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
+          </QueryProvider>
+        </SidebarInset>
+      </SidebarProvider>
+    </ComposeEmailProvider>
   );
 }
