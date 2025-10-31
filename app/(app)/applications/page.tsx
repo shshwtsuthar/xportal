@@ -12,17 +12,20 @@ import { ApplicationStats } from './_components/ApplicationStats';
 import { ApplicationsFilter } from './_components/ApplicationsFilter';
 import { ApplicationsColumnsMenu } from './_components/ApplicationsColumnsMenu';
 import { ExportDialog } from './_components/ExportDialog';
-import { Download } from 'lucide-react';
+import { Download, Mail } from 'lucide-react';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
 import { useApplicationsFilters } from '@/src/hooks/useApplicationsFilters';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
+import { useComposeEmail } from '@/components/providers/compose-email';
+import { toast } from 'sonner';
 
 type ApplicationStatus = Database['public']['Enums']['application_status'];
 
 export default function ApplicationsPage() {
   const tableRef = useRef<ApplicationsDataTableRef>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const { openWithRecipients } = useComposeEmail();
   const getRowsForExport = useCallback(() => {
     return tableRef.current?.getRows() ?? [];
   }, []);
@@ -46,6 +49,21 @@ export default function ApplicationsPage() {
       delete newFilters.statuses;
     }
     updateFilters(newFilters);
+  };
+
+  // Handle mail button click
+  const handleMailClick = () => {
+    const rows = tableRef.current?.getRows() ?? [];
+    const emails = Array.from(
+      new Set(rows.map((r) => r.email).filter(Boolean))
+    ) as string[];
+
+    if (emails.length === 0) {
+      toast.error('No email addresses found in filtered applications');
+      return;
+    }
+
+    openWithRecipients(emails);
   };
 
   // Current effective filters (combining quick status with other filters)
@@ -148,6 +166,14 @@ export default function ApplicationsPage() {
               </Button>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMailClick}
+                aria-label="Email filtered applicants"
+              >
+                <Mail className="mr-2 h-4 w-4" /> Mail
+              </Button>
               <ApplicationsFilter
                 filters={filters}
                 onApply={updateFilters}

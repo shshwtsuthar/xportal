@@ -14,11 +14,13 @@ import { cn } from '@/lib/utils';
 type ComposeEmailDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialRecipients?: string[];
 };
 
 export function ComposeEmailDialog({
   open,
   onOpenChange,
+  initialRecipients = [],
 }: ComposeEmailDialogProps) {
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const [recipientInput, setRecipientInput] = React.useState('');
@@ -28,6 +30,28 @@ export function ComposeEmailDialog({
   const { mutateAsync, isPending } = useSendEmail();
 
   const close = () => onOpenChange(false);
+
+  // Prefill recipients from initialRecipients when dialog opens
+  React.useEffect(() => {
+    if (open && initialRecipients.length > 0) {
+      // Deduplicate and filter out empty values
+      const uniqueRecipients = Array.from(
+        new Set(
+          initialRecipients
+            .map((email) => email.trim())
+            .filter((email) => email.length > 0)
+        )
+      );
+      setRecipients(uniqueRecipients);
+    }
+    // Reset when dialog closes
+    if (!open) {
+      setRecipients([]);
+      setSubject('');
+      setHtml('');
+      setRecipientInput('');
+    }
+  }, [open, initialRecipients]);
 
   const addRecipient = React.useCallback(
     (value: string) => {

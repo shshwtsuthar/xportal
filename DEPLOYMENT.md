@@ -10,6 +10,7 @@
 
 - UI Integration:
   - The compose dialog is globally available via the provider `components/providers/compose-email.tsx` and can be opened from the sidebar "Mail" button.
+  - Applications page has a "Mail" toolbar button that prefills recipients from filtered applications (all rows, ignoring pagination).
 ## Deployment Notes - Invoices DataTable Parity (2025-10-27)
 
 No database migrations required. Ensure the following steps post-deploy:

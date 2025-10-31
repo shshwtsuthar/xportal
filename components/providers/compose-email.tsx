@@ -6,6 +6,7 @@ import { ComposeEmailDialog } from '@/components/emails/ComposeEmailDialog';
 type ComposeEmailContextValue = {
   isOpen: boolean;
   open: () => void;
+  openWithRecipients: (recipients: string[]) => void;
   close: () => void;
 };
 
@@ -24,19 +25,49 @@ export default function ComposeEmailProvider({
   children: React.ReactNode;
 }) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [initialRecipients, setInitialRecipients] = React.useState<string[]>(
+    []
+  );
+
+  const handleOpenChange = React.useCallback((open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      // Clear initial recipients on close
+      setTimeout(() => setInitialRecipients([]), 0);
+    }
+  }, []);
+
+  const open = React.useCallback(() => {
+    setIsOpen(true);
+  }, []);
+
+  const openWithRecipients = React.useCallback((recipients: string[]) => {
+    setInitialRecipients(recipients);
+    setIsOpen(true);
+  }, []);
+
+  const close = React.useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
   const value = React.useMemo(
     () => ({
       isOpen,
-      open: () => setIsOpen(true),
-      close: () => setIsOpen(false),
+      open,
+      openWithRecipients,
+      close,
     }),
-    [isOpen]
+    [isOpen, open, openWithRecipients, close]
   );
 
   return (
     <ComposeEmailContext.Provider value={value}>
       {children}
-      <ComposeEmailDialog open={isOpen} onOpenChange={setIsOpen} />
+      <ComposeEmailDialog
+        open={isOpen}
+        onOpenChange={handleOpenChange}
+        initialRecipients={initialRecipients}
+      />
     </ComposeEmailContext.Provider>
   );
 }
