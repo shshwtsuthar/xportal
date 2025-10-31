@@ -11,6 +11,12 @@ When an application transitions from `ACCEPTED` to `APPROVED`, all relevant data
 **Table:** `public.students`
 - **Primary Key:** `id` (UUID)
 - **Display ID:** `student_id_display` (unique text identifier)
+  - Format: `STU-<RTO>-<YY>-<NNNNN>-<C>`
+    - `<RTO>`: sanitized `rtos.rto_code` (3–5 alphanumeric, uppercased)
+    - `<YY>`: two-digit year of creation
+    - `<NNNNN>`: per-RTO, per-year zero-padded sequence (5 digits)
+    - `<C>`: check character (Crockford Base32) computed from the stem
+  - Generated in DB via `before_insert_students_set_display` trigger using `generate_student_display_id()`
 - **Basic Info:** `first_name`, `last_name`, `email`, `date_of_birth`
 - **Links:** `application_id` (FK to original application), `rto_id` (tenant isolation)
 

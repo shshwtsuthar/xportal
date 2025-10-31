@@ -1,3 +1,11 @@
+## Student Display ID Overhaul
+
+- Implemented human-friendly student IDs generated in the database:
+  - Format: `STU-<RTO>-<YY>-<NNNNN>-<C>` with per-RTO/year sequencing and a check character.
+  - Added `student_id_sequences` table, generator functions, and a BEFORE INSERT trigger on `public.students`.
+  - Updated `approve-application` edge function to defer `student_id_display` to DB generation.
+  - No backfill required (pre-deployment).
+
 ## Compose Email Modal
 
 - Added POST `app/api/emails/send/route.ts` using Resend (`RESEND_API_KEY`, `RESEND_FROM`). Returns `{ id }`.

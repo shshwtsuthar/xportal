@@ -121,7 +121,6 @@ serve(async (req: Request) => {
     const { data: student, error: studentErr } = await supabase
       .from('students')
       .insert({
-        student_id_display: crypto.randomUUID(),
         rto_id: app.rto_id,
         application_id: app.id,
         first_name: app.first_name!,
