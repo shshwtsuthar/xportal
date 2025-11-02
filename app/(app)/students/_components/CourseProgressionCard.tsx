@@ -91,6 +91,7 @@ export function CourseProgressionCard({
                   <TableHead>Subject Name</TableHead>
                   <TableHead>Start Date</TableHead>
                   <TableHead>End Date</TableHead>
+                  <TableHead>Schedule</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -104,6 +105,22 @@ export function CourseProgressionCard({
                   const canExpand = Boolean(
                     enrollmentId && subject.program_plan_subjects?.id
                   );
+                  const outcomeCode = (subject.outcome_code ?? null) as
+                    | 'C'
+                    | 'NYC'
+                    | null;
+                  const outcomeBadgeVariant =
+                    outcomeCode === 'C'
+                      ? 'default'
+                      : outcomeCode === 'NYC'
+                        ? 'destructive'
+                        : 'outline';
+                  const outcomeLabel =
+                    outcomeCode === 'C'
+                      ? 'Competent'
+                      : outcomeCode === 'NYC'
+                        ? 'Not Yet Competent'
+                        : 'Not yet assessed';
 
                   return (
                     <React.Fragment key={subject.id}>
@@ -164,13 +181,21 @@ export function CourseProgressionCard({
                             {status}
                           </Badge>
                         </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={outcomeBadgeVariant}
+                            className="whitespace-nowrap"
+                          >
+                            {outcomeLabel}
+                          </Badge>
+                        </TableCell>
                       </TableRow>
                       {isExpanded &&
                         canExpand &&
                         enrollmentId &&
                         subject.program_plan_subjects?.id && (
                           <TableRow>
-                            <TableCell colSpan={6} className="border-t p-0">
+                            <TableCell colSpan={7} className="border-t p-0">
                               <div className="px-2 py-2">
                                 <SubjectClassesTable
                                   enrollmentId={enrollmentId}

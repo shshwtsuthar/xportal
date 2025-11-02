@@ -80,6 +80,7 @@ This is what we sell: education. The logic here is all about structuring and del
 1.  **The Building Blocks - Units of Competency:** The smallest academic component we manage is a "Unit" (what AVETMISS calls a Subject). In XPortal, a Head of Department can create and manage these Units. Each Unit has a code, a name, nominal hours, and critically, can be marked with prerequisites.
 2.  **The Blueprint - Qualifications (Programs/Courses):** A Qualification is essentially a container of Units. The Head of Department creates a Qualification (e.g., "Diploma of Business") and then adds the required Units to it. This defines the curriculum. The sequence and prerequisites of these units form the "packaging rules" for that qualification.
 3.  **Multi-Program Enrollments:** A single student can be enrolled in multiple Qualifications simultaneously. In the system, this simply means their `Student` record is linked to more than one `Qualification` record. Each enrollment is tracked independently for academic progress and finances.
+4.  **Assessment Outcomes:** Trainers mark each subject assignment as `S` (Satisfactory) or `NYS` (Not Yet Satisfactory). Once every assignment for a unit is marked `S`, the system automatically records the unit outcome as `C` (Competent); any outstanding `NYS` keeps the unit at `NYC` (Not Yet Competent).
 
 #### **Section 2.2: The Art of Timetabling - Our Rolling Intake Model Explained**
 

@@ -13,6 +13,12 @@ type UploadParams = {
   file: File;
   notes?: string | null;
 };
+type UpdateGradeParams = {
+  submissionId: string;
+  studentId: string;
+  subjectId: string;
+  grade: 'S' | 'NYS';
+};
 type DeleteParams = {
   submissionId: string;
   filePath: string;
@@ -103,6 +109,33 @@ export const useUploadStudentSubmission = () => {
       await queryClient.invalidateQueries({
         queryKey: ['student-submissions', v.studentId, v.subjectId],
       });
+    },
+  });
+};
+
+/**
+ * Update the grade of a student's assignment submission.
+ */
+export const useUpdateSubmissionGrade = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ submissionId, grade }: UpdateGradeParams) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('student_assignment_submissions')
+        .update({ grade })
+        .eq('id', submissionId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: async (_data, { studentId, subjectId }) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['student-submissions', studentId, subjectId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['student-enrollment-subjects', studentId],
+        }),
+      ]);
     },
   });
 };

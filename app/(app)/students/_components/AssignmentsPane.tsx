@@ -8,6 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -37,6 +44,7 @@ import {
   useCreateSubmissionSignedUrl,
   useGetStudentSubmissions,
   useUploadStudentSubmission,
+  useUpdateSubmissionGrade,
 } from '@/src/hooks/useStudentSubmissions';
 
 type Props = { studentId: string };
@@ -160,10 +168,78 @@ export function AssignmentsPane({ studentId }: Props) {
   const studentSubmissions = submissionGroups.student;
   const trainerFeedback = submissionGroups.trainer;
 
+  const latestSubmissionByAssignment = useMemo(() => {
+    const map = new Map<string, StudentSubmission>();
+    const getTimestamp = (submission: StudentSubmission) => {
+      const source =
+        (submission.submitted_at as string | null) ??
+        (submission.created_at as string | null);
+      if (!source) return 0;
+      const date = new Date(source);
+      return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+    };
+
+    const sorted = [...allSubmissions].sort(
+      (a, b) => getTimestamp(b) - getTimestamp(a)
+    );
+
+    sorted.forEach((submission) => {
+      const assignmentId = submission.assignment_id as string;
+      if (!map.has(assignmentId)) {
+        map.set(assignmentId, submission);
+      }
+    });
+
+    return map;
+  }, [allSubmissions]);
+
+  const latestSubmissionForSelectedAssignment = useMemo(() => {
+    if (!selectedAssignmentId) return undefined;
+    return latestSubmissionByAssignment.get(selectedAssignmentId);
+  }, [latestSubmissionByAssignment, selectedAssignmentId]);
+
   const createAssignment = useCreateSubjectAssignment();
   const assignmentUrl = useCreateAssignmentSignedUrl();
   const uploadSubmission = useUploadStudentSubmission();
   const submissionUrl = useCreateSubmissionSignedUrl();
+  const updateGrade = useUpdateSubmissionGrade();
+  const isGradeUpdating = updateGrade.isPending;
+  const selectedAssignmentGrade =
+    latestSubmissionForSelectedAssignment?.grade ?? null;
+  const selectedAssignmentGradeVariant =
+    selectedAssignmentGrade === 'S'
+      ? 'default'
+      : selectedAssignmentGrade === 'NYS'
+        ? 'destructive'
+        : 'outline';
+
+  const handleGradeChange = async (
+    submission: StudentSubmission,
+    grade: 'S' | 'NYS'
+  ) => {
+    if (!selectedSubjectId) {
+      toast.error('Select a subject before updating grades');
+      return;
+    }
+
+    if (submission.grade === grade) {
+      return;
+    }
+
+    try {
+      await updateGrade.mutateAsync({
+        submissionId: submission.id as string,
+        studentId,
+        subjectId: selectedSubjectId,
+        grade,
+      });
+      toast.success('Grade updated');
+    } catch (err) {
+      toast.error(
+        `Failed to update grade: ${String((err as Error).message || err)}`
+      );
+    }
+  };
 
   const handleStudentUpload = async (
     assignmentId: string,
@@ -242,6 +318,23 @@ export function AssignmentsPane({ studentId }: Props) {
               if (!subj) return null;
               const sid = s.program_plan_subjects?.subject_id as string;
               const isSelected = sid === selectedSubjectId;
+              const outcomeCode = (s.outcome_code ?? null) as
+                | 'C'
+                | 'NYC'
+                | null;
+              const outcomeBadgeVariant =
+                outcomeCode === 'C'
+                  ? 'default'
+                  : outcomeCode === 'NYC'
+                    ? 'destructive'
+                    : 'outline';
+              const outcomeBadgeText = outcomeCode ?? '—';
+              const outcomeDescription =
+                outcomeCode === 'C'
+                  ? 'Competent'
+                  : outcomeCode === 'NYC'
+                    ? 'Not Yet Competent'
+                    : 'Not yet assessed';
               return (
                 <div
                   key={`${sid}-${subj.code}`}
@@ -264,9 +357,20 @@ export function AssignmentsPane({ studentId }: Props) {
                   >
                     {subj.code}
                   </Badge>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">
-                      {subj.name}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="truncate text-sm font-medium">
+                        {subj.name}
+                      </div>
+                      <Badge
+                        variant={outcomeBadgeVariant}
+                        className="shrink-0 uppercase"
+                      >
+                        {outcomeBadgeText}
+                      </Badge>
+                    </div>
+                    <div className="text-muted-foreground mt-1 text-xs">
+                      {outcomeDescription}
                     </div>
                   </div>
                 </div>
@@ -319,54 +423,126 @@ export function AssignmentsPane({ studentId }: Props) {
                 No assignments yet.
               </div>
             )}
-            {assignments.map((a) => (
-              <div
-                key={a.id}
-                className={`cursor-pointer rounded-md border p-3 transition-colors ${
-                  a.id === selectedAssignmentId
-                    ? 'border-primary bg-primary/5'
-                    : 'hover:bg-muted/50'
-                }`}
-                onClick={() => setSelectedAssignmentId(a.id as string)}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{a.title}</div>
-                    {a.due_date && (
-                      <div className="text-muted-foreground text-xs">
-                        Due: {a.due_date as unknown as string}
+            {assignments.map((a) => {
+              const assignmentId = a.id as string;
+              const assignmentLatestSubmission =
+                latestSubmissionByAssignment.get(assignmentId);
+              const assignmentGrade = assignmentLatestSubmission?.grade ?? null;
+              const gradeBadgeVariant =
+                assignmentGrade === 'S'
+                  ? 'default'
+                  : assignmentGrade === 'NYS'
+                    ? 'destructive'
+                    : 'outline';
+
+              return (
+                <div
+                  key={a.id}
+                  className={`cursor-pointer rounded-md border p-3 transition-colors ${
+                    a.id === selectedAssignmentId
+                      ? 'border-primary bg-primary/5'
+                      : 'hover:bg-muted/50'
+                  }`}
+                  onClick={() => setSelectedAssignmentId(assignmentId)}
+                >
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-medium">{a.title}</div>
+                        {a.due_date && (
+                          <div className="text-muted-foreground text-xs">
+                            Due: {a.due_date as unknown as string}
+                          </div>
+                        )}
+                        {a.description && (
+                          <div className="text-muted-foreground mt-1 text-xs">
+                            {a.description}
+                          </div>
+                        )}
+                        {assignmentGrade && (
+                          <Badge
+                            variant={gradeBadgeVariant}
+                            className="mt-2 w-fit uppercase"
+                          >
+                            {assignmentGrade}
+                          </Badge>
+                        )}
                       </div>
-                    )}
-                    {a.description && (
-                      <div className="text-muted-foreground mt-1 text-xs">
-                        {a.description}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const url = await assignmentUrl.mutateAsync({
+                              filePath: a.file_path!,
+                              expiresIn: 60,
+                            });
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          } catch (e) {
+                            toast.error(
+                              `Download failed: ${String(
+                                (e as Error).message || e
+                              )}`
+                            );
+                          }
+                        }}
+                        aria-label={`Download ${a.file_name}`}
+                      >
+                        <Download className="mr-2 h-4 w-4" /> Download
+                      </Button>
+                    </div>
+                    {a.id === selectedAssignmentId && (
+                      <div
+                        className="space-y-2"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <Label className="text-muted-foreground text-xs">
+                          Assessment outcome
+                        </Label>
+                        {assignmentLatestSubmission ? (
+                          <Select
+                            value={
+                              assignmentLatestSubmission.grade ?? undefined
+                            }
+                            onValueChange={(value) =>
+                              void handleGradeChange(
+                                assignmentLatestSubmission,
+                                value as 'S' | 'NYS'
+                              )
+                            }
+                            disabled={isGradeUpdating}
+                          >
+                            <SelectTrigger
+                              className="w-full"
+                              disabled={isGradeUpdating}
+                            >
+                              <SelectValue placeholder="Set outcome" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="S">
+                                S - Satisfactory
+                              </SelectItem>
+                              <SelectItem value="NYS">
+                                NYS - Not Yet Satisfactory
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="text-muted-foreground text-xs">
+                            Upload a student submission before grading.
+                          </p>
+                        )}
+                        <p className="text-muted-foreground text-xs">
+                          Unit outcomes update automatically once all
+                          assessments are marked Satisfactory.
+                        </p>
                       </div>
                     )}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try {
-                        const url = await assignmentUrl.mutateAsync({
-                          filePath: a.file_path!,
-                          expiresIn: 60,
-                        });
-                        window.open(url, '_blank', 'noopener,noreferrer');
-                      } catch (e) {
-                        toast.error(
-                          `Download failed: ${String((e as Error).message || e)}`
-                        );
-                      }
-                    }}
-                    aria-label={`Download ${a.file_name}`}
-                  >
-                    <Download className="mr-2 h-4 w-4" /> Download
-                  </Button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -395,6 +571,14 @@ export function AssignmentsPane({ studentId }: Props) {
                     : 'Choose an assignment to manage submissions'}
                 </div>
               </div>
+              {selectedAssignmentGrade && (
+                <Badge
+                  variant={selectedAssignmentGradeVariant}
+                  className="uppercase"
+                >
+                  {selectedAssignmentGrade}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -439,6 +623,9 @@ export function AssignmentsPane({ studentId }: Props) {
                         <TableHead className="border-r">File</TableHead>
                         <TableHead className="border-r">Submitted at</TableHead>
                         <TableHead className="border-r">Notes</TableHead>
+                        <TableHead className="border-r text-center">
+                          Grade
+                        </TableHead>
                         <TableHead className="w-32 text-right">
                           Actions
                         </TableHead>
@@ -447,7 +634,7 @@ export function AssignmentsPane({ studentId }: Props) {
                     <TableBody>
                       {studentSubmissions.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={4}>
+                          <TableCell colSpan={5}>
                             <div className="text-muted-foreground text-sm">
                               No student submissions yet
                             </div>
@@ -467,6 +654,22 @@ export function AssignmentsPane({ studentId }: Props) {
                           </TableCell>
                           <TableCell className="border-r text-sm">
                             {submission.description ?? '—'}
+                          </TableCell>
+                          <TableCell className="border-r text-center">
+                            {submission.grade ? (
+                              <Badge
+                                variant={
+                                  submission.grade === 'S'
+                                    ? 'default'
+                                    : 'destructive'
+                                }
+                                className="uppercase"
+                              >
+                                {submission.grade}
+                              </Badge>
+                            ) : (
+                              '—'
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button

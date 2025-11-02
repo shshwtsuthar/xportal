@@ -3,6 +3,8 @@
 - No migrations required; storage buckets unchanged.
 - Trainer feedback uploads store metadata in `student_assignment_submissions.notes` as JSON `{ "type": "trainer-feedback", "message": string | null }`. Existing plain-text notes continue to render under student submissions.
 - After deploy, brief trainers on the new "Upload feedback" action within the student assignments pane.
+- Run migration `20251102094500_assignment_grading_status.sql` to enable automatic unit outcome recalculation, then regenerate types with `supabase gen types typescript --local > database.types.ts`.
+- Communicate the new grading flow: tutors select `S` or `NYS` per assignment, and subjects flip to `C`/`NYC` automatically when all assessments are satisfactory.
 
 ### Compose Email API
 

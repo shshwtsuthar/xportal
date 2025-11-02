@@ -4,6 +4,10 @@
   - Converted subject selector into accessible list rows
   - Split submissions into student uploads vs trainer feedback with dedicated actions
   - Added trainer feedback upload flow using structured notes metadata
+- feat(students): Add grading workflow and automatic unit outcomes
+  - Allow tutors to mark assignments as `S` or `NYS` with inline controls
+  - Surface subject outcome badges across assignments pane and course progression
+  - Trigger enrollment subject outcomes to flip to `C` or `NYC` via database trigger
 
 ## Student Display ID Overhaul
 
