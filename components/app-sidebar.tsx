@@ -29,7 +29,10 @@ import {
   SidebarRail,
   SidebarFooter,
 } from '@/components/ui/sidebar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useGetRto } from '@/src/hooks/useGetRto';
+import { useRtoProfileImageUrl } from '@/src/hooks/useRtoProfileImage';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Button } from '@/components/ui/button';
 import { useComposeEmail } from '@/components/providers/compose-email';
@@ -97,6 +100,8 @@ const NAV: NavItem[] = [
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { data: rto } = useGetRto();
+  const { data: profileImageUrl, isLoading: isProfileImageLoading } =
+    useRtoProfileImageUrl(rto?.profile_image_path);
   const { open } = useComposeEmail();
 
   const isActive = (href: string) => pathname === href;
@@ -110,9 +115,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip="XPortal">
               <Link href="/dashboard" aria-label="XPortal Home">
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <GalleryVerticalEnd className="size-4" />
-                </div>
+                {isProfileImageLoading ? (
+                  <Skeleton className="size-8 rounded-lg" />
+                ) : (
+                  <Avatar className="border-border size-8 rounded-lg border">
+                    {profileImageUrl ? (
+                      <AvatarImage
+                        src={profileImageUrl}
+                        alt="RTO profile image"
+                      />
+                    ) : (
+                      <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
+                        <GalleryVerticalEnd className="size-4" />
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                )}
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-medium">XPortal</span>
                   <span className="text-muted-foreground text-xs">

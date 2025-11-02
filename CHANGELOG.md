@@ -8,6 +8,10 @@
   - Allow tutors to mark assignments as `S` or `NYS` with inline controls
   - Surface subject outcome badges across assignments pane and course progression
   - Trigger enrollment subject outcomes to flip to `C` or `NYC` via database trigger
+- feat(rto): Add profile image upload backed by Supabase storage
+  - Added nullable `profile_image_path` on `public.rtos` and private `rto-assets` bucket policies
+  - Built drag-and-drop uploader with previews on the RTO management page
+  - Display the uploaded image in the sidebar branding beside the XPortal title
 
 ## Student Display ID Overhaul
 

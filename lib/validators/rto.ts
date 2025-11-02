@@ -35,6 +35,7 @@ export const rtoSchema = z.object({
   contact_name: z.string().max(50, 'Max 50 characters').optional(),
   statistical_area_1_id: z.string().max(10, 'Max 10 characters').optional(),
   statistical_area_2_id: z.string().max(10, 'Max 10 characters').optional(),
+  profile_image_path: z.string().optional(),
 });
 
 export type RtoFormValues = z.infer<typeof rtoSchema>;

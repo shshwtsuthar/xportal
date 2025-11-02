@@ -1,3 +1,10 @@
+## Deployment Notes - RTO Profile Image Upload (2025-11-02)
+
+- Run migration `20251102120000_rto_profile_image.sql` to add `profile_image_path` and provision the private `rto-assets` bucket and RLS policies.
+- After the migration, regenerate types: `supabase gen types typescript --local > database.types.ts`.
+- No environment variables required. Confirm Supabase storage public CDN is enabled if logos should load outside authenticated sessions.
+- Communicate to admins that the RTO logo uploader accepts PNG/JPG/WebP/GIF/SVG up to 5MB.
+
 ## Deployment Notes - Assignments Pane Refresh (2025-11-02)
 
 - No migrations required; storage buckets unchanged.

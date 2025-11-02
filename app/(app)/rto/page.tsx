@@ -8,6 +8,7 @@ import { RtoFormValues, rtoSchema } from '@/lib/validators/rto';
 import { useGetRto } from '@/src/hooks/useGetRto';
 import { useUpdateRto } from '@/src/hooks/useUpdateRto';
 import { RtoForm } from './_components/RtoForm';
+import { RtoProfileImageSection } from './_components/RtoProfileImageSection';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -68,6 +69,7 @@ export default function RtoPage() {
         contact_name: rto.contact_name || '',
         statistical_area_1_id: rto.statistical_area_1_id || '',
         statistical_area_2_id: rto.statistical_area_2_id || '',
+        profile_image_path: rto.profile_image_path || undefined,
       });
     }
   }, [rto, form]);
@@ -75,6 +77,7 @@ export default function RtoPage() {
   const handleSaveDraft = async () => {
     try {
       const values = form.getValues();
+      const { profile_image_path: _profileImagePath, ...formValues } = values;
 
       // Validate format before saving
       const validationResult = rtoSchema.safeParse(values);
@@ -94,18 +97,19 @@ export default function RtoPage() {
 
       // Clean up empty strings
       const cleanedValues = {
-        ...values,
-        address_line_1: values.address_line_1 || null,
-        suburb: values.suburb || null,
-        state: values.state || null,
-        postcode: values.postcode || null,
-        type_identifier: values.type_identifier || null,
-        phone_number: values.phone_number || null,
-        facsimile_number: values.facsimile_number || null,
-        email_address: values.email_address || null,
-        contact_name: values.contact_name || null,
-        statistical_area_1_id: values.statistical_area_1_id || null,
-        statistical_area_2_id: values.statistical_area_2_id || null,
+        name: formValues.name,
+        rto_code: formValues.rto_code,
+        address_line_1: formValues.address_line_1 || null,
+        suburb: formValues.suburb || null,
+        state: formValues.state || null,
+        postcode: formValues.postcode || null,
+        type_identifier: formValues.type_identifier || null,
+        phone_number: formValues.phone_number || null,
+        facsimile_number: formValues.facsimile_number || null,
+        email_address: formValues.email_address || null,
+        contact_name: formValues.contact_name || null,
+        statistical_area_1_id: formValues.statistical_area_1_id || null,
+        statistical_area_2_id: formValues.statistical_area_2_id || null,
       };
 
       await updateRto.mutateAsync(cleanedValues);
@@ -194,7 +198,10 @@ export default function RtoPage() {
           </CardTitle>
         </CardHeader>
         <Form {...form}>
-          <CardContent>
+          <CardContent className="space-y-6">
+            <RtoProfileImageSection
+              profileImagePath={rto?.profile_image_path}
+            />
             <RtoForm form={form} />
           </CardContent>
           <CardFooter className="flex items-center justify-between">
