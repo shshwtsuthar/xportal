@@ -1,3 +1,10 @@
+## 2025-11-02
+
+- refactor(students): Refresh assignments pane layout on `students/{id}`
+  - Converted subject selector into accessible list rows
+  - Split submissions into student uploads vs trainer feedback with dedicated actions
+  - Added trainer feedback upload flow using structured notes metadata
+
 ## Student Display ID Overhaul
 
 - Implemented human-friendly student IDs generated in the database:

@@ -1,3 +1,9 @@
+## Deployment Notes - Assignments Pane Refresh (2025-11-02)
+
+- No migrations required; storage buckets unchanged.
+- Trainer feedback uploads store metadata in `student_assignment_submissions.notes` as JSON `{ "type": "trainer-feedback", "message": string | null }`. Existing plain-text notes continue to render under student submissions.
+- After deploy, brief trainers on the new "Upload feedback" action within the student assignments pane.
+
 ### Compose Email API
 
 - Ensure environment variables are configured:

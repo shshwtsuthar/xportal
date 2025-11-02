@@ -1,6 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { KeyboardEvent, useMemo, useState } from 'react';
+import { Tables } from '@/database.types';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +26,7 @@ import {
 import { Download, Plus, UploadCloud } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { useGetStudentEnrollmentSubjects } from '@/src/hooks/useGetStudentEnrollmentSubjects';
 import {
   useGetSubjectAssignments,
@@ -37,6 +40,52 @@ import {
 } from '@/src/hooks/useStudentSubmissions';
 
 type Props = { studentId: string };
+
+type StudentSubmission = Tables<'student_assignment_submissions'>;
+
+type ParsedSubmission = StudentSubmission & {
+  description: string | null;
+};
+
+type SubmissionGroups = {
+  student: ParsedSubmission[];
+  trainer: ParsedSubmission[];
+};
+
+const parseSubmissionNotes = (
+  notes: string | null
+): { kind: 'student' | 'trainer'; description: string | null } => {
+  if (!notes) {
+    return { kind: 'student', description: null };
+  }
+
+  const trimmed = notes.trim();
+  if (!trimmed) {
+    return { kind: 'student', description: null };
+  }
+
+  const looksLikeJson = trimmed.startsWith('{') && trimmed.endsWith('}');
+  if (looksLikeJson) {
+    try {
+      const parsed = JSON.parse(trimmed) as {
+        type?: string;
+        message?: unknown;
+      };
+      if (parsed?.type === 'trainer-feedback') {
+        const message =
+          typeof parsed?.message === 'string' &&
+          parsed.message.trim().length > 0
+            ? parsed.message.trim()
+            : null;
+        return { kind: 'trainer', description: message };
+      }
+    } catch (_err) {
+      // Fallback to treating the value as a plain string below.
+    }
+  }
+
+  return { kind: 'student', description: trimmed };
+};
 
 export function AssignmentsPane({ studentId }: Props) {
   const { data: enrollmentSubjects = [] } =
@@ -60,6 +109,16 @@ export function AssignmentsPane({ studentId }: Props) {
     setSelectedAssignmentId(undefined); // Reset assignment selection when subject changes
   };
 
+  const handleSubjectKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    subjectId: string
+  ) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleSubjectChange(subjectId);
+    }
+  };
+
   const { data: assignments = [] } = useGetSubjectAssignments({
     subjectId: selectedSubjectId,
   });
@@ -79,10 +138,92 @@ export function AssignmentsPane({ studentId }: Props) {
     );
   }, [allSubmissions, selectedAssignmentId]);
 
+  const submissionGroups = useMemo<SubmissionGroups>(() => {
+    return submissions.reduce<SubmissionGroups>(
+      (acc, submission) => {
+        const parsed = parseSubmissionNotes(submission.notes);
+        const record: ParsedSubmission = {
+          ...submission,
+          description: parsed.description,
+        };
+        if (parsed.kind === 'trainer') {
+          acc.trainer.push(record);
+        } else {
+          acc.student.push(record);
+        }
+        return acc;
+      },
+      { student: [], trainer: [] }
+    );
+  }, [submissions]);
+
+  const studentSubmissions = submissionGroups.student;
+  const trainerFeedback = submissionGroups.trainer;
+
   const createAssignment = useCreateSubjectAssignment();
   const assignmentUrl = useCreateAssignmentSignedUrl();
   const uploadSubmission = useUploadStudentSubmission();
   const submissionUrl = useCreateSubmissionSignedUrl();
+
+  const handleStudentUpload = async (
+    assignmentId: string,
+    file: File,
+    notes?: string
+  ) => {
+    if (!selectedSubjectId) {
+      toast.error('Select a subject before uploading');
+      throw new Error('Subject not selected');
+    }
+
+    try {
+      await uploadSubmission.mutateAsync({
+        studentId,
+        subjectId: selectedSubjectId,
+        enrollmentId: null,
+        assignmentId,
+        file,
+        notes: notes && notes.trim().length > 0 ? notes.trim() : null,
+      });
+      toast.success('Submission uploaded');
+    } catch (err) {
+      toast.error(`Upload failed: ${String((err as Error).message || err)}`);
+      throw err;
+    }
+  };
+
+  const handleTrainerUpload = async (
+    assignmentId: string,
+    file: File,
+    notes?: string
+  ) => {
+    if (!selectedSubjectId) {
+      toast.error('Select a subject before uploading feedback');
+      throw new Error('Subject not selected');
+    }
+
+    const trimmed = notes?.trim() ?? '';
+    const feedbackNotes = JSON.stringify({
+      type: 'trainer-feedback',
+      message: trimmed.length > 0 ? trimmed : null,
+    });
+
+    try {
+      await uploadSubmission.mutateAsync({
+        studentId,
+        subjectId: selectedSubjectId,
+        enrollmentId: null,
+        assignmentId,
+        file,
+        notes: feedbackNotes,
+      });
+      toast.success('Feedback uploaded');
+    } catch (err) {
+      toast.error(`Upload failed: ${String((err as Error).message || err)}`);
+      throw err;
+    }
+  };
+
+  const assignmentTitle = selectedAssignment?.title ?? 'Selected assignment';
 
   return (
     <div className="flex h-[600px] overflow-hidden rounded-lg border">
@@ -100,20 +241,35 @@ export function AssignmentsPane({ studentId }: Props) {
               const subj = s.subjects;
               if (!subj) return null;
               const sid = s.program_plan_subjects?.subject_id as string;
+              const isSelected = sid === selectedSubjectId;
               return (
-                <Button
+                <div
                   key={`${sid}-${subj.code}`}
-                  variant={sid === selectedSubjectId ? 'default' : 'ghost'}
-                  size="sm"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSubjectChange(sid)}
-                  className="h-auto w-full justify-start px-3 py-2"
+                  onKeyDown={(event) => handleSubjectKeyDown(event, sid)}
                   aria-label={`Select subject ${subj.code}`}
+                  aria-pressed={isSelected}
+                  className={cn(
+                    'focus-visible:ring-ring flex items-start gap-3 rounded-md border px-3 py-2 text-left transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                    isSelected
+                      ? 'border-primary bg-primary/5'
+                      : 'hover:bg-muted/50 border-transparent'
+                  )}
                 >
-                  <span className="mr-2 text-sm whitespace-nowrap">
+                  <Badge
+                    variant={isSelected ? 'default' : 'outline'}
+                    className="mt-0.5 uppercase"
+                  >
                     {subj.code}
-                  </span>
-                  <span className="truncate text-sm">{subj.name}</span>
-                </Button>
+                  </Badge>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">
+                      {subj.name}
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -218,46 +374,28 @@ export function AssignmentsPane({ studentId }: Props) {
       {/* Right Pane - Submissions */}
       <div className="flex w-1/3 flex-col">
         <div className="border-b p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="font-medium">Student&apos;s submissions</div>
-              <div className="text-muted-foreground text-sm">
-                {selectedAssignmentId
-                  ? `${submissions.length} submissions for selected assignment`
-                  : 'Select an assignment to view submissions'}
+          <div className="flex flex-col gap-2">
+            <div className="text-muted-foreground text-sm font-medium">
+              Selected assignment
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="truncate font-medium">
+                  {selectedAssignment?.title ?? 'Select an assignment'}
+                </div>
+                <div className="text-muted-foreground text-sm">
+                  {selectedAssignmentId
+                    ? `${studentSubmissions.length} student ${
+                        studentSubmissions.length === 1
+                          ? 'submission'
+                          : 'submissions'
+                      } · ${trainerFeedback.length} trainer feedback ${
+                        trainerFeedback.length === 1 ? 'entry' : 'entries'
+                      }`
+                    : 'Choose an assignment to manage submissions'}
+                </div>
               </div>
             </div>
-            {selectedAssignmentId && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" aria-label="Upload submission">
-                    <UploadCloud className="mr-2 h-4 w-4" /> Upload
-                  </Button>
-                </DialogTrigger>
-                <UploadSubmissionDialog
-                  assignmentId={selectedAssignmentId}
-                  assignmentTitle={selectedAssignment?.title as string}
-                  onUpload={async (assignmentId, file, notes) => {
-                    if (!selectedSubjectId) return;
-                    try {
-                      await uploadSubmission.mutateAsync({
-                        studentId,
-                        subjectId: selectedSubjectId,
-                        enrollmentId: null,
-                        assignmentId,
-                        file,
-                        notes: notes || null,
-                      });
-                      toast.success('Submission uploaded');
-                    } catch (e) {
-                      toast.error(
-                        `Upload failed: ${String((e as Error).message || e)}`
-                      );
-                    }
-                  }}
-                />
-              </Dialog>
-            )}
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
@@ -266,60 +404,206 @@ export function AssignmentsPane({ studentId }: Props) {
               Select an assignment to view submissions
             </div>
           ) : (
-            <div className="w-full overflow-hidden rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="border-r">Assignment</TableHead>
-                    <TableHead className="border-r">Submitted at</TableHead>
-                    <TableHead className="w-32 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {submissions.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={3}>
-                        <div className="text-muted-foreground text-sm">
-                          No submissions
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {submissions.map((s) => (
-                    <TableRow key={s.id}>
-                      <TableCell className="border-r">{s.file_name}</TableCell>
-                      <TableCell className="border-r text-sm">
-                        {format(
-                          new Date(s.submitted_at as string),
-                          'MMM dd, yyyy HH:mm'
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            try {
-                              const url = await submissionUrl.mutateAsync({
-                                filePath: s.file_path!,
-                                expiresIn: 60,
-                              });
-                              window.open(url, '_blank', 'noopener,noreferrer');
-                            } catch (e) {
-                              toast.error(
-                                `Download failed: ${String((e as Error).message || e)}`
-                              );
-                            }
-                          }}
-                          aria-label={`Download ${s.file_name}`}
-                        >
-                          <Download className="mr-2 h-4 w-4" /> Download
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="space-y-6">
+              <section aria-label="Student submissions">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-medium">
+                      Student submissions ({studentSubmissions.length})
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      Latest uploads are shown first
+                    </p>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button size="sm" aria-label="Upload submission">
+                        <UploadCloud className="mr-2 h-4 w-4" /> Upload
+                      </Button>
+                    </DialogTrigger>
+                    <UploadSubmissionDialog
+                      assignmentId={selectedAssignmentId}
+                      assignmentTitle={assignmentTitle}
+                      dialogTitle="Upload submission"
+                      submitLabel="Upload"
+                      descriptionLabel="Description"
+                      descriptionPlaceholder="Add a description for your submission..."
+                      onUpload={handleStudentUpload}
+                    />
+                  </Dialog>
+                </div>
+                <div className="w-full overflow-hidden rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="border-r">File</TableHead>
+                        <TableHead className="border-r">Submitted at</TableHead>
+                        <TableHead className="border-r">Notes</TableHead>
+                        <TableHead className="w-32 text-right">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {studentSubmissions.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4}>
+                            <div className="text-muted-foreground text-sm">
+                              No student submissions yet
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {studentSubmissions.map((submission) => (
+                        <TableRow key={submission.id}>
+                          <TableCell className="border-r">
+                            {submission.file_name}
+                          </TableCell>
+                          <TableCell className="border-r text-sm">
+                            {format(
+                              new Date(submission.submitted_at as string),
+                              'MMM dd, yyyy HH:mm'
+                            )}
+                          </TableCell>
+                          <TableCell className="border-r text-sm">
+                            {submission.description ?? '—'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const url = await submissionUrl.mutateAsync({
+                                    filePath: submission.file_path!,
+                                    expiresIn: 60,
+                                  });
+                                  window.open(
+                                    url,
+                                    '_blank',
+                                    'noopener,noreferrer'
+                                  );
+                                } catch (e) {
+                                  toast.error(
+                                    `Download failed: ${String(
+                                      (e as Error).message || e
+                                    )}`
+                                  );
+                                }
+                              }}
+                              aria-label={`Download ${submission.file_name}`}
+                            >
+                              <Download className="mr-2 h-4 w-4" /> Download
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </section>
+
+              <section aria-label="Trainer feedback">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-medium">
+                      Trainer feedback ({trainerFeedback.length})
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      Upload annotated files and notes for the student
+                    </p>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        aria-label="Upload feedback"
+                      >
+                        <UploadCloud className="mr-2 h-4 w-4" /> Upload feedback
+                      </Button>
+                    </DialogTrigger>
+                    <UploadSubmissionDialog
+                      assignmentId={selectedAssignmentId}
+                      assignmentTitle={assignmentTitle}
+                      dialogTitle="Upload feedback"
+                      submitLabel="Upload feedback"
+                      descriptionLabel="Feedback notes"
+                      descriptionPlaceholder="Share context for the student (optional)"
+                      onUpload={handleTrainerUpload}
+                    />
+                  </Dialog>
+                </div>
+                <div className="w-full overflow-hidden rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="border-r">File</TableHead>
+                        <TableHead className="border-r">Uploaded at</TableHead>
+                        <TableHead className="border-r">Message</TableHead>
+                        <TableHead className="w-32 text-right">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {trainerFeedback.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4}>
+                            <div className="text-muted-foreground text-sm">
+                              No feedback uploaded yet
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {trainerFeedback.map((submission) => (
+                        <TableRow key={submission.id}>
+                          <TableCell className="border-r">
+                            {submission.file_name}
+                          </TableCell>
+                          <TableCell className="border-r text-sm">
+                            {format(
+                              new Date(submission.submitted_at as string),
+                              'MMM dd, yyyy HH:mm'
+                            )}
+                          </TableCell>
+                          <TableCell className="border-r text-sm">
+                            {submission.description ?? '—'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const url = await submissionUrl.mutateAsync({
+                                    filePath: submission.file_path!,
+                                    expiresIn: 60,
+                                  });
+                                  window.open(
+                                    url,
+                                    '_blank',
+                                    'noopener,noreferrer'
+                                  );
+                                } catch (e) {
+                                  toast.error(
+                                    `Download failed: ${String(
+                                      (e as Error).message || e
+                                    )}`
+                                  );
+                                }
+                              }}
+                              aria-label={`Download ${submission.file_name}`}
+                            >
+                              <Download className="mr-2 h-4 w-4" /> Download
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </section>
             </div>
           )}
         </div>
@@ -328,7 +612,7 @@ export function AssignmentsPane({ studentId }: Props) {
   );
 }
 
-function CreateAssignmentDialog({
+const CreateAssignmentDialog = ({
   subjectId,
   onCreate,
 }: {
@@ -342,7 +626,7 @@ function CreateAssignmentDialog({
     visibleTo?: Date | null;
     file: File;
   }) => Promise<void>;
-}) {
+}) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -437,24 +721,34 @@ function CreateAssignmentDialog({
       </DialogFooter>
     </DialogContent>
   );
-}
+};
 
-function UploadSubmissionDialog({
-  assignmentId,
-  assignmentTitle,
-  onUpload,
-}: {
+type UploadSubmissionDialogProps = {
   assignmentId: string;
   assignmentTitle: string;
+  dialogTitle: string;
+  submitLabel: string;
+  descriptionLabel?: string;
+  descriptionPlaceholder?: string;
   onUpload: (assignmentId: string, file: File, notes?: string) => Promise<void>;
-}) {
+};
+
+const UploadSubmissionDialog = ({
+  assignmentId,
+  assignmentTitle,
+  dialogTitle,
+  submitLabel,
+  descriptionLabel,
+  descriptionPlaceholder,
+  onUpload,
+}: UploadSubmissionDialogProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [notes, setNotes] = useState('');
 
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Upload submission</DialogTitle>
+        <DialogTitle>{dialogTitle}</DialogTitle>
       </DialogHeader>
       <div className="grid gap-3 py-2">
         <div className="grid gap-1">
@@ -471,15 +765,19 @@ function UploadSubmissionDialog({
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
         </div>
-        <div className="grid gap-1">
-          <Label htmlFor="submission-notes">Description</Label>
-          <Textarea
-            id="submission-notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add a description for your submission..."
-          />
-        </div>
+        {descriptionLabel && (
+          <div className="grid gap-1">
+            <Label htmlFor="submission-notes">{descriptionLabel}</Label>
+            <Textarea
+              id="submission-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={
+                descriptionPlaceholder ?? 'Add additional information...'
+              }
+            />
+          </div>
+        )}
       </div>
       <DialogFooter>
         <Button
@@ -489,14 +787,18 @@ function UploadSubmissionDialog({
               toast.error('File is required');
               return;
             }
-            await onUpload(assignmentId, file, notes.trim() || undefined);
-            setFile(null);
-            setNotes('');
+            try {
+              await onUpload(assignmentId, file, notes.trim() || undefined);
+              setFile(null);
+              setNotes('');
+            } catch (_err) {
+              // Error toasts handled by onUpload; keep dialog open for retry.
+            }
           }}
         >
-          Upload
+          {submitLabel}
         </Button>
       </DialogFooter>
     </DialogContent>
   );
-}
+};
