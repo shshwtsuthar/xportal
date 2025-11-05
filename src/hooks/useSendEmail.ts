@@ -15,9 +15,15 @@ async function sendEmailApi(input: SendEmailInput): Promise<SendEmailResult> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  const data = (await res.json()) as SendEmailResult & { error?: string };
+  const data = (await res.json()) as SendEmailResult & {
+    error?: string;
+    details?: string;
+  };
   if (!res.ok) {
-    throw new Error(data.error || 'Failed to send email');
+    const errorMsg = data.details
+      ? `${data.error || 'Failed to send email'}: ${data.details}`
+      : data.error || 'Failed to send email';
+    throw new Error(errorMsg);
   }
   return { id: data.id ?? null };
 }
@@ -32,7 +38,7 @@ export const useSendEmail = () => {
   const queryClient = useQueryClient();
   return useMutation<{ id: string | null }, Error, SendEmailInput>({
     mutationFn: sendEmailApi,
-    onSuccess: async (data) => {
+    onSuccess: async (_data) => {
       toast.success('Email sent successfully');
       // Invalidate any future email-related queries if added later
       await queryClient.invalidateQueries({ queryKey: ['emails'] });

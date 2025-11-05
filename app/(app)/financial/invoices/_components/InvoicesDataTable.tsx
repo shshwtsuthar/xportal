@@ -9,8 +9,8 @@ import {
   useState,
 } from 'react';
 import { useCallback } from 'react';
-import Link from 'next/link';
-// removed unused Badge, Button
+import { Button } from '@/components/ui/button';
+import { RecordPaymentDialog } from './RecordPaymentDialog';
 import {
   Table,
   TableBody,
@@ -68,6 +68,9 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
     const [dragOverId, setDragOverId] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<
+      string | undefined
+    >();
 
     const tableKey = getInvoicesTableKey();
     const { data: prefs } = useGetTablePreferences(tableKey);
@@ -274,15 +277,15 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
                   <TableCell key={col.id}>{col.render(row)}</TableCell>
                 ))}
                 <TableCell className="text-right">
-                  {/* Future actions (view invoice, record payment, send email, etc.) */}
-                  <Link
-                    href="#"
-                    aria-label="Open invoice"
-                    className="text-primary hover:underline"
-                    tabIndex={0}
-                  >
-                    Open
-                  </Link>
+                  {row.status !== 'PAID' && row.status !== 'VOID' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedInvoiceId(row.id as string)}
+                    >
+                      Record Payment
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -351,6 +354,11 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
             </PaginationContent>
           </Pagination>
         </div>
+
+        <RecordPaymentDialog
+          invoiceId={selectedInvoiceId}
+          onClose={() => setSelectedInvoiceId(undefined)}
+        />
       </div>
     );
   }

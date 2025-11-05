@@ -4,6 +4,7 @@ import './globals.css';
 import { createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 import { QueryProvider } from './_providers/QueryProvider';
+import { AuthErrorHandler } from './_providers/AuthErrorHandler';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 
@@ -92,7 +93,9 @@ export default async function RootLayout({
           ]}
           enableSystem={false}
         >
-          <QueryProvider>{children}</QueryProvider>
+          <AuthErrorHandler>
+            <QueryProvider>{children}</QueryProvider>
+          </AuthErrorHandler>
           <Toaster />
         </ThemeProvider>
       </body>

@@ -23,6 +23,25 @@
   - Body: `{ to: string[], subject: string, html: string }`
   - Response: `{ id: string | null }`
 
+## Deployment Notes - Communications: Mail Logging (2025-11-05)
+
+1. Run the migration to create email logging schema:
+   - `supabase/migrations/20251105100000_email_logging.sql`
+2. Regenerate types immediately after:
+   - `supabase gen types typescript --local > database.types.ts`
+3. Configure environment variables:
+   - `RESEND_API_KEY`
+   - `RESEND_FROM` (e.g. `Acme RTO <no-reply@yourdomain.com>`)
+   - `RESEND_WEBHOOK_SECRET` (shared secret for webhook verification)
+4. Set up Resend webhook pointing to your deployment URL:
+   - Endpoint: `POST https://<your-domain>/api/webhooks/resend`
+   - Subscribe to events: `email.sent`, `email.delivered`, `email.bounced`, `email.complained` (optional: `email.delivery_delayed`)
+   - Add header `x-resend-secret: <RESEND_WEBHOOK_SECRET>`
+5. Smoke test:
+   - Send a test email via the compose dialog; verify a row appears on `/communications/mail`
+   - Trigger a delivery (or use Resend test addresses) and verify KPI cards increment
+   - Confirm status changes after webhook delivery
+
 - UI Integration:
   - The compose dialog is globally available via the provider `components/providers/compose-email.tsx` and can be opened from the sidebar "Mail" button.
   - Applications page has a "Mail" toolbar button that prefills recipients from filtered applications (all rows, ignoring pagination).

@@ -13,6 +13,7 @@ import {
   UserCheck,
   Building2,
   Mail,
+  MessageCircle,
 } from 'lucide-react';
 
 import {
@@ -86,6 +87,16 @@ const NAV: NavItem[] = [
       { title: 'Invoices', url: '/financial/invoices' },
       { title: 'Payment Templates', url: '/financial/templates' },
       { title: 'New Template', url: '/financial/templates/new' },
+    ],
+  },
+  {
+    title: 'Communications',
+    url: '/communications/mail',
+    icon: MessageCircle,
+    items: [
+      { title: 'Mail', url: '/communications/mail' },
+      { title: 'WhatsApp', url: '/communications/whatsapp' },
+      { title: 'SMS', url: '/communications/sms' },
     ],
   },
   {
@@ -198,7 +209,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               aria-label="Compose mail"
             >
               <Mail className="size-4" />
-              <span>Mail</span>
+              <span>Compose</span>
             </Button>
           </SidebarMenuItem>
         </SidebarMenu>

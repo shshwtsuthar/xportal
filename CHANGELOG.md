@@ -32,6 +32,20 @@
   - Collects primary emails from all filtered rows (ignoring pagination) and prefills Compose Email dialog
   - Button placed before Filter button, shows toast error if no emails found
   - Supports status tabs (Submitted, Accepted, etc.) and advanced filters
+
+## 2025-11-05 - Communications: Mail Logging & Page
+
+- feat(db): Email logging schema
+  - Enums: `email_status`, `email_participant_type`
+  - Tables: `email_messages`, `email_message_participants`, `email_message_attachments`, `email_message_status_events`
+  - RLS scoped by `get_my_rto_id()` with admin override
+- feat(api): Persist and track email sends
+  - Upgraded `POST /api/emails/send` to queue, send via Resend, and update status with events
+  - Added webhook `POST /api/webhooks/resend` (requires `RESEND_WEBHOOK_SECRET`) to record delivered/bounced/complained
+- feat(hooks): Added `useGetEmailStats`, `useGetEmails`, `useGetEmailById`
+- feat(ui): New Mail page at `/communications/mail`
+  - 4 KPI cards (Total Sent, Sent 7d, Delivered 7d, Failed 7d)
+  - Data table with subject/status/subject-search filters, pagination, and drawer preview with HTML body
 ## 2025-10-27
 
 - feat(invoices): Implement Invoices DataTable parity with Applications
