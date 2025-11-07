@@ -41,6 +41,28 @@
    - Send a test email via the compose dialog; verify a row appears on `/communications/mail`
    - Trigger a delivery (or use Resend test addresses) and verify KPI cards increment
    - Confirm status changes after webhook delivery
+## Deployment Notes - Twilio WhatsApp Prerequisites (2025-11-06)
+
+1. Run the migrations:
+   - `supabase/migrations/20251106103000_twilio_settings.sql`
+   - `supabase/migrations/20251106120000_whatsapp_logging.sql`
+2. Regenerate types immediately after:
+   - `supabase gen types typescript --local > database.types.ts`
+3. Configure environment variables (server):
+   - `TWILIO_CFG_ENC_KEY` (min 32 chars; used to encrypt/decrypt Twilio Auth Token)
+4. In-app configuration (Settings > Twilio):
+   - Enter Account SID and Auth Token (masked after save)
+   - Optionally set Messaging Service SID
+   - Add WhatsApp sender numbers (E.164) with channel `whatsapp`
+   - Toggle "Validate Webhooks" as desired
+5. Twilio Console setup:
+   - Inbound Webhook (WhatsApp): `POST https://<your-domain>/api/communications/whatsapp/webhook`
+   - Status Callback: `POST https://<your-domain>/api/communications/whatsapp/status`
+6. Smoke test:
+   - Use "Test Connection" on Settings > Twilio
+   - Send a WhatsApp message to your registered number; verify a row in `whatsapp_messages`
+   - Confirm status updates via Twilio callback change `whatsapp_messages.status`
+
 
 - UI Integration:
   - The compose dialog is globally available via the provider `components/providers/compose-email.tsx` and can be opened from the sidebar "Mail" button.
