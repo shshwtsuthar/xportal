@@ -52,6 +52,7 @@
 
 - No database schema changes or regenerated types required.
 - Ensure Supabase already contains `applications` and `students` data so the chart shows meaningful progressions; empty datasets render a flat baseline.
+- Optional: rerun `supabase db reset` locally if you want the enriched seed timestamps that better demonstrate cumulative growth through 2025.
 - Post-deploy checks:
   - Load `/dashboard` and confirm the cumulative chart renders under the KPI cards without errors.
   - Hover over the chart to verify tooltip values and legend entries for both applications and students series.

@@ -119,21 +119,25 @@ export function CumulativeMetricsChart() {
             <ChartLegend content={<ChartLegendContent />} />
             <Area
               dataKey="applications"
-              type="monotone"
+              type="basis"
               stroke="var(--color-applications)"
               fill="var(--color-applications)"
               fillOpacity={0.18}
               strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
               dot={false}
               activeDot={{ r: 5 }}
             />
             <Area
               dataKey="students"
-              type="monotone"
+              type="basis"
               stroke="var(--color-students)"
               fill="var(--color-students)"
               fillOpacity={0.18}
               strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
               dot={false}
               activeDot={{ r: 5 }}
             />

@@ -949,7 +949,7 @@ BEGIN
   -- CORRECTED APPROACH: Create all applications in DRAFT first, then simulate workflow progression
   CREATE TEMP TABLE tmp_apps (
     first_name text, last_name text, email text, dob date, is_intl boolean, program_id uuid, timetable_id uuid,
-    final_status text, proposed date, agent_id uuid
+    final_status text, proposed date, agent_id uuid, seed_created_at timestamptz
   );
 
   -- Populate applications - all start as DRAFT, final_status indicates target status
@@ -957,48 +957,48 @@ BEGIN
   SELECT * FROM (
     VALUES
     -- Will stay DRAFT (6)
-    ('Arjun','Kumar','arjun.kumar@example.com','2002-05-12'::date,true, v_prog_it_id, v_tt_it_id,'DRAFT','2025-02-10'::date,(SELECT id FROM tmp_agents LIMIT 1)),
-    ('Sofia','Martinez','sofia.martinez@example.com','2001-08-21',true, v_prog_bus_id, v_tt_bus_id,'DRAFT','2025-03-01',NULL),
-    ('Noah','Williams','noah.williams@example.com','2003-02-02',false, v_prog_hosp_id, v_tt_hosp_id,'DRAFT','2025-02-24',NULL),
-    ('Mia','Chen','mia.chen@example.com','2000-12-01',true, v_prog_it_id, v_tt_it_id,'DRAFT','2025-03-03',NULL),
-    ('Liam','Nguyen','liam.nguyen@example.com','2004-07-30',true, v_prog_bus_id, v_tt_bus_id,'DRAFT','2025-02-17',NULL),
-    ('Zara','Ali','zara.ali@example.com','2002-03-18',true, v_prog_hosp_id, v_tt_hosp_id,'DRAFT','2025-02-17',NULL),
+    ('Arjun','Kumar','arjun.kumar@example.com','2002-05-12'::date,true, v_prog_it_id, v_tt_it_id,'DRAFT','2025-02-10'::date,(SELECT id FROM tmp_agents LIMIT 1),'2025-01-05 09:00:00+11'::timestamptz),
+    ('Sofia','Martinez','sofia.martinez@example.com','2001-08-21',true, v_prog_bus_id, v_tt_bus_id,'DRAFT','2025-03-01',NULL,'2025-01-12 09:00:00+11'::timestamptz),
+    ('Noah','Williams','noah.williams@example.com','2003-02-02',false, v_prog_hosp_id, v_tt_hosp_id,'DRAFT','2025-02-24',NULL,'2025-01-19 09:00:00+11'::timestamptz),
+    ('Mia','Chen','mia.chen@example.com','2000-12-01',true, v_prog_it_id, v_tt_it_id,'DRAFT','2025-03-03',NULL,'2025-01-26 09:00:00+11'::timestamptz),
+    ('Liam','Nguyen','liam.nguyen@example.com','2004-07-30',true, v_prog_bus_id, v_tt_bus_id,'DRAFT','2025-02-17',NULL,'2025-02-02 09:00:00+11'::timestamptz),
+    ('Zara','Ali','zara.ali@example.com','2002-03-18',true, v_prog_hosp_id, v_tt_hosp_id,'DRAFT','2025-02-17',NULL,'2025-02-09 09:00:00+11'::timestamptz),
     -- Will become SUBMITTED (5)
-    ('Daniel','Hernandez','daniel.h@example.com','2001-10-10',true, v_prog_it_id, v_tt_it_id,'SUBMITTED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 1 LIMIT 1)),
-    ('Isabella','Rossi','isabella.rossi@example.com','2000-06-22',true, v_prog_bus_id, v_tt_bus_id,'SUBMITTED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 2 LIMIT 1)),
-    ('Ethan','Johnson','ethan.j@example.com','1999-11-11',false, v_prog_hosp_id, v_tt_hosp_id,'SUBMITTED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 3 LIMIT 1)),
-    ('Hana','Yamamoto','hana.y@example.com','2002-09-15',true, v_prog_it_id, v_tt_it_id,'SUBMITTED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 4 LIMIT 1)),
-    ('Omar','Hassan','omar.hassan@example.com','2001-04-05',true, v_prog_bus_id, v_tt_bus_id,'SUBMITTED','2025-03-10',(SELECT id FROM tmp_agents OFFSET 5 LIMIT 1)),
+    ('Daniel','Hernandez','daniel.h@example.com','2001-10-10',true, v_prog_it_id, v_tt_it_id,'SUBMITTED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 1 LIMIT 1),'2025-02-16 09:00:00+11'::timestamptz),
+    ('Isabella','Rossi','isabella.rossi@example.com','2000-06-22',true, v_prog_bus_id, v_tt_bus_id,'SUBMITTED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 2 LIMIT 1),'2025-02-23 09:00:00+11'::timestamptz),
+    ('Ethan','Johnson','ethan.j@example.com','1999-11-11',false, v_prog_hosp_id, v_tt_hosp_id,'SUBMITTED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 3 LIMIT 1),'2025-03-01 09:00:00+11'::timestamptz),
+    ('Hana','Yamamoto','hana.y@example.com','2002-09-15',true, v_prog_it_id, v_tt_it_id,'SUBMITTED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 4 LIMIT 1),'2025-03-08 09:00:00+11'::timestamptz),
+    ('Omar','Hassan','omar.hassan@example.com','2001-04-05',true, v_prog_bus_id, v_tt_bus_id,'SUBMITTED','2025-03-10',(SELECT id FROM tmp_agents OFFSET 5 LIMIT 1),'2025-03-15 09:00:00+11'::timestamptz),
     -- Will become OFFER_GENERATED (4)
-    ('Lucas','Silva','lucas.silva@example.com','2000-01-09',true, v_prog_it_id, v_tt_it_id,'OFFER_GENERATED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 6 LIMIT 1)),
-    ('Ava','Brown','ava.brown@example.com','2003-03-19',true, v_prog_bus_id, v_tt_bus_id,'OFFER_GENERATED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 7 LIMIT 1)),
-    ('Yusuf','Khan','yusuf.khan@example.com','1998-12-30',true, v_prog_hosp_id, v_tt_hosp_id,'OFFER_GENERATED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 8 LIMIT 1)),
-    ('Leila','Rahman','leila.rahman@example.com','2002-02-14',true, v_prog_it_id, v_tt_it_id,'OFFER_GENERATED','2025-03-10',(SELECT id FROM tmp_agents OFFSET 9 LIMIT 1)),
+    ('Lucas','Silva','lucas.silva@example.com','2000-01-09',true, v_prog_it_id, v_tt_it_id,'OFFER_GENERATED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 6 LIMIT 1),'2025-03-22 09:00:00+11'::timestamptz),
+    ('Ava','Brown','ava.brown@example.com','2003-03-19',true, v_prog_bus_id, v_tt_bus_id,'OFFER_GENERATED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 7 LIMIT 1),'2025-03-29 09:00:00+11'::timestamptz),
+    ('Yusuf','Khan','yusuf.khan@example.com','1998-12-30',true, v_prog_hosp_id, v_tt_hosp_id,'OFFER_GENERATED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 8 LIMIT 1),'2025-04-05 09:00:00+10'::timestamptz),
+    ('Leila','Rahman','leila.rahman@example.com','2002-02-14',true, v_prog_it_id, v_tt_it_id,'OFFER_GENERATED','2025-03-10',(SELECT id FROM tmp_agents OFFSET 9 LIMIT 1),'2025-04-12 09:00:00+10'::timestamptz),
     -- Will become OFFER_SENT (4)
-    ('Chen','Wei','chen.wei@example.com','2001-07-07',true, v_prog_it_id, v_tt_it_id,'OFFER_SENT','2025-02-17',(SELECT id FROM tmp_agents OFFSET 10 LIMIT 1)),
-    ('Amelia','Davis','amelia.davis@example.com','1999-05-25',true, v_prog_bus_id, v_tt_bus_id,'OFFER_SENT','2025-03-03',(SELECT id FROM tmp_agents OFFSET 11 LIMIT 1)),
-    ('Priya','Shah','priya.shah@example.com','2000-10-20',true, v_prog_hosp_id, v_tt_hosp_id,'OFFER_SENT','2025-02-24',(SELECT id FROM tmp_agents LIMIT 1)),
-    ('Mohammed','Ali','mohammed.ali@example.com','1997-01-12',true, v_prog_it_id, v_tt_it_id,'OFFER_SENT','2025-03-10',(SELECT id FROM tmp_agents OFFSET 1 LIMIT 1)),
+    ('Chen','Wei','chen.wei@example.com','2001-07-07',true, v_prog_it_id, v_tt_it_id,'OFFER_SENT','2025-02-17',(SELECT id FROM tmp_agents OFFSET 10 LIMIT 1),'2025-04-19 09:00:00+10'::timestamptz),
+    ('Amelia','Davis','amelia.davis@example.com','1999-05-25',true, v_prog_bus_id, v_tt_bus_id,'OFFER_SENT','2025-03-03',(SELECT id FROM tmp_agents OFFSET 11 LIMIT 1),'2025-04-26 09:00:00+10'::timestamptz),
+    ('Priya','Shah','priya.shah@example.com','2000-10-20',true, v_prog_hosp_id, v_tt_hosp_id,'OFFER_SENT','2025-02-24',(SELECT id FROM tmp_agents LIMIT 1),'2025-05-03 09:00:00+10'::timestamptz),
+    ('Mohammed','Ali','mohammed.ali@example.com','1997-01-12',true, v_prog_it_id, v_tt_it_id,'OFFER_SENT','2025-03-10',(SELECT id FROM tmp_agents OFFSET 1 LIMIT 1),'2025-05-10 09:00:00+10'::timestamptz),
     -- Will become ACCEPTED (5)
-    ('Elena','Popov','elena.popov@example.com','2002-04-04',true, v_prog_it_id, v_tt_it_id,'ACCEPTED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 2 LIMIT 1)),
-    ('Diego','Garcia','diego.garcia@example.com','2001-03-03',true, v_prog_bus_id, v_tt_bus_id,'ACCEPTED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 3 LIMIT 1)),
-    ('Fatima','Zahra','fatima.zahra@example.com','1999-09-09',true, v_prog_hosp_id, v_tt_hosp_id,'ACCEPTED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 4 LIMIT 1)),
-    ('Oliver','Taylor','oliver.taylor@example.com','2000-08-18',false, v_prog_it_id, v_tt_it_id,'ACCEPTED','2025-03-10',(SELECT id FROM tmp_agents OFFSET 5 LIMIT 1)),
-    ('Ananya','Iyer','ananya.iyer@example.com','2003-01-23',true, v_prog_bus_id, v_tt_bus_id,'ACCEPTED','2025-03-17',(SELECT id FROM tmp_agents OFFSET 6 LIMIT 1)),
+    ('Elena','Popov','elena.popov@example.com','2002-04-04',true, v_prog_it_id, v_tt_it_id,'ACCEPTED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 2 LIMIT 1),'2025-05-17 09:00:00+10'::timestamptz),
+    ('Diego','Garcia','diego.garcia@example.com','2001-03-03',true, v_prog_bus_id, v_tt_bus_id,'ACCEPTED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 3 LIMIT 1),'2025-05-24 09:00:00+10'::timestamptz),
+    ('Fatima','Zahra','fatima.zahra@example.com','1999-09-09',true, v_prog_hosp_id, v_tt_hosp_id,'ACCEPTED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 4 LIMIT 1),'2025-05-31 09:00:00+10'::timestamptz),
+    ('Oliver','Taylor','oliver.taylor@example.com','2000-08-18',false, v_prog_it_id, v_tt_it_id,'ACCEPTED','2025-03-10',(SELECT id FROM tmp_agents OFFSET 5 LIMIT 1),'2025-06-07 09:00:00+10'::timestamptz),
+    ('Ananya','Iyer','ananya.iyer@example.com','2003-01-23',true, v_prog_bus_id, v_tt_bus_id,'ACCEPTED','2025-03-17',(SELECT id FROM tmp_agents OFFSET 6 LIMIT 1),'2025-06-14 09:00:00+10'::timestamptz),
     -- Will become APPROVED (12)
-    ('Hassan','Mehdi','hassan.mehdi@example.com','1998-02-02',true, v_prog_it_id, v_tt_it_id,'APPROVED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 7 LIMIT 1)),
-    ('Sara','Ahmed','sara.ahmed@example.com','2001-01-01',true, v_prog_bus_id, v_tt_bus_id,'APPROVED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 8 LIMIT 1)),
-    ('Jun','Park','jun.park@example.com','2000-11-11',true, v_prog_hosp_id, v_tt_hosp_id,'APPROVED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 9 LIMIT 1)),
-    ('Emily','Clark','emily.clark@example.com','1999-07-07',false, v_prog_it_id, v_tt_it_id,'APPROVED','2025-03-10',(SELECT id FROM tmp_agents OFFSET 10 LIMIT 1)),
-    ('Naveen','Rao','naveen.rao@example.com','2002-06-16',true, v_prog_bus_id, v_tt_bus_id,'APPROVED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 11 LIMIT 1)),
-    ('Katarina','Novak','katarina.novak@example.com','2001-05-05',true, v_prog_it_id, v_tt_it_id,'APPROVED','2025-02-17',(SELECT id FROM tmp_agents LIMIT 1)),
-    ('Wei','Zhang','wei.zhang@example.com','1998-08-08',true, v_prog_bus_id, v_tt_bus_id,'APPROVED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 1 LIMIT 1)),
-    ('Ahmed','Salim','ahmed.salim@example.com','1997-09-09',true, v_prog_hosp_id, v_tt_hosp_id,'APPROVED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 2 LIMIT 1)),
-    ('Sienna','Moore','sienna.moore@example.com','2003-10-10',true, v_prog_it_id, v_tt_it_id,'APPROVED','2025-03-10',(SELECT id FROM tmp_agents OFFSET 3 LIMIT 1)),
-    ('Aria','Wilson','aria.wilson@example.com','2002-02-12',true, v_prog_bus_id, v_tt_bus_id,'APPROVED','2025-03-17',(SELECT id FROM tmp_agents OFFSET 4 LIMIT 1)),
-    ('Hiro','Tanaka','hiro.tanaka@example.com','1999-12-12',true, v_prog_hosp_id, v_tt_hosp_id,'APPROVED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 5 LIMIT 1)),
-    ('Riya','Kapoor','riya.kapoor@example.com','2001-03-21',true, v_prog_it_id, v_tt_it_id,'APPROVED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 6 LIMIT 1))
-  ) AS t(first_name,last_name,email,dob,is_intl,program_id,timetable_id,final_status,proposed,agent_id);
+    ('Hassan','Mehdi','hassan.mehdi@example.com','1998-02-02',true, v_prog_it_id, v_tt_it_id,'APPROVED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 7 LIMIT 1),'2025-06-21 09:00:00+10'::timestamptz),
+    ('Sara','Ahmed','sara.ahmed@example.com','2001-01-01',true, v_prog_bus_id, v_tt_bus_id,'APPROVED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 8 LIMIT 1),'2025-06-28 09:00:00+10'::timestamptz),
+    ('Jun','Park','jun.park@example.com','2000-11-11',true, v_prog_hosp_id, v_tt_hosp_id,'APPROVED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 9 LIMIT 1),'2025-07-05 09:00:00+10'::timestamptz),
+    ('Emily','Clark','emily.clark@example.com','1999-07-07',false, v_prog_it_id, v_tt_it_id,'APPROVED','2025-03-10',(SELECT id FROM tmp_agents OFFSET 10 LIMIT 1),'2025-07-12 09:00:00+10'::timestamptz),
+    ('Naveen','Rao','naveen.rao@example.com','2002-06-16',true, v_prog_bus_id, v_tt_bus_id,'APPROVED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 11 LIMIT 1),'2025-07-19 09:00:00+10'::timestamptz),
+    ('Katarina','Novak','katarina.novak@example.com','2001-05-05',true, v_prog_it_id, v_tt_it_id,'APPROVED','2025-02-17',(SELECT id FROM tmp_agents LIMIT 1),'2025-07-26 09:00:00+10'::timestamptz),
+    ('Wei','Zhang','wei.zhang@example.com','1998-08-08',true, v_prog_bus_id, v_tt_bus_id,'APPROVED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 1 LIMIT 1),'2025-08-02 09:00:00+10'::timestamptz),
+    ('Ahmed','Salim','ahmed.salim@example.com','1997-09-09',true, v_prog_hosp_id, v_tt_hosp_id,'APPROVED','2025-02-24',(SELECT id FROM tmp_agents OFFSET 2 LIMIT 1),'2025-08-16 09:00:00+10'::timestamptz),
+    ('Sienna','Moore','sienna.moore@example.com','2003-10-10',true, v_prog_it_id, v_tt_it_id,'APPROVED','2025-03-10',(SELECT id FROM tmp_agents OFFSET 3 LIMIT 1),'2025-08-30 09:00:00+10'::timestamptz),
+    ('Aria','Wilson','aria.wilson@example.com','2002-02-12',true, v_prog_bus_id, v_tt_bus_id,'APPROVED','2025-03-17',(SELECT id FROM tmp_agents OFFSET 4 LIMIT 1),'2025-09-13 09:00:00+10'::timestamptz),
+    ('Hiro','Tanaka','hiro.tanaka@example.com','1999-12-12',true, v_prog_hosp_id, v_tt_hosp_id,'APPROVED','2025-02-17',(SELECT id FROM tmp_agents OFFSET 5 LIMIT 1),'2025-10-04 09:00:00+11'::timestamptz),
+    ('Riya','Kapoor','riya.kapoor@example.com','2001-03-21',true, v_prog_it_id, v_tt_it_id,'APPROVED','2025-03-03',(SELECT id FROM tmp_agents OFFSET 6 LIMIT 1),'2025-11-01 09:00:00+11'::timestamptz)
+  ) AS t(first_name,last_name,email,dob,is_intl,program_id,timetable_id,final_status,proposed,agent_id,seed_created_at);
 
   -- Insert ALL applications as DRAFT initially
   INSERT INTO public.applications (
@@ -1006,7 +1006,7 @@ BEGIN
     program_id, timetable_id, proposed_commencement_date, agent_id, country_of_citizenship, passport_number,
     visa_type, visa_number, language_code, english_proficiency_code, gender, highest_school_level_id,
     indigenous_status_id, labour_force_status_id, at_school_flag, phone_number, mobile_phone, street_country,
-    suburb, state, postcode, payment_plan_template_id, offer_generated_at
+    suburb, state, postcode, payment_plan_template_id, created_at, offer_generated_at
   )
   SELECT
     extensions.uuid_generate_v4(), v_rto_id, 'DRAFT'::public.application_status, v_admin_id, first_name, last_name, dob, email, is_intl,
@@ -1024,6 +1024,7 @@ BEGIN
     'N', -- at school flag
     '+61 400 000 000', '+61 400 000 001', 'AUS', 'Melbourne', 'VIC', '3000',
     CASE WHEN program_id = v_prog_it_id THEN v_tpl_it_id WHEN program_id = v_prog_bus_id THEN v_tpl_bus_id ELSE v_tpl_hosp_id END,
+    ta.seed_created_at,
     NULL -- No offer generated yet
   FROM tmp_apps ta
   ON CONFLICT DO NOTHING;
@@ -1061,9 +1062,12 @@ BEGIN
   FOR v_tmp_id IN SELECT id FROM public.applications WHERE status = 'APPROVED' LOOP
     -- Ensure student exists (idempotent check via application_id)
     IF NOT EXISTS (SELECT 1 FROM public.students WHERE application_id = v_tmp_id) THEN
-      INSERT INTO public.students (id, student_id_display, rto_id, application_id, first_name, last_name, email, date_of_birth, status)
-      SELECT extensions.uuid_generate_v4(), 'STU-2025-' || right(encode(digest(id::text, 'sha1'),'hex'),4), rto_id, id, first_name, last_name, email, date_of_birth, 'ACTIVE'
-      FROM public.applications WHERE id = v_tmp_id;
+      INSERT INTO public.students (id, student_id_display, rto_id, application_id, first_name, last_name, email, date_of_birth, status, created_at)
+      SELECT extensions.uuid_generate_v4(), 'STU-2025-' || right(encode(digest(a.id::text, 'sha1'),'hex'),4), a.rto_id, a.id, a.first_name, a.last_name, a.email, a.date_of_birth, 'ACTIVE',
+             ta.seed_created_at + INTERVAL '30 days'
+      FROM public.applications a
+      JOIN tmp_apps ta ON ta.email = a.email
+      WHERE a.id = v_tmp_id;
     END IF;
 
     -- Create enrollment if not exists

@@ -6,6 +6,9 @@
 - feat(dashboard): Visualise cumulative applications vs students
   - Added client dashboard chart showing year-to-date cumulative totals sourced from Supabase
   - Introduced TanStack Query hook `useGetDashboardCumulativeMetrics` producing a daily series for charting
+- chore(seed): Stagger application and student timestamps
+  - Added `seed_created_at` values to seed data so cumulative metrics chart displays meaningful growth over 2025
+  - Students now inherit timestamps roughly one month after their originating application for realistic progression
 
 ## 2025-11-02
 
