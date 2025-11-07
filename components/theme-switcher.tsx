@@ -72,6 +72,15 @@ const themes = [
 
 export const ThemeSwitcher: React.FC = () => {
   const { theme, setTheme } = useTheme();
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <DropdownMenu>

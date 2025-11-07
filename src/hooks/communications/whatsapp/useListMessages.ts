@@ -50,6 +50,19 @@ export function useListMessages(threadId: string) {
           });
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'whatsapp_message_status_events',
+        },
+        () => {
+          qc.invalidateQueries({
+            queryKey: ['whatsapp', 'messages', threadId],
+          });
+        }
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);

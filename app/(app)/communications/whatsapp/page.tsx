@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -16,7 +15,8 @@ export default function WhatsAppPage() {
   const qp = useSearchParams();
   const pathname = usePathname();
   const tab = qp.get('tab') || 'chat';
-  const senderId = qp.get('sender') || '';
+  const senderParam = qp.get('sender') || '';
+  const senderId = senderParam === 'auto' ? '' : senderParam;
   const threadId = qp.get('thread') || '';
 
   // Default tab is handled by local fallback; no effect needed

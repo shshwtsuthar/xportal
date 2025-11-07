@@ -1,3 +1,9 @@
+## 2025-11-07
+
+- refactor(settings): SSR prefetch Twilio configuration & senders
+  - Converted `/settings/twilio` page to server component with TanStack Query hydration
+  - Removed suspense loaders so forms render immediately with prefetched data
+
 ## 2025-11-02
 
 - refactor(students): Refresh assignments pane layout on `students/{id}`

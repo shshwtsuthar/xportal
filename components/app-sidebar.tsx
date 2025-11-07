@@ -14,6 +14,7 @@ import {
   Building2,
   Mail,
   MessageCircle,
+  Settings,
 } from 'lucide-react';
 
 import {
@@ -105,7 +106,15 @@ const NAV: NavItem[] = [
     icon: Building2,
     items: [{ title: 'Locations', url: '/locations' }],
   },
-  { title: 'Users', url: '/users', icon: Users },
+  {
+    title: 'Settings',
+    url: '/settings/twilio',
+    icon: Settings,
+    items: [
+      { title: 'Twilio', url: '/settings/twilio' },
+      { title: 'Users', url: '/users' },
+    ],
+  },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

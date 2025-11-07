@@ -1,12 +1,7 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { useGetTwilioConfig } from '@/src/hooks/useGetTwilioConfig';
-import { useUpsertTwilioConfig } from '@/src/hooks/useUpsertTwilioConfig';
-import { useListTwilioSenders } from '@/src/hooks/useListTwilioSenders';
-import { useCreateTwilioSender } from '@/src/hooks/useCreateTwilioSender';
-import { useUpdateTwilioSender } from '@/src/hooks/useUpdateTwilioSender';
-import { useDeleteTwilioSender } from '@/src/hooks/useDeleteTwilioSender';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import {
   Card,
   CardContent,
@@ -42,8 +37,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { useGetTwilioConfig } from '@/src/hooks/useGetTwilioConfig';
+import { useUpsertTwilioConfig } from '@/src/hooks/useUpsertTwilioConfig';
+import { useListTwilioSenders } from '@/src/hooks/useListTwilioSenders';
+import { useCreateTwilioSender } from '@/src/hooks/useCreateTwilioSender';
+import { useUpdateTwilioSender } from '@/src/hooks/useUpdateTwilioSender';
+import { useDeleteTwilioSender } from '@/src/hooks/useDeleteTwilioSender';
 import { useTestTwilioConfig } from '@/src/hooks/settings/twilio/useTestTwilioConfig';
+import type { TwilioConfig } from '@/src/hooks/useGetTwilioConfig';
+import type { TwilioSender } from '@/src/hooks/useListTwilioSenders';
+
+type TwilioSettingsClientProps = {
+  initialConfig: TwilioConfig | null;
+  initialSenders: TwilioSender[] | null;
+};
 
 function WebhookUrls() {
   const webhookBase = '/api/communications/whatsapp';
@@ -81,8 +88,14 @@ function WebhookUrls() {
   );
 }
 
-function AccountConfigCard() {
-  const { data, isLoading } = useGetTwilioConfig();
+function AccountConfigCard({
+  initialConfig,
+}: {
+  initialConfig: TwilioConfig | null;
+}) {
+  const { data, isLoading } = useGetTwilioConfig({
+    initialData: initialConfig ?? undefined,
+  });
   const upsert = useUpsertTwilioConfig();
   const testConn = useTestTwilioConfig();
   const [accountSid, setAccountSid] = useState('');
@@ -96,7 +109,6 @@ function AccountConfigCard() {
     [data]
   );
 
-  // Populate form fields when data first loads
   useEffect(() => {
     if (data && !isLoading && !hasInitializedRef.current) {
       if (data.account_sid) {
@@ -143,7 +155,7 @@ function AccountConfigCard() {
                     data?.account_sid || 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
                   }
                   value={accountSid}
-                  onChange={(e) => setAccountSid(e.target.value)}
+                  onChange={(event) => setAccountSid(event.target.value)}
                 />
               </div>
               <div>
@@ -152,7 +164,7 @@ function AccountConfigCard() {
                   type="password"
                   placeholder={data?.auth_token_masked || '********'}
                   value={authToken}
-                  onChange={(e) => setAuthToken(e.target.value)}
+                  onChange={(event) => setAuthToken(event.target.value)}
                 />
               </div>
               <div>
@@ -163,7 +175,7 @@ function AccountConfigCard() {
                     'MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
                   }
                   value={messagingSid}
-                  onChange={(e) => setMessagingSid(e.target.value)}
+                  onChange={(event) => setMessagingSid(event.target.value)}
                 />
               </div>
               <div className="flex items-center gap-3 pt-6">
@@ -208,8 +220,14 @@ function AccountConfigCard() {
   );
 }
 
-function SenderManagementCard() {
-  const { data: senders, isLoading } = useListTwilioSenders();
+function SenderManagementCard({
+  initialSenders,
+}: {
+  initialSenders: TwilioSender[] | null;
+}) {
+  const { data: senders, isLoading } = useListTwilioSenders({
+    initialData: initialSenders ?? undefined,
+  });
   const createSender = useCreateTwilioSender();
   const updateSender = useUpdateTwilioSender();
   const deleteSender = useDeleteTwilioSender();
@@ -265,14 +283,14 @@ function SenderManagementCard() {
                   <Label>Friendly name</Label>
                   <Input
                     value={friendlyName}
-                    onChange={(e) => setFriendlyName(e.target.value)}
+                    onChange={(event) => setFriendlyName(event.target.value)}
                   />
                 </div>
                 <div>
                   <Label>Phone (+E.164)</Label>
                   <Input
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(event) => setPhone(event.target.value)}
                     placeholder="+61xxxxxxxxx"
                   />
                 </div>
@@ -280,7 +298,9 @@ function SenderManagementCard() {
                   <Label>Channel</Label>
                   <Select
                     value={channel}
-                    onValueChange={(v) => setChannel(v as 'whatsapp' | 'sms')}
+                    onValueChange={(value) =>
+                      setChannel(value as 'whatsapp' | 'sms')
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select channel" />
@@ -295,14 +315,14 @@ function SenderManagementCard() {
                   <Label>Description (optional)</Label>
                   <Input
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(event) => setDescription(event.target.value)}
                   />
                 </div>
                 <div>
                   <Label>Phone Number SID (optional)</Label>
                   <Input
                     value={phoneSid}
-                    onChange={(e) => setPhoneSid(e.target.value)}
+                    onChange={(event) => setPhoneSid(event.target.value)}
                     placeholder="PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                   />
                 </div>
@@ -310,7 +330,7 @@ function SenderManagementCard() {
                   <Label>Sender SID (optional)</Label>
                   <Input
                     value={senderSid}
-                    onChange={(e) => setSenderSid(e.target.value)}
+                    onChange={(event) => setSenderSid(event.target.value)}
                     placeholder="SExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                   />
                 </div>
@@ -351,24 +371,24 @@ function SenderManagementCard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(senders || []).map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell>{s.friendly_name}</TableCell>
-                  <TableCell>{s.phone_e164}</TableCell>
+              {(senders || []).map((sender) => (
+                <TableRow key={sender.id}>
+                  <TableCell>{sender.friendly_name}</TableCell>
+                  <TableCell>{sender.phone_e164}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        s.channel === 'whatsapp' ? 'default' : 'secondary'
+                        sender.channel === 'whatsapp' ? 'default' : 'secondary'
                       }
                     >
-                      {s.channel.toUpperCase()}
+                      {sender.channel.toUpperCase()}
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-[28ch] truncate">
-                    {s.description || '-'}
+                    {sender.description || '-'}
                   </TableCell>
                   <TableCell>
-                    {s.is_active ? (
+                    {sender.is_active ? (
                       <Badge>Active</Badge>
                     ) : (
                       <Badge variant="secondary">Inactive</Badge>
@@ -379,17 +399,17 @@ function SenderManagementCard() {
                       variant="outline"
                       onClick={async () => {
                         await updateSender.mutateAsync({
-                          id: s.id,
-                          is_active: !s.is_active,
+                          id: sender.id,
+                          is_active: !sender.is_active,
                         });
                       }}
                     >
-                      {s.is_active ? 'Deactivate' : 'Activate'}
+                      {sender.is_active ? 'Deactivate' : 'Activate'}
                     </Button>
                     <Button
                       variant="destructive"
                       onClick={async () => {
-                        await deleteSender.mutateAsync(s.id);
+                        await deleteSender.mutateAsync(sender.id);
                       }}
                     >
                       Remove
@@ -405,7 +425,10 @@ function SenderManagementCard() {
   );
 }
 
-export default function TwilioSettingsPage() {
+export function TwilioSettingsClient({
+  initialConfig,
+  initialSenders,
+}: TwilioSettingsClientProps) {
   return (
     <div className="space-y-6 p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between">
@@ -413,12 +436,8 @@ export default function TwilioSettingsPage() {
           Twilio Settings
         </h1>
       </div>
-      <Suspense>
-        <AccountConfigCard />
-      </Suspense>
-      <Suspense>
-        <SenderManagementCard />
-      </Suspense>
+      <AccountConfigCard initialConfig={initialConfig} />
+      <SenderManagementCard initialSenders={initialSenders} />
     </div>
   );
 }

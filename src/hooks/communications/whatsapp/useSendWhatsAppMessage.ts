@@ -5,7 +5,10 @@ type SendInput = {
   senderId: string;
   toE164?: string;
   threadId?: string;
-  body: string;
+  body?: string;
+  mediaUrls?: string[];
+  templateSid?: string;
+  templateParams?: Record<string, string>;
 };
 
 async function sendApi(input: SendInput) {

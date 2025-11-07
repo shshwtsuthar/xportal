@@ -41,6 +41,12 @@
    - Send a test email via the compose dialog; verify a row appears on `/communications/mail`
    - Trigger a delivery (or use Resend test addresses) and verify KPI cards increment
    - Confirm status changes after webhook delivery
+## Deployment Notes - Twilio Settings Prefetch (2025-11-07)
+
+- No database changes or environment variables required.
+- The settings page now performs server-side prefetches against `/api/settings/twilio/*`; ensure your deployment platform forwards `x-forwarded-proto` and `x-forwarded-host` headers (default on Vercel) so requests resolve the correct origin.
+- If your hosting setup does not forward those headers, set `NEXT_PUBLIC_APP_URL` to the public base URL so server-side fetches resolve correctly.
+- Smoke test: load `/settings/twilio` after deploy and confirm the Account and Senders forms render instantly without showing the loading placeholders.
 ## Deployment Notes - Twilio WhatsApp Prerequisites (2025-11-06)
 
 1. Run the migrations:

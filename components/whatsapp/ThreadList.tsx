@@ -6,6 +6,8 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useListThreads } from '@/src/hooks/communications/whatsapp/useListThreads';
 import { buildUrlWithParams } from '@/lib/utils/url';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function ThreadList({
   senderId,
@@ -18,10 +20,54 @@ export default function ThreadList({
   const pathname = usePathname();
   const qp = useSearchParams();
   const { data, isLoading } = useListThreads(senderId);
-  const threads = data || [];
+  const [search, setSearch] = useState('');
+  const [pinned, setPinned] = useState<string[]>([]);
+
+  useEffect(() => {
+    const key = `wa:pins:${senderId || 'none'}`;
+    try {
+      const raw = localStorage.getItem(key);
+      setPinned(raw ? JSON.parse(raw) : []);
+    } catch {
+      setPinned([]);
+    }
+  }, [senderId]);
+
+  const threads = useMemo(() => {
+    const list = (data || []).slice();
+    const filtered = search
+      ? list.filter((t) => t.counterparty_e164.includes(search))
+      : list;
+    const sorted = filtered.sort((a, b) => {
+      const aPinned = pinned.includes(a.id);
+      const bPinned = pinned.includes(b.id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+    return sorted;
+  }, [data, search, pinned]);
+
+  const togglePin = (id: string) => {
+    const key = `wa:pins:${senderId || 'none'}`;
+    setPinned((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev, id];
+      localStorage.setItem(key, JSON.stringify(next));
+      return next;
+    });
+  };
 
   return (
     <Card className="p-2">
+      <div className="mb-2">
+        <Input
+          placeholder="Search by number"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
       <ScrollArea className="h-[60vh]">
         <div className="space-y-1">
           {isLoading && (
@@ -36,29 +82,46 @@ export default function ThreadList({
           )}
           {threads.map((t) => {
             const active = t.id === selectedThreadId;
+            const showUnread = t.last_dir === 'IN';
+            const isPinned = pinned.includes(t.id);
             return (
-              <button
+              <div
                 key={t.id}
-                className={`w-full rounded p-2 text-left ${active ? 'bg-muted' : 'hover:bg-muted/50'}`}
-                onClick={() => {
-                  const url = buildUrlWithParams(pathname, qp, {
-                    thread: t.id,
-                  });
-                  router.push(url);
-                }}
+                className={`group rounded ${active ? 'bg-muted' : ''}`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="truncate font-medium">
-                    {t.counterparty_e164}
+                <button
+                  className={`w-full rounded p-2 text-left ${active ? '' : 'hover:bg-muted/50'}`}
+                  onClick={() => {
+                    const url = buildUrlWithParams(pathname, qp, {
+                      thread: t.id,
+                    });
+                    router.push(url);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="truncate font-medium">
+                      {t.counterparty_e164}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {showUnread && <Badge variant="secondary">New</Badge>}
+                      {t.last_status ? (
+                        <Badge variant="outline">{t.last_status}</Badge>
+                      ) : null}
+                    </div>
                   </div>
-                  {t.last_status ? (
-                    <Badge variant="secondary">{t.last_status}</Badge>
-                  ) : null}
+                  <div className="text-muted-foreground truncate text-xs">
+                    {t.last_dir === 'OUT' ? 'You: ' : ''}
+                  </div>
+                </button>
+                <div className="px-2 pb-2">
+                  <button
+                    className="text-muted-foreground text-xs hover:underline"
+                    onClick={() => togglePin(t.id)}
+                  >
+                    {isPinned ? 'Unpin' : 'Pin'}
+                  </button>
                 </div>
-                <div className="text-muted-foreground truncate text-xs">
-                  {t.last_dir === 'OUT' ? 'You: ' : ''}
-                </div>
-              </button>
+              </div>
             );
           })}
           {threads.length === 0 && (

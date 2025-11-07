@@ -14,28 +14,60 @@ export type TwilioSender = {
   updated_at: string;
 };
 
-async function fetchSenders(): Promise<TwilioSender[]> {
-  const res = await fetch('/api/settings/twilio/senders', {
+type FetchTwilioSendersOptions = {
+  init?: RequestInit;
+  baseUrl?: string;
+};
+
+export const twilioSendersQueryKey = ['settings', 'twilio', 'senders'] as const;
+
+export const fetchTwilioSenders = async (
+  options: FetchTwilioSendersOptions = {}
+): Promise<TwilioSender[]> => {
+  const { init, baseUrl } = options;
+  const url = baseUrl
+    ? new URL('/api/settings/twilio/senders', baseUrl).toString()
+    : '/api/settings/twilio/senders';
+
+  const headers: HeadersInit = init?.headers
+    ? init.headers instanceof Headers
+      ? init.headers
+      : { ...init.headers }
+    : {};
+
+  const res = await fetch(url, {
     cache: 'no-store',
+    ...init,
+    headers,
   });
-  const data = (await res.json()) as TwilioSender[] | { error: string };
+
+  const data = (await res.json()) as TwilioSender[] | { error?: string };
+
   if (!res.ok) {
     const err = (data as { error?: string }).error || 'Failed to load senders';
     throw new Error(err);
   }
+
   return data as TwilioSender[];
-}
+};
 
 /**
  * useListTwilioSenders
  *
  * Fetch list of Twilio senders for current RTO
  */
-export const useListTwilioSenders = () => {
+type UseListTwilioSendersOptions = {
+  initialData?: TwilioSender[];
+};
+
+export const useListTwilioSenders = (
+  options: UseListTwilioSendersOptions = {}
+) => {
   return useQuery<TwilioSender[], Error>({
-    queryKey: ['settings', 'twilio', 'senders'],
-    queryFn: fetchSenders,
+    queryKey: twilioSendersQueryKey,
+    queryFn: () => fetchTwilioSenders(),
     staleTime: 5 * 60 * 1000, // 5 minutes - senders don't change often
     refetchOnWindowFocus: false, // Don't refetch on window focus
+    initialData: options.initialData,
   });
 };

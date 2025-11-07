@@ -11,6 +11,9 @@ export async function POST(req: NextRequest) {
       toE164?: string;
       body?: string;
       threadId?: string;
+      mediaUrls?: string[];
+      templateSid?: string;
+      templateParams?: Record<string, string>;
     };
     const supabase = await createServerSupabase();
     const { data: userRes } = await supabase.auth.getUser();
@@ -42,16 +45,28 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'senderId required' }), {
         status: 400,
       });
-    if (!body.body?.trim())
-      return new Response(JSON.stringify({ error: 'Message body required' }), {
-        status: 400,
-      });
+    if (
+      !body.body?.trim() &&
+      !body.templateSid &&
+      (!body.mediaUrls || body.mediaUrls.length === 0)
+    ) {
+      return new Response(
+        JSON.stringify({ error: 'Provide body, media, or templateSid' }),
+        { status: 400 }
+      );
+    }
 
     const result = await sendWhatsAppMessage({
       rtoId: rtoId as string,
       senderId: body.senderId,
       toE164: to,
-      body: body.body.trim(),
+      body: body.body?.trim() || undefined,
+      mediaUrls: body.mediaUrls?.length ? body.mediaUrls : undefined,
+      templateSid: body.templateSid || undefined,
+      templateParams:
+        body.templateParams && Object.keys(body.templateParams).length
+          ? body.templateParams
+          : undefined,
     });
     return new Response(JSON.stringify(result), { status: 200 });
   } catch (e) {

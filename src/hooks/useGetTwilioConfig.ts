@@ -8,15 +8,42 @@ export type TwilioConfig = {
   has_token: boolean;
 };
 
-async function fetchConfig(): Promise<TwilioConfig> {
-  const res = await fetch('/api/settings/twilio/config', { cache: 'no-store' });
+type FetchTwilioConfigOptions = {
+  init?: RequestInit;
+  baseUrl?: string;
+};
+
+export const twilioConfigQueryKey = ['settings', 'twilio', 'config'] as const;
+
+export const fetchTwilioConfig = async (
+  options: FetchTwilioConfigOptions = {}
+): Promise<TwilioConfig> => {
+  const { init, baseUrl } = options;
+  const url = baseUrl
+    ? new URL('/api/settings/twilio/config', baseUrl).toString()
+    : '/api/settings/twilio/config';
+
+  const headers: HeadersInit = init?.headers
+    ? init.headers instanceof Headers
+      ? init.headers
+      : { ...init.headers }
+    : {};
+
+  const res = await fetch(url, {
+    cache: 'no-store',
+    ...init,
+    headers,
+  });
+
   const data = (await res.json()) as Partial<TwilioConfig> & {
     error?: string;
     details?: string;
   };
+
   if (!res.ok) {
     throw new Error(data.error || 'Failed to load Twilio settings');
   }
+
   return {
     account_sid: data.account_sid ?? null,
     auth_token_masked: data.auth_token_masked ?? null,
@@ -27,7 +54,7 @@ async function fetchConfig(): Promise<TwilioConfig> {
         : true,
     has_token: Boolean(data.has_token),
   };
-}
+};
 
 /**
  * useGetTwilioConfig
@@ -35,11 +62,16 @@ async function fetchConfig(): Promise<TwilioConfig> {
  * Fetch per-RTO Twilio settings. Returns masked token only.
  * @returns useQuery result with TwilioConfig
  */
-export const useGetTwilioConfig = () => {
+type UseGetTwilioConfigOptions = {
+  initialData?: TwilioConfig;
+};
+
+export const useGetTwilioConfig = (options: UseGetTwilioConfigOptions = {}) => {
   return useQuery<TwilioConfig, Error>({
-    queryKey: ['settings', 'twilio', 'config'],
-    queryFn: fetchConfig,
+    queryKey: twilioConfigQueryKey,
+    queryFn: () => fetchTwilioConfig(),
     staleTime: 5 * 60 * 1000, // 5 minutes - config doesn't change often
     refetchOnWindowFocus: false, // Don't refetch on window focus
+    initialData: options.initialData,
   });
 };
