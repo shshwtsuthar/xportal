@@ -23,7 +23,6 @@ import {
   useGetDashboardCumulativeMetrics,
   getYearToDateRange,
   getLast30DaysRange,
-  getLast3MonthsRange,
   getLast6MonthsRange,
   getLastYearRange,
 } from '@/hooks/reporting/useGetDashboardCumulativeMetrics';
@@ -54,7 +53,6 @@ const tooltipFormatter = new Intl.DateTimeFormat(undefined, {
 type DateRangeType =
   | 'year-to-date'
   | 'last-30-days'
-  | 'last-3-months'
   | 'last-6-months'
   | 'last-year'
   | 'custom';
@@ -65,8 +63,6 @@ const getRangeTitle = (rangeType: DateRangeType): string => {
       return 'Year-to-date Growth';
     case 'last-30-days':
       return 'Last 30 Days Growth';
-    case 'last-3-months':
-      return 'Last 3 Months Growth';
     case 'last-6-months':
       return 'Last 6 Months Growth';
     case 'last-year':
@@ -93,8 +89,6 @@ export function CumulativeMetricsChart() {
         return getYearToDateRange();
       case 'last-30-days':
         return getLast30DaysRange();
-      case 'last-3-months':
-        return getLast3MonthsRange();
       case 'last-6-months':
         return getLast6MonthsRange();
       case 'last-year':
@@ -223,13 +217,6 @@ export function CumulativeMetricsChart() {
                 onClick={() => handleRangeTypeChange('last-30-days')}
               >
                 Last 30 Days
-              </Button>
-              <Button
-                variant={rangeType === 'last-3-months' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleRangeTypeChange('last-3-months')}
-              >
-                Last 3 Months
               </Button>
               <Button
                 variant={rangeType === 'last-6-months' ? 'default' : 'outline'}

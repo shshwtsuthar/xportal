@@ -23,9 +23,24 @@ export default async function DashboardPage() {
 
   // Use verified user from Auth server
   const { data: userRes } = await supabase.auth.getUser();
-  const role = (
-    userRes.user?.app_metadata as Record<string, unknown> | undefined
-  )?.role;
+  const userId = userRes.user?.id;
+
+  if (!userId) {
+    redirect('/login');
+  }
+
+  // Fetch user's profile to get first_name
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('first_name')
+    .eq('id', userId)
+    .single();
+
+  if (profileError) {
+    throw new Error('Failed to load user profile.');
+  }
+
+  const firstName = profile?.first_name || 'User';
 
   const [
     { count: studentCount, error: studentError },
@@ -83,9 +98,7 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-semibold tracking-tight">
           Welcome to your Dashboard
         </h1>
-        <p className="text-muted-foreground">
-          Welcome back! You are logged in as {String(role)}.
-        </p>
+        <p className="text-muted-foreground">Welcome back, {firstName}!</p>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
