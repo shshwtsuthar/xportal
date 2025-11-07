@@ -157,7 +157,7 @@ export function CumulativeMetricsChart() {
           </div>
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-80 w-full" />
+          <Skeleton className="h-60 w-full" />
         </CardContent>
       </Card>
     );
@@ -252,7 +252,7 @@ export function CumulativeMetricsChart() {
         </div>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[320px] w-full">
+        <ChartContainer config={chartConfig} className="min-h-[240px] w-full">
           <AreaChart accessibilityLayer data={chartData}>
             <CartesianGrid vertical={false} />
             <XAxis
