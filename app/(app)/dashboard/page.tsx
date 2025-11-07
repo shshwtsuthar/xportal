@@ -26,8 +26,58 @@ export default async function DashboardPage() {
     userRes.user?.app_metadata as Record<string, unknown> | undefined
   )?.role;
 
+  const [
+    { count: studentCount, error: studentError },
+    { count: applicationCount, error: applicationError },
+    { count: overdueInvoiceCount, error: overdueInvoicesError },
+    { count: paidInvoiceCount, error: paidInvoicesError },
+  ] = await Promise.all([
+    supabase.from('students').select('id', { head: true, count: 'exact' }),
+    supabase.from('applications').select('id', { head: true, count: 'exact' }),
+    supabase
+      .from('invoices')
+      .select('id', { head: true, count: 'exact' })
+      .eq('status', 'OVERDUE'),
+    supabase
+      .from('invoices')
+      .select('id', { head: true, count: 'exact' })
+      .eq('status', 'PAID'),
+  ]);
+
+  if (
+    studentError ||
+    applicationError ||
+    overdueInvoicesError ||
+    paidInvoicesError
+  ) {
+    throw new Error('Failed to load dashboard metrics.');
+  }
+
+  const metrics = [
+    {
+      title: 'Total Students',
+      description: 'Active student records',
+      value: studentCount ?? 0,
+    },
+    {
+      title: 'Total Applications',
+      description: 'All application records',
+      value: applicationCount ?? 0,
+    },
+    {
+      title: 'Overdue Invoices',
+      description: 'Invoices past due date',
+      value: overdueInvoiceCount ?? 0,
+    },
+    {
+      title: 'Paid Invoices',
+      description: 'Invoices fully settled',
+      value: paidInvoiceCount ?? 0,
+    },
+  ];
+
   return (
-    <div className="container py-8">
+    <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight">
           Welcome to your Dashboard
@@ -37,44 +87,22 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Applications</CardTitle>
-            <CardDescription>Manage student applications</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm">
-              View and process student applications
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Students</CardTitle>
-            <CardDescription>Manage student records</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm">
-              View and manage student information
-            </p>
-          </CardContent>
-        </Card>
-
-        {role === 'ADMIN' && (
-          <Card>
+      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map((metric) => (
+          <Card key={metric.title}>
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>Manage staff accounts</CardDescription>
+              <CardTitle className="text-muted-foreground text-sm font-medium">
+                {metric.title}
+              </CardTitle>
+              <CardDescription>{metric.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground text-sm">
-                Invite and manage staff members
+              <p className="text-3xl font-semibold tracking-tight">
+                {metric.value.toLocaleString()}
               </p>
             </CardContent>
           </Card>
-        )}
+        ))}
       </div>
     </div>
   );
