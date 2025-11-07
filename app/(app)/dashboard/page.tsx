@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { CumulativeMetricsChart } from './_components/CumulativeMetricsChart';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -102,6 +103,10 @@ export default async function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      <section className="mt-8">
+        <CumulativeMetricsChart />
+      </section>
     </div>
   );
 }

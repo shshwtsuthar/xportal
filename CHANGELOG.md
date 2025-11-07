@@ -3,6 +3,9 @@
 - refactor(settings): SSR prefetch Twilio configuration & senders
   - Converted `/settings/twilio` page to server component with TanStack Query hydration
   - Removed suspense loaders so forms render immediately with prefetched data
+- feat(dashboard): Visualise cumulative applications vs students
+  - Added client dashboard chart showing year-to-date cumulative totals sourced from Supabase
+  - Introduced TanStack Query hook `useGetDashboardCumulativeMetrics` producing a daily series for charting
 
 ## 2025-11-02
 

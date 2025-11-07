@@ -47,6 +47,14 @@
 - The settings page now performs server-side prefetches against `/api/settings/twilio/*`; ensure your deployment platform forwards `x-forwarded-proto` and `x-forwarded-host` headers (default on Vercel) so requests resolve the correct origin.
 - If your hosting setup does not forward those headers, set `NEXT_PUBLIC_APP_URL` to the public base URL so server-side fetches resolve correctly.
 - Smoke test: load `/settings/twilio` after deploy and confirm the Account and Senders forms render instantly without showing the loading placeholders.
+
+## Deployment Notes - Dashboard Cumulative Metrics (2025-11-07)
+
+- No database schema changes or regenerated types required.
+- Ensure Supabase already contains `applications` and `students` data so the chart shows meaningful progressions; empty datasets render a flat baseline.
+- Post-deploy checks:
+  - Load `/dashboard` and confirm the cumulative chart renders under the KPI cards without errors.
+  - Hover over the chart to verify tooltip values and legend entries for both applications and students series.
 ## Deployment Notes - Twilio WhatsApp Prerequisites (2025-11-06)
 
 1. Run the migrations:
