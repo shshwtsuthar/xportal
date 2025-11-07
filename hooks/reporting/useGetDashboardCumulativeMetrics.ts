@@ -13,13 +13,57 @@ export type DashboardCumulativePoint = {
   students: number;
 };
 
-const getYearToDateRange = () => {
+export const getYearToDateRange = () => {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 1);
 
   return {
     start,
     end: now,
+  };
+};
+
+export const getLast30DaysRange = () => {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - 30);
+
+  return {
+    start,
+    end,
+  };
+};
+
+export const getLast3MonthsRange = () => {
+  const end = new Date();
+  const start = new Date(end);
+  start.setMonth(start.getMonth() - 3);
+
+  return {
+    start,
+    end,
+  };
+};
+
+export const getLast6MonthsRange = () => {
+  const end = new Date();
+  const start = new Date(end);
+  start.setMonth(start.getMonth() - 6);
+
+  return {
+    start,
+    end,
+  };
+};
+
+export const getLastYearRange = () => {
+  const end = new Date();
+  const start = new Date(end);
+  start.setFullYear(start.getFullYear() - 1);
+
+  return {
+    start,
+    end,
   };
 };
 
@@ -78,15 +122,30 @@ const buildDailyCumulativeSeries = (
   return points;
 };
 
-export const useGetDashboardCumulativeMetrics = () => {
+export const useGetDashboardCumulativeMetrics = (
+  startDate?: Date,
+  endDate?: Date
+) => {
   return useQuery({
-    queryKey: ['dashboard', 'cumulative-metrics'],
+    queryKey: [
+      'dashboard',
+      'cumulative-metrics',
+      startDate?.toISOString(),
+      endDate?.toISOString(),
+    ],
     queryFn: async (): Promise<DashboardCumulativePoint[]> => {
       const supabase = createClient();
-      const { start, end } = getYearToDateRange();
+      const { start, end } =
+        startDate && endDate
+          ? { start: startDate, end: endDate }
+          : getYearToDateRange();
 
       const startIso = new Date(
         Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())
+      ).toISOString();
+
+      const endIso = new Date(
+        Date.UTC(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59)
       ).toISOString();
 
       const [applicationsResult, studentsResult] = await Promise.all([
@@ -94,11 +153,13 @@ export const useGetDashboardCumulativeMetrics = () => {
           .from('applications')
           .select('created_at')
           .gte('created_at', startIso)
+          .lte('created_at', endIso)
           .order('created_at', { ascending: true }),
         supabase
           .from('students')
           .select('created_at')
           .gte('created_at', startIso)
+          .lte('created_at', endIso)
           .order('created_at', { ascending: true }),
       ]);
 
@@ -117,5 +178,7 @@ export const useGetDashboardCumulativeMetrics = () => {
         end
       );
     },
+    placeholderData: (previousData) => previousData,
+    staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
   });
 };
