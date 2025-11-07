@@ -1,12 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import SpotlightCard from '@/components/ui/spotlight-card';
 import { CumulativeMetricsChart } from './_components/CumulativeMetricsChart';
 
 export default async function DashboardPage() {
@@ -103,17 +97,12 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => (
-          <Card key={metric.title}>
-            <CardHeader>
-              <CardTitle>{metric.title}</CardTitle>
-              <CardDescription>{metric.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-semibold tracking-tight">
-                {metric.value.toLocaleString()}
-              </p>
-            </CardContent>
-          </Card>
+          <SpotlightCard
+            key={metric.title}
+            title={metric.title}
+            description={metric.description}
+            value={metric.value}
+          />
         ))}
       </div>
 

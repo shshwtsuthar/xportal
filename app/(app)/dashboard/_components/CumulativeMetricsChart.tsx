@@ -26,6 +26,7 @@ import {
   getLast6MonthsRange,
   getLastYearRange,
 } from '@/hooks/reporting/useGetDashboardCumulativeMetrics';
+import { useGetRto } from '@/src/hooks/useGetRto';
 import { DateRangePicker } from './DateRangePicker';
 
 const chartConfig = {
@@ -57,27 +58,16 @@ type DateRangeType =
   | 'last-year'
   | 'custom';
 
-const getRangeTitle = (rangeType: DateRangeType): string => {
-  switch (rangeType) {
-    case 'year-to-date':
-      return 'Year-to-date Growth';
-    case 'last-30-days':
-      return 'Last 30 Days Growth';
-    case 'last-6-months':
-      return 'Last 6 Months Growth';
-    case 'last-year':
-      return 'Last Year Growth';
-    case 'custom':
-      return 'Custom Range Growth';
-    default:
-      return 'Year-to-date Growth';
-  }
-};
-
 export function CumulativeMetricsChart() {
   const [rangeType, setRangeType] = useState<DateRangeType>('year-to-date');
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const { data: rto } = useGetRto();
+
+  const chartTitle = useMemo(() => {
+    const rtoName = rto?.name || 'RTO';
+    return `${rtoName} Growth`;
+  }, [rto?.name]);
 
   const dateRange = useMemo(() => {
     if (rangeType === 'custom' && customRange?.from && customRange?.to) {
@@ -147,7 +137,7 @@ export function CumulativeMetricsChart() {
           <div className="flex items-start justify-between">
             <div>
               <CardTitle className="text-xl font-semibold tracking-tight">
-                {getRangeTitle(rangeType)}
+                {chartTitle}
               </CardTitle>
               <p className="text-muted-foreground text-sm">
                 Daily cumulative totals showing how applications convert into
@@ -170,7 +160,7 @@ export function CumulativeMetricsChart() {
           <div className="flex items-start justify-between">
             <div>
               <CardTitle className="text-xl font-semibold tracking-tight">
-                {getRangeTitle(rangeType)}
+                {chartTitle}
               </CardTitle>
               <p className="text-muted-foreground text-sm">
                 Daily cumulative totals showing how applications convert into
@@ -195,7 +185,7 @@ export function CumulativeMetricsChart() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <CardTitle className="text-xl font-semibold tracking-tight">
-              {getRangeTitle(rangeType)}
+              {chartTitle}
             </CardTitle>
             <p className="text-muted-foreground text-sm">
               Daily cumulative totals showing how applications convert into
