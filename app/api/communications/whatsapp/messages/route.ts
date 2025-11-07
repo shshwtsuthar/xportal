@@ -23,12 +23,28 @@ export async function GET(req: NextRequest) {
         status: 400,
       });
 
+    // First verify the thread belongs to this RTO
+    const { data: thread } = await supabase
+      .from('whatsapp_threads')
+      .select('id, rto_id')
+      .eq('id', threadId)
+      .eq('rto_id', rtoId as string)
+      .maybeSingle();
+
+    if (!thread) {
+      return new Response(
+        JSON.stringify({ error: 'Thread not found or access denied' }),
+        { status: 404 }
+      );
+    }
+
     const { data, error } = await supabase
       .from('whatsapp_messages')
       .select(
         'id, thread_id, sender_id, direction, body, media_urls, status, occurred_at'
       )
       .eq('thread_id', threadId)
+      .eq('rto_id', rtoId as string)
       .order('occurred_at', { ascending: true });
     if (error)
       return new Response(JSON.stringify({ error: error.message }), {

@@ -39,5 +39,7 @@ export const useGetTwilioConfig = () => {
   return useQuery<TwilioConfig, Error>({
     queryKey: ['settings', 'twilio', 'config'],
     queryFn: fetchConfig,
+    staleTime: 5 * 60 * 1000, // 5 minutes - config doesn't change often
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 };

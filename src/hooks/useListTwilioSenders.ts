@@ -35,5 +35,7 @@ export const useListTwilioSenders = () => {
   return useQuery<TwilioSender[], Error>({
     queryKey: ['settings', 'twilio', 'senders'],
     queryFn: fetchSenders,
+    staleTime: 5 * 60 * 1000, // 5 minutes - senders don't change often
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 };

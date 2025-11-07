@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useListTwilioSenders } from '@/src/hooks/useListTwilioSenders';
+import { buildUrlWithParams } from '@/lib/utils/url';
 
 export default function SenderTabs() {
   const { data: senders } = useListTwilioSenders();
@@ -14,15 +15,17 @@ export default function SenderTabs() {
   );
   const qp = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const senderId = qp.get('sender') || '';
 
   useEffect(() => {
     if (!senderId && whatsappSenders.length > 0) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('sender', whatsappSenders[0].id);
-      router.replace(url.toString());
+      const url = buildUrlWithParams(pathname, qp, {
+        sender: whatsappSenders[0].id,
+      });
+      router.replace(url);
     }
-  }, [senderId, whatsappSenders, router]);
+  }, [senderId, whatsappSenders, router, pathname, qp]);
 
   if (whatsappSenders.length <= 1) {
     return null;
@@ -32,9 +35,8 @@ export default function SenderTabs() {
     <Tabs
       value={senderId}
       onValueChange={(id) => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('sender', id);
-        router.push(url.toString());
+        const url = buildUrlWithParams(pathname, qp, { sender: id });
+        router.push(url);
       }}
     >
       <TabsList className="flex w-full flex-wrap">

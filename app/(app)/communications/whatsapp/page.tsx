@@ -3,7 +3,8 @@
 import { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { buildUrlWithParams } from '@/lib/utils/url';
 import SenderTabs from '@/components/whatsapp/SenderTabs';
 import ThreadList from '@/components/whatsapp/ThreadList';
 import MessagePane from '@/components/whatsapp/MessagePane';
@@ -13,17 +14,12 @@ import BulkForm from '@/components/whatsapp/BulkForm';
 export default function WhatsAppPage() {
   const router = useRouter();
   const qp = useSearchParams();
+  const pathname = usePathname();
   const tab = qp.get('tab') || 'chat';
   const senderId = qp.get('sender') || '';
   const threadId = qp.get('thread') || '';
 
-  useEffect(() => {
-    if (!tab) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('tab', 'chat');
-      router.replace(url.toString());
-    }
-  }, [tab, router]);
+  // Default tab is handled by local fallback; no effect needed
 
   return (
     <div className="space-y-6 p-4 md:p-6 lg:p-8">
@@ -33,9 +29,8 @@ export default function WhatsAppPage() {
       <Tabs
         value={tab}
         onValueChange={(v) => {
-          const url = new URL(window.location.href);
-          url.searchParams.set('tab', v);
-          router.push(url.toString());
+          const url = buildUrlWithParams(pathname, qp, { tab: v });
+          router.push(url);
         }}
       >
         <TabsList>

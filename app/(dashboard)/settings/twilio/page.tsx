@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetTwilioConfig } from '@/src/hooks/useGetTwilioConfig';
 import { useUpsertTwilioConfig } from '@/src/hooks/useUpsertTwilioConfig';
 import { useListTwilioSenders } from '@/src/hooks/useListTwilioSenders';
@@ -89,11 +89,28 @@ function AccountConfigCard() {
   const [authToken, setAuthToken] = useState('');
   const [messagingSid, setMessagingSid] = useState('');
   const [validateWebhooks, setValidateWebhooks] = useState(true);
+  const hasInitializedRef = useRef(false);
 
   const hasExisting = useMemo(
     () => Boolean(data?.account_sid || data?.auth_token_masked),
     [data]
   );
+
+  // Populate form fields when data first loads
+  useEffect(() => {
+    if (data && !isLoading && !hasInitializedRef.current) {
+      if (data.account_sid) {
+        setAccountSid(data.account_sid);
+      }
+      if (data.messaging_service_sid) {
+        setMessagingSid(data.messaging_service_sid);
+      }
+      if (typeof data.validate_webhooks === 'boolean') {
+        setValidateWebhooks(data.validate_webhooks);
+      }
+      hasInitializedRef.current = true;
+    }
+  }, [data, isLoading]);
 
   const handleSave = async () => {
     await upsert.mutateAsync({

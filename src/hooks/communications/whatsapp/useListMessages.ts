@@ -1,42 +1,34 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { Tables } from '@/database.types';
 
-export type MessageRow = {
-  id: string;
-  thread_id: string;
-  sender_id: string;
-  direction: 'OUT' | 'IN';
-  body: string | null;
-  media_urls: string[];
-  status:
-    | 'queued'
-    | 'sending'
-    | 'sent'
-    | 'delivered'
-    | 'read'
-    | 'undelivered'
-    | 'failed';
-  occurred_at: string;
-};
-
-async function fetchMessages(threadId: string): Promise<MessageRow[]> {
+async function fetchMessages(
+  threadId: string
+): Promise<Array<Tables<'whatsapp_messages'>>> {
   if (!threadId) return [];
-  const res = await fetch(
-    `/api/communications/whatsapp/messages?threadId=${encodeURIComponent(threadId)}`
-  );
-  const data = (await res.json()) as MessageRow[] | { error: string };
-  if (Array.isArray(data)) return data;
-  if ('error' in data) throw new Error(data.error);
-  return [];
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('whatsapp_messages')
+    .select(
+      'id, thread_id, sender_id, direction, body, media_urls, status, occurred_at'
+    )
+    .eq('thread_id', threadId)
+    .order('occurred_at', { ascending: true });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data || []) as Array<Tables<'whatsapp_messages'>>;
 }
 
 export function useListMessages(threadId: string) {
   const qc = useQueryClient();
-  const query = useQuery<MessageRow[], Error>({
+  const query = useQuery<Array<Tables<'whatsapp_messages'>>, Error>({
     queryKey: ['whatsapp', 'messages', threadId],
     queryFn: () => fetchMessages(threadId),
     enabled: !!threadId,
+    staleTime: 10 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {

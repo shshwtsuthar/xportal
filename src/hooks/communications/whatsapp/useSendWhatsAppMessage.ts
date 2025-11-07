@@ -32,6 +32,11 @@ export function useSendWhatsAppMessage() {
           queryKey: ['whatsapp', 'messages', variables.threadId],
         });
       }
+      if (variables.senderId) {
+        await qc.invalidateQueries({
+          queryKey: ['whatsapp', 'threads', variables.senderId],
+        });
+      }
     },
     onError: (e: unknown) =>
       toast.error(e instanceof Error ? e.message : 'Failed to send'),
