@@ -91,9 +91,7 @@ export default async function DashboardPage() {
         {metrics.map((metric) => (
           <Card key={metric.title}>
             <CardHeader>
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                {metric.title}
-              </CardTitle>
+              <CardTitle>{metric.title}</CardTitle>
               <CardDescription>{metric.description}</CardDescription>
             </CardHeader>
             <CardContent>
