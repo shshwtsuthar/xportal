@@ -1,60 +1,47 @@
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
-import { Tables, Enums } from '@/database.types';
+import { Tables } from '@/database.types';
+import type { StudentFilters } from './useStudentsFilters';
+import { serializeFilters } from './useStudentsFilters';
 
 /**
- * Fetch students with optional search and status filtering.
+ * Fetch students with optional filtering.
  * Uses RLS via browser supabase client. Throws on errors.
  */
-export type StudentStatus = Enums<'student_status'>;
-
-type Filters = {
-  q?: string;
-  status?: StudentStatus;
-  page?: number;
-  pageSize?: number;
-};
-
-export const useGetStudents = (filters: Filters) => {
-  const { q, status, page = 1, pageSize = 20 } = filters;
-
+export const useGetStudents = (filters?: StudentFilters) => {
   return useQuery({
-    queryKey: [
-      'students',
-      { q: q ?? '', status: status ?? 'all', page, pageSize },
-    ],
-    queryFn: async (): Promise<
-      Pick<
-        Tables<'students'>,
-        | 'id'
-        | 'student_id_display'
-        | 'first_name'
-        | 'last_name'
-        | 'email'
-        | 'status'
-        | 'created_at'
-      >[]
-    > => {
+    queryKey: ['students', filters ? serializeFilters(filters) : 'all'],
+    queryFn: async (): Promise<Tables<'students'>[]> => {
       const supabase = createClient();
 
       let query = supabase
         .from('students')
-        .select(
-          'id, student_id_display, first_name, last_name, email, status, created_at',
-          { count: 'exact' }
-        )
-        .order('created_at', { ascending: false })
-        .range((page - 1) * pageSize, page * pageSize - 1);
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (q && q.trim().length > 0) {
-        const term = q.trim();
+      if (!filters) {
+        const { data, error } = await query;
+        if (error) throw new Error(error.message);
+        return data ?? [];
+      }
+
+      // Apply filters
+      if (filters.search) {
+        const searchTerm = `%${filters.search}%`;
         query = query.or(
-          `first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`
+          `first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm},student_id_display.ilike.${searchTerm}`
         );
       }
 
-      if (status && typeof status === 'string') {
-        query = query.eq('status', status);
+      if (filters.statuses?.length) {
+        query = query.in('status', filters.statuses);
+      }
+
+      if (filters.createdAt?.from) {
+        query = query.gte('created_at', filters.createdAt.from);
+      }
+      if (filters.createdAt?.to) {
+        query = query.lte('created_at', filters.createdAt.to);
       }
 
       const { data, error } = await query;

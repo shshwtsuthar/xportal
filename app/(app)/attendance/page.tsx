@@ -63,11 +63,13 @@ export default function AttendancePage() {
       studentId: undefined,
     });
   const studentSummary = useGetStudentAttendanceSummary(selectedStudentId);
-  const { data: studentOptions = [] } = useGetStudents({
-    q: studentQuery,
-    page: 1,
-    pageSize: 20,
-  });
+  const { data: studentOptions = [] } = useGetStudents(
+    studentQuery
+      ? {
+          search: studentQuery,
+        }
+      : undefined
+  );
 
   const handleToggleAttendance = async (
     enrollmentClassId: string,

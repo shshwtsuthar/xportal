@@ -13,6 +13,9 @@ export const getApplicationsTableKey = () => TABLE_KEY_APPLICATIONS;
 const TABLE_KEY_INVOICES = 'invoices.datatable';
 export const getInvoicesTableKey = () => TABLE_KEY_INVOICES;
 
+const TABLE_KEY_STUDENTS = 'students.datatable';
+export const getStudentsTableKey = () => TABLE_KEY_STUDENTS;
+
 export const useGetTablePreferences = (tableKey: string) => {
   return useQuery({
     queryKey: ['table-prefs', tableKey],
