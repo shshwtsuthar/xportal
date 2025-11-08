@@ -21,6 +21,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Tables } from '@/database.types';
 import type { StudentFilters } from '@/src/hooks/useStudentsFilters';
@@ -52,6 +54,7 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
       key: string;
       direction: 'asc' | 'desc';
     } | null>(null);
+    const [searchQuery, setSearchQuery] = useState<string>('');
 
     // Preferences: visible columns persisted per user
     const tableKey = getStudentsTableKey();
@@ -119,12 +122,70 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
       });
     }, [data, sortConfig, colById]);
 
+    // Filter columns based on visibility preferences
+    const visibleCols = useMemo(
+      () => allColumns.filter((col) => visibleColumns.includes(col.id)),
+      [allColumns, visibleColumns]
+    );
+
+    // Apply client-side search filtering
+    const filteredRows = useMemo(() => {
+      if (!searchQuery?.trim()) return rows;
+
+      const query = searchQuery.toLowerCase().trim();
+      return rows.filter((row) => {
+        return visibleCols.some((col) => {
+          // Get searchable value from column
+          let value: string = '';
+
+          // For date columns, prefer rendered text (formatted date) over sortAccessor (timestamp)
+          const isDateColumn =
+            col.id === 'date_of_birth' || col.id === 'created_at';
+
+          if (isDateColumn) {
+            // For dates, use the rendered formatted text
+            const rendered = col.render(row);
+            if (typeof rendered === 'string') {
+              value = rendered.toLowerCase();
+            } else {
+              value = String(rendered ?? '').toLowerCase();
+            }
+          } else if (col.sortAccessor) {
+            // Use sortAccessor for raw data values (name, email, student_id, status)
+            const rawValue = col.sortAccessor(row);
+            value = String(rawValue ?? '').toLowerCase();
+          } else {
+            // Fall back to rendered text for columns without sortAccessor
+            const rendered = col.render(row);
+            if (typeof rendered === 'string') {
+              value = rendered.toLowerCase();
+            } else if (
+              rendered &&
+              typeof rendered === 'object' &&
+              'props' in rendered
+            ) {
+              // For React elements like Badge, extract children text
+              const element = rendered as React.ReactElement<{
+                children?: React.ReactNode;
+              }>;
+              const children = element.props?.children;
+              value = String(children ?? '').toLowerCase();
+            } else {
+              value = String(rendered ?? '').toLowerCase();
+            }
+          }
+
+          return value.includes(query);
+        });
+      });
+    }, [rows, searchQuery, visibleCols]);
+
     useImperativeHandle(
       ref,
       () => ({
-        getRows: () => rows ?? [],
+        getRows: () => filteredRows ?? [],
       }),
-      [rows]
+      [filteredRows]
     );
 
     if (isLoading) {
@@ -136,22 +197,21 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
       );
     }
 
-    const formatDate = (value: string | null) => {
-      if (!value) return '';
-      try {
-        return format(new Date(value), 'dd MMM yyyy');
-      } catch {
-        return String(value);
-      }
-    };
-
-    // Filter columns based on visibility preferences
-    const visibleCols = allColumns.filter((col) =>
-      visibleColumns.includes(col.id)
-    );
-
     return (
       <div className="w-full overflow-hidden rounded-md border">
+        <div className="border-b p-3">
+          <div className="relative">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input
+              type="text"
+              placeholder="Search all columns..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 text-sm"
+              aria-label="Search students table"
+            />
+          </div>
+        </div>
         <Table>
           <TableHeader>
             <TableRow className="divide-x">
@@ -170,7 +230,7 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y">
-            {rows.map((s) => (
+            {filteredRows.map((s) => (
               <TableRow key={s.id} className="divide-x">
                 {visibleCols.map((col) => {
                   // Make name column clickable
@@ -198,11 +258,13 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
                 </TableCell>
               </TableRow>
             ))}
-            {rows.length === 0 && (
+            {filteredRows.length === 0 && (
               <TableRow className="divide-x">
                 <TableCell colSpan={visibleCols.length + 1}>
                   <p className="text-muted-foreground text-sm">
-                    No students found.
+                    {searchQuery.trim()
+                      ? 'No students match your search.'
+                      : 'No students found.'}
                   </p>
                 </TableCell>
               </TableRow>

@@ -34,9 +34,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Search } from 'lucide-react';
 // removed unused Tables type
 import { useGetInvoices } from '@/src/hooks/useGetInvoices';
+import { Input } from '@/components/ui/input';
 import {
   getInvoicesTableKey,
   useGetTablePreferences,
@@ -71,6 +72,7 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<
       string | undefined
     >();
+    const [searchQuery, setSearchQuery] = useState<string>('');
 
     const tableKey = getInvoicesTableKey();
     const { data: prefs } = useGetTablePreferences(tableKey);
@@ -180,13 +182,80 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
       return working;
     }, [data, sortConfig, manualOrderIds, colById]);
 
-    useImperativeHandle(ref, () => ({ getRows: () => rows }));
+    const visibleDefs = useMemo(
+      () => allColumns.filter((c) => visibleColumns.includes(c.id)),
+      [allColumns, visibleColumns]
+    );
 
-    const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
+    // Apply client-side search filtering
+    const filteredRows = useMemo(() => {
+      if (!searchQuery?.trim()) return rows;
+
+      const query = searchQuery.toLowerCase().trim();
+      return rows.filter((row) => {
+        return visibleDefs.some((col) => {
+          // Get searchable value from column
+          let value: string = '';
+
+          // For date columns, prefer rendered text (formatted date) over sortAccessor (timestamp)
+          const isDateColumn =
+            col.id === 'issue_date' ||
+            col.id === 'due_date' ||
+            col.id === 'last_email_sent_at';
+
+          if (isDateColumn) {
+            // For dates, use the rendered formatted text
+            const rendered = col.render(row);
+            if (typeof rendered === 'string') {
+              value = rendered.toLowerCase();
+            } else {
+              value = String(rendered ?? '').toLowerCase();
+            }
+          } else if (col.sortAccessor) {
+            // Use sortAccessor for raw data values
+            const rawValue = col.sortAccessor(row);
+            value = String(rawValue ?? '').toLowerCase();
+          } else {
+            // Fall back to rendered text for columns without sortAccessor
+            const rendered = col.render(row);
+            if (typeof rendered === 'string') {
+              value = rendered.toLowerCase();
+            } else if (
+              rendered &&
+              typeof rendered === 'object' &&
+              'props' in rendered
+            ) {
+              // For React elements like Badge, extract children text
+              const element = rendered as React.ReactElement<{
+                children?: React.ReactNode;
+              }>;
+              const children = element.props?.children;
+              value = String(children ?? '').toLowerCase();
+            } else {
+              value = String(rendered ?? '').toLowerCase();
+            }
+          }
+
+          return value.includes(query);
+        });
+      });
+    }, [rows, searchQuery, visibleDefs]);
+
+    useImperativeHandle(ref, () => ({ getRows: () => filteredRows }));
+
+    const totalPages = Math.max(
+      1,
+      Math.ceil(filteredRows.length / rowsPerPage)
+    );
     const pagedRows = useMemo(() => {
       const start = (currentPage - 1) * rowsPerPage;
-      return rows.slice(start, start + rowsPerPage);
-    }, [rows, currentPage, rowsPerPage]);
+      return filteredRows.slice(start, start + rowsPerPage);
+    }, [filteredRows, currentPage, rowsPerPage]);
+
+    // Reset to page 1 when data or search changes
+    useEffect(() => {
+      setCurrentPage(1);
+    }, [data, searchQuery]);
 
     const onDragStart = (id: string) => setDraggingId(id);
     const onDragEnter = (id: string) => setDragOverId(id);
@@ -207,8 +276,6 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
       setDragOverId(null);
     };
 
-    const visibleDefs = allColumns.filter((c) => visibleColumns.includes(c.id));
-
     const handleSortClick = (key: string) => {
       setSortConfig((prev) => {
         if (prev?.key === key) {
@@ -227,6 +294,19 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
 
     return (
       <div className="w-full overflow-hidden rounded-md border">
+        <div className="border-b p-3">
+          <div className="relative">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input
+              type="text"
+              placeholder="Search all columns..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 text-sm"
+              aria-label="Search invoices table"
+            />
+          </div>
+        </div>
         <Table>
           <TableHeader>
             <TableRow className="divide-x">
@@ -295,7 +375,9 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
                   colSpan={visibleDefs.length + 2}
                   className="text-muted-foreground py-8 text-center text-sm"
                 >
-                  No invoices to display.
+                  {searchQuery.trim()
+                    ? 'No invoices match your search.'
+                    : 'No invoices to display.'}
                 </TableCell>
               </TableRow>
             )}

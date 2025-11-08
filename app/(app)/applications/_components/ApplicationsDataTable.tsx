@@ -53,9 +53,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { MoreHorizontal, Trash2, Check, X, GripVertical } from 'lucide-react';
+import {
+  MoreHorizontal,
+  Trash2,
+  Check,
+  X,
+  GripVertical,
+  Search,
+} from 'lucide-react';
 // removed unused date-fns import
 import { Tables } from '@/database.types';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
 import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
@@ -104,6 +112,7 @@ export const ApplicationsDataTable = forwardRef<
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Preferences: visible columns and widths persisted per user
   const tableKey = getApplicationsTableKey();
@@ -207,23 +216,83 @@ export const ApplicationsDataTable = forwardRef<
     });
   }, [data, sortConfig, manualOrderIds, colById]);
 
+  // Filter columns based on visibility preferences
+  const visibleCols = useMemo(
+    () => allColumns.filter((col) => visibleColumns.includes(col.id)),
+    [allColumns, visibleColumns]
+  );
+
+  // Apply client-side search filtering
+  const filteredRows = useMemo(() => {
+    if (!searchQuery?.trim()) return rows;
+
+    const query = searchQuery.toLowerCase().trim();
+    return rows.filter((row) => {
+      return visibleCols.some((col) => {
+        // Get searchable value from column
+        let value: string = '';
+
+        // For date columns, prefer rendered text (formatted date) over sortAccessor (timestamp)
+        const isDateColumn =
+          col.id === 'requested_start' ||
+          col.id === 'updated_at' ||
+          col.id === 'created_at';
+
+        if (isDateColumn) {
+          // For dates, use the rendered formatted text
+          const rendered = col.render(row);
+          if (typeof rendered === 'string') {
+            value = rendered.toLowerCase();
+          } else {
+            value = String(rendered ?? '').toLowerCase();
+          }
+        } else if (col.sortAccessor) {
+          // Use sortAccessor for raw data values
+          const rawValue = col.sortAccessor(row);
+          value = String(rawValue ?? '').toLowerCase();
+        } else {
+          // Fall back to rendered text for columns without sortAccessor
+          const rendered = col.render(row);
+          if (typeof rendered === 'string') {
+            value = rendered.toLowerCase();
+          } else if (
+            rendered &&
+            typeof rendered === 'object' &&
+            'props' in rendered
+          ) {
+            // For React elements like Badge, extract children text
+            const element = rendered as React.ReactElement<{
+              children?: React.ReactNode;
+            }>;
+            const children = element.props?.children;
+            value = String(children ?? '').toLowerCase();
+          } else {
+            value = String(rendered ?? '').toLowerCase();
+          }
+        }
+
+        return value.includes(query);
+      });
+    });
+  }, [rows, searchQuery, visibleCols]);
+
   // Pagination logic
-  const totalPages = Math.ceil(rows.length / rowsPerPage);
+  const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
-  const paginatedRows = rows.slice(startIndex, endIndex);
+  const paginatedRows = filteredRows.slice(startIndex, endIndex);
 
-  // Reset to page 1 when data changes
+  // Reset to page 1 when data or search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [data]);
+  }, [data, searchQuery]);
 
   useImperativeHandle(
     ref,
     () => ({
-      getRows: () => (rows as RowType[]) ?? [],
+      getRows: () => (filteredRows as RowType[]) ?? [],
     }),
-    [rows]
+    [filteredRows]
   );
 
   const isManualOrderActive = !!(manualOrderIds && manualOrderIds.length > 0);
@@ -455,6 +524,19 @@ export const ApplicationsDataTable = forwardRef<
             </Button>
           </div>
         )}
+        <div className="border-b p-3">
+          <div className="relative">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input
+              type="text"
+              placeholder="Search all columns..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 text-sm"
+              aria-label="Search applications table"
+            />
+          </div>
+        </div>
         <Table className="table-fixed">
           <TableHeader>
             <TableRow className="divide-x">
@@ -567,14 +649,16 @@ export const ApplicationsDataTable = forwardRef<
               <TableRow className="divide-x">
                 <TableCell colSpan={visibleColumns.length + 2}>
                   <p className="text-muted-foreground text-sm">
-                    No applications found.
+                    {searchQuery.trim()
+                      ? 'No applications match your search.'
+                      : 'No applications found.'}
                   </p>
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-        {rows.length > 0 && (
+        {filteredRows.length > 0 && (
           <div className="flex flex-col gap-4 border-t px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground text-sm whitespace-nowrap">
