@@ -86,7 +86,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
             name="first_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First name</FormLabel>
+                <FormLabel>First name *</FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="John" />
                 </FormControl>
@@ -112,7 +112,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
             name="last_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last name</FormLabel>
+                <FormLabel>Last name *</FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="Smith" />
                 </FormControl>
@@ -139,7 +139,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
             name="date_of_birth"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Date of birth</FormLabel>
+                <FormLabel>Date of birth *</FormLabel>
                 <FormControl>
                   <Input
                     type="date"
@@ -295,7 +295,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
             name="suburb"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Suburb</FormLabel>
+                <FormLabel>Suburb *</FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="Richmond" />
                 </FormControl>
@@ -308,7 +308,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
             name="state"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>State</FormLabel>
+                <FormLabel>State *</FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="VIC" />
                 </FormControl>
@@ -321,7 +321,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
             name="postcode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Postcode</FormLabel>
+                <FormLabel>Postcode *</FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="3000" />
                 </FormControl>

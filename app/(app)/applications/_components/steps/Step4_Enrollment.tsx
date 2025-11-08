@@ -284,7 +284,7 @@ export function EnrollmentStep({ form }: Props) {
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-semibold tracking-tight">
-              Commencement Date
+              Commencement Date *
             </CardTitle>
           </CardHeader>
           <CardContent>

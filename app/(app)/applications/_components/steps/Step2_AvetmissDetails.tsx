@@ -28,7 +28,7 @@ export const Step2_AvetmissDetails = () => {
         name="gender"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Gender</FormLabel>
+            <FormLabel>Gender *</FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
@@ -52,7 +52,7 @@ export const Step2_AvetmissDetails = () => {
         name="highest_school_level_id"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Highest school level completed</FormLabel>
+            <FormLabel>Highest school level completed *</FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
@@ -78,7 +78,7 @@ export const Step2_AvetmissDetails = () => {
         name="indigenous_status_id"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Indigenous status</FormLabel>
+            <FormLabel>Indigenous status *</FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
@@ -105,7 +105,7 @@ export const Step2_AvetmissDetails = () => {
         name="labour_force_status_id"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Labour force status</FormLabel>
+            <FormLabel>Labour force status *</FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
@@ -135,7 +135,7 @@ export const Step2_AvetmissDetails = () => {
         name="country_of_birth_id"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Country of birth</FormLabel>
+            <FormLabel>Country of birth *</FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
@@ -157,7 +157,7 @@ export const Step2_AvetmissDetails = () => {
         name="language_code"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Main language at home</FormLabel>
+            <FormLabel>Main language at home *</FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
@@ -179,7 +179,7 @@ export const Step2_AvetmissDetails = () => {
         name="citizenship_status_code"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Citizenship status</FormLabel>
+            <FormLabel>Citizenship status *</FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
@@ -203,7 +203,7 @@ export const Step2_AvetmissDetails = () => {
         name="at_school_flag"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Currently at school</FormLabel>
+            <FormLabel>Currently at school *</FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
