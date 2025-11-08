@@ -9,9 +9,11 @@ import {
 import { StudentsFilter } from './_components/StudentsFilter';
 import { StudentsColumnsMenu } from './_components/StudentsColumnsMenu';
 import { ExportDialog } from './_components/ExportDialog';
+import { StudentStats } from './_components/StudentStats';
 import { Download, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStudentsFilters } from '@/src/hooks/useStudentsFilters';
+import { useGetStudents } from '@/src/hooks/useGetStudents';
 import { useComposeEmail } from '@/components/providers/compose-email';
 import { toast } from 'sonner';
 import type { Database } from '@/database.types';
@@ -30,6 +32,9 @@ export default function StudentsPage() {
   const [quickStatus, setQuickStatus] = useState<StudentStatus | undefined>(
     filters.statuses?.length === 1 ? filters.statuses[0] : undefined
   );
+
+  // Fetch all students for stats
+  const { data: allStudents, isLoading } = useGetStudents();
 
   // Handle quick status tab clicks
   const handleStatusClick = (status: StudentStatus | undefined) => {
@@ -73,6 +78,15 @@ export default function StudentsPage() {
             View and manage students
           </p>
         </div>
+      </div>
+
+      {/* Student Statistics Cards */}
+      <div className="mb-6">
+        {isLoading ? (
+          <p className="text-muted-foreground text-sm">Loading statistics...</p>
+        ) : (
+          <StudentStats students={allStudents ?? []} />
+        )}
       </div>
 
       <Card>

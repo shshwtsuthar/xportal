@@ -11,7 +11,9 @@ import {
 import { InvoicesColumnsMenu } from './_components/InvoicesColumnsMenu';
 import { InvoicesFilter } from './_components/InvoicesFilter';
 import { ExportDialogInvoices } from './_components/ExportDialogInvoices';
+import { InvoiceStats } from './_components/InvoiceStats';
 import { useInvoicesFilters } from '@/src/hooks/useInvoicesFilters';
+import { useGetInvoices } from '@/src/hooks/useGetInvoices';
 
 export default function InvoicesPage() {
   const tableRef = useRef<InvoicesDataTableRef>(null);
@@ -31,6 +33,9 @@ export default function InvoicesPage() {
     };
   }, [filters, quickStatus]);
 
+  // Fetch all invoices for stats
+  const { data: allInvoices, isLoading } = useGetInvoices();
+
   const handleStatusClick = (s: 'ALL' | 'OVERDUE' | 'PAID' | 'SCHEDULED') => {
     setQuickStatus(s);
   };
@@ -44,6 +49,15 @@ export default function InvoicesPage() {
         <p className="text-muted-foreground text-sm">
           View and manage student invoices and payments
         </p>
+      </div>
+
+      {/* Invoice Statistics Cards */}
+      <div className="mb-6">
+        {isLoading ? (
+          <p className="text-muted-foreground text-sm">Loading statistics...</p>
+        ) : (
+          <InvoiceStats invoices={allInvoices ?? []} />
+        )}
       </div>
 
       <Card>
