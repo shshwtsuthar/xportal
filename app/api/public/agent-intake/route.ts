@@ -44,6 +44,9 @@ const payloadSchema = z.object({
   language_code: z.string().optional(),
   citizenship_status_code: z.string().optional(),
   at_school_flag: z.string().optional(),
+  year_highest_school_level_completed: z.string().optional(),
+  survey_contact_status: z.string().optional(),
+  vsn: z.string().optional(),
   // CRICOS
   is_international: z.boolean().optional(),
   usi: z.string().optional(),
@@ -134,6 +137,10 @@ export async function POST(request: Request) {
       language_code: input.language_code ?? null,
       citizenship_status_code: input.citizenship_status_code ?? null,
       at_school_flag: input.at_school_flag ?? null,
+      year_highest_school_level_completed:
+        input.year_highest_school_level_completed ?? null,
+      survey_contact_status: input.survey_contact_status ?? 'A',
+      vsn: input.vsn ?? null,
       is_international: input.is_international ?? null,
       usi: input.usi ?? null,
       passport_number: input.passport_number ?? null,

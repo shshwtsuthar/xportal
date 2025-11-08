@@ -20,6 +20,53 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   },
 });
 
+/**
+ * Ensures a profile record exists for the given user.
+ * Creates it if it doesn't exist (idempotent).
+ */
+async function ensureProfileExists(
+  userId: string,
+  rtoId: string,
+  role: string,
+  firstName: string,
+  lastName: string
+) {
+  // Check if profile already exists
+  const { data: existingProfile, error: checkError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', userId)
+    .single();
+
+  if (checkError && checkError.code !== 'PGRST116') {
+    // PGRST116 is "not found" error, which is expected if profile doesn't exist
+    throw checkError;
+  }
+
+  if (existingProfile) {
+    console.log('Profile already exists for user:', userId);
+    return;
+  }
+
+  // Create the profile
+  const { error: insertError } = await supabase.from('profiles').insert({
+    id: userId,
+    rto_id: rtoId,
+    role: role as
+      | 'ADMISSIONS_OFFICER'
+      | 'SENIOR_ADMISSIONS_OFFICER'
+      | 'COMPLIANCE_MANAGER'
+      | 'ACADEMIC_HEAD'
+      | 'FINANCE_OFFICER'
+      | 'ADMIN',
+    first_name: firstName,
+    last_name: lastName,
+  });
+
+  if (insertError) throw insertError;
+  console.log('Successfully created profile for user:', userId);
+}
+
 async function seedFirstAdmin() {
   try {
     // Ensure initial RTO exists (idempotent)
@@ -43,14 +90,24 @@ async function seedFirstAdmin() {
 
       if (adminError) throw adminError;
 
-      const hasAdmin = adminUser.users.some(
+      const adminUserData = adminUser.users.find(
         (user) =>
           user.email === 'shshwtsuthar@gmail.com' &&
           user.app_metadata?.role === 'ADMIN'
       );
 
-      if (hasAdmin) {
-        console.log('Admin user already exists. Skipping seed process.');
+      if (adminUserData) {
+        console.log('Admin user already exists. Checking profile...');
+        // Ensure profile exists even if user already exists
+        const rtoId = existingRTOs[0].id;
+        await ensureProfileExists(
+          adminUserData.id,
+          rtoId,
+          'ADMIN',
+          adminUserData.user_metadata?.first_name || 'Shashwat',
+          adminUserData.user_metadata?.last_name || 'Suthar'
+        );
+        console.log('Seed process complete.');
         process.exit(0);
       } else {
         console.log('Creating admin user for existing RTO...');
@@ -72,7 +129,20 @@ async function seedFirstAdmin() {
           });
 
         if (createUserError) throw createUserError;
+        if (!user) throw new Error('Failed to create admin user');
+
         console.log('Successfully created admin user:', user.user.email);
+
+        // Ensure profile exists (trigger might not fire with admin.createUser)
+        await ensureProfileExists(
+          user.user.id,
+          rtoId,
+          'ADMIN',
+          'Shashwat',
+          'Suthar'
+        );
+
+        console.log('Seed process complete.');
         process.exit(0);
       }
     }
@@ -108,6 +178,16 @@ async function seedFirstAdmin() {
     if (!user) throw new Error('Failed to create admin user');
 
     console.log('Successfully created admin user:', user.user.email);
+
+    // Ensure profile exists (trigger might not fire with admin.createUser)
+    await ensureProfileExists(
+      user.user.id,
+      rto.id,
+      'ADMIN',
+      'Shashwat',
+      'Suthar'
+    );
+
     console.log('You can now log in with these credentials.');
   } catch (error) {
     console.error('Error seeding first admin:', error);

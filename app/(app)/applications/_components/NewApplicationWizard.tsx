@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from '@/components/ui/form';
 import {
@@ -84,7 +84,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       street_number_name: '',
       street_po_box: '',
       street_country: 'Australia',
-      postal_is_same_as_street: false,
+      postal_is_same_as_street: true,
       postal_building_name: '',
       postal_unit_details: '',
       postal_number_name: '',
@@ -101,6 +101,9 @@ export function NewApplicationWizard({ applicationId }: Props) {
       language_code: '',
       citizenship_status_code: '',
       at_school_flag: '',
+      year_highest_school_level_completed: '',
+      survey_contact_status: 'A',
+      vsn: '',
       is_international: false,
       usi: '',
       passport_number: '',
@@ -170,6 +173,15 @@ export function NewApplicationWizard({ applicationId }: Props) {
         citizenship_status_code:
           currentApplication.citizenship_status_code ?? '',
         at_school_flag: currentApplication.at_school_flag ?? '',
+        year_highest_school_level_completed:
+          currentApplication.year_highest_school_level_completed ?? '',
+        survey_contact_status: (currentApplication.survey_contact_status &&
+        ['A', 'C', 'D', 'E', 'I', 'M', 'O'].includes(
+          currentApplication.survey_contact_status
+        )
+          ? currentApplication.survey_contact_status
+          : 'A') as 'A' | 'C' | 'D' | 'E' | 'I' | 'M' | 'O',
+        vsn: currentApplication.vsn ?? '',
         is_international: Boolean(currentApplication.is_international),
         usi: currentApplication.usi ?? '',
         passport_number: currentApplication.passport_number ?? '',
@@ -423,6 +435,125 @@ export function NewApplicationWizard({ applicationId }: Props) {
     }
   };
 
+  // Watch all required fields to determine if form is ready for submission
+  const watchedFields = useWatch({
+    control: form.control,
+    name: [
+      'first_name',
+      'last_name',
+      'date_of_birth',
+      'program_id',
+      'timetable_id',
+      'proposed_commencement_date',
+      'suburb',
+      'state',
+      'postcode',
+      'gender',
+      'highest_school_level_id',
+      'year_highest_school_level_completed',
+      'indigenous_status_id',
+      'labour_force_status_id',
+      'country_of_birth_id',
+      'language_code',
+      'citizenship_status_code',
+      'at_school_flag',
+      'is_international',
+      'usi',
+      'vsn',
+    ],
+  });
+
+  // Check if all required fields are filled
+  const isFormReadyForSubmission = useMemo(() => {
+    const [
+      first_name,
+      last_name,
+      date_of_birth,
+      program_id,
+      timetable_id,
+      proposed_commencement_date,
+      suburb,
+      state,
+      postcode,
+      gender,
+      highest_school_level_id,
+      year_highest_school_level_completed,
+      indigenous_status_id,
+      labour_force_status_id,
+      country_of_birth_id,
+      language_code,
+      citizenship_status_code,
+      at_school_flag,
+      is_international,
+      usi,
+      vsn,
+    ] = watchedFields;
+
+    // Basic required fields
+    if (
+      !first_name ||
+      !last_name ||
+      !date_of_birth ||
+      !program_id ||
+      !timetable_id ||
+      !proposed_commencement_date ||
+      !suburb ||
+      !state ||
+      !postcode ||
+      !gender ||
+      !highest_school_level_id ||
+      !indigenous_status_id ||
+      !labour_force_status_id ||
+      !country_of_birth_id ||
+      !language_code ||
+      !citizenship_status_code ||
+      !at_school_flag
+    ) {
+      return false;
+    }
+
+    // Conditional: Year highest school level completed (required if not "Did not go to school")
+    if (
+      highest_school_level_id &&
+      highest_school_level_id !== '02' &&
+      !year_highest_school_level_completed
+    ) {
+      return false;
+    }
+
+    // Conditional: USI (required for domestic students)
+    if (is_international === false && (!usi || usi.trim().length === 0)) {
+      return false;
+    }
+
+    // Conditional: VSN (required if shown - state === 'VIC' && age < 25 && is_international === false)
+    // Calculate age from date_of_birth
+    if (date_of_birth && state === 'VIC' && is_international === false) {
+      try {
+        const dob =
+          typeof date_of_birth === 'string'
+            ? new Date(date_of_birth)
+            : date_of_birth;
+        if (!isNaN(dob.getTime())) {
+          const today = new Date();
+          let age = today.getFullYear() - dob.getFullYear();
+          const monthDiff = today.getMonth() - dob.getMonth();
+          const dayDiff = today.getDate() - dob.getDate();
+          if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+            age--;
+          }
+          if (age < 25 && (!vsn || vsn.trim().length === 0)) {
+            return false;
+          }
+        }
+      } catch {
+        // If age calculation fails, don't block submission
+      }
+    }
+
+    return true;
+  }, [watchedFields]);
+
   const StepContent = useMemo(() => {
     if (activeStep === 0) return <Step1_PersonalDetails />;
     if (activeStep === 1) return <Step2_AvetmissDetails />;
@@ -555,15 +686,17 @@ export function NewApplicationWizard({ applicationId }: Props) {
                   ? 'Saving...'
                   : 'Save Draft'}
               </Button>
-              <Button
-                type="button"
-                onClick={handleSubmitApplication}
-                disabled={submitMutation.isPending || !currentApplication?.id}
-              >
-                {submitMutation.isPending
-                  ? 'Submitting...'
-                  : 'Submit Application'}
-              </Button>
+              {isFormReadyForSubmission && (
+                <Button
+                  type="button"
+                  onClick={handleSubmitApplication}
+                  disabled={submitMutation.isPending || !currentApplication?.id}
+                >
+                  {submitMutation.isPending
+                    ? 'Submitting...'
+                    : 'Submit Application'}
+                </Button>
+              )}
             </div>
           </CardFooter>
         </Form>

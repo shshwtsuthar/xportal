@@ -301,12 +301,16 @@ serve(async (req: Request) => {
         rto_id: app.rto_id,
         gender: app.gender,
         highest_school_level_id: app.highest_school_level_id,
+        year_highest_school_level_completed:
+          app.year_highest_school_level_completed,
         indigenous_status_id: app.indigenous_status_id,
         labour_force_status_id: app.labour_force_status_id,
         country_of_birth_id: app.country_of_birth_id,
         language_code: app.language_code,
         citizenship_status_code: app.citizenship_status_code,
         at_school_flag: app.at_school_flag,
+        survey_contact_status: app.survey_contact_status || 'A',
+        vsn: app.vsn || null,
       });
       if (avErr) {
         return new Response(
