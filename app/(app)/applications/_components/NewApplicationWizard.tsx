@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { MagneticButton } from '@/components/ui/magnetic-button';
 import {
   applicationSchema,
   draftApplicationSchema,
@@ -580,15 +581,27 @@ export function NewApplicationWizard({ applicationId }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleSaveDraft}
-            disabled={createMutation.isPending || updateMutation.isPending}
-          >
-            {createMutation.isPending || updateMutation.isPending
-              ? 'Saving...'
-              : 'Save Draft'}
-          </Button>
+          {!isFormReadyForSubmission ? (
+            <MagneticButton
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
+              {createMutation.isPending || updateMutation.isPending
+                ? 'Saving...'
+                : 'Save Draft'}
+            </MagneticButton>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
+              {createMutation.isPending || updateMutation.isPending
+                ? 'Saving...'
+                : 'Save Draft'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -676,18 +689,35 @@ export function NewApplicationWizard({ applicationId }: Props) {
                   Upload file
                 </Button>
               </label>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleSaveDraft}
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
-                {createMutation.isPending || updateMutation.isPending
-                  ? 'Saving...'
-                  : 'Save Draft'}
-              </Button>
-              {isFormReadyForSubmission && (
+              {!isFormReadyForSubmission ? (
+                <MagneticButton
+                  type="button"
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={
+                    createMutation.isPending || updateMutation.isPending
+                  }
+                >
+                  {createMutation.isPending || updateMutation.isPending
+                    ? 'Saving...'
+                    : 'Save Draft'}
+                </MagneticButton>
+              ) : (
                 <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={
+                    createMutation.isPending || updateMutation.isPending
+                  }
+                >
+                  {createMutation.isPending || updateMutation.isPending
+                    ? 'Saving...'
+                    : 'Save Draft'}
+                </Button>
+              )}
+              {isFormReadyForSubmission && (
+                <MagneticButton
                   type="button"
                   onClick={handleSubmitApplication}
                   disabled={submitMutation.isPending || !currentApplication?.id}
@@ -695,7 +725,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
                   {submitMutation.isPending
                     ? 'Submitting...'
                     : 'Submit Application'}
-                </Button>
+                </MagneticButton>
               )}
             </div>
           </CardFooter>
