@@ -39,6 +39,21 @@ import {
   type RowType,
 } from './studentsTableColumns';
 import { Button } from '@/components/ui/button';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type Props = {
   filters?: StudentFilters;
@@ -58,6 +73,8 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
     const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [searchQuery, setSearchQuery] = useState<string>('');
 
     // Preferences: visible columns persisted per user
@@ -215,10 +232,21 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
       });
     }, [rows, searchQuery, visibleCols]);
 
+    // Pagination logic
+    const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const paginatedRows = filteredRows.slice(startIndex, endIndex);
+
+    // Reset to page 1 when data or search changes
+    useEffect(() => {
+      setCurrentPage(1);
+    }, [data, searchQuery]);
+
     useImperativeHandle(
       ref,
       () => ({
-        getRows: () => filteredRows ?? [],
+        getRows: () => (filteredRows as RowType[]) ?? [],
       }),
       [filteredRows]
     );
@@ -289,7 +317,7 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y">
-            {filteredRows.map((s) => (
+            {paginatedRows.map((s) => (
               <TableRow
                 key={s.id}
                 className="divide-x"
@@ -327,7 +355,7 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
                 </TableCell>
               </TableRow>
             ))}
-            {filteredRows.length === 0 && (
+            {paginatedRows.length === 0 && (
               <TableRow className="divide-x">
                 <TableCell colSpan={visibleCols.length + 2}>
                   <p className="text-muted-foreground text-sm">
@@ -340,6 +368,83 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
             )}
           </TableBody>
         </Table>
+        {filteredRows.length > 0 && (
+          <div className="flex flex-col gap-4 border-t px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-sm whitespace-nowrap">
+                Rows per page:
+              </span>
+              <Select
+                value={rowsPerPage.toString()}
+                onValueChange={(value) => {
+                  setRowsPerPage(Number(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-center sm:justify-end">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className={
+                        currentPage === 1
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 7) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 4) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 3) {
+                      pageNum = totalPages - 6 + i;
+                    } else {
+                      pageNum = currentPage - 3 + i;
+                    }
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(pageNum)}
+                          isActive={currentPage === pageNum}
+                          className="cursor-pointer"
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className={
+                        currentPage === totalPages
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
