@@ -28,6 +28,12 @@ serve(async (req: Request) => {
       }
     );
 
+    // Service role client for storage operations that bypass RLS
+    const service = createClient<Db>(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     const { applicationId } = await req.json();
     if (!applicationId) {
       return new Response(
@@ -123,10 +129,16 @@ serve(async (req: Request) => {
       .insert({
         rto_id: app.rto_id,
         application_id: app.id,
+        salutation: app.salutation,
         first_name: app.first_name!,
+        middle_name: app.middle_name,
         last_name: app.last_name!,
+        preferred_name: app.preferred_name,
         email: app.email!,
         date_of_birth: app.date_of_birth!,
+        work_phone: app.work_phone,
+        mobile_phone: app.mobile_phone,
+        alternative_email: app.alternative_email,
         status: 'ACTIVE',
       })
       .select('*')
@@ -138,6 +150,101 @@ serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
         }
+      );
+    }
+
+    // 1b) Copy files from applications bucket to students bucket
+    const fileCopyWarnings: string[] = [];
+    try {
+      // Recursively list all files in the application folder
+      const listFilesRecursively = async (
+        bucket: string,
+        prefix: string,
+        files: string[] = []
+      ): Promise<string[]> => {
+        const { data, error } = await service.storage
+          .from(bucket)
+          .list(prefix, {
+            limit: 1000,
+            sortBy: { column: 'name', order: 'asc' },
+          });
+
+        if (error) {
+          console.error(`Error listing files in ${prefix}:`, error);
+          return files;
+        }
+
+        if (!data || data.length === 0) {
+          return files;
+        }
+
+        for (const item of data) {
+          const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
+          // Files have an id property, folders don't
+          if (item.id) {
+            // It's a file
+            files.push(fullPath);
+          } else {
+            // It's a folder, recurse into it
+            await listFilesRecursively(bucket, fullPath, files);
+          }
+        }
+
+        return files;
+      };
+
+      const applicationFiles = await listFilesRecursively(
+        'applications',
+        app.id
+      );
+
+      // Copy each file to students bucket
+      for (const filePath of applicationFiles) {
+        try {
+          // Download from applications bucket
+          const { data: fileData, error: downloadErr } = await service.storage
+            .from('applications')
+            .download(filePath);
+
+          if (downloadErr || !fileData) {
+            fileCopyWarnings.push(
+              `Failed to download ${filePath}: ${downloadErr?.message || 'Unknown error'}`
+            );
+            continue;
+          }
+
+          // Calculate relative path (remove applicationId prefix)
+          const relativePath = filePath.startsWith(`${app.id}/`)
+            ? filePath.slice(`${app.id}/`.length)
+            : filePath;
+
+          // Upload to students bucket
+          const targetPath = `${student.id}/${relativePath}`;
+          // Get content type from file extension or metadata if available
+          const contentType = fileData.type || undefined;
+          const { error: uploadErr } = await service.storage
+            .from('students')
+            .upload(targetPath, fileData, {
+              contentType: contentType,
+              upsert: false,
+            });
+
+          if (uploadErr) {
+            fileCopyWarnings.push(
+              `Failed to upload ${targetPath}: ${uploadErr.message}`
+            );
+          }
+        } catch (fileErr) {
+          fileCopyWarnings.push(
+            `Error copying ${filePath}: ${fileErr instanceof Error ? fileErr.message : String(fileErr)}`
+          );
+        }
+      }
+    } catch (copyErr) {
+      // Log error but don't fail approval
+      console.error('Error during file copy:', copyErr);
+      fileCopyWarnings.push(
+        `File copy operation failed: ${copyErr instanceof Error ? copyErr.message : String(copyErr)}`
       );
     }
 
@@ -311,6 +418,7 @@ serve(async (req: Request) => {
         at_school_flag: app.at_school_flag,
         survey_contact_status: app.survey_contact_status || 'A',
         vsn: app.vsn || null,
+        usi: app.usi || null,
       });
       if (avErr) {
         return new Response(
@@ -330,10 +438,32 @@ serve(async (req: Request) => {
         rto_id: app.rto_id,
         is_international: Boolean(app.is_international),
         passport_number: app.passport_number,
+        passport_issue_date: app.passport_issue_date,
+        passport_expiry_date: app.passport_expiry_date,
+        place_of_birth: app.place_of_birth,
         visa_type: app.visa_type,
         visa_number: app.visa_number,
+        visa_application_office: app.visa_application_office,
         country_of_citizenship: app.country_of_citizenship,
+        is_under_18: app.is_under_18,
+        provider_accepting_welfare_responsibility:
+          app.provider_accepting_welfare_responsibility,
+        welfare_start_date: app.welfare_start_date,
+        provider_arranged_oshc: app.provider_arranged_oshc,
+        oshc_provider_name: app.oshc_provider_name,
+        oshc_start_date: app.oshc_start_date,
+        oshc_end_date: app.oshc_end_date,
+        has_english_test: app.has_english_test,
+        english_test_type: app.english_test_type,
+        english_test_date: app.english_test_date,
         ielts_score: app.ielts_score,
+        has_previous_study_australia: app.has_previous_study_australia,
+        previous_provider_name: app.previous_provider_name,
+        completed_previous_course: app.completed_previous_course,
+        has_release_letter: app.has_release_letter,
+        written_agreement_accepted: app.written_agreement_accepted,
+        written_agreement_date: app.written_agreement_date,
+        privacy_notice_accepted: app.privacy_notice_accepted,
       });
       if (crErr) {
         return new Response(
@@ -382,6 +512,7 @@ serve(async (req: Request) => {
             name: app.g_name,
             email: app.g_email,
             phone_number: app.g_phone_number,
+            relationship: app.g_relationship,
           });
         if (gErr) {
           return new Response(
@@ -475,6 +606,22 @@ serve(async (req: Request) => {
       }
     }
 
+    // 3h) Update offer_letters to link to student
+    {
+      const { error: offerErr } = await service
+        .from('offer_letters')
+        .update({ student_id: student.id })
+        .eq('application_id', app.id)
+        .is('student_id', null);
+      if (offerErr) {
+        // Log but don't fail approval
+        console.error('Failed to link offer letters to student:', offerErr);
+        fileCopyWarnings.push(
+          `Failed to link offer letters: ${offerErr.message}`
+        );
+      }
+    }
+
     // 4) Update application status to APPROVED
     const { error: updErr } = await supabase
       .from('applications')
@@ -495,6 +642,7 @@ serve(async (req: Request) => {
         message: 'Application approved, invoices generated',
         studentId: student.id,
         enrollmentId: enrollment.id,
+        warnings: fileCopyWarnings.length > 0 ? fileCopyWarnings : undefined,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

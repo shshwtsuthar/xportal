@@ -181,6 +181,146 @@ export const applicationSchema = z
     country_of_citizenship: z.string().optional(),
     ielts_score: z.string().optional(),
 
+    // CRICOS: Passport details (enhanced)
+    passport_issue_date: z
+      .union([z.string(), z.date()])
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true;
+          let date: Date;
+          if (typeof val === 'string') {
+            date = new Date(val);
+          } else {
+            date = val;
+          }
+          return !isNaN(date.getTime());
+        },
+        { message: 'Passport issue date must be valid' }
+      ),
+    passport_expiry_date: z
+      .union([z.string(), z.date()])
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true;
+          let date: Date;
+          if (typeof val === 'string') {
+            date = new Date(val);
+          } else {
+            date = val;
+          }
+          return !isNaN(date.getTime());
+        },
+        { message: 'Passport expiry date must be valid' }
+      ),
+    place_of_birth: z.string().optional(),
+
+    // CRICOS: Visa information (enhanced)
+    visa_application_office: z.string().optional(),
+
+    // CRICOS: Under 18 welfare arrangements
+    is_under_18: z.boolean().optional(),
+    provider_accepting_welfare_responsibility: z.boolean().optional(),
+    welfare_start_date: z
+      .union([z.string(), z.date()])
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true;
+          let date: Date;
+          if (typeof val === 'string') {
+            date = new Date(val);
+          } else {
+            date = val;
+          }
+          return !isNaN(date.getTime());
+        },
+        { message: 'Welfare start date must be valid' }
+      ),
+
+    // CRICOS: OSHC (Overseas Student Health Cover)
+    provider_arranged_oshc: z.boolean().optional(),
+    oshc_provider_name: z.string().optional(),
+    oshc_start_date: z
+      .union([z.string(), z.date()])
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true;
+          let date: Date;
+          if (typeof val === 'string') {
+            date = new Date(val);
+          } else {
+            date = val;
+          }
+          return !isNaN(date.getTime());
+        },
+        { message: 'OSHC start date must be valid' }
+      ),
+    oshc_end_date: z
+      .union([z.string(), z.date()])
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true;
+          let date: Date;
+          if (typeof val === 'string') {
+            date = new Date(val);
+          } else {
+            date = val;
+          }
+          return !isNaN(date.getTime());
+        },
+        { message: 'OSHC end date must be valid' }
+      ),
+
+    // CRICOS: English language proficiency (enhanced)
+    has_english_test: z.boolean().optional(),
+    english_test_type: z.string().optional(),
+    english_test_date: z
+      .union([z.string(), z.date()])
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true;
+          let date: Date;
+          if (typeof val === 'string') {
+            date = new Date(val);
+          } else {
+            date = val;
+          }
+          return !isNaN(date.getTime());
+        },
+        { message: 'English test date must be valid' }
+      ),
+
+    // CRICOS: Previous study in Australia
+    has_previous_study_australia: z.boolean().optional(),
+    previous_provider_name: z.string().optional(),
+    completed_previous_course: z.boolean().optional(),
+    has_release_letter: z.boolean().optional(),
+
+    // CRICOS: Written agreement and consent
+    written_agreement_accepted: z.boolean().optional(),
+    written_agreement_date: z
+      .union([z.string(), z.date()])
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true;
+          let date: Date;
+          if (typeof val === 'string') {
+            date = new Date(val);
+          } else {
+            date = val;
+          }
+          return !isNaN(date.getTime());
+        },
+        { message: 'Written agreement date must be valid' }
+      ),
+    privacy_notice_accepted: z.boolean().optional(),
+
     // Embedded Emergency Contact
     ec_name: z.string().optional(),
     ec_relationship: z.string().optional(),
@@ -194,6 +334,7 @@ export const applicationSchema = z
       .optional()
       .or(z.literal('')),
     g_phone_number: z.string().optional(),
+    g_relationship: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -222,6 +363,143 @@ export const applicationSchema = z
     {
       message: 'USI is required for domestic students',
       path: ['usi'],
+    }
+  )
+  .refine(
+    (data) => {
+      // CRICOS: Written agreement is required for international students
+      if (data.is_international === true) {
+        return data.written_agreement_accepted === true;
+      }
+      return true;
+    },
+    {
+      message:
+        'Written agreement acceptance is required for international students',
+      path: ['written_agreement_accepted'],
+    }
+  )
+  .refine(
+    (data) => {
+      // CRICOS: Written agreement date is required if agreement is accepted
+      if (data.written_agreement_accepted === true) {
+        return !!data.written_agreement_date;
+      }
+      return true;
+    },
+    {
+      message: 'Written agreement date is required',
+      path: ['written_agreement_date'],
+    }
+  )
+  .refine(
+    (data) => {
+      // CRICOS: Privacy notice is required for international students
+      if (data.is_international === true) {
+        return data.privacy_notice_accepted === true;
+      }
+      return true;
+    },
+    {
+      message:
+        'Privacy notice acceptance is required for international students',
+      path: ['privacy_notice_accepted'],
+    }
+  )
+  .refine(
+    (data) => {
+      // CRICOS: Passport number is mandatory if international AND student in Australia
+      // Check if student is in Australia by checking if address country is Australia or state is set
+      if (
+        data.is_international === true &&
+        (data.street_country === 'Australia' || data.state)
+      ) {
+        return !!data.passport_number && data.passport_number.trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message:
+        'Passport number is required for international students in Australia',
+      path: ['passport_number'],
+    }
+  )
+  .refine(
+    (data) => {
+      // CRICOS: Under 18 fields required if is_under_18 is true
+      if (data.is_under_18 === true) {
+        return data.provider_accepting_welfare_responsibility !== undefined;
+      }
+      return true;
+    },
+    {
+      message:
+        'Provider accepting welfare responsibility is required for students under 18',
+      path: ['provider_accepting_welfare_responsibility'],
+    }
+  )
+  .refine(
+    (data) => {
+      // CRICOS: Welfare start date required if provider accepting responsibility
+      if (data.provider_accepting_welfare_responsibility === true) {
+        return !!data.welfare_start_date;
+      }
+      return true;
+    },
+    {
+      message:
+        'Welfare start date is required when provider accepts welfare responsibility',
+      path: ['welfare_start_date'],
+    }
+  )
+  .refine(
+    (data) => {
+      // CRICOS: OSHC fields required if provider_arranged_oshc is true
+      if (data.provider_arranged_oshc === true) {
+        return (
+          !!data.oshc_provider_name &&
+          !!data.oshc_start_date &&
+          !!data.oshc_end_date
+        );
+      }
+      return true;
+    },
+    {
+      message:
+        'OSHC provider name, start date, and end date are required when provider arranges OSHC',
+      path: ['oshc_provider_name'],
+    }
+  )
+  .refine(
+    (data) => {
+      // CRICOS: English test fields required if has_english_test is true
+      if (data.has_english_test === true) {
+        return !!data.english_test_type && !!data.ielts_score;
+      }
+      return true;
+    },
+    {
+      message:
+        'English test type and score are required when student has taken English test',
+      path: ['english_test_type'],
+    }
+  )
+  .refine(
+    (data) => {
+      // CRICOS: Previous study fields required if has_previous_study_australia is true
+      if (data.has_previous_study_australia === true) {
+        return (
+          !!data.previous_provider_name &&
+          data.completed_previous_course !== undefined &&
+          data.has_release_letter !== undefined
+        );
+      }
+      return true;
+    },
+    {
+      message:
+        'Previous provider name, completion status, and release letter status are required when student has previous study in Australia',
+      path: ['previous_provider_name'],
     }
   );
 
@@ -345,6 +623,34 @@ export const draftApplicationSchema = z.object({
   visa_number: z.string().optional(),
   country_of_citizenship: z.string().optional(),
   ielts_score: z.string().optional(),
+  // CRICOS: Passport details (enhanced)
+  passport_issue_date: z.union([z.string(), z.date()]).optional(),
+  passport_expiry_date: z.union([z.string(), z.date()]).optional(),
+  place_of_birth: z.string().optional(),
+  // CRICOS: Visa information (enhanced)
+  visa_application_office: z.string().optional(),
+  // CRICOS: Under 18 welfare arrangements
+  is_under_18: z.boolean().optional(),
+  provider_accepting_welfare_responsibility: z.boolean().optional(),
+  welfare_start_date: z.union([z.string(), z.date()]).optional(),
+  // CRICOS: OSHC (Overseas Student Health Cover)
+  provider_arranged_oshc: z.boolean().optional(),
+  oshc_provider_name: z.string().optional(),
+  oshc_start_date: z.union([z.string(), z.date()]).optional(),
+  oshc_end_date: z.union([z.string(), z.date()]).optional(),
+  // CRICOS: English language proficiency (enhanced)
+  has_english_test: z.boolean().optional(),
+  english_test_type: z.string().optional(),
+  english_test_date: z.union([z.string(), z.date()]).optional(),
+  // CRICOS: Previous study in Australia
+  has_previous_study_australia: z.boolean().optional(),
+  previous_provider_name: z.string().optional(),
+  completed_previous_course: z.boolean().optional(),
+  has_release_letter: z.boolean().optional(),
+  // CRICOS: Written agreement and consent
+  written_agreement_accepted: z.boolean().optional(),
+  written_agreement_date: z.union([z.string(), z.date()]).optional(),
+  privacy_notice_accepted: z.boolean().optional(),
   ec_name: z.string().optional(),
   ec_relationship: z.string().optional(),
   ec_phone_number: z.string().optional(),
@@ -355,6 +661,7 @@ export const draftApplicationSchema = z.object({
     .optional()
     .or(z.literal('')),
   g_phone_number: z.string().optional(),
+  g_relationship: z.string().optional(),
 });
 
 export type ApplicationFormValues = z.infer<typeof applicationSchema>;

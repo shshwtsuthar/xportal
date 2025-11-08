@@ -53,6 +53,11 @@ export function NewApplicationWizard({ applicationId }: Props) {
   // Use created application data if we just created one
   const currentApplication = application || createMutation.data;
 
+  // Only read-only if status exists and is not DRAFT (treat null/undefined as DRAFT)
+  const isReadOnly = currentApplication?.status
+    ? currentApplication.status !== 'DRAFT'
+    : false;
+
   const updateMutation = useUpdateApplication();
   const submitMutation = useSubmitApplication();
   const uploadFileMutation = useUploadApplicationFile();
@@ -118,6 +123,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       g_name: '',
       g_email: '',
       g_phone_number: '',
+      g_relationship: '',
     },
   });
 
@@ -196,6 +202,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
         g_name: currentApplication.g_name ?? '',
         g_email: currentApplication.g_email ?? '',
         g_phone_number: currentApplication.g_phone_number ?? '',
+        g_relationship: currentApplication.g_relationship ?? '',
       };
       form.reset(toReset);
     }
@@ -223,6 +230,12 @@ export function NewApplicationWizard({ applicationId }: Props) {
   }, [applicationId, isLoading, currentApplication, createMutation]);
 
   const handleSaveDraft = async () => {
+    if (isReadOnly) {
+      toast.error(
+        'Cannot save: Application has been submitted and is read-only.'
+      );
+      return;
+    }
     try {
       const values = form.getValues();
 
@@ -242,6 +255,16 @@ export function NewApplicationWizard({ applicationId }: Props) {
         return;
       }
 
+      // Helper function to convert Date objects to ISO strings
+      const convertDateToString = (
+        date: string | Date | null | undefined
+      ): string | null => {
+        if (!date) return null;
+        if (typeof date === 'string') return date;
+        if (date instanceof Date) return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        return null;
+      };
+
       // Clean up empty strings for date fields to prevent PostgreSQL errors
       const cleanedValues = {
         ...values,
@@ -250,8 +273,20 @@ export function NewApplicationWizard({ applicationId }: Props) {
             ? values.date_of_birth
             : values.date_of_birth.toISOString()
           : null,
-        proposed_commencement_date: values.proposed_commencement_date || null,
-        payment_anchor_date: values.payment_anchor_date || null,
+        proposed_commencement_date: convertDateToString(
+          values.proposed_commencement_date
+        ),
+        payment_anchor_date: convertDateToString(values.payment_anchor_date),
+        // CRICOS date fields
+        passport_issue_date: convertDateToString(values.passport_issue_date),
+        passport_expiry_date: convertDateToString(values.passport_expiry_date),
+        welfare_start_date: convertDateToString(values.welfare_start_date),
+        oshc_start_date: convertDateToString(values.oshc_start_date),
+        oshc_end_date: convertDateToString(values.oshc_end_date),
+        english_test_date: convertDateToString(values.english_test_date),
+        written_agreement_date: convertDateToString(
+          values.written_agreement_date
+        ),
         email: values.email || null,
         alternative_email: values.alternative_email || null,
         g_email: values.g_email || null,
@@ -461,6 +496,26 @@ export function NewApplicationWizard({ applicationId }: Props) {
       'is_international',
       'usi',
       'vsn',
+      // CRICOS fields
+      'written_agreement_accepted',
+      'written_agreement_date',
+      'privacy_notice_accepted',
+      'passport_number',
+      'street_country',
+      'is_under_18',
+      'provider_accepting_welfare_responsibility',
+      'welfare_start_date',
+      'provider_arranged_oshc',
+      'oshc_provider_name',
+      'oshc_start_date',
+      'oshc_end_date',
+      'has_english_test',
+      'english_test_type',
+      'ielts_score',
+      'has_previous_study_australia',
+      'previous_provider_name',
+      'completed_previous_course',
+      'has_release_letter',
     ],
   });
 
@@ -488,6 +543,26 @@ export function NewApplicationWizard({ applicationId }: Props) {
       is_international,
       usi,
       vsn,
+      // CRICOS fields
+      written_agreement_accepted,
+      written_agreement_date,
+      privacy_notice_accepted,
+      passport_number,
+      street_country,
+      is_under_18,
+      provider_accepting_welfare_responsibility,
+      welfare_start_date,
+      provider_arranged_oshc,
+      oshc_provider_name,
+      oshc_start_date,
+      oshc_end_date,
+      has_english_test,
+      english_test_type,
+      ielts_score,
+      has_previous_study_australia,
+      previous_provider_name,
+      completed_previous_course,
+      has_release_letter,
     ] = watchedFields;
 
     // Basic required fields
@@ -552,6 +627,64 @@ export function NewApplicationWizard({ applicationId }: Props) {
       }
     }
 
+    // CRICOS: Required fields for international students
+    if (is_international === true) {
+      // Written agreement and privacy notice are always required
+      if (
+        written_agreement_accepted !== true ||
+        !written_agreement_date ||
+        privacy_notice_accepted !== true
+      ) {
+        return false;
+      }
+
+      // Passport number required if student in Australia
+      if (street_country === 'Australia' || state) {
+        if (!passport_number || passport_number.trim().length === 0) {
+          return false;
+        }
+      }
+
+      // Under 18 fields required if is_under_18 is true
+      if (is_under_18 === true) {
+        if (provider_accepting_welfare_responsibility === undefined) {
+          return false;
+        }
+        // Welfare start date required if provider accepting responsibility
+        if (
+          provider_accepting_welfare_responsibility === true &&
+          !welfare_start_date
+        ) {
+          return false;
+        }
+      }
+
+      // OSHC fields required if provider_arranged_oshc is true
+      if (provider_arranged_oshc === true) {
+        if (!oshc_provider_name || !oshc_start_date || !oshc_end_date) {
+          return false;
+        }
+      }
+
+      // English test fields required if has_english_test is true
+      if (has_english_test === true) {
+        if (!english_test_type || !ielts_score) {
+          return false;
+        }
+      }
+
+      // Previous study fields required if has_previous_study_australia is true
+      if (has_previous_study_australia === true) {
+        if (
+          !previous_provider_name ||
+          completed_previous_course === undefined ||
+          has_release_letter === undefined
+        ) {
+          return false;
+        }
+      }
+    }
+
     return true;
   }, [watchedFields]);
 
@@ -585,7 +718,11 @@ export function NewApplicationWizard({ applicationId }: Props) {
             <MagneticButton
               variant="outline"
               onClick={handleSaveDraft}
-              disabled={createMutation.isPending || updateMutation.isPending}
+              disabled={
+                createMutation.isPending ||
+                updateMutation.isPending ||
+                isReadOnly
+              }
             >
               {createMutation.isPending || updateMutation.isPending
                 ? 'Saving...'
@@ -595,7 +732,11 @@ export function NewApplicationWizard({ applicationId }: Props) {
             <Button
               variant="outline"
               onClick={handleSaveDraft}
-              disabled={createMutation.isPending || updateMutation.isPending}
+              disabled={
+                createMutation.isPending ||
+                updateMutation.isPending ||
+                isReadOnly
+              }
             >
               {createMutation.isPending || updateMutation.isPending
                 ? 'Saving...'
@@ -624,12 +765,17 @@ export function NewApplicationWizard({ applicationId }: Props) {
           </CardTitle>
         </CardHeader>
         <Form {...form}>
-          <CardContent>{StepContent}</CardContent>
+          <CardContent>
+            <div className={isReadOnly ? 'pointer-events-none opacity-60' : ''}>
+              {StepContent}
+            </div>
+          </CardContent>
           <CardFooter className="flex items-center justify-between">
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={() => goStep(Math.max(0, activeStep - 1))}
+                disabled={isReadOnly}
                 aria-label="Previous step"
               >
                 Previous
@@ -639,6 +785,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
                 onClick={() =>
                   goStep(Math.min(steps.length - 1, activeStep + 1))
                 }
+                disabled={isReadOnly}
                 aria-label="Next step"
               >
                 Next
@@ -684,7 +831,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
                       .previousSibling as HTMLInputElement | null;
                     input?.click();
                   }}
-                  disabled={!currentApplication?.id}
+                  disabled={!currentApplication?.id || isReadOnly}
                 >
                   Upload file
                 </Button>
@@ -695,7 +842,9 @@ export function NewApplicationWizard({ applicationId }: Props) {
                   variant="outline"
                   onClick={handleSaveDraft}
                   disabled={
-                    createMutation.isPending || updateMutation.isPending
+                    createMutation.isPending ||
+                    updateMutation.isPending ||
+                    isReadOnly
                   }
                 >
                   {createMutation.isPending || updateMutation.isPending
@@ -708,7 +857,9 @@ export function NewApplicationWizard({ applicationId }: Props) {
                   variant="outline"
                   onClick={handleSaveDraft}
                   disabled={
-                    createMutation.isPending || updateMutation.isPending
+                    createMutation.isPending ||
+                    updateMutation.isPending ||
+                    isReadOnly
                   }
                 >
                   {createMutation.isPending || updateMutation.isPending
