@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/table';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Tables } from '@/database.types';
 import type { StudentFilters } from '@/src/hooks/useStudentsFilters';
@@ -38,6 +38,7 @@ import {
   type ColumnDef,
   type RowType,
 } from './studentsTableColumns';
+import { Button } from '@/components/ui/button';
 
 type Props = {
   filters?: StudentFilters;
@@ -54,6 +55,9 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
       key: string;
       direction: 'asc' | 'desc';
     } | null>(null);
+    const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
+    const [draggingId, setDraggingId] = useState<string | null>(null);
+    const [dragOverId, setDragOverId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>('');
 
     // Preferences: visible columns persisted per user
@@ -96,7 +100,10 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
       [allColumns]
     );
 
+    const isManualOrderActive = !!(manualOrderIds && manualOrderIds.length > 0);
+
     const handleSort = (key: string) => {
+      if (isManualOrderActive) return; // sorting disabled during manual order
       setSortConfig((prevConfig) => {
         if (prevConfig?.key === key) {
           return prevConfig.direction === 'asc'
@@ -107,8 +114,36 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
       });
     };
 
+    const onDragStart = (id: string) => setDraggingId(id);
+    const onDragEnter = (id: string) => setDragOverId(id);
+    const onDragEnd = () => {
+      if (!draggingId || !dragOverId) {
+        setDraggingId(null);
+        setDragOverId(null);
+        return;
+      }
+      const ids = (manualOrderIds ?? rows.map((r) => r.id)).slice();
+      const from = ids.indexOf(draggingId);
+      const to = ids.indexOf(dragOverId);
+      if (from >= 0 && to >= 0 && from !== to) {
+        ids.splice(to, 0, ids.splice(from, 1)[0]);
+        setManualOrderIds(ids);
+      }
+      setDraggingId(null);
+      setDragOverId(null);
+    };
+
     const rows = useMemo(() => {
       const baseRows = (data ?? []) as RowType[];
+      if (manualOrderIds && manualOrderIds.length > 0) {
+        const orderIndex = new Map<string, number>();
+        manualOrderIds.forEach((id, idx) => orderIndex.set(id, idx));
+        return [...baseRows].sort((a, b) => {
+          const ai = orderIndex.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+          const bi = orderIndex.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+          return ai - bi;
+        });
+      }
       if (!sortConfig) return baseRows;
 
       const col = colById.get(sortConfig.key);
@@ -120,7 +155,7 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
-    }, [data, sortConfig, colById]);
+    }, [data, sortConfig, manualOrderIds, colById]);
 
     // Filter columns based on visibility preferences
     const visibleCols = useMemo(
@@ -199,6 +234,21 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
 
     return (
       <div className="w-full overflow-hidden rounded-md border">
+        {isManualOrderActive && (
+          <div className="bg-muted/40 flex items-center justify-between border-b px-3 py-2 text-xs">
+            <span className="text-muted-foreground">
+              Manual row order active. Column sorting is disabled.
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setManualOrderIds(null)}
+              aria-label="Reset manual order"
+            >
+              Reset order
+            </Button>
+          </div>
+        )}
         <div className="border-b p-3">
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -215,13 +265,22 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
         <Table>
           <TableHeader>
             <TableRow className="divide-x">
+              <TableHead
+                className="w-10 px-2 text-center"
+                aria-label="Manual order column"
+              />
               {visibleCols.map((col) => (
                 <SortableTableHead
                   key={col.id}
                   onSort={() => handleSort(col.id)}
                   sortDirection={
-                    sortConfig?.key === col.id ? sortConfig.direction : null
+                    isManualOrderActive
+                      ? null
+                      : sortConfig?.key === col.id
+                        ? sortConfig.direction
+                        : null
                   }
+                  disabled={isManualOrderActive}
                 >
                   {col.label}
                 </SortableTableHead>
@@ -231,7 +290,17 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
           </TableHeader>
           <TableBody className="divide-y">
             {filteredRows.map((s) => (
-              <TableRow key={s.id} className="divide-x">
+              <TableRow
+                key={s.id}
+                className="divide-x"
+                draggable
+                onDragStart={() => onDragStart(s.id)}
+                onDragEnter={() => onDragEnter(s.id)}
+                onDragEnd={onDragEnd}
+              >
+                <TableCell className="text-muted-foreground w-8">
+                  <GripVertical className="h-4 w-4" />
+                </TableCell>
                 {visibleCols.map((col) => {
                   // Make name column clickable
                   if (col.id === 'name') {
@@ -260,7 +329,7 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
             ))}
             {filteredRows.length === 0 && (
               <TableRow className="divide-x">
-                <TableCell colSpan={visibleCols.length + 1}>
+                <TableCell colSpan={visibleCols.length + 2}>
                   <p className="text-muted-foreground text-sm">
                     {searchQuery.trim()
                       ? 'No students match your search.'

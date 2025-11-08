@@ -8,6 +8,7 @@ interface SortableTableHeadProps {
   onSort?: () => void;
   sortDirection?: 'asc' | 'desc' | null;
   className?: string;
+  disabled?: boolean;
 }
 
 export function SortableTableHead({
@@ -15,19 +16,21 @@ export function SortableTableHead({
   onSort,
   sortDirection,
   className,
+  disabled = false,
 }: SortableTableHeadProps) {
   return (
     <th
       className={cn(
         'text-muted-foreground group h-12 px-4 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0',
-        onSort && 'hover:text-foreground cursor-pointer',
+        onSort && !disabled && 'hover:text-foreground cursor-pointer',
+        disabled && 'cursor-not-allowed opacity-50',
         className
       )}
-      onClick={onSort}
+      onClick={disabled ? undefined : onSort}
     >
       <div className="flex items-center gap-2">
         <span>{children}</span>
-        {onSort && (
+        {onSort && !disabled && (
           <div className="flex flex-col">
             <ChevronUp
               className={cn(

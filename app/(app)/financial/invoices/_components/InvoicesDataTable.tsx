@@ -148,38 +148,34 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
       window.addEventListener('mouseup', onUp, { once: true });
     };
 
+    const isManualOrderActive = !!(manualOrderIds && manualOrderIds.length > 0);
+
     const rows = useMemo(() => {
-      const base = (data ?? []) as RowType[];
-      const working = [...base];
-      if (sortConfig) {
-        const { key, direction } = sortConfig;
-        const col = colById.get(key);
-        if (col) {
-          const accessor =
-            col.sortAccessor ??
-            ((r: RowType) =>
-              (r as unknown as Record<string, unknown>)[key] as
-                | string
-                | number);
-          working.sort((a, b) => {
-            const av = accessor(a) ?? '';
-            const bv = accessor(b) ?? '';
-            if (av < bv) return direction === 'asc' ? -1 : 1;
-            if (av > bv) return direction === 'asc' ? 1 : -1;
-            return 0;
-          });
-        }
+      const baseRows = (data ?? []) as RowType[];
+      if (manualOrderIds && manualOrderIds.length > 0) {
+        const orderIndex = new Map<string, number>();
+        manualOrderIds.forEach((id, idx) => orderIndex.set(id, idx));
+        return [...baseRows].sort((a, b) => {
+          const ai = orderIndex.get(a.id as string) ?? Number.MAX_SAFE_INTEGER;
+          const bi = orderIndex.get(b.id as string) ?? Number.MAX_SAFE_INTEGER;
+          return ai - bi;
+        });
       }
-      if (manualOrderIds) {
-        const indexById = new Map(
-          manualOrderIds.map((id, i) => [id, i] as const)
-        );
-        working.sort(
-          (a, b) =>
-            indexById.get(a.id as string)! - indexById.get(b.id as string)!
-        );
-      }
-      return working;
+      if (!sortConfig) return baseRows;
+      const { key, direction } = sortConfig;
+      const col = colById.get(key);
+      if (!col) return baseRows;
+      const accessor =
+        col.sortAccessor ??
+        ((r: RowType) =>
+          (r as unknown as Record<string, unknown>)[key] as string | number);
+      return [...baseRows].sort((a, b) => {
+        const av = accessor(a) ?? '';
+        const bv = accessor(b) ?? '';
+        if (av < bv) return direction === 'asc' ? -1 : 1;
+        if (av > bv) return direction === 'asc' ? 1 : -1;
+        return 0;
+      });
     }, [data, sortConfig, manualOrderIds, colById]);
 
     const visibleDefs = useMemo(
@@ -277,6 +273,7 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
     };
 
     const handleSortClick = (key: string) => {
+      if (isManualOrderActive) return; // sorting disabled during manual order
       setSortConfig((prev) => {
         if (prev?.key === key) {
           return prev.direction === 'asc' ? { key, direction: 'desc' } : null;
@@ -294,6 +291,21 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
 
     return (
       <div className="w-full overflow-hidden rounded-md border">
+        {isManualOrderActive && (
+          <div className="bg-muted/40 flex items-center justify-between border-b px-3 py-2 text-xs">
+            <span className="text-muted-foreground">
+              Manual row order active. Column sorting is disabled.
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setManualOrderIds(null)}
+              aria-label="Reset manual order"
+            >
+              Reset order
+            </Button>
+          </div>
+        )}
         <div className="border-b p-3">
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -310,7 +322,10 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
         <Table>
           <TableHeader>
             <TableRow className="divide-x">
-              <TableHead className="w-8"></TableHead>
+              <TableHead
+                className="w-10 px-2 text-center"
+                aria-label="Manual order column"
+              />
               {visibleDefs.map((col) => (
                 <TableHead
                   key={col.id}
@@ -321,11 +336,22 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
                   <div className="flex items-center">
                     <button
                       type="button"
-                      className="text-left"
-                      onClick={() => col.sortable && handleSortClick(col.id)}
+                      className={`text-left ${col.sortable ? (isManualOrderActive ? 'cursor-not-allowed opacity-50' : 'hover:text-foreground') : ''}`}
+                      onClick={() => {
+                        if (!col.sortable) return;
+                        if (isManualOrderActive) return; // sorting disabled during manual order
+                        handleSortClick(col.id);
+                      }}
                       aria-label={`Sort by ${col.label}`}
                     >
                       {col.label}
+                      {col.sortable &&
+                        !isManualOrderActive &&
+                        sortConfig?.key === col.id && (
+                          <span className="text-muted-foreground ml-1 text-[10px]">
+                            {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                          </span>
+                        )}
                     </button>
                     <div
                       role="separator"
