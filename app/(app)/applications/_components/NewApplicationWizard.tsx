@@ -1006,17 +1006,11 @@ export function NewApplicationWizard({ applicationId }: Props) {
                 isReadOnly
               }
             >
-              {createMutation.isPending || updateMutation.isPending ? (
-                'Saving...'
-              ) : (
-                <>
-                  Save Draft{' '}
-                  <KbdGroup className="ml-2">
-                    <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
-                    <Kbd>S</Kbd>
-                  </KbdGroup>
-                </>
-              )}
+              Save Draft{' '}
+              <KbdGroup className="ml-2">
+                <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+                <Kbd>S</Kbd>
+              </KbdGroup>
             </MagneticButton>
           ) : (
             <Button
@@ -1028,17 +1022,11 @@ export function NewApplicationWizard({ applicationId }: Props) {
                 isReadOnly
               }
             >
-              {createMutation.isPending || updateMutation.isPending ? (
-                'Saving...'
-              ) : (
-                <>
-                  Save Draft{' '}
-                  <KbdGroup className="ml-2">
-                    <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
-                    <Kbd>S</Kbd>
-                  </KbdGroup>
-                </>
-              )}
+              Save Draft{' '}
+              <KbdGroup className="ml-2">
+                <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+                <Kbd>S</Kbd>
+              </KbdGroup>
             </Button>
           )}
         </div>
@@ -1145,17 +1133,11 @@ export function NewApplicationWizard({ applicationId }: Props) {
                     isReadOnly
                   }
                 >
-                  {createMutation.isPending || updateMutation.isPending ? (
-                    'Saving...'
-                  ) : (
-                    <>
-                      Save Draft{' '}
-                      <KbdGroup className="ml-2">
-                        <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
-                        <Kbd>S</Kbd>
-                      </KbdGroup>
-                    </>
-                  )}
+                  Save Draft{' '}
+                  <KbdGroup className="ml-2">
+                    <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+                    <Kbd>S</Kbd>
+                  </KbdGroup>
                 </MagneticButton>
               ) : (
                 <Button
@@ -1168,17 +1150,11 @@ export function NewApplicationWizard({ applicationId }: Props) {
                     isReadOnly
                   }
                 >
-                  {createMutation.isPending || updateMutation.isPending ? (
-                    'Saving...'
-                  ) : (
-                    <>
-                      Save Draft{' '}
-                      <KbdGroup className="ml-2">
-                        <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
-                        <Kbd>S</Kbd>
-                      </KbdGroup>
-                    </>
-                  )}
+                  Save Draft{' '}
+                  <KbdGroup className="ml-2">
+                    <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+                    <Kbd>S</Kbd>
+                  </KbdGroup>
                 </Button>
               )}
               {isFormReadyForSubmission && (
