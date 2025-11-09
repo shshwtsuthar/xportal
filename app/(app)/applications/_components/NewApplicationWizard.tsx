@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from '@/components/ui/form';
@@ -32,6 +32,7 @@ import { useUploadApplicationFile } from '@/src/hooks/useApplicationFiles';
 import { toast } from 'sonner';
 import { useSubmitApplication } from '@/src/hooks/useSubmitApplication';
 import { createClient } from '@/lib/supabase/client';
+import { Kbd, KbdGroup } from '@/components/ui/kbd';
 
 type Props = { applicationId?: string };
 
@@ -649,6 +650,37 @@ export function NewApplicationWizard({ applicationId }: Props) {
     }
   };
 
+  // Store the latest handleSaveDraft in a ref to avoid re-registering the event listener
+  const handleSaveDraftRef = useRef(handleSaveDraft);
+  useEffect(() => {
+    handleSaveDraftRef.current = handleSaveDraft;
+  }, [handleSaveDraft]);
+
+  // Keyboard shortcut: Ctrl+S / Cmd+S to save draft
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Ctrl+S (Windows/Linux) or Cmd+S (Mac)
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key === 's' &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
+        // Only trigger if button is not disabled
+        const isDisabled =
+          createMutation.isPending || updateMutation.isPending || isReadOnly;
+
+        if (!isDisabled) {
+          event.preventDefault();
+          handleSaveDraftRef.current();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [createMutation.isPending, updateMutation.isPending, isReadOnly]);
+
   const goStep = async (next: number) => {
     await handleSaveDraft();
     setActiveStep(next);
@@ -943,6 +975,15 @@ export function NewApplicationWizard({ applicationId }: Props) {
     return null;
   }, [activeStep, currentApplication, form]);
 
+  // Detect if running on Mac for displaying correct modifier key
+  const isMac = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      /Mac|iPhone|iPod|iPad/i.test(navigator.platform) ||
+      /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent)
+    );
+  }, []);
+
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="mb-6 flex items-center justify-between">
@@ -965,9 +1006,17 @@ export function NewApplicationWizard({ applicationId }: Props) {
                 isReadOnly
               }
             >
-              {createMutation.isPending || updateMutation.isPending
-                ? 'Saving...'
-                : 'Save Draft'}
+              {createMutation.isPending || updateMutation.isPending ? (
+                'Saving...'
+              ) : (
+                <>
+                  Save Draft{' '}
+                  <KbdGroup className="ml-2">
+                    <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+                    <Kbd>S</Kbd>
+                  </KbdGroup>
+                </>
+              )}
             </MagneticButton>
           ) : (
             <Button
@@ -979,9 +1028,17 @@ export function NewApplicationWizard({ applicationId }: Props) {
                 isReadOnly
               }
             >
-              {createMutation.isPending || updateMutation.isPending
-                ? 'Saving...'
-                : 'Save Draft'}
+              {createMutation.isPending || updateMutation.isPending ? (
+                'Saving...'
+              ) : (
+                <>
+                  Save Draft{' '}
+                  <KbdGroup className="ml-2">
+                    <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+                    <Kbd>S</Kbd>
+                  </KbdGroup>
+                </>
+              )}
             </Button>
           )}
         </div>
@@ -1088,9 +1145,17 @@ export function NewApplicationWizard({ applicationId }: Props) {
                     isReadOnly
                   }
                 >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? 'Saving...'
-                    : 'Save Draft'}
+                  {createMutation.isPending || updateMutation.isPending ? (
+                    'Saving...'
+                  ) : (
+                    <>
+                      Save Draft{' '}
+                      <KbdGroup className="ml-2">
+                        <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+                        <Kbd>S</Kbd>
+                      </KbdGroup>
+                    </>
+                  )}
                 </MagneticButton>
               ) : (
                 <Button
@@ -1103,9 +1168,17 @@ export function NewApplicationWizard({ applicationId }: Props) {
                     isReadOnly
                   }
                 >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? 'Saving...'
-                    : 'Save Draft'}
+                  {createMutation.isPending || updateMutation.isPending ? (
+                    'Saving...'
+                  ) : (
+                    <>
+                      Save Draft{' '}
+                      <KbdGroup className="ml-2">
+                        <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+                        <Kbd>S</Kbd>
+                      </KbdGroup>
+                    </>
+                  )}
                 </Button>
               )}
               {isFormReadyForSubmission && (
