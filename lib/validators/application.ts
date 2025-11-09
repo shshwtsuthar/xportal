@@ -97,9 +97,8 @@ export const applicationSchema = z
     // Contact
     email: z
       .string()
-      .email('Enter a valid email address')
-      .optional()
-      .or(z.literal('')),
+      .min(1, 'Email is required')
+      .email('Enter a valid email address'),
     work_phone: z.string().optional(),
     mobile_phone: z.string().optional(),
     alternative_email: z
@@ -155,6 +154,18 @@ export const applicationSchema = z
       .string()
       .min(1, 'Citizenship status is required'),
     at_school_flag: z.string().min(1, 'At school flag is required'),
+    // NAT00080: Disability Flag (Y/N)
+    disability_flag: z
+      .enum(['Y', 'N'], {
+        message: 'Disability flag must be Y or N',
+      })
+      .optional(),
+    // NAT00085: Prior Educational Achievement Flag (Y/N)
+    prior_education_flag: z
+      .enum(['Y', 'N'], {
+        message: 'Prior education flag must be Y or N',
+      })
+      .optional(),
     // NAT00080: Survey contact status (auto-calculated, default 'A')
     survey_contact_status: z
       .enum(['A', 'C', 'D', 'E', 'I', 'M', 'O'], {
@@ -577,9 +588,8 @@ export const draftApplicationSchema = z.object({
   agent_id: z.string().optional(),
   email: z
     .string()
-    .email('Enter a valid email address')
-    .optional()
-    .or(z.literal('')),
+    .min(1, 'Email is required')
+    .email('Enter a valid email address'),
   work_phone: z.string().optional(),
   mobile_phone: z.string().optional(),
   alternative_email: z
@@ -612,9 +622,11 @@ export const draftApplicationSchema = z.object({
   country_of_birth_id: z.string().optional(),
   language_code: z.string().optional(),
   citizenship_status_code: z.string().optional(),
-  at_school_flag: z.string().optional(),
-  year_highest_school_level_completed: z.string().optional(),
-  survey_contact_status: z.string().optional(),
+    at_school_flag: z.string().optional(),
+    disability_flag: z.enum(['Y', 'N']).optional(),
+    prior_education_flag: z.enum(['Y', 'N']).optional(),
+    year_highest_school_level_completed: z.string().optional(),
+    survey_contact_status: z.string().optional(),
   vsn: z.string().optional(),
   is_international: z.boolean().optional(),
   usi: z.string().optional(),

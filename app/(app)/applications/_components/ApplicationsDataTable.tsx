@@ -375,25 +375,33 @@ export const ApplicationsDataTable = forwardRef<
       }
     };
 
-    // For OFFER_SENT status, show Accept/Reject buttons
+    // For OFFER_SENT status, show Accept/Reject button group
     if (app.status === 'OFFER_SENT') {
       return (
-        <div className="flex justify-end gap-2">
+        <div className="flex w-full -space-x-px rounded-md shadow-sm">
           <Button
             variant="outline"
-            size="icon"
+            size="sm"
+            className="group hover:bg-primary/10 hover:text-primary flex-1 justify-start gap-2 overflow-hidden rounded-none rounded-l-md shadow-none transition-all duration-200 focus-visible:z-10"
             onClick={() => handleAccept(app.id)}
             aria-label="Accept application"
           >
-            <Check className="h-4 w-4" />
+            <Check className="h-4 w-4 shrink-0" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover:max-w-xs group-hover:opacity-100">
+              Accept
+            </span>
           </Button>
           <Button
-            variant="destructive"
-            size="icon"
+            variant="outline"
+            size="sm"
+            className="group hover:bg-destructive/10 hover:text-destructive flex-1 justify-end gap-2 overflow-hidden rounded-none rounded-r-md shadow-none transition-all duration-200 focus-visible:z-10"
             onClick={() => handleReject(app.id)}
             aria-label="Reject application"
           >
-            <X className="h-4 w-4" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover:max-w-xs group-hover:opacity-100">
+              Reject
+            </span>
+            <X className="h-4 w-4 shrink-0" />
           </Button>
         </div>
       );
@@ -429,6 +437,36 @@ export const ApplicationsDataTable = forwardRef<
       return <span className="text-muted-foreground">—</span>;
     }
 
+    // For SUBMITTED status, show Generate Offer button
+    if (app.status === 'SUBMITTED') {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={handleGenerateOffer}
+          aria-label="Generate Offer"
+        >
+          Generate Offer
+        </Button>
+      );
+    }
+
+    // For OFFER_GENERATED status, show Send Offer button
+    if (app.status === 'OFFER_GENERATED') {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => setSendOfferDialog({ open: true, application: app })}
+          aria-label="Send Offer"
+        >
+          Send Offer
+        </Button>
+      );
+    }
+
     // For other statuses, show dropdown menu
     return (
       <DropdownMenu>
@@ -445,26 +483,6 @@ export const ApplicationsDataTable = forwardRef<
           {app.status === 'DRAFT' && (
             <DropdownMenuItem asChild>
               <Link href={`/applications/edit/${app.id}`}>Continue</Link>
-            </DropdownMenuItem>
-          )}
-          {app.status === 'SUBMITTED' && (
-            <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault();
-                handleGenerateOffer();
-              }}
-            >
-              Generate Offer
-            </DropdownMenuItem>
-          )}
-          {app.status === 'OFFER_GENERATED' && (
-            <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault();
-                setSendOfferDialog({ open: true, application: app });
-              }}
-            >
-              Send Offer Letter
             </DropdownMenuItem>
           )}
           {app.status === 'DRAFT' && (
@@ -605,7 +623,7 @@ export const ApplicationsDataTable = forwardRef<
               })}
               <TableHead
                 style={{ width: 160 }}
-                className="bg-background sticky right-0 z-20 border-l px-4 text-right"
+                className="bg-background sticky right-0 z-20 px-4 text-right shadow-[-1px_0_0_0_hsl(var(--border))]"
               >
                 Actions
               </TableHead>
@@ -639,7 +657,7 @@ export const ApplicationsDataTable = forwardRef<
                 })}
                 <TableCell
                   style={{ width: 160 }}
-                  className="bg-background sticky right-0 z-10 border-l px-4 text-right"
+                  className="bg-background sticky right-0 z-10 px-4 text-right shadow-[-1px_0_0_0_hsl(var(--border))]"
                 >
                   {renderActions(app)}
                 </TableCell>

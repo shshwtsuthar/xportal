@@ -20,11 +20,13 @@ import {
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 
+// Make email required while keeping other fields optional
 type FormValues = Partial<
-  ReturnType<(typeof draftApplicationSchema)['parse']>
-> & {
-  requested_start_date?: string | Date;
-};
+  Omit<ReturnType<(typeof draftApplicationSchema)['parse']>, 'email'>
+> &
+  Pick<ReturnType<(typeof draftApplicationSchema)['parse']>, 'email'> & {
+    requested_start_date?: string | Date;
+  };
 
 export default function AgentIntakePage() {
   const params = useParams<{ slug: string }>();
