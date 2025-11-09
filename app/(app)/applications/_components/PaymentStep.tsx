@@ -39,7 +39,7 @@ import { useGetTemplateInstallments } from '@/src/hooks/useGetTemplateInstallmen
 type FlexibleFormValues =
   | ApplicationFormValues
   | {
-      email: string; // Required field from draftApplicationSchema
+      email?: string; // Optional in draftApplicationSchema
       program_id?: string;
       payment_plan_template_id?: string;
       payment_anchor_date?: string;

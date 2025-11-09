@@ -38,7 +38,7 @@ import { formatDateToLocal } from '@/lib/utils/date';
 type FlexibleFormValues =
   | ApplicationFormValues
   | {
-      email: string; // Required field from draftApplicationSchema
+      email?: string; // Optional in draftApplicationSchema
       program_id?: string;
       timetable_id?: string;
       proposed_commencement_date?: string;

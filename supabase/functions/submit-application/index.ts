@@ -50,6 +50,10 @@ const serverApplicationSchema = z
     language_code: z.string().min(1),
     citizenship_status_code: z.string().min(1),
     at_school_flag: z.string().min(1),
+    // NAT00080: Disability Flag (mandatory for AVETMISS)
+    disability_flag: z.enum(['Y', 'N']).optional(),
+    // NAT00085: Prior Educational Achievement Flag (mandatory for AVETMISS)
+    prior_education_flag: z.enum(['Y', 'N']).optional(),
     // optional fields permitted
     address_line_1: z.string().optional().or(z.literal('')),
     // CRICOS fields (nullable/optional in base schema, validated conditionally based on is_international)
@@ -300,6 +304,79 @@ serve(async (req: Request) => {
           status: 400,
         }
       );
+    }
+
+    // 4a. Validate disabilities and prior education records if flags are set
+    if (application.disability_flag === 'Y') {
+      const { data: disabilities, error: disErr } = await supabaseClient
+        .from('application_disabilities')
+        .select('id')
+        .eq('application_id', applicationId)
+        .limit(1);
+
+      if (disErr) {
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to validate disabilities',
+            details: [disErr.message],
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+
+      if (!disabilities || disabilities.length === 0) {
+        return new Response(
+          JSON.stringify({
+            error: 'Validation failed',
+            details: [
+              'disability_flag is Y but no disability records found. Please select at least one disability type.',
+            ],
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
+      }
+    }
+
+    if (application.prior_education_flag === 'Y') {
+      const { data: priorEd, error: priorEdErr } = await supabaseClient
+        .from('application_prior_education')
+        .select('id')
+        .eq('application_id', applicationId)
+        .limit(1);
+
+      if (priorEdErr) {
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to validate prior education',
+            details: [priorEdErr.message],
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+
+      if (!priorEd || priorEd.length === 0) {
+        return new Response(
+          JSON.stringify({
+            error: 'Validation failed',
+            details: [
+              'prior_education_flag is Y but no prior education records found. Please select at least one prior education qualification.',
+            ],
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
+      }
     }
 
     // 5. Freeze learning plan snapshot before changing status

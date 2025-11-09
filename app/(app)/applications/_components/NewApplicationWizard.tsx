@@ -107,6 +107,10 @@ export function NewApplicationWizard({ applicationId }: Props) {
       language_code: '',
       citizenship_status_code: '',
       at_school_flag: '',
+      disability_flag: undefined,
+      prior_education_flag: undefined,
+      disabilities: [],
+      prior_education: [],
       year_highest_school_level_completed: '',
       survey_contact_status: 'A',
       vsn: '',
@@ -180,6 +184,16 @@ export function NewApplicationWizard({ applicationId }: Props) {
         citizenship_status_code:
           currentApplication.citizenship_status_code ?? '',
         at_school_flag: currentApplication.at_school_flag ?? '',
+        disability_flag: currentApplication.disability_flag as
+          | 'Y'
+          | 'N'
+          | undefined,
+        prior_education_flag: currentApplication.prior_education_flag as
+          | 'Y'
+          | 'N'
+          | undefined,
+        disabilities: [], // Will be loaded by Step3_AdditionalInfo component
+        prior_education: [], // Will be loaded by Step3_AdditionalInfo component
         year_highest_school_level_completed:
           currentApplication.year_highest_school_level_completed ?? '',
         survey_contact_status: (currentApplication.survey_contact_status &&
@@ -239,11 +253,60 @@ export function NewApplicationWizard({ applicationId }: Props) {
     try {
       const values = form.getValues();
 
+      // Debug: Log form values, especially the new flag fields
+      console.log('=== DRAFT SAVE DEBUG ===');
+      console.log('Form values:', values);
+      console.log(
+        'disability_flag:',
+        values.disability_flag,
+        'Type:',
+        typeof values.disability_flag
+      );
+      console.log(
+        'prior_education_flag:',
+        values.prior_education_flag,
+        'Type:',
+        typeof values.prior_education_flag
+      );
+      console.log(
+        'disabilities array:',
+        values.disabilities,
+        'Length:',
+        values.disabilities?.length || 0
+      );
+      console.log(
+        'prior_education array:',
+        values.prior_education,
+        'Length:',
+        values.prior_education?.length || 0
+      );
+      console.log(
+        'prior_education array details:',
+        JSON.stringify(values.prior_education, null, 2)
+      );
+
       // Validate format only (using draft schema) before saving
       const validationResult = draftApplicationSchema.safeParse(values);
 
       if (!validationResult.success) {
-        console.log('Draft validation failed:', validationResult.error.issues);
+        console.log('=== VALIDATION ERRORS ===');
+        console.log('Total errors:', validationResult.error.issues.length);
+        console.log(
+          'All validation errors:',
+          JSON.stringify(validationResult.error.issues, null, 2)
+        );
+        validationResult.error.issues.forEach((issue, index) => {
+          const fieldValue =
+            issue.path.length > 0
+              ? (values as Record<string, unknown>)[issue.path[0] as string]
+              : 'N/A';
+          console.log(`Error ${index + 1}:`, {
+            path: issue.path,
+            message: issue.message,
+            code: issue.code,
+            value: fieldValue,
+          });
+        });
         // Set form errors for display
         validationResult.error.issues.forEach((issue) => {
           const fieldName = issue.path.join('.') as string;
@@ -266,8 +329,13 @@ export function NewApplicationWizard({ applicationId }: Props) {
       };
 
       // Clean up empty strings for date fields to prevent PostgreSQL errors
+      // Note: disabilities and prior_education arrays are NOT part of applications table
+      // They are stored separately in junction tables via afterPersistDisabilitiesAndPriorEducation
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { disabilities, prior_education, ...valuesWithoutArrays } = values;
+
       const cleanedValues = {
-        ...values,
+        ...valuesWithoutArrays,
         date_of_birth: values.date_of_birth
           ? typeof values.date_of_birth === 'string'
             ? values.date_of_birth
@@ -287,6 +355,13 @@ export function NewApplicationWizard({ applicationId }: Props) {
         written_agreement_date: convertDateToString(
           values.written_agreement_date
         ),
+        // Clean up empty strings for optional flag fields
+        disability_flag:
+          values.disability_flag === '' ? undefined : values.disability_flag,
+        prior_education_flag:
+          values.prior_education_flag === ''
+            ? undefined
+            : values.prior_education_flag,
         email: values.email || null,
         alternative_email: values.alternative_email || null,
         g_email: values.g_email || null,
@@ -355,6 +430,149 @@ export function NewApplicationWizard({ applicationId }: Props) {
         }
       };
 
+      const afterPersistDisabilitiesAndPriorEducation = async (
+        applicationId: string
+      ) => {
+        try {
+          const supabase = createClient();
+
+          // Get the RTO ID from the user's session
+          const { data: sessionData } = await supabase.auth.getSession();
+          const rtoId = (
+            sessionData.session?.user?.app_metadata as Record<string, unknown>
+          )?.rto_id as string;
+          if (!rtoId) {
+            console.error('User RTO not found in session metadata.');
+            toast.error('Failed to save: User RTO not found.');
+            return;
+          }
+
+          // Handle disabilities
+          const formDisabilities = values.disabilities || [];
+          console.log('=== PERSISTING DISABILITIES & PRIOR EDUCATION ===');
+          console.log('Application ID:', applicationId);
+          console.log('RTO ID:', rtoId);
+          console.log('Form disabilities:', formDisabilities);
+
+          // Delete all existing disabilities for this application
+          const { error: deleteDisErr } = await supabase
+            .from('application_disabilities')
+            .delete()
+            .eq('application_id', applicationId);
+
+          if (deleteDisErr) {
+            console.error(
+              'Error deleting existing disabilities:',
+              deleteDisErr
+            );
+            toast.error(`Failed to save disabilities: ${deleteDisErr.message}`);
+            return;
+          }
+
+          // Insert new disabilities from form state
+          if (formDisabilities.length > 0) {
+            const disabilityInserts = formDisabilities.map((d) => ({
+              application_id: applicationId,
+              rto_id: rtoId,
+              disability_type_id: d.disability_type_id,
+            }));
+
+            const { error: insertDisErr } = await supabase
+              .from('application_disabilities')
+              .insert(disabilityInserts);
+
+            if (insertDisErr) {
+              console.error('Error inserting disabilities:', insertDisErr);
+              toast.error(
+                `Failed to save disabilities: ${insertDisErr.message}`
+              );
+            } else {
+              console.log(
+                'Successfully inserted',
+                disabilityInserts.length,
+                'disabilities'
+              );
+            }
+          }
+
+          // Handle prior education
+          const formPriorEducation = values.prior_education || [];
+          console.log('Form prior education:', formPriorEducation);
+          console.log(
+            'Prior education array length:',
+            formPriorEducation.length
+          );
+
+          // Delete all existing prior education for this application
+          const { error: deletePriorEdErr } = await supabase
+            .from('application_prior_education')
+            .delete()
+            .eq('application_id', applicationId);
+
+          if (deletePriorEdErr) {
+            console.error(
+              'Error deleting existing prior education:',
+              deletePriorEdErr
+            );
+            toast.error(
+              `Failed to save prior education: ${deletePriorEdErr.message}`
+            );
+            return;
+          }
+
+          // Insert new prior education from form state
+          if (formPriorEducation.length > 0) {
+            const priorEdInserts = formPriorEducation.map((e) => ({
+              application_id: applicationId,
+              rto_id: rtoId,
+              prior_achievement_id: e.prior_achievement_id,
+              recognition_type: e.recognition_type || null,
+            }));
+
+            console.log('Prior education inserts to be saved:', priorEdInserts);
+
+            const { error: insertPriorEdErr, data: insertedData } =
+              await supabase
+                .from('application_prior_education')
+                .insert(priorEdInserts)
+                .select();
+
+            if (insertPriorEdErr) {
+              console.error(
+                'Error inserting prior education:',
+                insertPriorEdErr
+              );
+              console.error(
+                'Error details:',
+                JSON.stringify(insertPriorEdErr, null, 2)
+              );
+              toast.error(
+                `Failed to save prior education: ${insertPriorEdErr.message}`
+              );
+            } else {
+              console.log(
+                'Successfully inserted',
+                priorEdInserts.length,
+                'prior education records'
+              );
+              console.log('Inserted data:', insertedData);
+            }
+          } else {
+            console.log(
+              'No prior education records to insert (array is empty)'
+            );
+          }
+        } catch (e) {
+          console.error(
+            'Error persisting disabilities and prior education:',
+            e
+          );
+          toast.error(
+            `Failed to save additional info: ${e instanceof Error ? e.message : String(e)}`
+          );
+        }
+      };
+
       // If we have an application ID, update it
       if (currentApplication?.id) {
         updateMutation.mutate(
@@ -363,6 +581,9 @@ export function NewApplicationWizard({ applicationId }: Props) {
             onSuccess: async () => {
               await afterPersistLearningPlan(currentApplication.id);
               await afterPersistPaymentSchedule(currentApplication.id);
+              await afterPersistDisabilitiesAndPriorEducation(
+                currentApplication.id
+              );
             },
             onError: (error) =>
               toast.error(`Failed to save draft: ${error.message}`),
@@ -379,6 +600,9 @@ export function NewApplicationWizard({ applicationId }: Props) {
             onSuccess: async () => {
               await afterPersistLearningPlan(createMutation.data.id);
               await afterPersistPaymentSchedule(createMutation.data.id);
+              await afterPersistDisabilitiesAndPriorEducation(
+                createMutation.data.id
+              );
             },
             onError: (error) =>
               toast.error(`Failed to save draft: ${error.message}`),
@@ -397,6 +621,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
             );
             await afterPersistLearningPlan(created.id);
             await afterPersistPaymentSchedule(created.id);
+            await afterPersistDisabilitiesAndPriorEducation(created.id);
           },
           onError: (err) =>
             toast.error(`Failed to create application: ${err.message}`),

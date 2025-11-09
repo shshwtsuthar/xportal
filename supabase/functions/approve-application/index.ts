@@ -426,6 +426,8 @@ serve(async (req: Request) => {
         language_code: app.language_code,
         citizenship_status_code: app.citizenship_status_code,
         at_school_flag: app.at_school_flag,
+        disability_flag: app.disability_flag || null,
+        prior_education_flag: app.prior_education_flag || null,
         survey_contact_status: app.survey_contact_status || 'A',
         vsn: app.vsn || null,
         usi: app.usi || null,
@@ -438,6 +440,89 @@ serve(async (req: Request) => {
             status: 500,
           }
         );
+      }
+    }
+
+    // 3c1) Copy disabilities from application to student
+    {
+      const { data: appDisabilities, error: fetchErr } = await supabase
+        .from('application_disabilities')
+        .select('disability_type_id')
+        .eq('application_id', app.id);
+
+      if (fetchErr) {
+        console.error('Error fetching application disabilities:', fetchErr);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch application disabilities' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+
+      if (appDisabilities && appDisabilities.length > 0) {
+        const studentDisabilities = appDisabilities.map((d) => ({
+          student_id: student.id,
+          rto_id: app.rto_id,
+          disability_type_id: d.disability_type_id,
+        }));
+
+        const { error: disErr } = await supabase
+          .from('student_disabilities')
+          .insert(studentDisabilities);
+        if (disErr) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to copy disabilities' }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+      }
+    }
+
+    // 3c2) Copy prior education from application to student
+    {
+      const { data: appPriorEd, error: fetchErr } = await supabase
+        .from('application_prior_education')
+        .select('prior_achievement_id, recognition_type')
+        .eq('application_id', app.id);
+
+      if (fetchErr) {
+        console.error('Error fetching application prior education:', fetchErr);
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to fetch application prior education',
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+
+      if (appPriorEd && appPriorEd.length > 0) {
+        const studentPriorEd = appPriorEd.map((e) => ({
+          student_id: student.id,
+          rto_id: app.rto_id,
+          prior_achievement_id: e.prior_achievement_id,
+          recognition_type: e.recognition_type || null,
+        }));
+
+        const { error: priorEdErr } = await supabase
+          .from('student_prior_education')
+          .insert(studentPriorEd);
+        if (priorEdErr) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to copy prior education' }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
       }
     }
 

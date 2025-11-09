@@ -10,6 +10,7 @@ type DisabilityPayload = {
 type PriorEducationPayload = {
   application_id: string;
   prior_achievement_id: string;
+  recognition_type?: string;
 };
 
 /**
@@ -70,7 +71,11 @@ export const useCreatePriorEducation = () => {
 
       const { data, error } = await supabase
         .from('application_prior_education')
-        .insert({ ...payload, rto_id: rtoId })
+        .insert({
+          ...payload,
+          rto_id: rtoId,
+          recognition_type: payload.recognition_type || null,
+        })
         .select('*')
         .single();
       if (error) throw new Error(error.message);
