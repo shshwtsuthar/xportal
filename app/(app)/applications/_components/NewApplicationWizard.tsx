@@ -184,14 +184,16 @@ export function NewApplicationWizard({ applicationId }: Props) {
         citizenship_status_code:
           currentApplication.citizenship_status_code ?? '',
         at_school_flag: currentApplication.at_school_flag ?? '',
-        disability_flag: currentApplication.disability_flag as
-          | 'Y'
-          | 'N'
-          | undefined,
-        prior_education_flag: currentApplication.prior_education_flag as
-          | 'Y'
-          | 'N'
-          | undefined,
+        disability_flag:
+          currentApplication.disability_flag === null ||
+          currentApplication.disability_flag === undefined
+            ? undefined
+            : (currentApplication.disability_flag as 'Y' | 'N'),
+        prior_education_flag:
+          currentApplication.prior_education_flag === null ||
+          currentApplication.prior_education_flag === undefined
+            ? undefined
+            : (currentApplication.prior_education_flag as 'Y' | 'N'),
         disabilities: [], // Will be loaded by Step3_AdditionalInfo component
         prior_education: [], // Will be loaded by Step3_AdditionalInfo component
         year_highest_school_level_completed:
@@ -285,8 +287,21 @@ export function NewApplicationWizard({ applicationId }: Props) {
         JSON.stringify(values.prior_education, null, 2)
       );
 
+      // Clean null values from flag fields before validation
+      // Schema expects 'Y', 'N', '', or undefined (not null)
+      const valuesForValidation = {
+        ...values,
+        disability_flag:
+          values.disability_flag === null ? undefined : values.disability_flag,
+        prior_education_flag:
+          values.prior_education_flag === null
+            ? undefined
+            : values.prior_education_flag,
+      };
+
       // Validate format only (using draft schema) before saving
-      const validationResult = draftApplicationSchema.safeParse(values);
+      const validationResult =
+        draftApplicationSchema.safeParse(valuesForValidation);
 
       if (!validationResult.success) {
         console.log('=== VALIDATION ERRORS ===');
@@ -355,11 +370,12 @@ export function NewApplicationWizard({ applicationId }: Props) {
         written_agreement_date: convertDateToString(
           values.written_agreement_date
         ),
-        // Clean up empty strings for optional flag fields
+        // Clean up null values for optional flag fields
+        // Schema expects 'Y', 'N', '', or undefined (not null)
         disability_flag:
-          values.disability_flag === '' ? undefined : values.disability_flag,
+          values.disability_flag === null ? undefined : values.disability_flag,
         prior_education_flag:
-          values.prior_education_flag === ''
+          values.prior_education_flag === null
             ? undefined
             : values.prior_education_flag,
         email: values.email || null,
