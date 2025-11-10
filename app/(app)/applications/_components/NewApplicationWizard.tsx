@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from '@/components/ui/form';
@@ -90,7 +90,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       street_unit_details: '',
       street_number_name: '',
       street_po_box: '',
-      street_country: 'Australia',
+      street_country: 'AU',
       postal_is_same_as_street: true,
       postal_building_name: '',
       postal_unit_details: '',
@@ -99,12 +99,12 @@ export function NewApplicationWizard({ applicationId }: Props) {
       postal_suburb: '',
       postal_state: '',
       postal_postcode: '',
-      postal_country: 'Australia',
+      postal_country: 'AU',
       gender: '',
       highest_school_level_id: '',
       indigenous_status_id: '',
       labour_force_status_id: '',
-      country_of_birth_id: '',
+      country_of_birth_id: 'AU',
       language_code: '',
       citizenship_status_code: '',
       at_school_flag: '',
@@ -120,7 +120,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       passport_number: '',
       visa_type: '',
       visa_number: '',
-      country_of_citizenship: '',
+      country_of_citizenship: 'AU',
       ielts_score: '',
       ec_name: '',
       ec_relationship: '',
@@ -163,7 +163,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
         street_unit_details: currentApplication.street_unit_details ?? '',
         street_number_name: currentApplication.street_number_name ?? '',
         street_po_box: currentApplication.street_po_box ?? '',
-        street_country: currentApplication.street_country ?? 'Australia',
+        street_country: currentApplication.street_country ?? 'AU',
         postal_is_same_as_street: Boolean(
           currentApplication.postal_is_same_as_street
         ),
@@ -174,13 +174,13 @@ export function NewApplicationWizard({ applicationId }: Props) {
         postal_suburb: currentApplication.postal_suburb ?? '',
         postal_state: currentApplication.postal_state ?? '',
         postal_postcode: currentApplication.postal_postcode ?? '',
-        postal_country: currentApplication.postal_country ?? 'Australia',
+        postal_country: currentApplication.postal_country ?? 'AU',
         gender: currentApplication.gender ?? '',
         highest_school_level_id:
           currentApplication.highest_school_level_id ?? '',
         indigenous_status_id: currentApplication.indigenous_status_id ?? '',
         labour_force_status_id: currentApplication.labour_force_status_id ?? '',
-        country_of_birth_id: currentApplication.country_of_birth_id ?? '',
+        country_of_birth_id: currentApplication.country_of_birth_id ?? 'AU',
         language_code: currentApplication.language_code ?? '',
         citizenship_status_code:
           currentApplication.citizenship_status_code ?? '',
@@ -211,7 +211,8 @@ export function NewApplicationWizard({ applicationId }: Props) {
         passport_number: currentApplication.passport_number ?? '',
         visa_type: currentApplication.visa_type ?? '',
         visa_number: currentApplication.visa_number ?? '',
-        country_of_citizenship: currentApplication.country_of_citizenship ?? '',
+        country_of_citizenship:
+          currentApplication.country_of_citizenship ?? 'AU',
         ielts_score: currentApplication.ielts_score ?? '',
         ec_name: currentApplication.ec_name ?? '',
         ec_relationship: currentApplication.ec_relationship ?? '',
@@ -246,7 +247,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
     }
   }, [applicationId, isLoading, currentApplication, createMutation]);
 
-  const handleSaveDraft = async () => {
+  const handleSaveDraft = useCallback(async () => {
     if (isReadOnly) {
       toast.error(
         'Cannot save: Application has been submitted and is read-only.'
@@ -648,7 +649,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       console.error('Save draft error:', error);
       toast.error('Failed to save draft');
     }
-  };
+  }, [isReadOnly, form, updateMutation, createMutation, currentApplication]);
 
   // Store the latest handleSaveDraft in a ref to avoid re-registering the event listener
   const handleSaveDraftRef = useRef(handleSaveDraft);
@@ -912,7 +913,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       }
 
       // Passport number required if student in Australia
-      if (street_country === 'Australia' || state) {
+      if (street_country === 'AU' || state) {
         if (!passport_number || passport_number.trim().length === 0) {
           return false;
         }

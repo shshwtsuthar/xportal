@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { CountrySelect } from '@/components/ui/country-select';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -171,15 +172,11 @@ export const Step2_AvetmissDetails = () => {
               <FormItem>
                 <FormLabel>Country of birth *</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1101">Australia</SelectItem>
-                      <SelectItem value="...">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CountrySelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Select country"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

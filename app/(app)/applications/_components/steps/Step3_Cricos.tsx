@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { CountrySelect } from '@/components/ui/country-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ApplicationFormValues } from '@/lib/validators/application';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,15 +50,6 @@ export const Step3_Cricos = () => {
     { value: 'Cambridge CAE', label: 'Cambridge CAE' },
     { value: 'OET', label: 'OET' },
     { value: 'Other', label: 'Other' },
-  ];
-
-  // Study Load Options
-  const studyLoadOptions = [
-    {
-      value: 'Full-time',
-      label: 'Full-time (minimum 20 scheduled contact hours per week for VET)',
-    },
-    { value: 'Part-time', label: 'Part-time' },
   ];
 
   return (
@@ -230,36 +222,11 @@ export const Step3_Cricos = () => {
                   <FormItem>
                     <FormLabel>Country of citizenship *</FormLabel>
                     <FormControl>
-                      <Select
+                      <CountrySelect
                         value={field.value}
                         onValueChange={field.onChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AUS">Australia</SelectItem>
-                          <SelectItem value="NZL">New Zealand</SelectItem>
-                          <SelectItem value="CHN">China</SelectItem>
-                          <SelectItem value="IND">India</SelectItem>
-                          <SelectItem value="PAK">Pakistan</SelectItem>
-                          <SelectItem value="BGD">Bangladesh</SelectItem>
-                          <SelectItem value="NPL">Nepal</SelectItem>
-                          <SelectItem value="VNM">Vietnam</SelectItem>
-                          <SelectItem value="THA">Thailand</SelectItem>
-                          <SelectItem value="PHL">Philippines</SelectItem>
-                          <SelectItem value="IDN">Indonesia</SelectItem>
-                          <SelectItem value="MYS">Malaysia</SelectItem>
-                          <SelectItem value="SGP">Singapore</SelectItem>
-                          <SelectItem value="KOR">South Korea</SelectItem>
-                          <SelectItem value="JPN">Japan</SelectItem>
-                          <SelectItem value="GBR">United Kingdom</SelectItem>
-                          <SelectItem value="USA">United States</SelectItem>
-                          <SelectItem value="CAN">Canada</SelectItem>
-                          <SelectItem value="BRA">Brazil</SelectItem>
-                          <SelectItem value="OTH">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        placeholder="Select country"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

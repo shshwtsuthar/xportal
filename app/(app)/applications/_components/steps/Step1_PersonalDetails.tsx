@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { CountrySelect } from '@/components/ui/country-select';
 import { ApplicationFormValues } from '@/lib/validators/application';
 import { useGetAgents } from '@/src/hooks/useGetAgents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -472,7 +473,11 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
               <FormItem>
                 <FormLabel>Country</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Australia" />
+                  <CountrySelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Select country"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -606,7 +611,11 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
                   <FormItem>
                     <FormLabel>Postal country</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Australia" />
+                      <CountrySelect
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Select country"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

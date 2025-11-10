@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Tables } from '@/database.types';
+import { getCountryName } from '@/lib/utils/country';
 
 export type RowType = Tables<'applications'> & {
   agents?: Pick<Tables<'agents'>, 'name'> | null;
@@ -332,8 +333,8 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       label: 'Street Country',
       width: 160,
       sortable: true,
-      sortAccessor: (r) => r.street_country || '',
-      render: (r) => r.street_country || '—',
+      sortAccessor: (r) => getCountryName(r.street_country),
+      render: (r) => getCountryName(r.street_country) || '—',
       group: 'Contact',
     },
     {
@@ -413,8 +414,8 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       label: 'Postal Country',
       width: 160,
       sortable: true,
-      sortAccessor: (r) => r.postal_country || '',
-      render: (r) => r.postal_country || '—',
+      sortAccessor: (r) => getCountryName(r.postal_country),
+      render: (r) => getCountryName(r.postal_country) || '—',
       group: 'Contact',
     },
 
@@ -467,8 +468,8 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       label: 'Country of Birth',
       width: 180,
       sortable: true,
-      sortAccessor: (r) => r.country_of_birth_id || '',
-      render: (r) => r.country_of_birth_id || '—',
+      sortAccessor: (r) => getCountryName(r.country_of_birth_id),
+      render: (r) => getCountryName(r.country_of_birth_id) || '—',
       group: 'AVETMISS',
     },
     {
@@ -586,8 +587,8 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       label: 'Country of Citizenship',
       width: 200,
       sortable: true,
-      sortAccessor: (r) => r.country_of_citizenship || '',
-      render: (r) => r.country_of_citizenship || '—',
+      sortAccessor: (r) => getCountryName(r.country_of_citizenship),
+      render: (r) => getCountryName(r.country_of_citizenship) || '—',
       group: 'CRICOS',
     },
     {
