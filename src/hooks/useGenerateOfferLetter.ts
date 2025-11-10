@@ -3,21 +3,41 @@ import { createClient } from '@/lib/supabase/client';
 
 type GenerateParams = { applicationId: string };
 
+/**
+ * useGenerateOfferLetter
+ * Generates an offer letter via the Supabase Edge Function and refreshes dependent queries.
+ * @returns TanStack Query mutation for invoking the generate-offer-letter function.
+ */
 export const useGenerateOfferLetter = () => {
   const client = createClient();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ applicationId }: GenerateParams) => {
-      const { data, error } = await client.functions.invoke(
-        'generate-offer-letter',
-        {
-          body: { applicationId },
-        }
-      );
-      if (error) throw new Error(error.message);
-      return data as { filePath: string; signedUrl: string };
+      // Call Next.js API route (Node runtime) to avoid Deno/react-pdf issues
+      const res = await fetch('/api/generate-offer-letter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId }),
+      });
+      if (!res.ok) {
+        const msg =
+          (await res.json().catch(() => ({ error: res.statusText })))?.error ||
+          res.statusText;
+        throw new Error(msg || 'Failed to generate offer letter');
+      }
+      const data = (await res.json()) as {
+        filePath: string;
+        signedUrl: string;
+      };
+      return data;
     },
     onSuccess: (_, { applicationId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ['applications'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['application', applicationId],
+      });
       queryClient.invalidateQueries({
         queryKey: ['application-files', applicationId],
       });
@@ -28,6 +48,12 @@ export const useGenerateOfferLetter = () => {
   });
 };
 
+/**
+ * useGetOfferLetters
+ * Fetches generated offer letters for an application.
+ * @param applicationId UUID of the application to list offer letters for.
+ * @returns TanStack Query result with offer letter records.
+ */
 export const useGetOfferLetters = (applicationId?: string) => {
   return useQuery({
     queryKey: ['offer-letters', applicationId],
@@ -39,7 +65,9 @@ export const useGetOfferLetters = (applicationId?: string) => {
         .select('*')
         .eq('application_id', applicationId!)
         .order('generated_at', { ascending: false });
-      if (error) throw new Error(error.message);
+      if (error) {
+        throw new Error(error.message);
+      }
       return data ?? [];
     },
   });

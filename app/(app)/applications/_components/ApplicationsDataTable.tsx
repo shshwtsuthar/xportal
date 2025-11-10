@@ -69,6 +69,7 @@ import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
 import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
 import { SendOfferDialog } from './SendOfferDialog';
 import { useApproveApplication } from '@/src/hooks/useApproveApplication';
+import { useGenerateOfferLetter } from '@/src/hooks/useGenerateOfferLetter';
 import {
   getApplicationsTableKey,
   useGetTablePreferences,
@@ -97,12 +98,16 @@ export const ApplicationsDataTable = forwardRef<
   Props
 >(function ApplicationsDataTable({ filters }: Props, ref) {
   const { data, isLoading, isError } = useGetApplications(filters);
+  const generateOfferMutation = useGenerateOfferLetter();
   const deleteMutation = useDeleteApplication();
   const updateMutation = useUpdateApplication();
   const [sendOfferDialog, setSendOfferDialog] = useState<{
     open: boolean;
     application: Tables<'applications'> | null;
   }>({ open: false, application: null });
+  const [offerGeneratingId, setOfferGeneratingId] = useState<string | null>(
+    null
+  );
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: 'asc' | 'desc';
@@ -356,14 +361,14 @@ export const ApplicationsDataTable = forwardRef<
 
   const renderActions = (app: Tables<'applications'>) => {
     const handleGenerateOffer = async () => {
+      if (generateOfferMutation.isPending) {
+        return;
+      }
+      setOfferGeneratingId(app.id);
       try {
-        const res = await fetch('/api/generate-offer-letter', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ applicationId: app.id }),
+        const { signedUrl } = await generateOfferMutation.mutateAsync({
+          applicationId: app.id,
         });
-        if (!res.ok) throw new Error('Failed to generate');
-        const { signedUrl } = await res.json();
         if (signedUrl) {
           window.open(signedUrl, '_blank', 'noopener,noreferrer');
         }
@@ -372,8 +377,12 @@ export const ApplicationsDataTable = forwardRef<
         toast.error(
           `Failed to generate offer: ${String((e as Error).message || e)}`
         );
+      } finally {
+        setOfferGeneratingId(null);
       }
     };
+    const isRowGenerating =
+      generateOfferMutation.isPending && offerGeneratingId === app.id;
 
     // For OFFER_SENT status, show Accept/Reject button group
     if (app.status === 'OFFER_SENT') {
@@ -445,9 +454,11 @@ export const ApplicationsDataTable = forwardRef<
           size="sm"
           className="w-full"
           onClick={handleGenerateOffer}
+          disabled={isRowGenerating}
+          aria-busy={isRowGenerating}
           aria-label="Generate Offer"
         >
-          Generate Offer
+          {isRowGenerating ? 'Generating…' : 'Generate Offer'}
         </Button>
       );
     }
