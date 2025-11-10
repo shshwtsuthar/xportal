@@ -49,6 +49,10 @@ export const Step2_AvetmissDetails = () => {
     control: form.control,
     name: 'vsn',
   });
+  const citizenshipStatusCode = useWatch({
+    control: form.control,
+    name: 'citizenship_status_code',
+  });
 
   // Calculate age from date of birth
   const age = useMemo(() => {
@@ -95,6 +99,20 @@ export const Step2_AvetmissDetails = () => {
       form.setValue('survey_contact_status', 'A');
     }
   }, [isInternational, age, form]);
+
+  // Auto-check/uncheck International Student checkbox based on Citizenship Status
+  useEffect(() => {
+    const currentIsInternational = form.getValues('is_international');
+    if (citizenshipStatusCode === 'INTL') {
+      if (currentIsInternational !== true) {
+        form.setValue('is_international', true);
+      }
+      return;
+    }
+    if (currentIsInternational !== false) {
+      form.setValue('is_international', false);
+    }
+  }, [citizenshipStatusCode, form]);
 
   // Check if VSN field should be shown
   const showVSN = useMemo(() => {
