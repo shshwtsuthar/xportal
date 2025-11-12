@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import {
   FormControl,
@@ -22,37 +22,27 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ApplicationFormValues } from '@/lib/validators/application';
+import { ApplicationFormValues } from '@/src/schemas';
 import { ExternalLink } from 'lucide-react';
 
 export const Step2_AvetmissDetails = () => {
   const form = useFormContext<ApplicationFormValues>();
 
-  // Watch values for conditional logic
-  const highestSchoolLevelId = useWatch({
-    control: form.control,
-    name: 'highest_school_level_id',
-  });
-  const isInternational = useWatch({
-    control: form.control,
-    name: 'is_international',
-  });
+  // Watch form values for reactive updates
   const dateOfBirth = useWatch({
     control: form.control,
     name: 'date_of_birth',
   });
-  const state = useWatch({
+  const state = useWatch({ control: form.control, name: 'state' });
+  const isInternational = useWatch({
     control: form.control,
-    name: 'state',
+    name: 'is_international',
   });
-  const vsn = useWatch({
+  const highestSchoolLevel = useWatch({
     control: form.control,
-    name: 'vsn',
+    name: 'highest_school_level_id',
   });
-  const citizenshipStatusCode = useWatch({
-    control: form.control,
-    name: 'citizenship_status_code',
-  });
+  const vsn = useWatch({ control: form.control, name: 'vsn' });
 
   // Calculate age from date of birth
   const age = useMemo(() => {
@@ -82,39 +72,7 @@ export const Step2_AvetmissDetails = () => {
     return years;
   }, []);
 
-  // Auto-set year field to '@@' when "Did not go to school" is selected
-  useEffect(() => {
-    if (highestSchoolLevelId === '02') {
-      form.setValue('year_highest_school_level_completed', '@@');
-    }
-  }, [highestSchoolLevelId, form]);
-
-  // Auto-calculate survey_contact_status
-  useEffect(() => {
-    if (isInternational === true) {
-      form.setValue('survey_contact_status', 'O');
-    } else if (age !== null && age < 15) {
-      form.setValue('survey_contact_status', 'M');
-    } else {
-      form.setValue('survey_contact_status', 'A');
-    }
-  }, [isInternational, age, form]);
-
-  // Auto-check/uncheck International Student checkbox based on Citizenship Status
-  useEffect(() => {
-    const currentIsInternational = form.getValues('is_international');
-    if (citizenshipStatusCode === 'INTL') {
-      if (currentIsInternational !== true) {
-        form.setValue('is_international', true);
-      }
-      return;
-    }
-    if (currentIsInternational !== false) {
-      form.setValue('is_international', false);
-    }
-  }, [citizenshipStatusCode, form]);
-
-  // Check if VSN field should be shown
+  // Check if VSN field should be shown (VIC, age < 25, domestic)
   const showVSN = useMemo(() => {
     return (
       state === 'VIC' && age !== null && age < 25 && isInternational === false
@@ -230,7 +188,14 @@ export const Step2_AvetmissDetails = () => {
               <FormItem>
                 <FormLabel>Citizenship status *</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Derive is_international inline
+                      form.setValue('is_international', value === 'INTL');
+                    }}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -263,7 +228,19 @@ export const Step2_AvetmissDetails = () => {
               <FormItem>
                 <FormLabel>Highest school level completed *</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Set year field as per AVETMISS rule when 'Did not go to school'
+                      if (value === '02') {
+                        form.setValue(
+                          'year_highest_school_level_completed',
+                          '@@@@'
+                        );
+                      }
+                    }}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -283,7 +260,7 @@ export const Step2_AvetmissDetails = () => {
           />
 
           {/* NAT00080: Year Highest School Level Completed */}
-          {highestSchoolLevelId && highestSchoolLevelId !== '02' && (
+          {highestSchoolLevel && highestSchoolLevel !== '02' && (
             <FormField
               control={form.control}
               name="year_highest_school_level_completed"
@@ -396,7 +373,7 @@ export const Step2_AvetmissDetails = () => {
               name="vsn"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Victorian Student Number (VSN)</FormLabel>
+                  <FormLabel>Victorian Student Number (VSN) *</FormLabel>
                   <FormControl>
                     <div className="space-y-2">
                       <Input
@@ -498,6 +475,44 @@ export const Step2_AvetmissDetails = () => {
                 </FormItem>
               );
             }}
+          />
+
+          {/* USI Exemption */}
+          <FormField
+            control={form.control}
+            name="usi_exemption_code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>USI exemption (if applicable)</FormLabel>
+                <FormControl>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      // Use 'none' to clear the exemption
+                      if (value === 'none') {
+                        form.setValue('usi_exemption_code', undefined);
+                        return;
+                      }
+                      field.onChange(value);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select exemption (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No exemption</SelectItem>
+                      <SelectItem value="INDIV">
+                        INDIV - Individual Exemption
+                      </SelectItem>
+                      <SelectItem value="INTOFF">
+                        INTOFF - Overseas/International
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
         </CardContent>
       </Card>

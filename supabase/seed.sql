@@ -1005,7 +1005,7 @@ BEGIN
     id, rto_id, status, assigned_to, first_name, last_name, date_of_birth, email, is_international,
     program_id, timetable_id, proposed_commencement_date, agent_id, country_of_citizenship, passport_number,
     visa_type, visa_number, language_code, english_proficiency_code, gender, highest_school_level_id,
-    indigenous_status_id, labour_force_status_id, at_school_flag, phone_number, mobile_phone, street_country,
+    indigenous_status_id, labour_force_status_id, at_school_flag, disability_flag, prior_education_flag, phone_number, mobile_phone, street_country,
     suburb, state, postcode, payment_plan_template_id, created_at, offer_generated_at
   )
   SELECT
@@ -1022,6 +1022,8 @@ BEGIN
     '0', -- indigenous status placeholder
     '12', -- labour force status placeholder
     'N', -- at school flag
+    'N', -- disability flag (AVETMISS: Y/N/@)
+    'N', -- prior education flag (AVETMISS: Y/N/@)
     '+61 400 000 000', '+61 400 000 001', 'AUS', 'Melbourne', 'VIC', '3000',
     CASE WHEN program_id = v_prog_it_id THEN v_tpl_it_id WHEN program_id = v_prog_bus_id THEN v_tpl_bus_id ELSE v_tpl_hosp_id END,
     ta.seed_created_at,

@@ -1,3 +1,71 @@
+### New Application Wizard Hardening (AVETMISS/CRICOS)
+
+1) Database migration
+- Apply the migration adding submission-time constraints:
+  - `supabase/migrations/20251111_wizard_submission_constraints.sql`
+- Command:
+  - supabase db reset
+
+2) Regenerate types
+- Command:
+  - supabase gen types typescript --local > database.types.ts
+
+3) Edge function
+- No action needed if deploying via Supabase CLI; function `submit-application` now imports shared validator from `src/validation/application.ts`.
+- Ensure the build includes this file; with the current repo layout, relative import is used.
+
+4) Client
+- No environment changes. UI remains identical; behavior is improved.
+
+5) Rollback
+- Drop constraints:
+  - ALTER TABLE public.applications DROP CONSTRAINT IF EXISTS applications_email_required_on_submit;
+  - ALTER TABLE public.applications DROP CONSTRAINT IF EXISTS applications_mobile_required_on_submit;
+  - ALTER TABLE public.applications DROP CONSTRAINT IF EXISTS applications_disability_flag_required_on_submit;
+  - ALTER TABLE public.applications DROP CONSTRAINT IF EXISTS applications_prior_education_flag_required_on_submit;
+
+### CRICOS Optional For Domestic (2025-11-11)
+
+- No database changes required (CRICOS columns are nullable).
+- Deployed change lives in `src/validation/application.ts`:
+  - CRICOS block is enforced only when `is_international` is true.
+  - Normalization maps `null` to `undefined` and supports `is_international_student` alias.
+- Actions:
+  - Rebuild and deploy the web app and the `submit-application` Edge Function so both pick up the shared validator changes.
+  - No type regeneration needed unless schema changed elsewhere.
+
+### Remove “Written Agreement & Consent” (2025-11-12)
+
+1) Database migration
+- Create a new migration and drop the 3 columns (safe with IF EXISTS):
+  ```sql
+  -- applications: remove written agreement & consent fields
+  ALTER TABLE public.applications
+    DROP COLUMN IF EXISTS written_agreement_accepted,
+    DROP COLUMN IF EXISTS written_agreement_date,
+    DROP COLUMN IF EXISTS privacy_notice_accepted;
+  ```
+- Commands (run locally):
+  - supabase migration new "remove-written-agreement-consent-fields"
+  - Paste the SQL above into the generated file in `supabase/migrations/`
+  - supabase db reset
+
+2) Regenerate types
+- Command:
+  - supabase gen types typescript --local > database.types.ts
+
+3) Client
+- No environment changes. UI was removed and validators updated.
+
+4) Rollback
+- Re-add columns (nullable) if needed:
+  ```sql
+  ALTER TABLE public.applications
+    ADD COLUMN IF NOT EXISTS written_agreement_accepted boolean,
+    ADD COLUMN IF NOT EXISTS written_agreement_date date,
+    ADD COLUMN IF NOT EXISTS privacy_notice_accepted boolean;
+  ```
+
 ## Deployment Notes - RTO Profile Image Upload (2025-11-02)
 
 - Run migration `20251102120000_rto_profile_image.sql` to add `profile_image_path` and provision the private `rto-assets` bucket and RLS policies.

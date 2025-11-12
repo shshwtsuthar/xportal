@@ -1091,52 +1091,6 @@ export default function StudentPage({ params }: PageProps) {
                         </div>
                       </div>
                     )}
-
-                    {/* Agreements Section */}
-                    <div>
-                      <h3 className="mb-4 text-lg font-medium">
-                        Written Agreement & Consent
-                      </h3>
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Written Agreement Accepted
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.written_agreement_accepted === true
-                              ? 'Yes'
-                              : cricos.written_agreement_accepted === false
-                                ? 'No'
-                                : '—'}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Written Agreement Date
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.written_agreement_date
-                              ? format(
-                                  new Date(cricos.written_agreement_date),
-                                  'dd MMM yyyy'
-                                )
-                              : '—'}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Privacy Notice Accepted
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.privacy_notice_accepted === true
-                              ? 'Yes'
-                              : cricos.privacy_notice_accepted === false
-                                ? 'No'
-                                : '—'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </CardContent>
               </Card>

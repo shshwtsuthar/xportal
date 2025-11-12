@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import {
   FormControl,
   FormField,
@@ -19,19 +19,38 @@ import {
 } from '@/components/ui/select';
 import { CountrySelect } from '@/components/ui/country-select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ApplicationFormValues } from '@/lib/validators/application';
+import { ApplicationFormValues } from '@/src/schemas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const Step3_Cricos = () => {
   const form = useFormContext<ApplicationFormValues>();
-  const isInternational = form.watch('is_international');
-  const isUnder18 = form.watch('is_under_18');
-  const providerAcceptingWelfare = form.watch(
-    'provider_accepting_welfare_responsibility'
-  );
-  const providerArrangedOshc = form.watch('provider_arranged_oshc');
-  const hasEnglishTest = form.watch('has_english_test');
-  const hasPreviousStudy = form.watch('has_previous_study_australia');
+  const isInternational = useWatch({
+    control: form.control,
+    name: 'is_international',
+  });
+  const isUnder18 = useWatch({ control: form.control, name: 'is_under_18' });
+  const providerAcceptingWelfare = useWatch({
+    control: form.control,
+    name: 'provider_accepting_welfare_responsibility',
+  });
+  const providerArrangedOshc = useWatch({
+    control: form.control,
+    name: 'provider_arranged_oshc',
+  });
+  const hasEnglishTest = useWatch({
+    control: form.control,
+    name: 'has_english_test',
+  });
+  const hasPreviousStudy = useWatch({
+    control: form.control,
+    name: 'has_previous_study_australia',
+  });
+  const streetCountry = useWatch({
+    control: form.control,
+    name: 'street_country',
+  });
+  const holdsVisa = useWatch({ control: form.control, name: 'holds_visa' });
+  const state = useWatch({ control: form.control, name: 'state' });
 
   // OSHC Providers (5 approved providers)
   const oshcProviders = [
@@ -68,7 +87,9 @@ export const Step3_Cricos = () => {
                 <FormControl>
                   <Checkbox
                     checked={!!field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked);
+                    }}
                   />
                 </FormControl>
                 <FormLabel>International student</FormLabel>
@@ -95,10 +116,30 @@ export const Step3_Cricos = () => {
                 name="passport_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Passport number</FormLabel>
+                    <FormLabel>
+                      Passport number
+                      {(streetCountry === 'AU' || state) && ' *'}
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="E1234567" />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="holds_visa"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <Checkbox
+                        checked={!!field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel>Holds Australian visa</FormLabel>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -189,7 +230,10 @@ export const Step3_Cricos = () => {
                 name="visa_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Visa number</FormLabel>
+                    <FormLabel>
+                      Visa number
+                      {holdsVisa && ' *'}
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="0123ABC456" />
                     </FormControl>
@@ -373,7 +417,7 @@ export const Step3_Cricos = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
-                              Parent/Legal Guardian mobile phone
+                              Parent/Legal Guardian mobile phone *
                             </FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="0400 000 000" />
@@ -388,7 +432,7 @@ export const Step3_Cricos = () => {
                         name="g_email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Parent/Legal Guardian email</FormLabel>
+                            <FormLabel>Parent/Legal Guardian email *</FormLabel>
                             <FormControl>
                               <Input
                                 type="email"
@@ -746,99 +790,6 @@ export const Step3_Cricos = () => {
                   />
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Written Agreement & Consent */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-medium">
-                Written Agreement & Consent
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <FormField
-                control={form.control}
-                name="written_agreement_accepted"
-                render={({ field }) => (
-                  <FormItem className="flex items-start gap-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={!!field.value}
-                        onCheckedChange={field.onChange}
-                        className="mt-1"
-                      />
-                    </FormControl>
-                    <div className="space-y-1">
-                      <FormLabel>
-                        Student acknowledgment that they have read and accepted
-                        written agreement *
-                      </FormLabel>
-                      <FormDescription>
-                        I acknowledge that I have read and accepted the written
-                        agreement for this course.
-                      </FormDescription>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="written_agreement_date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date of Acceptance *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        value={
-                          field.value
-                            ? typeof field.value === 'string'
-                              ? field.value
-                              : field.value instanceof Date
-                                ? field.value.toISOString().split('T')[0]
-                                : ''
-                            : ''
-                        }
-                        onChange={(e) => field.onChange(e.target.value || '')}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="privacy_notice_accepted"
-                render={({ field }) => (
-                  <FormItem className="flex items-start gap-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={!!field.value}
-                        onCheckedChange={field.onChange}
-                        className="mt-1"
-                      />
-                    </FormControl>
-                    <div className="space-y-1">
-                      <FormLabel>
-                        Privacy and Data Sharing Notice Acceptance *
-                      </FormLabel>
-                      <FormDescription>
-                        I acknowledge that my personal information may be shared
-                        with Australian Government (Department of Education,
-                        Department of Home Affairs), designated authorities,
-                        Tuition Protection Service (TPS), and ESOS Assurance
-                        Fund Manager for ESOS compliance, visa monitoring, and
-                        immigration control purposes.
-                      </FormDescription>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
         </>

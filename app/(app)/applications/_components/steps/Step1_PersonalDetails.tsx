@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import {
   FormControl,
   FormField,
@@ -18,200 +18,56 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CountrySelect } from '@/components/ui/country-select';
-import { ApplicationFormValues } from '@/lib/validators/application';
+import { ApplicationFormValues } from '@/src/schemas';
 import { useGetAgents } from '@/src/hooks/useGetAgents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
-import { useState, useEffect } from 'react';
+
+// Extracted to avoid re-creation on every parent render which can close dropdowns
+const AgentSelector = () => {
+  const form = useFormContext<ApplicationFormValues>();
+  const { data: agents = [] } = useGetAgents();
+  return (
+    <FormField
+      control={form.control}
+      name="agent_id"
+      render={({ field }) => (
+        <FormItem className="w-full">
+          <FormLabel>Agent</FormLabel>
+          <FormControl>
+            <Select
+              value={field.value ?? undefined}
+              onValueChange={(v) => field.onChange(v || undefined)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select an agent" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {agents.map((a) => (
+                  <SelectItem key={a.id} value={a.id as string}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+};
 
 type Props = { hideAgent?: boolean };
 
 export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
   const form = useFormContext<ApplicationFormValues>();
 
-  const DateOfBirthPicker = () => {
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-      undefined
-    );
-    const dateOfBirthValue = form.watch('date_of_birth');
-    const [ddmmyyyy, setDdmmyyyy] = useState('');
-
-    // Convert ISO date string to DD/MM/YYYY format
-    const formatToDDMMYYYY = (dateStr: string): string => {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return '';
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = String(date.getFullYear());
-      return `${day}/${month}/${year}`;
-    };
-
-    // Format input value with slashes as user types
-    const formatWithSlashes = (value: string): string => {
-      // Remove all non-digits
-      const digits = value.replace(/\D/g, '');
-      if (digits.length === 0) return '';
-      if (digits.length <= 2) return digits;
-      if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
-    };
-
-    // Convert DD/MM/YYYY or DDMMYYYY to ISO date string
-    const parseDDMMYYYY = (value: string): string => {
-      // Remove slashes and get only digits
-      const digits = value.replace(/\D/g, '');
-      if (digits.length !== 8) return '';
-      const day = digits.substring(0, 2);
-      const month = digits.substring(2, 4);
-      const year = digits.substring(4, 8);
-      // Return ISO format YYYY-MM-DD
-      return `${year}-${month}-${day}`;
-    };
-
-    // Sync local state with form value
-    useEffect(() => {
-      if (dateOfBirthValue) {
-        const dateStr =
-          typeof dateOfBirthValue === 'string'
-            ? dateOfBirthValue
-            : dateOfBirthValue.toISOString().split('T')[0];
-        if (dateStr) {
-          const date = new Date(dateStr);
-          if (!isNaN(date.getTime())) {
-            setSelectedDate(date);
-            setDdmmyyyy(formatToDDMMYYYY(dateStr));
-          }
-        }
-      } else {
-        setSelectedDate(undefined);
-        setDdmmyyyy('');
-      }
-    }, [dateOfBirthValue]);
-
-    return (
-      <FormField
-        control={form.control}
-        name="date_of_birth"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Date of birth *</FormLabel>
-            <FormControl>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="DD/MM/YYYY"
-                  value={ddmmyyyy}
-                  maxLength={10}
-                  onChange={(e) => {
-                    const inputValue = e.target.value;
-                    // Remove all non-digits to get the raw value
-                    const digits = inputValue.replace(/\D/g, '');
-
-                    // Limit to 8 digits
-                    const limitedDigits = digits.slice(0, 8);
-
-                    // Format with slashes
-                    const formatted = formatWithSlashes(limitedDigits);
-                    setDdmmyyyy(formatted);
-
-                    // Update form value when we have 8 digits
-                    if (limitedDigits.length === 8) {
-                      const isoDate = parseDDMMYYYY(limitedDigits);
-                      if (isoDate) {
-                        field.onChange(isoDate);
-                      }
-                    } else if (limitedDigits.length === 0) {
-                      field.onChange('');
-                    }
-                  }}
-                  className="flex-1"
-                />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="shrink-0"
-                    >
-                      <CalendarIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(date) => {
-                        if (date) {
-                          setSelectedDate(date);
-                          const isoDate = date.toISOString().split('T')[0];
-                          field.onChange(isoDate);
-                          setDdmmyyyy(formatToDDMMYYYY(isoDate));
-                        } else {
-                          setSelectedDate(undefined);
-                          field.onChange('');
-                          setDdmmyyyy('');
-                        }
-                      }}
-                      initialFocus
-                      disabled={(date) => {
-                        // Disable future dates
-                        return date > new Date();
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    );
-  };
-
-  const AgentSelector = () => {
-    const { data: agents = [] } = useGetAgents();
-    return (
-      <FormField
-        control={form.control}
-        name="agent_id"
-        render={({ field }) => (
-          <FormItem className="w-full">
-            <FormLabel>Agent</FormLabel>
-            <FormControl>
-              <Select
-                value={field.value ?? undefined}
-                onValueChange={(v) => field.onChange(v || undefined)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select an agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {agents.map((a) => (
-                    <SelectItem key={a.id} value={a.id as string}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    );
-  };
   const samePostal = form.watch('postal_is_same_as_street');
+  const isInternational = useWatch({
+    control: form.control,
+    name: 'is_international',
+  });
   return (
     <div className="grid gap-8">
       <Card>
@@ -287,7 +143,31 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
             )}
           />
           {/* Date of birth */}
-          <DateOfBirthPicker />
+          <FormField
+            control={form.control}
+            name="date_of_birth"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date of birth *</FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    value={
+                      field.value
+                        ? typeof field.value === 'string'
+                          ? field.value
+                          : field.value instanceof Date
+                            ? field.value.toISOString().split('T')[0]
+                            : ''
+                        : ''
+                    }
+                    onChange={(e) => field.onChange(e.target.value || '')}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </CardContent>
       </Card>
 
@@ -342,7 +222,10 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
             name="mobile_phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Mobile phone</FormLabel>
+                <FormLabel>
+                  Mobile phone
+                  {isInternational === true && ' *'}
+                </FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="0400 000 000" />
                 </FormControl>
@@ -471,7 +354,10 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
             name="street_country"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Country</FormLabel>
+                <FormLabel>
+                  Country
+                  {isInternational === true && ' *'}
+                </FormLabel>
                 <FormControl>
                   <CountrySelect
                     value={field.value}

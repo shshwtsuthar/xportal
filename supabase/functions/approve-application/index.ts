@@ -556,9 +556,6 @@ serve(async (req: Request) => {
         previous_provider_name: app.previous_provider_name,
         completed_previous_course: app.completed_previous_course,
         has_release_letter: app.has_release_letter,
-        written_agreement_accepted: app.written_agreement_accepted,
-        written_agreement_date: app.written_agreement_date,
-        privacy_notice_accepted: app.privacy_notice_accepted,
       });
       if (crErr) {
         return new Response(

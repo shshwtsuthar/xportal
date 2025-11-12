@@ -1,3 +1,22 @@
+## [Unreleased]
+- New Application Wizard hardening:
+  - Server-first validation with shared rules (AVETMISS/CRICOS) via `src/validation/application.ts`
+  - Edge function `submit-application` now imports shared validator and persists derived fields
+  - Submission-time DB constraints for `email`, `mobile_phone`, `disability_flag`, `prior_education_flag`
+  - Removed heavy useWatch; added debounced readiness hook `useSubmissionReadiness`
+  - Fixed VSN, year_highest_school_level_completed rules; survey_contact_status derived on server
+  - Reduced race conditions; co-located conditional UI logic in step components
+ - chore(edge): Add Deno import mappings for `zod` and `@/` in edge functions to fix runtime import resolution
+- fix(wizard): CRICOS step fully optional for domestic students
+  - Treat all CRICOS fields as optional unless `is_international` is true
+  - Accept `null` from forms by normalizing to `undefined` before Zod parsing
+  - Support alias `is_international_student` by mapping it to `is_international` during validation
+
+- feat(cricos): Remove “Written Agreement & Consent” card and fields
+  - UI: Deleted the entire card from CRICOS step and student details page
+  - Validation: Removed fields from Zod schemas and submission checks
+  - Backend: Drop columns `written_agreement_accepted`, `written_agreement_date`, and `privacy_notice_accepted` from `applications` (see DEPLOYMENT.md)
+
 ## 2025-11-07
 
 - refactor(settings): SSR prefetch Twilio configuration & senders

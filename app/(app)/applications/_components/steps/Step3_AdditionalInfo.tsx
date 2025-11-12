@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ApplicationFormValues } from '@/lib/validators/application';
+import { ApplicationFormValues } from '@/src/schemas';
 import {
   useGetApplicationDisabilities,
   useGetApplicationPriorEducation,
@@ -109,11 +109,11 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
   // Sync database data to form state on mount or when data loads
   useEffect(() => {
     if (application) {
-      // Sync flags
+      // Sync flags - AVETMISS allows Y, N, or @
       if (application.disability_flag && !form.getValues('disability_flag')) {
         form.setValue(
           'disability_flag',
-          application.disability_flag as 'Y' | 'N'
+          application.disability_flag as 'Y' | 'N' | '@'
         );
       }
       if (
@@ -122,7 +122,7 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
       ) {
         form.setValue(
           'prior_education_flag',
-          application.prior_education_flag as 'Y' | 'N'
+          application.prior_education_flag as 'Y' | 'N' | '@'
         );
       }
     }
@@ -193,24 +193,22 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
     }
   }, [dbPriorEducation, applicationId, form]);
 
-  // Handle disability flag change
-  const handleDisabilityFlagChange = (value: 'Y' | 'N' | '') => {
-    const flagValue = value === '' ? undefined : (value as 'Y' | 'N');
-    form.setValue('disability_flag', flagValue);
+  // Handle disability flag change - AVETMISS requires Y, N, or @ only
+  const handleDisabilityFlagChange = (value: 'Y' | 'N' | '@') => {
+    form.setValue('disability_flag', value);
 
-    // If flag is N, clear all disabilities
-    if (value === 'N') {
+    // If flag is N or @, clear all disabilities
+    if (value === 'N' || value === '@') {
       form.setValue('disabilities', []);
     }
   };
 
-  // Handle prior education flag change
-  const handlePriorEducationFlagChange = (value: 'Y' | 'N' | '') => {
-    const flagValue = value === '' ? undefined : (value as 'Y' | 'N');
-    form.setValue('prior_education_flag', flagValue);
+  // Handle prior education flag change - AVETMISS requires Y, N, or @ only
+  const handlePriorEducationFlagChange = (value: 'Y' | 'N' | '@') => {
+    form.setValue('prior_education_flag', value);
 
-    // If flag is N, clear all prior education
-    if (value === 'N') {
+    // If flag is N or @, clear all prior education
+    if (value === 'N' || value === '@') {
       form.setValue('prior_education', []);
     }
   };
@@ -388,24 +386,24 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
               <FormItem>
                 <FormLabel>
                   Does the student have a disability, impairment or long-term
-                  condition?
+                  condition? *
                 </FormLabel>
                 <FormControl>
                   <Select
-                    value={field.value || ''}
+                    value={field.value || '@'}
                     onValueChange={(value) => {
-                      const flagValue =
-                        value === '' ? undefined : (value as 'Y' | 'N');
+                      const flagValue = value as 'Y' | 'N' | '@';
                       field.onChange(flagValue);
-                      handleDisabilityFlagChange(value as 'Y' | 'N' | '');
+                      handleDisabilityFlagChange(flagValue);
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select (optional)" />
+                      <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Y">Yes</SelectItem>
                       <SelectItem value="N">No</SelectItem>
+                      <SelectItem value="@">Not Stated</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -420,7 +418,7 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
               <FormLabel>
                 If the student has indicated the presence of a disability,
                 impairment or long-term condition, please select the area(s) in
-                the following list:
+                the following list: *
               </FormLabel>
               <div className="grid gap-3">
                 {DISABILITY_TYPES.map((type) => (
@@ -466,24 +464,24 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
               <FormItem>
                 <FormLabel>
                   Has the student SUCCESSFULLY completed any of the
-                  qualifications listed below?
+                  qualifications listed below? *
                 </FormLabel>
                 <FormControl>
                   <Select
-                    value={field.value || ''}
+                    value={field.value || '@'}
                     onValueChange={(value) => {
-                      const flagValue =
-                        value === '' ? undefined : (value as 'Y' | 'N');
+                      const flagValue = value as 'Y' | 'N' | '@';
                       field.onChange(flagValue);
-                      handlePriorEducationFlagChange(value as 'Y' | 'N' | '');
+                      handlePriorEducationFlagChange(flagValue);
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select (optional)" />
+                      <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Y">Yes</SelectItem>
                       <SelectItem value="N">No</SelectItem>
+                      <SelectItem value="@">Not Stated</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -497,7 +495,7 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
             <div className="grid gap-4">
               <FormLabel>
                 If Yes, select ANY applicable qualifications and specify the
-                recognition type for each:
+                recognition type for each: *
               </FormLabel>
               <div className="grid gap-4">
                 {PRIOR_EDUCATION_TYPES.map((type) => {

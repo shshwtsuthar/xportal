@@ -1,7 +1,7 @@
 'use client';
 
 import { UseFormReturn } from 'react-hook-form';
-import { ApplicationFormValues } from '@/lib/validators/application';
+import { ApplicationFormValues } from '@/src/schemas';
 import {
   FormField,
   FormItem,
@@ -100,6 +100,7 @@ export function EnrollmentStep({ form }: Props) {
   const selectedDate =
     localSelectedDate ||
     (selectedDateString ? new Date(selectedDateString) : undefined);
+  const [isDateOpen, setIsDateOpen] = useState(false);
 
   // Watch for changes in programId
   useEffect(() => {
@@ -290,7 +291,7 @@ export function EnrollmentStep({ form }: Props) {
           </CardHeader>
           <CardContent>
             <div className="grid gap-2">
-              <Popover>
+              <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -316,6 +317,7 @@ export function EnrollmentStep({ form }: Props) {
                       console.log('Setting date to:', iso);
                       form.setValue('proposed_commencement_date', iso);
                       setLocalSelectedDate(d); // Update local state immediately
+                      setIsDateOpen(false);
                     }}
                     disabled={disableDate}
                     initialFocus

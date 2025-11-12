@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { draftApplicationSchema } from '@/lib/validators/application';
+import { draftApplicationSchema } from '@/src/schemas';
 import { Step1_PersonalDetails } from '@/app/(app)/applications/_components/steps/Step1_PersonalDetails';
 import { Step2_AvetmissDetails } from '@/app/(app)/applications/_components/steps/Step2_AvetmissDetails';
 import { Step3_Cricos } from '@/app/(app)/applications/_components/steps/Step3_Cricos';

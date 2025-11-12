@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from '@/components/ui/form';
 import {
@@ -13,11 +13,12 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MagneticButton } from '@/components/ui/magnetic-button';
+import { XButton } from '@/components/ui/x-button';
 import {
-  applicationSchema,
   draftApplicationSchema,
   type ApplicationFormValues,
-} from '@/lib/validators/application';
+} from '@/src/schemas';
+import { useSubmissionReadiness } from '@/src/hooks/useSubmissionReadiness';
 import { useCreateApplication } from '@/src/hooks/useCreateApplication';
 import { useGetApplication } from '@/src/hooks/useGetApplication';
 import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
@@ -108,8 +109,8 @@ export function NewApplicationWizard({ applicationId }: Props) {
       language_code: '',
       citizenship_status_code: '',
       at_school_flag: '',
-      disability_flag: undefined,
-      prior_education_flag: undefined,
+      disability_flag: '@' as const,
+      prior_education_flag: '@' as const,
       disabilities: [],
       prior_education: [],
       year_highest_school_level_completed: '',
@@ -117,11 +118,30 @@ export function NewApplicationWizard({ applicationId }: Props) {
       vsn: '',
       is_international: false,
       usi: '',
+      usi_exemption_code: undefined,
       passport_number: '',
+      passport_issue_date: '',
+      passport_expiry_date: '',
+      place_of_birth: '',
       visa_type: '',
       visa_number: '',
+      visa_application_office: '',
+      holds_visa: false,
       country_of_citizenship: 'AU',
       ielts_score: '',
+      has_english_test: false,
+      english_test_type: '',
+      english_test_date: '',
+      has_previous_study_australia: false,
+      previous_provider_name: '',
+      completed_previous_course: undefined,
+      has_release_letter: undefined,
+      provider_accepting_welfare_responsibility: undefined,
+      welfare_start_date: '',
+      provider_arranged_oshc: false,
+      oshc_provider_name: '',
+      oshc_start_date: '',
+      oshc_end_date: '',
       ec_name: '',
       ec_relationship: '',
       ec_phone_number: '',
@@ -188,13 +208,13 @@ export function NewApplicationWizard({ applicationId }: Props) {
         disability_flag:
           currentApplication.disability_flag === null ||
           currentApplication.disability_flag === undefined
-            ? undefined
-            : (currentApplication.disability_flag as 'Y' | 'N'),
+            ? ('@' as const)
+            : (currentApplication.disability_flag as 'Y' | 'N' | '@'),
         prior_education_flag:
           currentApplication.prior_education_flag === null ||
           currentApplication.prior_education_flag === undefined
-            ? undefined
-            : (currentApplication.prior_education_flag as 'Y' | 'N'),
+            ? ('@' as const)
+            : (currentApplication.prior_education_flag as 'Y' | 'N' | '@'),
         disabilities: [], // Will be loaded by Step3_AdditionalInfo component
         prior_education: [], // Will be loaded by Step3_AdditionalInfo component
         year_highest_school_level_completed:
@@ -208,12 +228,43 @@ export function NewApplicationWizard({ applicationId }: Props) {
         vsn: currentApplication.vsn ?? '',
         is_international: Boolean(currentApplication.is_international),
         usi: currentApplication.usi ?? '',
+        usi_exemption_code: (() => {
+          const value = (currentApplication as Record<string, unknown>)
+            .usi_exemption_code;
+          return value === 'INDIV' || value === 'INTOFF' ? value : undefined;
+        })(),
         passport_number: currentApplication.passport_number ?? '',
+        passport_issue_date: currentApplication.passport_issue_date ?? '',
+        passport_expiry_date: currentApplication.passport_expiry_date ?? '',
+        place_of_birth: currentApplication.place_of_birth ?? '',
         visa_type: currentApplication.visa_type ?? '',
         visa_number: currentApplication.visa_number ?? '',
+        visa_application_office:
+          currentApplication.visa_application_office ?? '',
+        holds_visa: currentApplication.holds_visa ?? false,
         country_of_citizenship:
           currentApplication.country_of_citizenship ?? 'AU',
         ielts_score: currentApplication.ielts_score ?? '',
+        has_english_test: Boolean(currentApplication.has_english_test),
+        english_test_type: currentApplication.english_test_type ?? '',
+        english_test_date: currentApplication.english_test_date ?? '',
+        has_previous_study_australia: Boolean(
+          currentApplication.has_previous_study_australia
+        ),
+        previous_provider_name: currentApplication.previous_provider_name ?? '',
+        completed_previous_course:
+          currentApplication.completed_previous_course ?? undefined,
+        has_release_letter: currentApplication.has_release_letter ?? undefined,
+        provider_accepting_welfare_responsibility:
+          currentApplication.provider_accepting_welfare_responsibility ??
+          undefined,
+        welfare_start_date: currentApplication.welfare_start_date ?? '',
+        provider_arranged_oshc: Boolean(
+          currentApplication.provider_arranged_oshc
+        ),
+        oshc_provider_name: currentApplication.oshc_provider_name ?? '',
+        oshc_start_date: currentApplication.oshc_start_date ?? '',
+        oshc_end_date: currentApplication.oshc_end_date ?? '',
         ec_name: currentApplication.ec_name ?? '',
         ec_relationship: currentApplication.ec_relationship ?? '',
         ec_phone_number: currentApplication.ec_phone_number ?? '',
@@ -257,83 +308,8 @@ export function NewApplicationWizard({ applicationId }: Props) {
     try {
       const values = form.getValues();
 
-      // Debug: Log form values, especially the new flag fields
-      console.log('=== DRAFT SAVE DEBUG ===');
-      console.log('Form values:', values);
-      console.log(
-        'disability_flag:',
-        values.disability_flag,
-        'Type:',
-        typeof values.disability_flag
-      );
-      console.log(
-        'prior_education_flag:',
-        values.prior_education_flag,
-        'Type:',
-        typeof values.prior_education_flag
-      );
-      console.log(
-        'disabilities array:',
-        values.disabilities,
-        'Length:',
-        values.disabilities?.length || 0
-      );
-      console.log(
-        'prior_education array:',
-        values.prior_education,
-        'Length:',
-        values.prior_education?.length || 0
-      );
-      console.log(
-        'prior_education array details:',
-        JSON.stringify(values.prior_education, null, 2)
-      );
-
-      // Clean null values from flag fields before validation
-      // Schema expects 'Y', 'N', '', or undefined (not null)
-      const valuesForValidation = {
-        ...values,
-        disability_flag:
-          values.disability_flag === null ? undefined : values.disability_flag,
-        prior_education_flag:
-          values.prior_education_flag === null
-            ? undefined
-            : values.prior_education_flag,
-      };
-
-      // Validate format only (using draft schema) before saving
-      const validationResult =
-        draftApplicationSchema.safeParse(valuesForValidation);
-
-      if (!validationResult.success) {
-        console.log('=== VALIDATION ERRORS ===');
-        console.log('Total errors:', validationResult.error.issues.length);
-        console.log(
-          'All validation errors:',
-          JSON.stringify(validationResult.error.issues, null, 2)
-        );
-        validationResult.error.issues.forEach((issue, index) => {
-          const fieldValue =
-            issue.path.length > 0
-              ? (values as Record<string, unknown>)[issue.path[0] as string]
-              : 'N/A';
-          console.log(`Error ${index + 1}:`, {
-            path: issue.path,
-            message: issue.message,
-            code: issue.code,
-            value: fieldValue,
-          });
-        });
-        // Set form errors for display
-        validationResult.error.issues.forEach((issue) => {
-          const fieldName = issue.path.join('.') as string;
-          form.setError(fieldName as never, {
-            message: issue.message,
-          });
-        });
-        toast.error('Please fix format errors before saving draft.');
-        return;
-      }
+      // Save Draft: Save whatever is in the form, NO VALIDATION
+      // Validation only happens when submitting via handleSubmitApplication
 
       // Helper function to convert Date objects to ISO strings
       const convertDateToString = (
@@ -369,11 +345,8 @@ export function NewApplicationWizard({ applicationId }: Props) {
         oshc_start_date: convertDateToString(values.oshc_start_date),
         oshc_end_date: convertDateToString(values.oshc_end_date),
         english_test_date: convertDateToString(values.english_test_date),
-        written_agreement_date: convertDateToString(
-          values.written_agreement_date
-        ),
         // Clean up null values for optional flag fields
-        // Schema expects 'Y', 'N', '', or undefined (not null)
+        // Schema expects 'Y', 'N', '@', or undefined (not null)
         disability_flag:
           values.disability_flag === null ? undefined : values.disability_flag,
         prior_education_flag:
@@ -688,279 +661,32 @@ export function NewApplicationWizard({ applicationId }: Props) {
   };
 
   const handleSubmitApplication = async () => {
-    try {
-      console.log('Submit button clicked');
-      console.log('Application:', currentApplication);
-      console.log('Application ID:', currentApplication?.id);
-
-      // First validate the form using the full submission schema
-      const formValues = form.getValues();
-      const validationResult = applicationSchema.safeParse(formValues);
-
-      if (!validationResult.success) {
-        console.log('Form validation failed:', validationResult.error.issues);
-        // Set form errors for display
-        validationResult.error.issues.forEach((issue) => {
-          const fieldName = issue.path.join('.') as string;
-          form.setError(fieldName as never, {
-            message: issue.message,
-          });
-        });
-        toast.error('Please fix validation errors before submitting.');
-        return;
-      }
-
-      console.log('Form validation passed');
-
-      // Check if we have an application to submit
-      if (!currentApplication?.id) {
-        toast.error('No application found. Please save your draft first.');
-        return;
-      }
-
-      console.log(
-        'Calling submit mutation with applicationId:',
-        currentApplication.id
-      );
-
-      // Submit the application
-      submitMutation.mutate(
-        { applicationId: currentApplication.id },
-        {
-          onSuccess: (data) => {
-            console.log('Submit success:', data);
-            toast.success('Application submitted successfully');
-            // Redirect to applications page after successful submission
-            window.location.href = '/applications';
-          },
-          onError: (e) => {
-            console.error('Submit error:', e);
-            toast.error(`Failed to submit application: ${String(e)}`);
-          },
-        }
-      );
-    } catch (error) {
-      console.error('Submit application error:', error);
-      toast.error('Failed to submit application');
+    // Button only appears when validation passes, so skip client-side re-validation
+    // Server will validate as the final gate
+    if (!currentApplication?.id) {
+      toast.error('No application found. Please save your draft first.');
+      return;
     }
+
+    // Submit the application
+    submitMutation.mutate(
+      { applicationId: currentApplication.id },
+      {
+        onSuccess: () => {
+          toast.success('Application submitted successfully');
+          // Redirect to applications page after successful submission
+          window.location.href = '/applications';
+        },
+        onError: (e) => {
+          toast.error(`Failed to submit application: ${String(e)}`);
+        },
+      }
+    );
   };
 
-  // Watch all required fields to determine if form is ready for submission
-  const watchedFields = useWatch({
-    control: form.control,
-    name: [
-      'first_name',
-      'last_name',
-      'date_of_birth',
-      'program_id',
-      'timetable_id',
-      'proposed_commencement_date',
-      'suburb',
-      'state',
-      'postcode',
-      'gender',
-      'highest_school_level_id',
-      'year_highest_school_level_completed',
-      'indigenous_status_id',
-      'labour_force_status_id',
-      'country_of_birth_id',
-      'language_code',
-      'citizenship_status_code',
-      'at_school_flag',
-      'is_international',
-      'usi',
-      'vsn',
-      // CRICOS fields
-      'written_agreement_accepted',
-      'written_agreement_date',
-      'privacy_notice_accepted',
-      'passport_number',
-      'street_country',
-      'is_under_18',
-      'provider_accepting_welfare_responsibility',
-      'welfare_start_date',
-      'provider_arranged_oshc',
-      'oshc_provider_name',
-      'oshc_start_date',
-      'oshc_end_date',
-      'has_english_test',
-      'english_test_type',
-      'ielts_score',
-      'has_previous_study_australia',
-      'previous_provider_name',
-      'completed_previous_course',
-      'has_release_letter',
-    ],
-  });
-
-  // Check if all required fields are filled
-  const isFormReadyForSubmission = useMemo(() => {
-    const [
-      first_name,
-      last_name,
-      date_of_birth,
-      program_id,
-      timetable_id,
-      proposed_commencement_date,
-      suburb,
-      state,
-      postcode,
-      gender,
-      highest_school_level_id,
-      year_highest_school_level_completed,
-      indigenous_status_id,
-      labour_force_status_id,
-      country_of_birth_id,
-      language_code,
-      citizenship_status_code,
-      at_school_flag,
-      is_international,
-      usi,
-      vsn,
-      // CRICOS fields
-      written_agreement_accepted,
-      written_agreement_date,
-      privacy_notice_accepted,
-      passport_number,
-      street_country,
-      is_under_18,
-      provider_accepting_welfare_responsibility,
-      welfare_start_date,
-      provider_arranged_oshc,
-      oshc_provider_name,
-      oshc_start_date,
-      oshc_end_date,
-      has_english_test,
-      english_test_type,
-      ielts_score,
-      has_previous_study_australia,
-      previous_provider_name,
-      completed_previous_course,
-      has_release_letter,
-    ] = watchedFields;
-
-    // Basic required fields
-    if (
-      !first_name ||
-      !last_name ||
-      !date_of_birth ||
-      !program_id ||
-      !timetable_id ||
-      !proposed_commencement_date ||
-      !suburb ||
-      !state ||
-      !postcode ||
-      !gender ||
-      !highest_school_level_id ||
-      !indigenous_status_id ||
-      !labour_force_status_id ||
-      !country_of_birth_id ||
-      !language_code ||
-      !citizenship_status_code ||
-      !at_school_flag
-    ) {
-      return false;
-    }
-
-    // Conditional: Year highest school level completed (required if not "Did not go to school")
-    if (
-      highest_school_level_id &&
-      highest_school_level_id !== '02' &&
-      !year_highest_school_level_completed
-    ) {
-      return false;
-    }
-
-    // Conditional: USI (required for domestic students)
-    if (is_international === false && (!usi || usi.trim().length === 0)) {
-      return false;
-    }
-
-    // Conditional: VSN (required if shown - state === 'VIC' && age < 25 && is_international === false)
-    // Calculate age from date_of_birth
-    if (date_of_birth && state === 'VIC' && is_international === false) {
-      try {
-        const dob =
-          typeof date_of_birth === 'string'
-            ? new Date(date_of_birth)
-            : date_of_birth;
-        if (!isNaN(dob.getTime())) {
-          const today = new Date();
-          let age = today.getFullYear() - dob.getFullYear();
-          const monthDiff = today.getMonth() - dob.getMonth();
-          const dayDiff = today.getDate() - dob.getDate();
-          if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-            age--;
-          }
-          if (age < 25 && (!vsn || vsn.trim().length === 0)) {
-            return false;
-          }
-        }
-      } catch {
-        // If age calculation fails, don't block submission
-      }
-    }
-
-    // CRICOS: Required fields for international students
-    if (is_international === true) {
-      // Written agreement and privacy notice are always required
-      if (
-        written_agreement_accepted !== true ||
-        !written_agreement_date ||
-        privacy_notice_accepted !== true
-      ) {
-        return false;
-      }
-
-      // Passport number required if student in Australia
-      if (street_country === 'AU' || state) {
-        if (!passport_number || passport_number.trim().length === 0) {
-          return false;
-        }
-      }
-
-      // Under 18 fields required if is_under_18 is true
-      if (is_under_18 === true) {
-        if (provider_accepting_welfare_responsibility === undefined) {
-          return false;
-        }
-        // Welfare start date required if provider accepting responsibility
-        if (
-          provider_accepting_welfare_responsibility === true &&
-          !welfare_start_date
-        ) {
-          return false;
-        }
-      }
-
-      // OSHC fields required if provider_arranged_oshc is true
-      if (provider_arranged_oshc === true) {
-        if (!oshc_provider_name || !oshc_start_date || !oshc_end_date) {
-          return false;
-        }
-      }
-
-      // English test fields required if has_english_test is true
-      if (has_english_test === true) {
-        if (!english_test_type || !ielts_score) {
-          return false;
-        }
-      }
-
-      // Previous study fields required if has_previous_study_australia is true
-      if (has_previous_study_australia === true) {
-        if (
-          !previous_provider_name ||
-          completed_previous_course === undefined ||
-          has_release_letter === undefined
-        ) {
-          return false;
-        }
-      }
-    }
-
-    return true;
-  }, [watchedFields]);
+  // Debounced readiness engine (single subscription; avoids heavy useWatch arrays)
+  const { isReady: isFormReadyForSubmission, isValidating } =
+    useSubmissionReadiness(form);
 
   const StepContent = useMemo(() => {
     if (activeStep === 0) return <Step1_PersonalDetails />;
@@ -998,13 +724,14 @@ export function NewApplicationWizard({ applicationId }: Props) {
         </div>
         <div className="flex gap-2">
           {!isFormReadyForSubmission ? (
-            <MagneticButton
+            <XButton
               variant="outline"
               onClick={handleSaveDraft}
               disabled={
                 createMutation.isPending ||
                 updateMutation.isPending ||
-                isReadOnly
+                isReadOnly ||
+                isValidating
               }
             >
               Save Draft{' '}
@@ -1012,7 +739,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
                 <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
                 <Kbd>S</Kbd>
               </KbdGroup>
-            </MagneticButton>
+            </XButton>
           ) : (
             <Button
               variant="outline"
@@ -1020,7 +747,8 @@ export function NewApplicationWizard({ applicationId }: Props) {
               disabled={
                 createMutation.isPending ||
                 updateMutation.isPending ||
-                isReadOnly
+                isReadOnly ||
+                isValidating
               }
             >
               Save Draft{' '}
@@ -1162,7 +890,11 @@ export function NewApplicationWizard({ applicationId }: Props) {
                 <MagneticButton
                   type="button"
                   onClick={handleSubmitApplication}
-                  disabled={submitMutation.isPending || !currentApplication?.id}
+                  disabled={
+                    submitMutation.isPending ||
+                    !currentApplication?.id ||
+                    isValidating
+                  }
                 >
                   {submitMutation.isPending
                     ? 'Submitting...'
