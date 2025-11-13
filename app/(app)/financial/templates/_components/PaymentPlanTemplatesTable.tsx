@@ -20,6 +20,7 @@ import {
 import { MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tables } from '@/database.types';
+import Link from 'next/link';
 
 export function PaymentPlanTemplatesTable() {
   const { data: programs, isLoading: programsLoading } = useGetPrograms();
@@ -76,7 +77,11 @@ export function PaymentPlanTemplatesTable() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/financial/templates/edit/${t.id}`}>
+                        Edit
+                      </Link>
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>

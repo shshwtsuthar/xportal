@@ -37,6 +37,7 @@ const templateSchema = z.object({
         name: z.string().min(1, 'Installment name is required'),
         amount_cents: z.number().min(1, 'Amount must be greater than 0'),
         due_date_rule_days: z.number().min(0, 'Offset must be 0 or greater'),
+        is_commissionable: z.boolean(),
       })
     )
     .min(1, 'At least one installment is required'),
@@ -138,7 +139,7 @@ export function PaymentPlanTemplateForm({ form }: Props) {
           {fields.map((field, index) => (
             <div
               key={field.id}
-              className="grid grid-cols-[1fr_150px_150px_auto] items-end gap-2 rounded-md border p-3"
+              className="grid grid-cols-[1fr_150px_150px_140px_auto] items-end gap-2 rounded-md border p-3"
             >
               <div className="grid gap-1">
                 <FormLabel className="text-xs">Name</FormLabel>
@@ -199,6 +200,24 @@ export function PaymentPlanTemplateForm({ form }: Props) {
                   )}
                 />
               </div>
+              <div className="grid gap-1">
+                <FormLabel className="text-xs">Commissionable?</FormLabel>
+                <FormField
+                  control={form.control}
+                  name={`installments.${index}.is_commissionable`}
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-y-0 space-x-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <Button
                 type="button"
                 variant="ghost"
@@ -215,7 +234,12 @@ export function PaymentPlanTemplateForm({ form }: Props) {
             type="button"
             variant="outline"
             onClick={() =>
-              append({ name: '', amount_cents: 0, due_date_rule_days: 0 })
+              append({
+                name: '',
+                amount_cents: 0,
+                due_date_rule_days: 0,
+                is_commissionable: false,
+              })
             }
           >
             <Plus className="mr-2 h-4 w-4" />
