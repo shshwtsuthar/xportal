@@ -34,10 +34,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { GripVertical, Search } from 'lucide-react';
+import { GripVertical, Search, Download } from 'lucide-react';
 // removed unused Tables type
 import { useGetInvoices } from '@/src/hooks/useGetInvoices';
+import { useGenerateInvoicePdf } from '@/src/hooks/useGenerateInvoicePdf';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 import {
   getInvoicesTableKey,
   useGetTablePreferences,
@@ -73,6 +75,10 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
       string | undefined
     >();
     const [searchQuery, setSearchQuery] = useState<string>('');
+    const [generatingInvoiceId, setGeneratingInvoiceId] = useState<
+      string | null
+    >(null);
+    const generatePdf = useGenerateInvoicePdf();
 
     const tableKey = getInvoicesTableKey();
     const { data: prefs } = useGetTablePreferences(tableKey);
@@ -383,15 +389,50 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
                   <TableCell key={col.id}>{col.render(row)}</TableCell>
                 ))}
                 <TableCell className="text-right">
-                  {row.status !== 'PAID' && row.status !== 'VOID' && (
+                  <div className="flex items-center justify-end gap-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setSelectedInvoiceId(row.id as string)}
+                      onClick={async () => {
+                        const invoiceId = row.id as string;
+                        setGeneratingInvoiceId(invoiceId);
+                        try {
+                          const { signedUrl } = await generatePdf.mutateAsync({
+                            invoiceId,
+                          });
+                          if (signedUrl) {
+                            window.open(
+                              signedUrl,
+                              '_blank',
+                              'noopener,noreferrer'
+                            );
+                          }
+                          toast.success('Invoice PDF generated');
+                        } catch (error) {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : 'Failed to generate invoice PDF'
+                          );
+                        } finally {
+                          setGeneratingInvoiceId(null);
+                        }
+                      }}
+                      disabled={generatingInvoiceId === row.id}
+                      aria-label="Generate and download invoice PDF"
                     >
-                      Record Payment
+                      <Download className="h-4 w-4" />
                     </Button>
-                  )}
+                    {row.status !== 'PAID' && row.status !== 'VOID' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedInvoiceId(row.id as string)}
+                      >
+                        Record Payment
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
