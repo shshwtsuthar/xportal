@@ -49,6 +49,10 @@ export function NewAgentWizard({ agentId }: Props) {
       contact_person: '',
       contact_email: '',
       contact_phone: '',
+      commission_rate_percent: 0,
+      commission_active: true,
+      commission_start_date: null,
+      commission_end_date: null,
     },
   });
 
@@ -60,6 +64,10 @@ export function NewAgentWizard({ agentId }: Props) {
         contact_person: currentAgent.contact_person ?? '',
         contact_email: currentAgent.contact_email ?? '',
         contact_phone: currentAgent.contact_phone ?? '',
+        commission_rate_percent: currentAgent.commission_rate_percent ?? 0,
+        commission_active: currentAgent.commission_active ?? true,
+        commission_start_date: currentAgent.commission_start_date ?? null,
+        commission_end_date: currentAgent.commission_end_date ?? null,
       };
       form.reset(toReset);
     }
@@ -85,12 +93,14 @@ export function NewAgentWizard({ agentId }: Props) {
         return;
       }
 
-      // Clean up empty strings
+      // Clean up empty strings and dates
       const cleanedValues = {
         ...values,
         contact_person: values.contact_person || null,
         contact_email: values.contact_email || null,
         contact_phone: values.contact_phone || null,
+        commission_start_date: values.commission_start_date || null,
+        commission_end_date: values.commission_end_date || null,
       };
 
       // If we have an agent ID, update it

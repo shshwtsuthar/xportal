@@ -10,13 +10,13 @@
 
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
-// Import shared submission validator (relative to repo root)
-// Note: Ensure build/deploy config includes this file for the function bundle.
+// Import shared submission validator from _shared directory
+// Note: This ensures all Edge Functions use the same validation logic
 import {
   validateSubmission,
   computeDerivedFields,
   type SubmissionValues,
-} from '../../../src/schemas/application-submission.ts';
+} from '../_shared/application-submission.ts';
 
 // --- Type Imports ---
 // Import the auto-generated TypeScript types for your database.

@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useRecordPayment } from '@/src/hooks/useRecordPayment';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 type Props = {
@@ -54,12 +55,38 @@ export function RecordPaymentDialog({ invoiceId, onClose }: Props) {
         toast.error('Invalid payment amount');
         return;
       }
-      await recordPayment.mutateAsync({
+      const paymentId = await recordPayment.mutateAsync({
         invoiceId,
         paymentDate: values.paymentDate,
         amountCents,
         notes: values.notes || undefined,
       });
+
+      // Trigger commission calculation (fire and forget)
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase.functions.invoke(
+          'calculate-agent-commission',
+          {
+            body: { paymentId },
+          }
+        );
+
+        if (error) {
+          console.error('Commission calculation error:', error);
+          // Don't show error to user - commission calculation is background process
+        } else if (data?.created) {
+          // Optionally show success message if commission was created
+          // toast.success('Commission generated for agent');
+        }
+      } catch (commissionErr) {
+        console.error(
+          'Failed to trigger commission calculation:',
+          commissionErr
+        );
+        // Silently fail - commission calculation is non-blocking
+      }
+
       toast.success('Payment recorded successfully');
       onClose();
     } catch (e: unknown) {

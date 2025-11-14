@@ -30,6 +30,15 @@ export const useCreateAgent = () => {
         contact_email: (payload.contact_email ?? null) as string | null,
         contact_phone: (payload.contact_phone ?? null) as string | null,
         slug: payload.slug as string,
+        commission_rate_percent: (payload.commission_rate_percent ??
+          0) as number,
+        commission_active: (payload.commission_active ?? true) as boolean,
+        commission_start_date: (payload.commission_start_date || null) as
+          | string
+          | null,
+        commission_end_date: (payload.commission_end_date || null) as
+          | string
+          | null,
       };
 
       const { data, error } = await supabase

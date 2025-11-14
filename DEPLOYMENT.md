@@ -1,3 +1,47 @@
+### Agent Commissions System (2025-11-13)
+
+1) Database migrations
+- Apply the migrations in order:
+  - `supabase/migrations/20251113000001_add_agent_commission_fields.sql`
+  - `supabase/migrations/20251113000002_create_commission_invoices_table.sql`
+  - `supabase/migrations/20251113000003_create_commission_payments_table.sql`
+  - `supabase/migrations/20251113000004_update_record_payment_return_id.sql`
+- Commands:
+  - `supabase db reset` (applies all migrations)
+
+2) Regenerate types
+- Command:
+  - `supabase gen types typescript --local > database.types.ts`
+  - Copy or regenerate `supabase/functions/_shared/database.types.ts` to match
+
+3) Edge Function deployment
+- Deploy the new Edge Function:
+  - `supabase functions deploy calculate-agent-commission`
+- The function uses service role client and requires `SUPABASE_SERVICE_ROLE_KEY` environment variable (set automatically in Supabase)
+
+4) Client deployment
+- No environment variables required
+- The Commissions page is available at `/financial/commissions`
+- Agent forms now include commission fields (rate, active status, validity dates)
+- Payment plan template installments UI already had commissionable checkbox (now defaults to `true`)
+
+5) Post-deployment verification
+- Create an agent with a commission rate (e.g., 20%)
+- Create a payment plan template with commissionable installments
+- Create an application with that agent and payment plan
+- Approve the application to create invoices
+- Record a payment against an invoice
+- Verify a commission invoice appears in `/financial/commissions` page
+- Check that commission invoice has correct base amount, GST, and total
+
+6) Rollback
+- To disable commission calculation temporarily, set `agents.commission_active = false` for all agents
+- To remove commission system entirely:
+  - Drop tables: `commission_invoices`, `commission_payments`, `commission_invoice_sequences`
+  - Remove columns from `agents`: `commission_rate_percent`, `commission_active`, `commission_start_date`, `commission_end_date`
+  - Revert `record_payment` function to return `void` instead of `uuid`
+  - Remove Edge Function: `supabase functions delete calculate-agent-commission`
+
 ### New Application Wizard Hardening (AVETMISS/CRICOS)
 
 1) Database migration

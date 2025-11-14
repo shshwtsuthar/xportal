@@ -135,3 +135,4 @@ COMMENT ON COLUMN public.applications.written_agreement_accepted IS 'CRICOS: Stu
 COMMENT ON COLUMN public.applications.written_agreement_date IS 'CRICOS: Date of acceptance (DD/MM/YYYY format)';
 COMMENT ON COLUMN public.applications.privacy_notice_accepted IS 'CRICOS: Student acknowledgment of privacy and data sharing notice';
 
+

@@ -238,7 +238,7 @@ export function PaymentPlanTemplateForm({ form }: Props) {
                 name: '',
                 amount_cents: 0,
                 due_date_rule_days: 0,
-                is_commissionable: false,
+                is_commissionable: true, // Default to commissionable for new installments
               })
             }
           >

@@ -25,3 +25,4 @@ ALTER TABLE public.student_cricos
   DROP COLUMN IF EXISTS total_tuition_fees,
   DROP COLUMN IF EXISTS non_tuition_fees_received;
 
+

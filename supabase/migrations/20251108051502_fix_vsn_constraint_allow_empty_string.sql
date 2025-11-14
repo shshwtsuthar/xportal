@@ -43,3 +43,4 @@ ALTER TABLE public.student_avetmiss
     vsn ~ '^[0-9]{9}$'
   );
 
+

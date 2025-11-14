@@ -22,3 +22,4 @@ ALTER TABLE public.applications
     usi ~ '^[A-Z0-9]{10}$'
   );
 
+

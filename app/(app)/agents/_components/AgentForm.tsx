@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useEffect } from 'react';
 
 type Props = {
@@ -128,6 +129,108 @@ export function AgentForm({ form }: Props) {
             <FormControl>
               <Input placeholder="e.g. +61 2 1234 5678" {...field} />
             </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Commission Settings */}
+      <div className="md:col-span-2">
+        <h3 className="mb-4 text-lg font-medium">Commission Settings</h3>
+      </div>
+
+      <FormField
+        control={form.control}
+        name="commission_rate_percent"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Commission Rate (%) *</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                placeholder="e.g. 20.00"
+                {...field}
+                onChange={(e) => {
+                  const value =
+                    e.target.value === '' ? 0 : parseFloat(e.target.value);
+                  field.onChange(isNaN(value) ? 0 : value);
+                }}
+                value={field.value ?? 0}
+              />
+            </FormControl>
+            <p className="text-muted-foreground text-xs">
+              Percentage of commissionable payments (0-100). Example: 20.00
+              means 20%.
+            </p>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="commission_active"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <FormLabel className="text-base">Commissions Active</FormLabel>
+              <p className="text-muted-foreground text-sm">
+                Enable or disable commission calculations for this agent.
+              </p>
+            </div>
+            <FormControl>
+              <Switch
+                checked={field.value ?? true}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="commission_start_date"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Commission Start Date (Optional)</FormLabel>
+            <FormControl>
+              <Input
+                type="date"
+                {...field}
+                value={field.value || ''}
+                onChange={(e) => field.onChange(e.target.value || null)}
+              />
+            </FormControl>
+            <p className="text-muted-foreground text-xs">
+              If set, commissions will only be calculated from this date
+              onwards.
+            </p>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="commission_end_date"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Commission End Date (Optional)</FormLabel>
+            <FormControl>
+              <Input
+                type="date"
+                {...field}
+                value={field.value || ''}
+                onChange={(e) => field.onChange(e.target.value || null)}
+              />
+            </FormControl>
+            <p className="text-muted-foreground text-xs">
+              If set, commissions will only be calculated until this date.
+            </p>
             <FormMessage />
           </FormItem>
         )}
