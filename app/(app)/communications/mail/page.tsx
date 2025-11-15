@@ -21,8 +21,25 @@ import {
   type EmailListItem,
 } from '@/src/hooks/useGetEmails';
 import { useGetEmailById } from '@/src/hooks/useGetEmailById';
-import { Mail, Plus, X } from 'lucide-react';
+import { Mail, Plus, X, Search } from 'lucide-react';
 import { useComposeEmail } from '@/components/providers/compose-email';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 const StatusBadge = ({ status }: { status: string }) => {
   const color =
@@ -53,13 +70,71 @@ export default function MailPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: detail } = useGetEmailById(selectedId);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const total = list?.total ?? 0;
   const items = list?.items ?? [];
   const totalPages = Math.max(1, Math.ceil(total / (filters.pageSize ?? 20)));
 
+  // Client-side search filtering
+  const filteredItems = useMemo(() => {
+    if (!searchQuery?.trim()) return items;
+    const query = searchQuery.toLowerCase().trim();
+    return items.filter((m: EmailListItem) => {
+      const tos = (m.email_message_participants || []).filter(
+        (p: { type: 'TO' | 'CC' | 'BCC' }) => p.type === 'TO'
+      );
+      const toDisplay =
+        tos.length === 0
+          ? '—'
+          : tos.length === 1
+            ? tos[0].email
+            : `${tos[0].email} +${tos.length - 1}`;
+      return (
+        m.subject?.toLowerCase().includes(query) ||
+        toDisplay.toLowerCase().includes(query) ||
+        m.created_by?.toLowerCase().includes(query) ||
+        m.status?.toLowerCase().includes(query) ||
+        (m.sent_at &&
+          new Date(m.sent_at).toLocaleString().toLowerCase().includes(query))
+      );
+    });
+  }, [items, searchQuery]);
+
   const clearFilters = () =>
     setFilters({ page: 1, pageSize: filters.pageSize, sort: filters.sort });
+
+  const handleSort = (
+    column: 'created_at' | 'sent_at' | 'delivered_at' | 'status'
+  ) => {
+    setFilters((f) => {
+      const currentSort = f.sort;
+      if (currentSort?.column === column) {
+        // Toggle direction or clear sort
+        if (currentSort.desc) {
+          return {
+            ...f,
+            page: 1,
+            sort: { column, desc: false },
+          };
+        } else {
+          // Clear sort by going back to default
+          return {
+            ...f,
+            page: 1,
+            sort: { column: 'created_at', desc: true },
+          };
+        }
+      } else {
+        // New column, start with descending
+        return {
+          ...f,
+          page: 1,
+          sort: { column, desc: true },
+        };
+      }
+    });
+  };
 
   const statusOptions = useMemo(
     () => ['QUEUED', 'SENT', 'DELIVERED', 'FAILED', 'BOUNCED', 'COMPLAINED'],
@@ -200,18 +275,46 @@ export default function MailPage() {
         </CardHeader>
         <CardContent>
           <div className="w-full overflow-hidden rounded-md border">
-            <table className="w-full table-fixed">
-              <thead>
-                <tr className="border-b">
-                  <th className="px-4 py-2 text-left">Subject</th>
-                  <th className="px-4 py-2 text-left">To</th>
-                  <th className="px-4 py-2 text-left">Sender</th>
-                  <th className="px-4 py-2 text-left">Status</th>
-                  <th className="px-4 py-2 text-left">Sent at</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((m: EmailListItem) => {
+            <div className="border-b p-3">
+              <div className="relative">
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                <Input
+                  type="text"
+                  placeholder="Search all columns..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 text-sm"
+                  aria-label="Search emails table"
+                />
+              </div>
+            </div>
+            <Table className="table-fixed">
+              <TableHeader>
+                <TableRow className="divide-x">
+                  <TableHead>Subject</TableHead>
+                  <TableHead>To</TableHead>
+                  <TableHead>Sender</TableHead>
+                  <TableHead>Status</TableHead>
+                  <SortableTableHead
+                    onSort={() => handleSort('sent_at')}
+                    sortDirection={
+                      filters.sort?.column === 'sent_at'
+                        ? filters.sort.desc
+                          ? 'desc'
+                          : 'asc'
+                        : filters.sort?.column === 'created_at'
+                          ? filters.sort.desc
+                            ? 'desc'
+                            : 'asc'
+                          : null
+                    }
+                  >
+                    Sent at
+                  </SortableTableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y">
+                {filteredItems.map((m: EmailListItem) => {
                   const tos = (m.email_message_participants || []).filter(
                     (p: { type: 'TO' | 'CC' | 'BCC' }) => p.type === 'TO'
                   );
@@ -222,77 +325,140 @@ export default function MailPage() {
                         ? tos[0].email
                         : `${tos[0].email} +${tos.length - 1}`;
                   return (
-                    <tr
+                    <TableRow
                       key={m.id}
-                      className="hover:bg-muted/40 cursor-pointer border-b"
+                      className="cursor-pointer divide-x"
                       onClick={() => setSelectedId(m.id)}
                     >
-                      <td className="truncate px-4 py-2" title={m.subject}>
+                      <TableCell className="truncate px-4" title={m.subject}>
                         {m.subject}
-                      </td>
-                      <td className="truncate px-4 py-2" title={toDisplay}>
+                      </TableCell>
+                      <TableCell className="truncate px-4" title={toDisplay}>
                         {toDisplay}
-                      </td>
-                      <td className="truncate px-4 py-2">
+                      </TableCell>
+                      <TableCell className="truncate px-4">
                         {m.created_by ?? '—'}
-                      </td>
-                      <td className="px-4 py-2">
+                      </TableCell>
+                      <TableCell className="px-4">
                         <StatusBadge status={m.status} />
-                      </td>
-                      <td className="px-4 py-2">
+                      </TableCell>
+                      <TableCell className="px-4">
                         {m.sent_at ? new Date(m.sent_at).toLocaleString() : '—'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-                {items.length === 0 && (
-                  <tr>
-                    <td
+                {filteredItems.length === 0 && (
+                  <TableRow className="divide-x">
+                    <TableCell
                       colSpan={5}
                       className="text-muted-foreground px-4 py-6 text-sm"
                     >
-                      No emails found.
-                    </td>
-                  </tr>
+                      {searchQuery.trim()
+                        ? 'No emails match your search.'
+                        : 'No emails found.'}
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
-            <div className="flex items-center justify-between border-t px-3 py-2">
-              <div className="text-muted-foreground text-sm">{total} total</div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setFilters((f) => ({
-                      ...f,
-                      page: Math.max(1, (f.page ?? 1) - 1),
-                    }))
-                  }
-                  aria-label="Previous page"
-                  disabled={(filters.page ?? 1) <= 1}
-                >
-                  Prev
-                </Button>
-                <span className="text-sm">
-                  Page {filters.page ?? 1} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setFilters((f) => ({
-                      ...f,
-                      page: Math.min(totalPages, (f.page ?? 1) + 1),
-                    }))
-                  }
-                  aria-label="Next page"
-                  disabled={(filters.page ?? 1) >= totalPages}
-                >
-                  Next
-                </Button>
+              </TableBody>
+            </Table>
+            {filteredItems.length > 0 && (
+              <div className="flex flex-col gap-4 border-t px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground text-sm whitespace-nowrap">
+                    Rows per page:
+                  </span>
+                  <Select
+                    value={(filters.pageSize ?? 20).toString()}
+                    onValueChange={(value) => {
+                      setFilters((f) => ({
+                        ...f,
+                        page: 1,
+                        pageSize: Number(value),
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[70px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-center sm:justify-end">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() =>
+                            setFilters((f) => ({
+                              ...f,
+                              page: Math.max(1, (f.page ?? 1) - 1),
+                            }))
+                          }
+                          className={
+                            (filters.page ?? 1) === 1
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                        />
+                      </PaginationItem>
+                      {Array.from(
+                        { length: Math.min(totalPages, 7) },
+                        (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 7) {
+                            pageNum = i + 1;
+                          } else if ((filters.page ?? 1) <= 4) {
+                            pageNum = i + 1;
+                          } else if ((filters.page ?? 1) >= totalPages - 3) {
+                            pageNum = totalPages - 6 + i;
+                          } else {
+                            pageNum = (filters.page ?? 1) - 3 + i;
+                          }
+                          return (
+                            <PaginationItem key={pageNum}>
+                              <PaginationLink
+                                onClick={() =>
+                                  setFilters((f) => ({
+                                    ...f,
+                                    page: pageNum,
+                                  }))
+                                }
+                                isActive={(filters.page ?? 1) === pageNum}
+                                className="cursor-pointer"
+                              >
+                                {pageNum}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        }
+                      )}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() =>
+                            setFilters((f) => ({
+                              ...f,
+                              page: Math.min(totalPages, (f.page ?? 1) + 1),
+                            }))
+                          }
+                          className={
+                            (filters.page ?? 1) >= totalPages
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
