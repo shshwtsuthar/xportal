@@ -100,23 +100,138 @@ export async function POST(request: Request) {
     }
     const resend = new Resend(resendApiKey);
 
-    const { error: emailErr } = await resend.emails.send({
-      from: resendFrom,
-      to: email,
-      subject: 'You have been invited to XPortal',
-      html: `
+    const htmlBody = `
         <p>Hello ${first_name || ''} ${last_name || ''},</p>
         <p>You have been invited to join XPortal. Click the button below to accept your invite and set your password.</p>
         <p><a href="${linkData.properties.action_link}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;text-decoration:none;border-radius:6px">Accept Invitation</a></p>
         <p>If the button doesn't work, copy and paste this link into your browser:</p>
         <p><a href="${linkData.properties.action_link}">${linkData.properties.action_link}</a></p>
         <p>— XPortal Team</p>
-      `,
+      `;
+
+    // Prepare plain-text snapshot (basic)
+    const textBody = htmlBody
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const subject = 'You have been invited to XPortal';
+
+    // Ensure created_by references an existing profile; fall back to NULL if not found
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    // Insert QUEUED email message
+    const insertPayload = {
+      rto_id: rtoId,
+      created_by: profileRow?.id ?? null,
+      from_email: resendFrom,
+      from_name: null,
+      reply_to: null,
+      subject,
+      html_body: htmlBody,
+      text_body: textBody || null,
+      metadata: {
+        source: 'api/users/invite',
+        invited_email: email,
+        invited_role: role,
+        invited_user_id: linkData?.user?.id ?? null,
+      },
+      status: 'QUEUED' as const,
+      status_updated_at: new Date().toISOString(),
+    };
+
+    const { data: insertMsg, error: insertErr } = await supabase
+      .from('email_messages')
+      .insert(insertPayload)
+      .select('id')
+      .single();
+
+    if (insertErr || !insertMsg) {
+      console.error('Email insert error:', insertErr);
+      return NextResponse.json(
+        {
+          error: 'Failed to queue email',
+          details: insertErr?.message || insertErr?.code || 'Unknown error',
+        },
+        { status: 500 }
+      );
+    }
+
+    const emailMessageId = insertMsg.id as string;
+
+    // Insert participant (TO)
+    const { error: partErr } = await supabase
+      .from('email_message_participants')
+      .insert({
+        email_message_id: emailMessageId,
+        type: 'TO',
+        email: email,
+        display_name:
+          first_name && last_name ? `${first_name} ${last_name}` : null,
+      });
+
+    if (partErr) {
+      // Best-effort: continue, but mark FAILED
+      await supabase
+        .from('email_messages')
+        .update({
+          status: 'FAILED',
+          failed_at: new Date().toISOString(),
+          error_message: 'Failed to insert participants',
+        })
+        .eq('id', emailMessageId);
+      return NextResponse.json(
+        { error: 'Failed to insert participants' },
+        { status: 500 }
+      );
+    }
+
+    // Send via Resend
+    const { data: emailResult, error: emailErr } = await resend.emails.send({
+      from: resendFrom,
+      to: email,
+      subject,
+      html: htmlBody,
     });
 
     if (emailErr) {
+      await supabase
+        .from('email_messages')
+        .update({
+          status: 'FAILED',
+          status_updated_at: new Date().toISOString(),
+          failed_at: new Date().toISOString(),
+          error_message: emailErr.message,
+        })
+        .eq('id', emailMessageId);
+      await supabase.from('email_message_status_events').insert({
+        email_message_id: emailMessageId,
+        event_type: 'FAILED',
+        payload: { error: emailErr.message },
+      });
       return NextResponse.json({ error: emailErr.message }, { status: 500 });
     }
+
+    // Update to SENT and log event
+    await supabase
+      .from('email_messages')
+      .update({
+        status: 'SENT',
+        status_updated_at: new Date().toISOString(),
+        sent_at: new Date().toISOString(),
+        resend_message_id: emailResult?.id ?? null,
+      })
+      .eq('id', emailMessageId);
+
+    await supabase.from('email_message_status_events').insert({
+      email_message_id: emailMessageId,
+      event_type: 'SENT',
+      payload: { id: emailResult?.id ?? null },
+    });
 
     return NextResponse.json({
       message: 'User invited successfully',

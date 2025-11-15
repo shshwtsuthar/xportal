@@ -154,15 +154,139 @@ export async function POST(req: NextRequest) {
       );
     }
     const fromAddress: string = (resendFrom ?? rtoEmail)!;
-    const emailData = {
-      from: fromAddress,
-      to: recipientEmail,
-      subject: `Offer Letter - ${programName}`,
-      html: `
+
+    // Resolve auth context for email logging
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized', details: userError?.message }),
+        { status: 401 }
+      );
+    }
+
+    const { data: rtoIdRes, error: rtoErr } =
+      await supabase.rpc('get_my_rto_id');
+    if (rtoErr || !rtoIdRes) {
+      return new Response(
+        JSON.stringify({
+          error: 'Unable to resolve RTO',
+          details: rtoErr?.message,
+        }),
+        { status: 400 }
+      );
+    }
+
+    // Ensure created_by references an existing profile; fall back to NULL if not found
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const htmlBody = `
         <p>Dear ${recipientName},</p>
         <p>Please find attached your offer letter for ${programName}.</p>
         <p>Best regards,<br/>${rtoName}</p>
-      `,
+      `;
+
+    // Prepare plain-text snapshot (basic)
+    const textBody = htmlBody
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const subject = `Offer Letter - ${programName}`;
+
+    // Insert QUEUED email message
+    const insertPayload = {
+      rto_id: rtoIdRes as string,
+      created_by: profileRow?.id ?? null,
+      from_email: fromAddress,
+      from_name: rtoName,
+      reply_to: rtoEmail ? [rtoEmail] : null,
+      subject,
+      html_body: htmlBody,
+      text_body: textBody || null,
+      metadata: {
+        source: 'api/send-offer-letter',
+        application_id: applicationId,
+        recipient,
+        offer_letter_id: offerLetter.id,
+      },
+      status: 'QUEUED' as const,
+      status_updated_at: new Date().toISOString(),
+    };
+
+    const { data: insertMsg, error: insertErr } = await supabase
+      .from('email_messages')
+      .insert(insertPayload)
+      .select('id')
+      .single();
+
+    if (insertErr || !insertMsg) {
+      console.error('Email insert error:', insertErr);
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to queue email',
+          details: insertErr?.message || insertErr?.code || 'Unknown error',
+        }),
+        { status: 500 }
+      );
+    }
+
+    const emailMessageId = insertMsg.id as string;
+
+    // Insert participant (TO)
+    const { error: partErr } = await supabase
+      .from('email_message_participants')
+      .insert({
+        email_message_id: emailMessageId,
+        type: 'TO',
+        email: recipientEmail,
+        display_name: recipientName,
+      });
+
+    if (partErr) {
+      // Best-effort: continue, but mark FAILED
+      await supabase
+        .from('email_messages')
+        .update({
+          status: 'FAILED',
+          failed_at: new Date().toISOString(),
+          error_message: 'Failed to insert participants',
+        })
+        .eq('id', emailMessageId);
+      return new Response(
+        JSON.stringify({ error: 'Failed to insert participants' }),
+        { status: 500 }
+      );
+    }
+
+    // Insert attachment info
+    const { error: attachErr } = await supabase
+      .from('email_message_attachments')
+      .insert({
+        email_message_id: emailMessageId,
+        file_name: 'offer-letter.pdf',
+        content_type: 'application/pdf',
+        size_bytes: pdfBuffer.length,
+        storage_path: offerLetter.file_path,
+      });
+
+    if (attachErr) {
+      // Non-fatal: log but continue
+      console.error('Attachment insert error:', attachErr);
+    }
+
+    // Send via Resend
+    const emailData = {
+      from: fromAddress,
+      to: recipientEmail,
+      subject,
+      html: htmlBody,
       reply_to: rtoEmail || undefined,
       attachments: [
         {
@@ -176,11 +300,42 @@ export async function POST(req: NextRequest) {
       await resend.emails.send(emailData);
 
     if (emailErr) {
+      await supabase
+        .from('email_messages')
+        .update({
+          status: 'FAILED',
+          status_updated_at: new Date().toISOString(),
+          failed_at: new Date().toISOString(),
+          error_message: emailErr.message,
+        })
+        .eq('id', emailMessageId);
+      await supabase.from('email_message_status_events').insert({
+        email_message_id: emailMessageId,
+        event_type: 'FAILED',
+        payload: { error: emailErr.message },
+      });
       return new Response(
         JSON.stringify({ error: `Failed to send email: ${emailErr.message}` }),
         { status: 500 }
       );
     }
+
+    // Update to SENT and log event
+    await supabase
+      .from('email_messages')
+      .update({
+        status: 'SENT',
+        status_updated_at: new Date().toISOString(),
+        sent_at: new Date().toISOString(),
+        resend_message_id: emailResult?.id ?? null,
+      })
+      .eq('id', emailMessageId);
+
+    await supabase.from('email_message_status_events').insert({
+      email_message_id: emailMessageId,
+      event_type: 'SENT',
+      payload: { id: emailResult?.id ?? null },
+    });
 
     // Update application status to OFFER_SENT
     const { error: statusErr } = await admin
@@ -199,6 +354,7 @@ export async function POST(req: NextRequest) {
       JSON.stringify({
         message: 'Offer letter sent successfully',
         emailId: emailResult?.id,
+        emailMessageId,
       }),
       {
         headers: { 'Content-Type': 'application/json' },
