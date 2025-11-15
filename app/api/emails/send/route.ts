@@ -13,6 +13,13 @@ if (!resendApiKey) {
 
 const resend = new Resend(resendApiKey);
 
+type EmailAttachment = {
+  filename: string;
+  content: string; // base64 encoded
+  contentType: string;
+  size: number;
+};
+
 type SendEmailPayload = {
   to: string[];
   subject: string;
@@ -20,6 +27,7 @@ type SendEmailPayload = {
   cc?: string[];
   bcc?: string[];
   replyTo?: string | string[];
+  attachments?: EmailAttachment[];
 };
 
 function isValidEmail(email: string): boolean {
@@ -29,7 +37,7 @@ function isValidEmail(email: string): boolean {
 
 export async function POST(req: NextRequest) {
   try {
-    const { to, subject, html, cc, bcc, replyTo } =
+    const { to, subject, html, cc, bcc, replyTo, attachments } =
       (await req.json()) as Partial<SendEmailPayload>;
 
     if (!Array.isArray(to) || to.length === 0 || !subject || !html) {
@@ -85,6 +93,57 @@ export async function POST(req: NextRequest) {
         }),
         { status: 400 }
       );
+    }
+
+    // Validate attachments
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    const MAX_FILES = 10;
+    const validAttachments: EmailAttachment[] = [];
+
+    if (attachments && Array.isArray(attachments)) {
+      if (attachments.length > MAX_FILES) {
+        return new Response(
+          JSON.stringify({
+            error: `Maximum ${MAX_FILES} attachments allowed`,
+          }),
+          { status: 400 }
+        );
+      }
+
+      for (const att of attachments) {
+        if (!att.filename || !att.content || !att.contentType || !att.size) {
+          return new Response(
+            JSON.stringify({
+              error:
+                'Invalid attachment format. Required: filename, content (base64), contentType, size',
+            }),
+            { status: 400 }
+          );
+        }
+
+        if (att.size > MAX_FILE_SIZE) {
+          return new Response(
+            JSON.stringify({
+              error: `Attachment ${att.filename} exceeds ${MAX_FILE_SIZE / (1024 * 1024)}MB limit`,
+            }),
+            { status: 400 }
+          );
+        }
+
+        // Validate base64 content
+        try {
+          Buffer.from(att.content, 'base64');
+        } catch (e) {
+          return new Response(
+            JSON.stringify({
+              error: `Invalid base64 content for attachment ${att.filename}`,
+            }),
+            { status: 400 }
+          );
+        }
+
+        validAttachments.push(att);
+      }
     }
 
     // Prepare plain-text snapshot (basic)
@@ -212,6 +271,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Insert attachments into database
+    if (validAttachments.length > 0) {
+      const attachmentRows = validAttachments.map((att) => ({
+        email_message_id: emailMessageId,
+        file_name: att.filename,
+        content_type: att.contentType,
+        size_bytes: att.size,
+        storage_path: null, // We're not storing files in storage, just sending via Resend
+      }));
+
+      const { error: attachErr } = await supabase
+        .from('email_message_attachments')
+        .insert(attachmentRows);
+
+      if (attachErr) {
+        // Non-fatal: log but continue
+        console.error('Attachment insert error:', attachErr);
+      }
+    }
+
+    // Prepare attachments for Resend API
+    const resendAttachments =
+      validAttachments.length > 0
+        ? validAttachments.map((att) => ({
+            filename: att.filename,
+            content: Buffer.from(att.content, 'base64'),
+          }))
+        : undefined;
+
     // Send via Resend
     const { data, error } = await resend.emails.send({
       from: resendFrom,
@@ -221,6 +309,7 @@ export async function POST(req: NextRequest) {
       replyTo: replyTo as string | string[] | undefined,
       cc: uniqueCc.length ? uniqueCc : undefined,
       bcc: uniqueBcc.length ? uniqueBcc : undefined,
+      attachments: resendAttachments,
     });
 
     if (error) {

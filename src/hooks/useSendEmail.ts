@@ -1,10 +1,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+export type EmailAttachment = {
+  filename: string;
+  content: string; // base64 encoded
+  contentType: string;
+  size: number;
+};
+
 export type SendEmailInput = {
   to: string[];
   subject: string;
   html: string;
+  cc?: string[];
+  bcc?: string[];
+  attachments?: EmailAttachment[];
 };
 
 export type SendEmailResult = { id: string | null };
