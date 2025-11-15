@@ -42,13 +42,13 @@ import type { Database } from '@/database.types';
 type ApplicationStatus = Database['public']['Enums']['application_status'];
 
 const APPLICATION_STATUSES: { value: ApplicationStatus; label: string }[] = [
-  { value: 'DRAFT', label: 'Draft' },
-  { value: 'SUBMITTED', label: 'Submitted' },
-  { value: 'OFFER_GENERATED', label: 'Offer Generated' },
-  { value: 'OFFER_SENT', label: 'Offer Sent' },
-  { value: 'ACCEPTED', label: 'Accepted' },
-  { value: 'APPROVED', label: 'Approved' },
-  { value: 'REJECTED', label: 'Rejected' },
+  { value: 'DRAFT', label: 'DRAFT' },
+  { value: 'SUBMITTED', label: 'SUBMITTED' },
+  { value: 'OFFER_GENERATED', label: 'OFFER GENERATED' },
+  { value: 'OFFER_SENT', label: 'OFFER SENT' },
+  { value: 'ACCEPTED', label: 'ACCEPTED' },
+  { value: 'APPROVED', label: 'APPROVED' },
+  { value: 'REJECTED', label: 'REJECTED' },
 ];
 
 interface ApplicationsFilterProps {

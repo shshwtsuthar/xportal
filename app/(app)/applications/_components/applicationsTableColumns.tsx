@@ -74,18 +74,20 @@ export const getApplicationsColumns = (): ColumnDef[] => {
           }
         >
           {r.status === 'OFFER_GENERATED'
-            ? 'Offer Generated'
+            ? 'OFFER GENERATED'
             : r.status === 'OFFER_SENT'
-              ? 'Offer Sent'
+              ? 'OFFER SENT'
               : r.status === 'ACCEPTED'
-                ? 'Accepted'
+                ? 'ACCEPTED'
                 : r.status === 'DRAFT'
-                  ? 'Draft'
+                  ? 'DRAFT'
                   : r.status === 'SUBMITTED'
-                    ? 'Submitted'
+                    ? 'SUBMITTED'
                     : r.status === 'REJECTED'
-                      ? 'Rejected'
-                      : (r.status as unknown as string)}
+                      ? 'REJECTED'
+                      : r.status === 'APPROVED'
+                        ? 'APPROVED'
+                        : (r.status as unknown as string).toUpperCase()}
         </Badge>
       ),
       group: 'Identity',
