@@ -42,19 +42,15 @@ import {
 } from '@/components/ui/pagination';
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const color =
-    status === 'DELIVERED'
-      ? 'bg-green-100 text-green-700'
-      : status === 'SENT'
-        ? 'bg-blue-100 text-blue-700'
-        : status === 'BOUNCED' || status === 'FAILED'
-          ? 'bg-red-100 text-red-700'
-          : status === 'COMPLAINED'
-            ? 'bg-yellow-100 text-yellow-800'
-            : 'bg-muted text-foreground';
-  return (
-    <span className={`rounded px-2 py-0.5 text-xs ${color}`}>{status}</span>
-  );
+  // Use semantic Badge variants per ui.md guidelines
+  if (status === 'BOUNCED' || status === 'FAILED' || status === 'COMPLAINED') {
+    return <Badge variant="destructive">{status}</Badge>;
+  }
+  if (status === 'DELIVERED' || status === 'SENT') {
+    return <Badge variant="default">{status}</Badge>;
+  }
+  // Default to secondary for neutral/non-active statuses (e.g., QUEUED)
+  return <Badge variant="secondary">{status}</Badge>;
 };
 
 export default function MailPage() {
@@ -484,7 +480,8 @@ export default function MailPage() {
             </span>
             <span>•</span>
             <span>
-              Status: <Badge variant="secondary">{detail?.status ?? '—'}</Badge>
+              Status:{' '}
+              {detail?.status ? <StatusBadge status={detail.status} /> : '—'}
             </span>
           </div>
           <div
