@@ -222,10 +222,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
             name="mobile_phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>
-                  Mobile phone
-                  {isInternational === true && ' *'}
-                </FormLabel>
+                <FormLabel>Mobile phone *</FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="0400 000 000" />
                 </FormControl>

@@ -729,6 +729,27 @@ serve(async (req: Request) => {
       );
     }
 
+    // 5) Sync student to Xero as Contact (non-blocking)
+    // This is done asynchronously so failures don't block application approval
+    try {
+      const xeroSyncUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/xero-sync-contact`;
+      const xeroSyncResponse = fetch(xeroSyncUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+        },
+        body: JSON.stringify({ studentId: student.id }),
+      }).catch((err) => {
+        // Log but don't fail - Xero sync is non-critical for approval
+        console.warn('Xero contact sync failed (non-blocking):', err);
+      });
+      // Don't await - let it run in background
+    } catch (xeroErr) {
+      // Log but don't fail
+      console.warn('Xero contact sync error (non-blocking):', xeroErr);
+    }
+
     return new Response(
       JSON.stringify({
         message: 'Application approved, invoices generated',

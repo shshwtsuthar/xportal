@@ -319,8 +319,11 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+XERO_ENCRYPTION_KEY = "env(XERO_ENCRYPTION_KEY)"
+XERO_CLIENT_ID = "env(XERO_CLIENT_ID)"
+XERO_CLIENT_SECRET = "env(XERO_CLIENT_SECRET)"
+XERO_REDIRECT_URI = "env(XERO_REDIRECT_URI)"
 
 [analytics]
 enabled = true

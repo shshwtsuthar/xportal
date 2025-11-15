@@ -8,7 +8,6 @@ export type SubmissionValues = ApplicationFormValues;
 function nullToUndefinedDeep<T>(value: T): T {
   if (value === null) return undefined as unknown as T;
   if (Array.isArray(value)) {
-     
     return value.map((v) => nullToUndefinedDeep(v)) as unknown as T;
   }
   if (typeof value === 'object' && value !== undefined) {
@@ -145,11 +144,9 @@ export function getSubmissionMissingFields(values: SubmissionValues): string[] {
     }
   }
 
-  // Mobile phone: required for international students (CRICOS)
-  if (values.is_international === true) {
-    if (!values.mobile_phone || values.mobile_phone.trim() === '') {
-      missing.push('mobile_phone');
-    }
+  // Mobile phone: required for all students on submission (database constraint)
+  if (!values.mobile_phone || values.mobile_phone.trim() === '') {
+    missing.push('mobile_phone');
   }
 
   // Year highest school level completed:
