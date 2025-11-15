@@ -86,9 +86,16 @@ export default function MailPage() {
           : tos.length === 1
             ? tos[0].email
             : `${tos[0].email} +${tos.length - 1}`;
+      const senderName =
+        m.sender_profile?.first_name || m.sender_profile?.last_name
+          ? [m.sender_profile.first_name, m.sender_profile.last_name]
+              .filter(Boolean)
+              .join(' ')
+          : (m.created_by ?? '');
       return (
         m.subject?.toLowerCase().includes(query) ||
         toDisplay.toLowerCase().includes(query) ||
+        senderName.toLowerCase().includes(query) ||
         m.created_by?.toLowerCase().includes(query) ||
         m.status?.toLowerCase().includes(query) ||
         (m.sent_at &&
@@ -320,6 +327,15 @@ export default function MailPage() {
                       : tos.length === 1
                         ? tos[0].email
                         : `${tos[0].email} +${tos.length - 1}`;
+                  const senderName =
+                    m.sender_profile?.first_name || m.sender_profile?.last_name
+                      ? [
+                          m.sender_profile.first_name,
+                          m.sender_profile.last_name,
+                        ]
+                          .filter(Boolean)
+                          .join(' ')
+                      : (m.created_by ?? '—');
                   return (
                     <TableRow
                       key={m.id}
@@ -332,8 +348,8 @@ export default function MailPage() {
                       <TableCell className="truncate px-4" title={toDisplay}>
                         {toDisplay}
                       </TableCell>
-                      <TableCell className="truncate px-4">
-                        {m.created_by ?? '—'}
+                      <TableCell className="truncate px-4" title={senderName}>
+                        {senderName}
                       </TableCell>
                       <TableCell className="px-4">
                         <StatusBadge status={m.status} />

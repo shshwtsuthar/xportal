@@ -33,6 +33,10 @@ export type EmailListItem = {
   delivered_at: string | null;
   resend_message_id: string | null;
   email_message_participants: { email: string; type: 'TO' | 'CC' | 'BCC' }[];
+  sender_profile: {
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
 };
 
 /**
@@ -57,7 +61,7 @@ export const useGetEmails = (filters: EmailsFilters) => {
       let query = supabase
         .from('email_messages')
         .select(
-          'id, created_at, created_by, subject, status, sent_at, delivered_at, resend_message_id, email_message_participants(email,type)',
+          'id, created_at, created_by, subject, status, sent_at, delivered_at, resend_message_id, email_message_participants(email,type), sender_profile:profiles!created_by(first_name,last_name)',
           { count: 'exact' }
         );
 
