@@ -118,14 +118,14 @@ export default function ApplicationsPage() {
                 size="sm"
                 onClick={() => handleStatusClick('DRAFT')}
               >
-                DRAFT
+                Draft
               </Button>
               <Button
                 variant={quickStatus === 'SUBMITTED' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleStatusClick('SUBMITTED')}
               >
-                SUBMITTED
+                Submitted
               </Button>
               <Button
                 variant={
@@ -134,35 +134,35 @@ export default function ApplicationsPage() {
                 size="sm"
                 onClick={() => handleStatusClick('OFFER_GENERATED')}
               >
-                OFFER GENERATED
+                Offer Generated
               </Button>
               <Button
                 variant={quickStatus === 'OFFER_SENT' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleStatusClick('OFFER_SENT')}
               >
-                OFFER SENT
+                Offer Sent
               </Button>
               <Button
                 variant={quickStatus === 'ACCEPTED' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleStatusClick('ACCEPTED')}
               >
-                ACCEPTED
+                Accepted
               </Button>
               <Button
                 variant={quickStatus === 'APPROVED' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleStatusClick('APPROVED')}
               >
-                APPROVED
+                Approved
               </Button>
               <Button
                 variant={quickStatus === 'REJECTED' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleStatusClick('REJECTED')}
               >
-                REJECTED
+                Rejected
               </Button>
             </div>
             <div className="flex items-center gap-2">
