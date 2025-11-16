@@ -12,7 +12,6 @@ import {
   Users,
   UserCheck,
   Building2,
-  Mail,
   MessageCircle,
   Settings,
 } from 'lucide-react';
@@ -36,8 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useGetRto } from '@/src/hooks/useGetRto';
 import { useRtoProfileImageUrl } from '@/src/hooks/useRtoProfileImage';
 import { ThemeSwitcher } from '@/components/theme-switcher';
-import { Button } from '@/components/ui/button';
-import { useComposeEmail } from '@/components/providers/compose-email';
+import { AccountSwitcher } from '@/components/account-switcher';
 
 type NavItem = {
   title: string;
@@ -122,7 +120,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: rto } = useGetRto();
   const { data: profileImageUrl, isLoading: isProfileImageLoading } =
     useRtoProfileImageUrl(rto?.profile_image_path);
-  const { open } = useComposeEmail();
 
   const isActive = (href: string) => pathname === href;
   const isParentActive = (href: string) =>
@@ -210,16 +207,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <ThemeSwitcher />
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full justify-start"
-              onClick={open}
-              aria-label="Compose mail"
-            >
-              <Mail className="size-4" />
-              <span>Compose</span>
-            </Button>
+            <AccountSwitcher />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

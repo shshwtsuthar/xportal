@@ -102,7 +102,7 @@ export const applicationSchema = z
       .min(1, 'Email is required')
       .email('Enter a valid email address'),
     work_phone: z.string().optional(),
-    // CRICOS: Mobile phone is MANDATORY for international students
+    // Mobile phone is MANDATORY for all students (database constraint)
     mobile_phone: z.string().optional(),
     alternative_email: z
       .string()
@@ -372,9 +372,15 @@ export const applicationSchema = z
   )
   .refine(
     (data) => {
-      // USI: required for domestic students
+      // USI: required for domestic students unless exemption code is present
       if (data.is_international === false) {
-        return !!data.usi && data.usi.trim().length > 0;
+        const hasExemption =
+          !!data.usi_exemption_code &&
+          (data.usi_exemption_code === 'INDIV' ||
+            data.usi_exemption_code === 'INTOFF');
+        if (!hasExemption) {
+          return !!data.usi && data.usi.trim().length > 0;
+        }
       }
       return true;
     },
@@ -385,15 +391,66 @@ export const applicationSchema = z
   )
   .refine(
     (data) => {
-      // CRICOS: Mobile phone is MANDATORY for international students
-      if (data.is_international === true) {
-        return !!data.mobile_phone && data.mobile_phone.trim().length > 0;
+      // Mobile phone is MANDATORY for all students (database constraint)
+      return !!data.mobile_phone && data.mobile_phone.trim().length > 0;
+    },
+    {
+      message: 'Mobile phone is required',
+      path: ['mobile_phone'],
+    }
+  )
+  .refine(
+    (data) => {
+      // VSN: required for VIC domestic students under 25
+      if (data.state === 'VIC' && data.is_international === false) {
+        // Calculate age at commencement date
+        const calculateAgeAt = (
+          dob: string | Date | undefined,
+          atDate: string | undefined
+        ): number | null => {
+          if (!dob || !atDate) return null;
+
+          let birthDate: Date;
+          if (typeof dob === 'string') {
+            birthDate = new Date(dob);
+          } else {
+            birthDate = dob;
+          }
+
+          const atDateParsed = new Date(atDate);
+
+          if (isNaN(birthDate.getTime()) || isNaN(atDateParsed.getTime())) {
+            return null;
+          }
+
+          let age = atDateParsed.getFullYear() - birthDate.getFullYear();
+          const monthDiff = atDateParsed.getMonth() - birthDate.getMonth();
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && atDateParsed.getDate() < birthDate.getDate())
+          ) {
+            age--;
+          }
+          return age;
+        };
+
+        const age = calculateAgeAt(
+          data.date_of_birth,
+          data.proposed_commencement_date
+        );
+
+        if (age !== null && age < 25) {
+          const vsn = data.vsn ?? '';
+          const ok = vsn === '000000000' || /^[0-9]{9}$/.test(vsn);
+          return ok;
+        }
       }
       return true;
     },
     {
-      message: 'Mobile phone is required for international students',
-      path: ['mobile_phone'],
+      message:
+        'VSN is required for Victorian domestic students under 25 years old',
+      path: ['vsn'],
     }
   )
   .refine(
@@ -416,8 +473,51 @@ export const applicationSchema = z
   )
   .refine(
     (data) => {
-      // CRICOS: Under 18 fields required if is_under_18 is true
-      if (data.is_under_18 === true) {
+      // CRICOS: Under 18 fields required if is_under_18 is true (or computed from age)
+      // Compute is_under_18 from age if not explicitly set
+      let isUnder18 = data.is_under_18;
+      if (isUnder18 === undefined) {
+        // Calculate age at commencement date
+        const calculateAgeAt = (
+          dob: string | Date | undefined,
+          atDate: string | undefined
+        ): number | null => {
+          if (!dob || !atDate) return null;
+
+          let birthDate: Date;
+          if (typeof dob === 'string') {
+            birthDate = new Date(dob);
+          } else {
+            birthDate = dob;
+          }
+
+          const atDateParsed = new Date(atDate);
+
+          if (isNaN(birthDate.getTime()) || isNaN(atDateParsed.getTime())) {
+            return null;
+          }
+
+          let age = atDateParsed.getFullYear() - birthDate.getFullYear();
+          const monthDiff = atDateParsed.getMonth() - birthDate.getMonth();
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && atDateParsed.getDate() < birthDate.getDate())
+          ) {
+            age--;
+          }
+          return age;
+        };
+
+        const age = calculateAgeAt(
+          data.date_of_birth,
+          data.proposed_commencement_date
+        );
+        if (age !== null) {
+          isUnder18 = age < 18;
+        }
+      }
+
+      if (isUnder18 === true) {
         return data.provider_accepting_welfare_responsibility !== undefined;
       }
       return true;
