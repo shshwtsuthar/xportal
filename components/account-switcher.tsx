@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronsUpDown, Check, Bell, LogOut, User } from 'lucide-react';
+import { ProfileDialog } from '@/components/profile-dialog';
 
 import {
   DropdownMenu,
@@ -20,9 +21,10 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGetCurrentUser } from '@/src/hooks/useGetCurrentUser';
+import { useProfileImageUrl } from '@/src/hooks/useProfileImage';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -33,6 +35,9 @@ export function AccountSwitcher() {
   const { isMobile } = useSidebar();
   const router = useRouter();
   const { data: user, isLoading } = useGetCurrentUser();
+  const { data: profileImageUrl, isLoading: isLoadingImage } =
+    useProfileImageUrl(user?.profile_image_path);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = React.useState(false);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -85,6 +90,9 @@ export function AccountSwitcher() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="border-border size-8 rounded-lg border">
+                {profileImageUrl ? (
+                  <AvatarImage src={profileImageUrl} alt="Profile image" />
+                ) : null}
                 <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
                   {getUserInitials()}
                 </AvatarFallback>
@@ -109,6 +117,9 @@ export function AccountSwitcher() {
             <div className="p-2">
               <div className="flex items-center gap-2 rounded-md p-2">
                 <Avatar className="size-8 rounded-lg border">
+                  {profileImageUrl ? (
+                    <AvatarImage src={profileImageUrl} alt="Profile image" />
+                  ) : null}
                   <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
                     {getUserInitials()}
                   </AvatarFallback>
@@ -126,15 +137,16 @@ export function AccountSwitcher() {
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              Account
+              Profile
             </DropdownMenuLabel>
-            <DropdownMenuItem className="gap-2 p-2" asChild>
-              <a href="/settings" className="cursor-pointer">
-                <div className="flex size-6 items-center justify-center rounded-md border">
-                  <User className="size-3.5 shrink-0" />
-                </div>
-                <div className="font-medium">Account</div>
-              </a>
+            <DropdownMenuItem
+              className="cursor-pointer gap-2 p-2"
+              onClick={() => setIsProfileDialogOpen(true)}
+            >
+              <div className="flex size-6 items-center justify-center rounded-md border">
+                <User className="size-3.5 shrink-0" />
+              </div>
+              <div className="font-medium">Profile</div>
             </DropdownMenuItem>
             <DropdownMenuItem className="gap-2 p-2" asChild>
               <a href="/notifications" className="cursor-pointer">
@@ -157,6 +169,10 @@ export function AccountSwitcher() {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
+      <ProfileDialog
+        open={isProfileDialogOpen}
+        onOpenChange={setIsProfileDialogOpen}
+      />
     </SidebarMenu>
   );
 }
