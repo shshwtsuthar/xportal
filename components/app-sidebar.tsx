@@ -34,7 +34,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGetRto } from '@/src/hooks/useGetRto';
 import { useRtoProfileImageUrl } from '@/src/hooks/useRtoProfileImage';
-import { ThemeSwitcher } from '@/components/theme-switcher';
 import { AccountSwitcher } from '@/components/account-switcher';
 
 type NavItem = {
@@ -203,9 +202,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <ThemeSwitcher />
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <AccountSwitcher />
           </SidebarMenuItem>

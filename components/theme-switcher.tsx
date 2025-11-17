@@ -120,9 +120,16 @@ const getThemeSwatch = (themeValue: string): string => {
  * The card itself displays the theme color as its background
  */
 const ThemeCard: React.FC<ThemeCardProps> = ({ theme, isActive, onClick }) => {
+  const handleClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onClick();
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
+      event.stopPropagation();
       onClick();
     }
   };
@@ -132,7 +139,7 @@ const ThemeCard: React.FC<ThemeCardProps> = ({ theme, isActive, onClick }) => {
   return (
     <Card
       data-theme={theme.value}
-      onClick={onClick}
+      onClick={handleClick}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
@@ -151,7 +158,7 @@ const ThemeCard: React.FC<ThemeCardProps> = ({ theme, isActive, onClick }) => {
     >
       {/* Check icon overlay when active */}
       {isActive && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="bg-primary rounded-full p-1 shadow-sm">
             <Check className="text-primary-foreground h-3 w-3" />
           </div>
@@ -161,10 +168,21 @@ const ThemeCard: React.FC<ThemeCardProps> = ({ theme, isActive, onClick }) => {
   );
 };
 
-export const ThemeSwitcher: React.FC = () => {
+type ThemeDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+/**
+ * Theme Dialog component that can be controlled externally
+ * Used by both ThemeSwitcher and AccountSwitcher
+ */
+export const ThemeDialog: React.FC<ThemeDialogProps> = ({
+  open,
+  onOpenChange,
+}) => {
   const { theme, setTheme } = useTheme();
   const [isMounted, setIsMounted] = React.useState(false);
-  const [isOpen, setIsOpen] = React.useState(false);
   const [previewTheme, setPreviewTheme] = React.useState<string | undefined>(
     undefined
   );
@@ -184,23 +202,27 @@ export const ThemeSwitcher: React.FC = () => {
   }, [previewTheme, isMounted]);
 
   // Initialize preview theme when dialog opens
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (open) {
+  React.useEffect(() => {
+    if (open && isMounted) {
       // Store original theme and set preview to current theme
       setOriginalTheme(theme);
       setPreviewTheme(theme);
-    } else {
+    }
+  }, [open, isMounted, theme]);
+
+  // Revert to original theme when dialog closes without saving
+  React.useEffect(() => {
+    if (!open && isMounted && originalTheme) {
       // Revert to original theme if dialog is closed without saving
       // (only if preview theme differs from original)
-      if (originalTheme && previewTheme && originalTheme !== previewTheme) {
+      if (previewTheme && originalTheme !== previewTheme) {
         setTheme(originalTheme);
         document.documentElement.setAttribute('data-theme', originalTheme);
       }
       setPreviewTheme(undefined);
       setOriginalTheme(undefined);
     }
-  };
+  }, [open, isMounted, originalTheme, previewTheme, setTheme]);
 
   const handleCardClick = (themeValue: string) => {
     setPreviewTheme(themeValue);
@@ -210,7 +232,7 @@ export const ThemeSwitcher: React.FC = () => {
     if (previewTheme) {
       setTheme(previewTheme);
     }
-    setIsOpen(false);
+    onOpenChange(false);
     setPreviewTheme(undefined);
     setOriginalTheme(undefined);
   };
@@ -221,7 +243,7 @@ export const ThemeSwitcher: React.FC = () => {
       setTheme(originalTheme);
       document.documentElement.setAttribute('data-theme', originalTheme);
     }
-    setIsOpen(false);
+    onOpenChange(false);
     setPreviewTheme(undefined);
     setOriginalTheme(undefined);
   };
@@ -233,7 +255,45 @@ export const ThemeSwitcher: React.FC = () => {
   const activeTheme = previewTheme || theme;
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+    <DialogContent className="flex max-h-[70vh] w-[calc(100%-2rem)] max-w-6xl flex-col">
+      <DialogHeader>
+        <DialogTitle className="text-2xl font-semibold tracking-tight">
+          Select Theme
+        </DialogTitle>
+        <DialogDescription>
+          Preview themes by clicking on a card. Save your selection to apply the
+          theme.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="-mr-1 flex-1 overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="pr-1">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {themes.map((themeOption) => (
+              <ThemeCard
+                key={themeOption.value}
+                theme={themeOption}
+                isActive={activeTheme === themeOption.value}
+                onClick={() => handleCardClick(themeOption.value)}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={handleCancel}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave}>Save changes</Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
+
+export const ThemeSwitcher: React.FC = () => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"
@@ -245,37 +305,7 @@ export const ThemeSwitcher: React.FC = () => {
           <span className="hidden sm:inline">Theme</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="flex max-h-[70vh] w-[calc(100%-2rem)] max-w-6xl flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-semibold tracking-tight">
-            Select Theme
-          </DialogTitle>
-          <DialogDescription>
-            Preview themes by clicking on a card. Save your selection to apply
-            the theme.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="-mr-1 flex-1 overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="pr-1">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {themes.map((themeOption) => (
-                <ThemeCard
-                  key={themeOption.value}
-                  theme={themeOption}
-                  isActive={activeTheme === themeOption.value}
-                  onClick={() => handleCardClick(themeOption.value)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>Save changes</Button>
-        </DialogFooter>
-      </DialogContent>
+      <ThemeDialog open={isOpen} onOpenChange={setIsOpen} />
     </Dialog>
   );
 };

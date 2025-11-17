@@ -2,8 +2,16 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronsUpDown, Check, Bell, LogOut, User } from 'lucide-react';
+import {
+  ChevronsUpDown,
+  Check,
+  Bell,
+  LogOut,
+  User,
+  Palette,
+} from 'lucide-react';
 import { ProfileDialog } from '@/components/profile-dialog';
+import { ThemeDialog } from '@/components/theme-switcher';
 
 import {
   DropdownMenu,
@@ -12,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Dialog } from '@/components/ui/dialog';
 
 import {
   SidebarMenu,
@@ -38,6 +47,7 @@ export function AccountSwitcher() {
     user?.profile_image_path
   );
   const [isProfileDialogOpen, setIsProfileDialogOpen] = React.useState(false);
+  const [isThemeDialogOpen, setIsThemeDialogOpen] = React.useState(false);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -144,6 +154,10 @@ export function AccountSwitcher() {
                 <span>Notifications</span>
               </a>
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setIsThemeDialogOpen(true)}>
+              <Palette className="h-4 w-4" />
+              <span>Theme</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
@@ -156,6 +170,12 @@ export function AccountSwitcher() {
         open={isProfileDialogOpen}
         onOpenChange={setIsProfileDialogOpen}
       />
+      <Dialog open={isThemeDialogOpen} onOpenChange={setIsThemeDialogOpen}>
+        <ThemeDialog
+          open={isThemeDialogOpen}
+          onOpenChange={setIsThemeDialogOpen}
+        />
+      </Dialog>
     </SidebarMenu>
   );
 }
