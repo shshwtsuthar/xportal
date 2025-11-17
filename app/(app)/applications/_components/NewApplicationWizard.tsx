@@ -58,6 +58,7 @@ const formatFieldLabel = (field: string) =>
 export function NewApplicationWizard({ applicationId }: Props) {
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const createMutation = useCreateApplication();
   const { data: application, isLoading } = useGetApplication(applicationId);
 
@@ -160,6 +161,10 @@ export function NewApplicationWizard({ applicationId }: Props) {
       g_relationship: '',
     },
   });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (currentApplication) {
@@ -982,7 +987,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
     missing: missingFields,
   } = useSubmissionReadiness(form);
   const readinessPreview = useMemo(() => {
-    const preview = missingFields.slice(0, 5);
+    const preview = missingFields.slice(0, 10);
     const remainder =
       missingFields.length > preview.length
         ? missingFields.length - preview.length
@@ -1012,6 +1017,46 @@ export function NewApplicationWizard({ applicationId }: Props) {
       /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent)
     );
   }, []);
+
+  const readinessSummary = isMounted ? (
+    <div
+      aria-live="polite"
+      suppressHydrationWarning
+      className="border-muted-foreground/40 bg-muted/30 text-muted-foreground w-full rounded-md border border-dashed p-3 text-sm"
+    >
+      {isValidating ? (
+        <span>Checking submission readiness…</span>
+      ) : missingFields.length === 0 ? (
+        <span className="text-emerald-600">
+          All mandatory fields are completed. You can submit.
+        </span>
+      ) : (
+        <>
+          <p className="text-foreground">
+            {missingFields.length} requirement
+            {missingFields.length === 1 ? '' : 's'} remaining before you can
+            submit:
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1">
+            {readinessPreview.preview.map((field) => (
+              <Badge
+                key={field}
+                variant="secondary"
+                className="text-xs font-normal"
+              >
+                {formatFieldLabel(field)}
+              </Badge>
+            ))}
+            {readinessPreview.remainder > 0 && (
+              <Badge variant="outline" className="text-xs font-normal">
+                +{readinessPreview.remainder} more
+              </Badge>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  ) : null;
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -1081,6 +1126,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
             </div>
           </CardTitle>
         </CardHeader>
+        <CardContent className="py-0">{readinessSummary}</CardContent>
         <Form {...form}>
           <CardContent>
             <div className={isReadOnly ? 'pointer-events-none opacity-60' : ''}>
@@ -1109,126 +1155,91 @@ export function NewApplicationWizard({ applicationId }: Props) {
                   Next
                 </Button>
               </div>
-              <div
-                aria-live="polite"
-                className="border-muted-foreground/40 bg-muted/30 text-muted-foreground rounded-md border border-dashed p-3 text-sm"
-              >
-                {isValidating ? (
-                  <span>Checking submission readiness…</span>
-                ) : missingFields.length === 0 ? (
-                  <span className="text-emerald-600">
-                    All mandatory fields are completed. You can submit.
-                  </span>
-                ) : (
-                  <>
-                    <p className="text-foreground">
-                      {missingFields.length} requirement
-                      {missingFields.length === 1 ? '' : 's'} remaining before
-                      you can submit:
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {readinessPreview.preview.map((field) => (
-                        <Badge
-                          key={field}
-                          variant="secondary"
-                          className="text-xs font-normal"
-                        >
-                          {formatFieldLabel(field)}
-                        </Badge>
-                      ))}
-                      {readinessPreview.remainder > 0 && (
-                        <Badge
-                          variant="outline"
-                          className="text-xs font-normal"
-                        >
-                          +{readinessPreview.remainder} more
-                        </Badge>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
             </div>
             <div className="flex flex-col gap-2 lg:w-1/3">
-              {/* Inline uploader */}
-              <label className="relative inline-flex">
-                <input
-                  type="file"
-                  className="hidden"
-                  aria-label="Upload file"
-                  onChange={async (e) => {
-                    try {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      if (!currentApplication?.id) {
-                        toast.error('Save draft to enable uploads.');
-                        return;
+              <div className="flex items-center justify-end gap-2">
+                {/* Inline uploader */}
+                <label className="relative inline-flex">
+                  <input
+                    type="file"
+                    className="hidden"
+                    aria-label="Upload file"
+                    onChange={async (e) => {
+                      try {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!currentApplication?.id) {
+                          toast.error('Save draft to enable uploads.');
+                          return;
+                        }
+                        if (file.size > 10 * 1024 * 1024) {
+                          toast.error('File too large (max 10MB).');
+                          return;
+                        }
+                        await uploadFileMutation.mutateAsync({
+                          applicationId: currentApplication.id,
+                          file,
+                        });
+                        toast.success('File uploaded');
+                        e.currentTarget.value = '';
+                      } catch (err) {
+                        toast.error(
+                          `Upload failed: ${String(
+                            (err as Error).message || err
+                          )}`
+                        );
                       }
-                      if (file.size > 10 * 1024 * 1024) {
-                        toast.error('File too large (max 10MB).');
-                        return;
-                      }
-                      await uploadFileMutation.mutateAsync({
-                        applicationId: currentApplication.id,
-                        file,
-                      });
-                      toast.success('File uploaded');
-                      e.currentTarget.value = '';
-                    } catch (err) {
-                      toast.error(
-                        `Upload failed: ${String((err as Error).message || err)}`
-                      );
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={(e) => {
+                      const input = e.currentTarget
+                        .previousSibling as HTMLInputElement | null;
+                      input?.click();
+                    }}
+                    disabled={!currentApplication?.id || isReadOnly}
+                  >
+                    Upload file
+                  </Button>
+                </label>
+                {!isFormReadyForSubmission ? (
+                  <MagneticButton
+                    type="button"
+                    variant="outline"
+                    onClick={handleSaveDraft}
+                    disabled={
+                      createMutation.isPending ||
+                      updateMutation.isPending ||
+                      isReadOnly
                     }
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={(e) => {
-                    const input = e.currentTarget
-                      .previousSibling as HTMLInputElement | null;
-                    input?.click();
-                  }}
-                  disabled={!currentApplication?.id || isReadOnly}
-                >
-                  Upload file
-                </Button>
-              </label>
-              {!isFormReadyForSubmission ? (
-                <MagneticButton
-                  type="button"
-                  variant="outline"
-                  onClick={handleSaveDraft}
-                  disabled={
-                    createMutation.isPending ||
-                    updateMutation.isPending ||
-                    isReadOnly
-                  }
-                >
-                  Save Draft{' '}
-                  <KbdGroup className="ml-2">
-                    <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
-                    <Kbd>S</Kbd>
-                  </KbdGroup>
-                </MagneticButton>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleSaveDraft}
-                  disabled={
-                    createMutation.isPending ||
-                    updateMutation.isPending ||
-                    isReadOnly
-                  }
-                >
-                  Save Draft{' '}
-                  <KbdGroup className="ml-2">
-                    <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
-                    <Kbd>S</Kbd>
-                  </KbdGroup>
-                </Button>
-              )}
+                  >
+                    Save Draft{' '}
+                    <KbdGroup className="ml-2">
+                      <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+                      <Kbd>S</Kbd>
+                    </KbdGroup>
+                  </MagneticButton>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSaveDraft}
+                    disabled={
+                      createMutation.isPending ||
+                      updateMutation.isPending ||
+                      isReadOnly
+                    }
+                  >
+                    Save Draft{' '}
+                    <KbdGroup className="ml-2">
+                      <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+                      <Kbd>S</Kbd>
+                    </KbdGroup>
+                  </Button>
+                )}
+              </div>
               {isFormReadyForSubmission && (
                 <MagneticButton
                   type="button"

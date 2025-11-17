@@ -82,20 +82,24 @@ export const Step3_Cricos = () => {
         <CardHeader>
           <CardTitle className="text-lg font-medium">CRICOS</CardTitle>
         </CardHeader>
-        <CardContent className="border-primary/30 bg-primary/5 flex flex-col gap-2 rounded-md border border-dashed p-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-medium">International student status</p>
-            <p className="text-muted-foreground text-sm">
-              This is derived from the citizenship field in Step 2. Update that
-              selection to change the status.
-            </p>
+        <CardContent className="px-6 py-0">
+          <div className="border-primary/30 bg-primary/5 flex flex-col gap-2 rounded-md border border-dashed p-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm font-medium">
+                International student status
+              </p>
+              <p className="text-muted-foreground text-sm">
+                This is derived from the citizenship field in Step 2. Update
+                that selection to change the status.
+              </p>
+            </div>
+            <Badge
+              variant={isInternational ? 'default' : 'outline'}
+              className="w-fit px-3 py-1 text-sm"
+            >
+              {isInternational ? 'International' : 'Domestic'}
+            </Badge>
           </div>
-          <Badge
-            variant={isInternational ? 'default' : 'outline'}
-            className="w-fit px-3 py-1 text-sm"
-          >
-            {isInternational ? 'International' : 'Domestic'}
-          </Badge>
         </CardContent>
       </Card>
 
