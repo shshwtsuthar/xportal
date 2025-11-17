@@ -9,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -35,8 +34,9 @@ export function AccountSwitcher() {
   const { isMobile } = useSidebar();
   const router = useRouter();
   const { data: user, isLoading } = useGetCurrentUser();
-  const { data: profileImageUrl, isLoading: isLoadingImage } =
-    useProfileImageUrl(user?.profile_image_path);
+  const { data: profileImageUrl } = useProfileImageUrl(
+    user?.profile_image_path
+  );
   const [isProfileDialogOpen, setIsProfileDialogOpen] = React.useState(false);
 
   const handleLogout = async () => {
@@ -109,62 +109,45 @@ export function AccountSwitcher() {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-56 rounded-lg"
+            className="w-56"
             align="start"
             side={isMobile ? 'bottom' : 'right'}
             sideOffset={4}
           >
-            <div className="p-2">
-              <div className="flex items-center gap-2 rounded-md p-2">
-                <Avatar className="size-8 rounded-lg border">
-                  {profileImageUrl ? (
-                    <AvatarImage src={profileImageUrl} alt="Profile image" />
-                  ) : null}
-                  <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
-                    {getUserInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">
-                    {getUserDisplayName()}
-                  </span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {user.email}
-                  </span>
-                </div>
-                <Check className="text-muted-foreground size-4" />
+            <div className="flex items-center gap-3 px-2 py-1.5">
+              <Avatar className="size-8 rounded-lg border">
+                {profileImageUrl ? (
+                  <AvatarImage src={profileImageUrl} alt="Profile image" />
+                ) : null}
+                <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
+                  {getUserInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">
+                  {getUserDisplayName()}
+                </span>
+                <span className="text-muted-foreground truncate text-xs">
+                  {user.email}
+                </span>
               </div>
+              <Check className="text-muted-foreground h-4 w-4" />
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-muted-foreground text-xs">
-              Profile
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              className="cursor-pointer gap-2 p-2"
-              onClick={() => setIsProfileDialogOpen(true)}
-            >
-              <div className="flex size-6 items-center justify-center rounded-md border">
-                <User className="size-3.5 shrink-0" />
-              </div>
-              <div className="font-medium">Profile</div>
+            <DropdownMenuItem onClick={() => setIsProfileDialogOpen(true)}>
+              <User className="h-4 w-4" />
+              <span>Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 p-2" asChild>
-              <a href="/notifications" className="cursor-pointer">
-                <div className="flex size-6 items-center justify-center rounded-md border">
-                  <Bell className="size-3.5 shrink-0" />
-                </div>
-                <div className="font-medium">Notifications</div>
+            <DropdownMenuItem asChild>
+              <a href="/notifications">
+                <Bell className="h-4 w-4" />
+                <span>Notifications</span>
               </a>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive gap-2 p-2"
-              onClick={handleLogout}
-            >
-              <div className="flex size-6 items-center justify-center rounded-md border">
-                <LogOut className="size-3.5 shrink-0" />
-              </div>
-              <div className="font-medium">Log out</div>
+            <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+              <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
