@@ -1,4 +1,8 @@
 ## [Unreleased]
+- feat(applications): Animate submission readiness counter
+  - Extracted readiness summary into `SubmissionReadinessCard` to minimize rerenders.
+  - Replaced the static missing-fields count with `NumberFlow` for smooth animated transitions.
+  - Added local module typings for `@number-flow/react` so the component remains fully typed.
 - fix(applications): Align wizard validation with edge functions
   - Promoted `src/lib/applicationSchema.ts` as the single source of truth and re-exported it into Supabase edge code to eliminate drift.
   - Restored domestic USI exemptions, derived under-18 welfare checks, and Australian-only passport rules on both client and server.

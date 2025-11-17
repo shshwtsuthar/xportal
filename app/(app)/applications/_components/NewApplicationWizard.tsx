@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { NumberFlowProps } from '@number-flow/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from '@/components/ui/form';
@@ -34,6 +36,12 @@ import { useSubmitApplication } from '@/src/hooks/useSubmitApplication';
 import { createClient } from '@/lib/supabase/client';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { validateSubmission } from '@/src/schemas/application-submission';
+import { Loader2 } from 'lucide-react';
+
+const NumberFlow = dynamic<NumberFlowProps>(
+  () => import('@number-flow/react'),
+  { ssr: false }
+);
 
 type Props = { applicationId?: string };
 
@@ -54,6 +62,80 @@ const formatFieldLabel = (field: string) =>
       segment.length > 0 ? segment[0].toUpperCase() + segment.slice(1) : segment
     )
     .join(' ');
+
+type ReadinessPreview = { preview: string[]; remainder: number };
+
+type SubmissionReadinessCardProps = {
+  isMounted: boolean;
+  isValidating: boolean;
+  missingFields: string[];
+  readinessPreview: ReadinessPreview;
+};
+
+const SubmissionReadinessCard = memo(
+  ({
+    isMounted,
+    isValidating,
+    missingFields,
+    readinessPreview,
+  }: SubmissionReadinessCardProps) => {
+    if (!isMounted) return null;
+    return (
+      <div
+        aria-live="polite"
+        suppressHydrationWarning
+        aria-busy={isValidating}
+        className="border-muted-foreground/40 bg-muted/30 text-muted-foreground w-full rounded-md border border-dashed p-3 text-sm"
+      >
+        <div className="text-muted-foreground/80 flex items-center justify-between text-xs tracking-wide uppercase">
+          <span>Submission readiness</span>
+          {isValidating && (
+            <span className="text-foreground flex items-center gap-1 text-[11px] font-medium">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Updating…
+            </span>
+          )}
+        </div>
+        {missingFields.length === 0 ? (
+          <span className="text-emerald-600">
+            All mandatory fields are completed. You can submit.
+          </span>
+        ) : (
+          <>
+            <p className="text-foreground flex items-baseline gap-2 font-medium">
+              <span className="text-foreground flex items-baseline gap-2 text-2xl font-semibold tracking-tight">
+                <NumberFlow
+                  value={missingFields.length}
+                  className="font-mono [font-variant-numeric:tabular-nums]"
+                />
+              </span>
+              requirement
+              {missingFields.length === 1 ? '' : 's'} remaining before you can
+              submit:
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {readinessPreview.preview.map((field) => (
+                <Badge
+                  key={field}
+                  variant="secondary"
+                  className="text-xs font-normal"
+                >
+                  {formatFieldLabel(field)}
+                </Badge>
+              ))}
+              {readinessPreview.remainder > 0 && (
+                <Badge variant="outline" className="text-xs font-normal">
+                  +{readinessPreview.remainder} more
+                </Badge>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+);
+SubmissionReadinessCard.displayName = 'SubmissionReadinessCard';
 
 export function NewApplicationWizard({ applicationId }: Props) {
   const [activeStep, setActiveStep] = useState(0);
@@ -1018,45 +1100,14 @@ export function NewApplicationWizard({ applicationId }: Props) {
     );
   }, []);
 
-  const readinessSummary = isMounted ? (
-    <div
-      aria-live="polite"
-      suppressHydrationWarning
-      className="border-muted-foreground/40 bg-muted/30 text-muted-foreground w-full rounded-md border border-dashed p-3 text-sm"
-    >
-      {isValidating ? (
-        <span>Checking submission readiness…</span>
-      ) : missingFields.length === 0 ? (
-        <span className="text-emerald-600">
-          All mandatory fields are completed. You can submit.
-        </span>
-      ) : (
-        <>
-          <p className="text-foreground">
-            {missingFields.length} requirement
-            {missingFields.length === 1 ? '' : 's'} remaining before you can
-            submit:
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1">
-            {readinessPreview.preview.map((field) => (
-              <Badge
-                key={field}
-                variant="secondary"
-                className="text-xs font-normal"
-              >
-                {formatFieldLabel(field)}
-              </Badge>
-            ))}
-            {readinessPreview.remainder > 0 && (
-              <Badge variant="outline" className="text-xs font-normal">
-                +{readinessPreview.remainder} more
-              </Badge>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  ) : null;
+  const readinessSummary = (
+    <SubmissionReadinessCard
+      isMounted={isMounted}
+      isValidating={isValidating}
+      missingFields={missingFields}
+      readinessPreview={readinessPreview}
+    />
+  );
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
