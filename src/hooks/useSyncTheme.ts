@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useGetCurrentUser } from './useGetCurrentUser';
 import { useUpdateProfile } from './useUpdateProfile';
@@ -19,32 +19,43 @@ export const useSyncTheme = () => {
   const { data: user, isLoading: isLoadingUser } = useGetCurrentUser();
   const updateProfileMutation = useUpdateProfile();
   const lastUserId = useRef<string | null>(null);
+  const hasInitializedForUser = useRef(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ensure we're mounted before initializing theme (prevents hydration mismatch)
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Initialize theme from database when user data loads (for authenticated users)
   useEffect(() => {
-    if (isLoadingUser) return;
+    // Wait for mount and user data to be ready
+    if (!isMounted || isLoadingUser) return;
 
     const currentUserId = user?.id || null;
 
-    // Only initialize if user changed (login/logout) or if we haven't initialized yet
+    // Only initialize if user changed (login/logout)
     if (currentUserId !== lastUserId.current) {
       lastUserId.current = currentUserId;
-
-      // Only sync from DB if user is authenticated
-      if (user) {
-        const dbTheme = user.theme;
-
-        // If user has a theme in DB, apply it
-        if (dbTheme) {
-          setTheme(dbTheme);
-        } else {
-          // If no theme in DB, use default (monochrome)
-          setTheme(DEFAULT_THEME);
-        }
-      }
-      // For unauthenticated users, next-themes handles localStorage automatically
+      hasInitializedForUser.current = false;
     }
-  }, [user, isLoadingUser, setTheme]);
+
+    // Only sync from DB if user is authenticated and we haven't initialized for this user yet
+    if (user && !hasInitializedForUser.current) {
+      hasInitializedForUser.current = true;
+      const dbTheme = user.theme;
+      const targetTheme = dbTheme || DEFAULT_THEME;
+
+      // Only set theme if it's different from current to avoid unnecessary updates
+      // Use setTimeout to ensure this runs after hydration is complete
+      if (theme !== targetTheme) {
+        setTimeout(() => {
+          setTheme(targetTheme);
+        }, 0);
+      }
+    }
+    // For unauthenticated users, next-themes handles localStorage automatically
+  }, [isMounted, user, isLoadingUser, theme, setTheme]);
 
   /**
    * Save theme to database (for authenticated users only).
