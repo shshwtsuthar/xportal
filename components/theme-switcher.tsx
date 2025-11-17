@@ -5,86 +5,236 @@ import { Palette, Check } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
-const themes = [
-  // Light Themes
-  { value: 'red-light', label: 'Red Light' },
-  { value: 'green-light', label: 'Green Light' },
-  { value: 'blue-light', label: 'Blue Light' },
-  { value: 'purple-light', label: 'Purple Light' },
-  { value: 'orange-light', label: 'Orange Light' },
-  { value: 'pink-light', label: 'Pink Light' },
-  { value: 'teal-light', label: 'Teal Light' },
-  { value: 'indigo-light', label: 'Indigo Light' },
-  { value: 'amber-light', label: 'Amber Light' },
-  { value: 'emerald-light', label: 'Emerald Light' },
-  { value: 'cyan-light', label: 'Cyan Light' },
-  { value: 'rose-light', label: 'Rose Light' },
-  { value: 'violet-light', label: 'Violet Light' },
-  { value: 'lime-light', label: 'Lime Light' },
-  { value: 'sky-light', label: 'Sky Light' },
-  { value: 'fuchsia-light', label: 'Fuchsia Light' },
-  { value: 'slate-light', label: 'Slate Light' },
-  { value: 'zinc-light', label: 'Zinc Light' },
-  { value: 'neutral-light', label: 'Neutral Light' },
-  { value: 'stone-light', label: 'Stone Light' },
-  // Dark Themes
-  { value: 'red-dark', label: 'Red Dark' },
-  { value: 'green-dark', label: 'Green Dark' },
-  { value: 'blue-dark', label: 'Blue Dark' },
-  { value: 'purple-dark', label: 'Purple Dark' },
-  { value: 'orange-dark', label: 'Orange Dark' },
-  { value: 'pink-dark', label: 'Pink Dark' },
-  { value: 'teal-dark', label: 'Teal Dark' },
-  { value: 'indigo-dark', label: 'Indigo Dark' },
-  { value: 'amber-dark', label: 'Amber Dark' },
-  { value: 'emerald-dark', label: 'Emerald Dark' },
-  { value: 'cyan-dark', label: 'Cyan Dark' },
-  { value: 'rose-dark', label: 'Rose Dark' },
-  { value: 'violet-dark', label: 'Violet Dark' },
-  { value: 'lime-dark', label: 'Lime Dark' },
-  { value: 'sky-dark', label: 'Sky Dark' },
-  { value: 'fuchsia-dark', label: 'Fuchsia Dark' },
-  { value: 'slate-dark', label: 'Slate Dark' },
-  { value: 'zinc-dark', label: 'Zinc Dark' },
-  { value: 'neutral-dark', label: 'Neutral Dark' },
-  { value: 'stone-dark', label: 'Stone Dark' },
-  // Special Themes
-  { value: 'midnight', label: 'Midnight' },
-  { value: 'sunset', label: 'Sunset' },
-  { value: 'ocean', label: 'Ocean' },
-  { value: 'forest', label: 'Forest' },
-  { value: 'desert', label: 'Desert' },
-  { value: 'aurora', label: 'Aurora' },
-  { value: 'cosmic', label: 'Cosmic' },
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'high-contrast', label: 'High Contrast' },
-  { value: 'warm', label: 'Warm' },
-  { value: 'cool', label: 'Cool' },
-  { value: 'monochrome', label: 'Monochrome' },
-];
+type ThemeOption = {
+  value: string;
+  label: string;
+  category?: 'light' | 'dark';
+};
+
+/**
+ * Generate theme options programmatically
+ */
+const generateThemes = (): ThemeOption[] => {
+  const lightColorNames = [
+    'red',
+    'green',
+    'blue',
+    'purple',
+    'orange',
+    'pink',
+    'teal',
+    'indigo',
+    'amber',
+    'emerald',
+    'cyan',
+    'rose',
+  ];
+
+  const darkColorNames = [
+    'red',
+    'green',
+    'blue',
+    'purple',
+    'orange',
+    'pink',
+    'teal',
+  ];
+
+  const lightThemes: ThemeOption[] = lightColorNames.map((color) => ({
+    value: `${color}-light`,
+    label: `${color.charAt(0).toUpperCase() + color.slice(1)} Light`,
+    category: 'light',
+  }));
+
+  const darkThemes: ThemeOption[] = darkColorNames.map((color) => ({
+    value: `${color}-dark`,
+    label: `${color.charAt(0).toUpperCase() + color.slice(1)} Dark`,
+    category: 'dark',
+  }));
+
+  // Add monochrome as the 8th dark theme
+  const monochromeTheme: ThemeOption = {
+    value: 'monochrome',
+    label: 'Monochrome',
+    category: 'dark',
+  };
+
+  return [...lightThemes, ...darkThemes, monochromeTheme];
+};
+
+const themes = generateThemes();
+
+type ThemeCardProps = {
+  theme: ThemeOption;
+  isActive: boolean;
+  onClick: () => void;
+};
+
+/**
+ * Get color swatch gradient based on theme value
+ */
+const getThemeSwatch = (themeValue: string): string => {
+  const colorMap: Record<string, string> = {
+    // Light themes (first 12)
+    'red-light': 'from-red-50 to-red-100',
+    'green-light': 'from-green-50 to-green-100',
+    'blue-light': 'from-blue-50 to-blue-100',
+    'purple-light': 'from-purple-50 to-purple-100',
+    'orange-light': 'from-orange-50 to-orange-100',
+    'pink-light': 'from-pink-50 to-pink-100',
+    'teal-light': 'from-teal-50 to-teal-100',
+    'indigo-light': 'from-indigo-50 to-indigo-100',
+    'amber-light': 'from-amber-50 to-amber-100',
+    'emerald-light': 'from-emerald-50 to-emerald-100',
+    'cyan-light': 'from-cyan-50 to-cyan-100',
+    'rose-light': 'from-rose-50 to-rose-100',
+    // Dark themes (first 7)
+    'red-dark': 'from-red-900 to-red-950',
+    'green-dark': 'from-green-900 to-green-950',
+    'blue-dark': 'from-blue-900 to-blue-950',
+    'purple-dark': 'from-purple-900 to-purple-950',
+    'orange-dark': 'from-orange-900 to-orange-950',
+    'pink-dark': 'from-pink-900 to-pink-950',
+    'teal-dark': 'from-teal-900 to-teal-950',
+    // Monochrome (8th dark theme)
+    monochrome: 'from-gray-200 via-gray-300 to-gray-400',
+  };
+
+  return colorMap[themeValue] || 'from-gray-100 to-gray-200';
+};
+
+/**
+ * Individual theme card component
+ * The card itself displays the theme color as its background
+ */
+const ThemeCard: React.FC<ThemeCardProps> = ({ theme, isActive, onClick }) => {
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick();
+    }
+  };
+
+  const swatchGradient = getThemeSwatch(theme.value);
+
+  return (
+    <Card
+      data-theme={theme.value}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`Select ${theme.label} theme`}
+      aria-pressed={isActive}
+      className={cn(
+        'group relative h-14 cursor-pointer overflow-hidden transition-all duration-200',
+        'bg-gradient-to-br',
+        swatchGradient,
+        'hover:border-primary/50 hover:scale-[1.01] hover:shadow-md',
+        'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+        'active:scale-[0.99]',
+        isActive &&
+          'ring-primary border-primary scale-[1.01] shadow-md ring-2 ring-offset-0'
+      )}
+    >
+      {/* Check icon overlay when active */}
+      {isActive && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="bg-primary rounded-full p-1 shadow-sm">
+            <Check className="text-primary-foreground h-3 w-3" />
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+};
 
 export const ThemeSwitcher: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const [isMounted, setIsMounted] = React.useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [previewTheme, setPreviewTheme] = React.useState<string | undefined>(
+    undefined
+  );
+  const [originalTheme, setOriginalTheme] = React.useState<string | undefined>(
+    undefined
+  );
 
   React.useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Apply preview theme to root element
+  React.useEffect(() => {
+    if (previewTheme && isMounted) {
+      document.documentElement.setAttribute('data-theme', previewTheme);
+    }
+  }, [previewTheme, isMounted]);
+
+  // Initialize preview theme when dialog opens
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open) {
+      // Store original theme and set preview to current theme
+      setOriginalTheme(theme);
+      setPreviewTheme(theme);
+    } else {
+      // Revert to original theme if dialog is closed without saving
+      // (only if preview theme differs from original)
+      if (originalTheme && previewTheme && originalTheme !== previewTheme) {
+        setTheme(originalTheme);
+        document.documentElement.setAttribute('data-theme', originalTheme);
+      }
+      setPreviewTheme(undefined);
+      setOriginalTheme(undefined);
+    }
+  };
+
+  const handleCardClick = (themeValue: string) => {
+    setPreviewTheme(themeValue);
+  };
+
+  const handleSave = () => {
+    if (previewTheme) {
+      setTheme(previewTheme);
+    }
+    setIsOpen(false);
+    setPreviewTheme(undefined);
+    setOriginalTheme(undefined);
+  };
+
+  const handleCancel = () => {
+    // Revert to original theme
+    if (originalTheme) {
+      setTheme(originalTheme);
+      document.documentElement.setAttribute('data-theme', originalTheme);
+    }
+    setIsOpen(false);
+    setPreviewTheme(undefined);
+    setOriginalTheme(undefined);
+  };
+
   if (!isMounted) {
     return null;
   }
 
+  const activeTheme = previewTheme || theme;
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
         <Button
           variant="ghost"
           size="sm"
@@ -94,22 +244,38 @@ export const ThemeSwitcher: React.FC = () => {
           <Palette className="h-4 w-4" />
           <span className="hidden sm:inline">Theme</span>
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="max-h-96 w-48 overflow-y-auto"
-      >
-        {themes.map((themeOption) => (
-          <DropdownMenuItem
-            key={themeOption.value}
-            onClick={() => setTheme(themeOption.value)}
-            className="flex items-center justify-between"
-          >
-            <span>{themeOption.label}</span>
-            {theme === themeOption.value && <Check className="h-4 w-4" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[70vh] w-[calc(100%-2rem)] max-w-6xl flex-col">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-semibold tracking-tight">
+            Select Theme
+          </DialogTitle>
+          <DialogDescription>
+            Preview themes by clicking on a card. Save your selection to apply
+            the theme.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="-mr-1 flex-1 overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="pr-1">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {themes.map((themeOption) => (
+                <ThemeCard
+                  key={themeOption.value}
+                  theme={themeOption}
+                  isActive={activeTheme === themeOption.value}
+                  onClick={() => handleCardClick(themeOption.value)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>Save changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
