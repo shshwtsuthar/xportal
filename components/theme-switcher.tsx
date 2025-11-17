@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { Palette, Check } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useSyncTheme } from '@/src/hooks/useSyncTheme';
+import { toast } from 'sonner';
 
 import {
   Dialog,
@@ -182,6 +184,7 @@ export const ThemeDialog: React.FC<ThemeDialogProps> = ({
   onOpenChange,
 }) => {
   const { theme, setTheme } = useTheme();
+  const { saveThemeToDb } = useSyncTheme();
   const [isMounted, setIsMounted] = React.useState(false);
   const [previewTheme, setPreviewTheme] = React.useState<string | undefined>(
     undefined
@@ -189,6 +192,7 @@ export const ThemeDialog: React.FC<ThemeDialogProps> = ({
   const [originalTheme, setOriginalTheme] = React.useState<string | undefined>(
     undefined
   );
+  const [isSaving, setIsSaving] = React.useState(false);
 
   React.useEffect(() => {
     setIsMounted(true);
@@ -228,13 +232,29 @@ export const ThemeDialog: React.FC<ThemeDialogProps> = ({
     setPreviewTheme(themeValue);
   };
 
-  const handleSave = () => {
-    if (previewTheme) {
+  const handleSave = async () => {
+    if (!previewTheme) return;
+
+    setIsSaving(true);
+    try {
+      // Update theme in next-themes for immediate UI update
       setTheme(previewTheme);
+      // Save to database (or localStorage for unauthenticated users)
+      await saveThemeToDb(previewTheme);
+      toast.success('Theme preference saved.');
+      onOpenChange(false);
+      setPreviewTheme(undefined);
+      setOriginalTheme(undefined);
+    } catch (error) {
+      // Error toast is already shown in useSyncTheme
+      // Revert to original theme on error
+      if (originalTheme) {
+        setTheme(originalTheme);
+        document.documentElement.setAttribute('data-theme', originalTheme);
+      }
+    } finally {
+      setIsSaving(false);
     }
-    onOpenChange(false);
-    setPreviewTheme(undefined);
-    setOriginalTheme(undefined);
   };
 
   const handleCancel = () => {
@@ -280,10 +300,12 @@ export const ThemeDialog: React.FC<ThemeDialogProps> = ({
         </div>
       </div>
       <DialogFooter>
-        <Button variant="outline" onClick={handleCancel}>
+        <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
           Cancel
         </Button>
-        <Button onClick={handleSave}>Save changes</Button>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Save changes'}
+        </Button>
       </DialogFooter>
     </DialogContent>
   );

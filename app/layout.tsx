@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 import { QueryProvider } from './_providers/QueryProvider';
 import { AuthErrorHandler } from './_providers/AuthErrorHandler';
+import { ThemeInitializer } from './_providers/ThemeInitializer';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 
@@ -33,7 +34,7 @@ export default async function RootLayout({
       >
         <ThemeProvider
           attribute="data-theme"
-          defaultTheme="red-light"
+          defaultTheme="monochrome"
           themes={[
             // Light Themes
             'red-light',
@@ -94,7 +95,10 @@ export default async function RootLayout({
           enableSystem={false}
         >
           <AuthErrorHandler>
-            <QueryProvider>{children}</QueryProvider>
+            <QueryProvider>
+              <ThemeInitializer />
+              {children}
+            </QueryProvider>
           </AuthErrorHandler>
           <Toaster />
         </ThemeProvider>

@@ -5,6 +5,7 @@ import { Tables } from '@/database.types';
 type UpdatePayload = {
   first_name?: string | null;
   last_name?: string | null;
+  theme?: string | null;
 };
 
 /**
@@ -28,6 +29,7 @@ export const useUpdateProfile = () => {
       const updateData = {
         first_name: payload.first_name || null,
         last_name: payload.last_name || null,
+        theme: payload.theme || null,
       };
 
       const { data, error } = await supabase

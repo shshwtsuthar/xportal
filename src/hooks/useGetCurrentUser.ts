@@ -9,6 +9,7 @@ type CurrentUser = {
   last_name: string | null;
   role: Tables<'profiles'>['role'];
   profile_image_path: string | null;
+  theme: string | null;
 };
 
 /**
@@ -32,10 +33,10 @@ export const useGetCurrentUser = () => {
       const email = userData.user?.email;
       if (!email) throw new Error('User email not found');
 
-      // Fetch user's profile to get first_name, last_name, role, and profile_image_path
+      // Fetch user's profile to get first_name, last_name, role, profile_image_path, and theme
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, role, profile_image_path')
+        .select('first_name, last_name, role, profile_image_path, theme')
         .eq('id', userId)
         .single();
 
@@ -49,6 +50,7 @@ export const useGetCurrentUser = () => {
         last_name: profile.last_name,
         role: profile.role,
         profile_image_path: profile.profile_image_path,
+        theme: profile.theme,
       };
     },
   });
