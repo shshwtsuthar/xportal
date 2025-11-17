@@ -102,9 +102,83 @@ serve(async (req: Request) => {
       );
     }
 
+    // 4a. Fetch disabilities and prior_education arrays from junction tables
+    // These arrays are required by the validation schema but are not stored in the applications table
+    console.log(
+      `[Submit Application] Fetching arrays for application ${applicationId}`
+    );
+
+    const { data: disabilitiesData, error: disabilitiesErr } =
+      await supabaseClient
+        .from('application_disabilities')
+        .select('disability_type_id')
+        .eq('application_id', applicationId);
+
+    if (disabilitiesErr) {
+      console.error(
+        `[Submit Application] Error fetching disabilities:`,
+        disabilitiesErr.message
+      );
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to fetch disabilities',
+          details: [disabilitiesErr.message],
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    const { data: priorEdData, error: priorEdErr } = await supabaseClient
+      .from('application_prior_education')
+      .select('prior_achievement_id, recognition_type')
+      .eq('application_id', applicationId);
+
+    if (priorEdErr) {
+      console.error(
+        `[Submit Application] Error fetching prior education:`,
+        priorEdErr.message
+      );
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to fetch prior education',
+          details: [priorEdErr.message],
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    // Transform junction table records into array format matching schema
+    const applicationWithArrays = {
+      ...application,
+      disabilities: (disabilitiesData || []).map((d) => ({
+        disability_type_id: d.disability_type_id,
+      })),
+      prior_education: (priorEdData || []).map((e) => ({
+        prior_achievement_id: e.prior_achievement_id,
+        recognition_type: e.recognition_type || undefined,
+      })),
+    };
+
+    console.log(
+      `[Submit Application] Application with arrays - disabilities: ${applicationWithArrays.disabilities.length}, prior_education: ${applicationWithArrays.prior_education.length}`
+    );
+
     // Rule: The application must pass all AVETMISS/CRICOS validation checks.
-    const validation = validateSubmission(application);
+    console.log(
+      `[Submit Application] Validating application with schema validation`
+    );
+    const validation = validateSubmission(applicationWithArrays);
     if (!validation.ok) {
+      console.error(
+        `[Submit Application] Schema validation failed:`,
+        validation.issues
+      );
       return new Response(
         JSON.stringify({
           error: 'Validation failed',
@@ -116,29 +190,18 @@ serve(async (req: Request) => {
         }
       );
     }
+    console.log(`[Submit Application] Schema validation passed`);
 
-    // 4a. Validate disabilities and prior education records if flags are set
+    // 4b. Secondary validation: Verify junction table records match arrays (defense-in-depth)
+    // This provides an additional safety check to ensure database consistency
     if (application.disability_flag === 'Y') {
-      const { data: disabilities, error: disErr } = await supabaseClient
-        .from('application_disabilities')
-        .select('id')
-        .eq('application_id', applicationId)
-        .limit(1);
-
-      if (disErr) {
-        return new Response(
-          JSON.stringify({
-            error: 'Failed to validate disabilities',
-            details: [disErr.message],
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
+      if (
+        !applicationWithArrays.disabilities ||
+        applicationWithArrays.disabilities.length === 0
+      ) {
+        console.error(
+          `[Submit Application] Disability flag is Y but no disabilities in array`
         );
-      }
-
-      if (!disabilities || disabilities.length === 0) {
         return new Response(
           JSON.stringify({
             error: 'Validation failed',
@@ -155,26 +218,13 @@ serve(async (req: Request) => {
     }
 
     if (application.prior_education_flag === 'Y') {
-      const { data: priorEd, error: priorEdErr } = await supabaseClient
-        .from('application_prior_education')
-        .select('id')
-        .eq('application_id', applicationId)
-        .limit(1);
-
-      if (priorEdErr) {
-        return new Response(
-          JSON.stringify({
-            error: 'Failed to validate prior education',
-            details: [priorEdErr.message],
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
+      if (
+        !applicationWithArrays.prior_education ||
+        applicationWithArrays.prior_education.length === 0
+      ) {
+        console.error(
+          `[Submit Application] Prior education flag is Y but no prior education in array`
         );
-      }
-
-      if (!priorEd || priorEd.length === 0) {
         return new Response(
           JSON.stringify({
             error: 'Validation failed',

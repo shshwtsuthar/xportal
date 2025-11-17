@@ -22,7 +22,10 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ApplicationFormValues } from '@/src/schemas';
+import {
+  ApplicationFormValues,
+  deriveIsInternational,
+} from '@/src/lib/applicationSchema';
 import { ExternalLink } from 'lucide-react';
 
 export const Step2_AvetmissDetails = () => {
@@ -192,8 +195,10 @@ export const Step2_AvetmissDetails = () => {
                     value={field.value}
                     onValueChange={(value) => {
                       field.onChange(value);
-                      // Derive is_international inline
-                      form.setValue('is_international', value === 'INTL');
+                      form.setValue(
+                        'is_international',
+                        deriveIsInternational(value)
+                      );
                     }}
                   >
                     <SelectTrigger className="w-full">

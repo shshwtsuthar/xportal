@@ -1,3 +1,25 @@
+### Validation Alignment & Readiness UI (2025-11-17)
+
+1) Database migrations
+- None. Schema changes live entirely in shared Zod definitions.
+
+2) Shared validator packaging
+- `src/lib/applicationSchema.ts` is now the single source of truth. Supabase edge functions import it via `supabase/functions/_shared/application.ts`.
+- When deploying via CLI, ensure the relative path is preserved (default behavior). No additional build steps required.
+
+3) Edge Function deployment
+- Redeploy `submit-application`: `supabase functions deploy submit-application`.
+- This picks up the shared schema, USI exemption fixes, under-18 derivation, and passport logic.
+
+4) Client deployment
+- Redeploy the Next.js app so the CRICOS step badge, derived `is_international` handling, and readiness summary ship together.
+- No environment variables or migrations required.
+
+5) Post-deployment verification
+- Create a domestic application with `usi_exemption_code=INDIV` and confirm submission succeeds without a USI value.
+- Create an international minor (DOB + commencement < 18) and confirm the welfare fields are enforced automatically.
+- Toggle citizenship between domestic and `INTL` and verify the CRICOS status badge updates and the readiness summary lists blocking fields until all requirements are met.
+
 ### Agent Commissions System (2025-11-13)
 
 1) Database migrations

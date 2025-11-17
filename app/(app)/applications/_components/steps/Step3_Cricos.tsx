@@ -19,8 +19,12 @@ import {
 } from '@/components/ui/select';
 import { CountrySelect } from '@/components/ui/country-select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ApplicationFormValues } from '@/src/schemas';
+import {
+  ApplicationFormValues,
+  isAustralianAddress,
+} from '@/src/lib/applicationSchema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 export const Step3_Cricos = () => {
   const form = useFormContext<ApplicationFormValues>();
@@ -73,30 +77,25 @@ export const Step3_Cricos = () => {
 
   return (
     <div className="grid gap-6">
-      {/* International Student Checkbox */}
+      {/* International Student Status */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-medium">CRICOS</CardTitle>
         </CardHeader>
-        <CardContent>
-          <FormField
-            control={form.control}
-            name="is_international"
-            render={({ field }) => (
-              <FormItem className="flex items-center gap-2">
-                <FormControl>
-                  <Checkbox
-                    checked={!!field.value}
-                    onCheckedChange={(checked) => {
-                      field.onChange(checked);
-                    }}
-                  />
-                </FormControl>
-                <FormLabel>International student</FormLabel>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <CardContent className="border-primary/30 bg-primary/5 flex flex-col gap-2 rounded-md border border-dashed p-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-medium">International student status</p>
+            <p className="text-muted-foreground text-sm">
+              This is derived from the citizenship field in Step 2. Update that
+              selection to change the status.
+            </p>
+          </div>
+          <Badge
+            variant={isInternational ? 'default' : 'outline'}
+            className="w-fit px-3 py-1 text-sm"
+          >
+            {isInternational ? 'International' : 'Domestic'}
+          </Badge>
         </CardContent>
       </Card>
 
@@ -114,18 +113,25 @@ export const Step3_Cricos = () => {
               <FormField
                 control={form.control}
                 name="passport_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Passport number
-                      {(streetCountry === 'AU' || state) && ' *'}
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="E1234567" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const requiresPassport =
+                    isInternational &&
+                    isAustralianAddress(state, streetCountry);
+                  return (
+                    <FormItem>
+                      <FormLabel>
+                        Passport number
+                        {requiresPassport && (
+                          <span className="text-destructive"> *</span>
+                        )}
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="E1234567" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField

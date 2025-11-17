@@ -1,7 +1,7 @@
 'use client';
 
 import { UseFormReturn } from 'react-hook-form';
-import { ApplicationFormValues } from '@/src/schemas';
+import { ApplicationFormValues } from '@/src/lib/applicationSchema';
 import {
   FormField,
   FormItem,

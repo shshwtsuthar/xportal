@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ApplicationFormValues } from '@/src/schemas';
+import { ApplicationFormValues } from '@/src/lib/applicationSchema';
 import {
   useGetApplicationDisabilities,
   useGetApplicationPriorEducation,

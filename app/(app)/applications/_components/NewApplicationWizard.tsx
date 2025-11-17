@@ -12,12 +12,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { MagneticButton } from '@/components/ui/magnetic-button';
 import { XButton } from '@/components/ui/x-button';
-import {
-  draftApplicationSchema,
-  type ApplicationFormValues,
-} from '@/src/schemas';
+import { draftApplicationSchema } from '@/src/schemas';
+import type { ApplicationFormValues } from '@/src/lib/applicationSchema';
 import { useSubmissionReadiness } from '@/src/hooks/useSubmissionReadiness';
 import { useCreateApplication } from '@/src/hooks/useCreateApplication';
 import { useGetApplication } from '@/src/hooks/useGetApplication';
@@ -34,6 +33,7 @@ import { toast } from 'sonner';
 import { useSubmitApplication } from '@/src/hooks/useSubmitApplication';
 import { createClient } from '@/lib/supabase/client';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { validateSubmission } from '@/src/schemas/application-submission';
 
 type Props = { applicationId?: string };
 
@@ -47,8 +47,17 @@ const steps = [
   { id: 7, label: 'Documents' },
 ];
 
+const formatFieldLabel = (field: string) =>
+  field
+    .split('_')
+    .map((segment) =>
+      segment.length > 0 ? segment[0].toUpperCase() + segment.slice(1) : segment
+    )
+    .join(' ');
+
 export function NewApplicationWizard({ applicationId }: Props) {
   const [activeStep, setActiveStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const createMutation = useCreateApplication();
   const { data: application, isLoading } = useGetApplication(applicationId);
 
@@ -661,32 +670,325 @@ export function NewApplicationWizard({ applicationId }: Props) {
   };
 
   const handleSubmitApplication = async () => {
-    // Button only appears when validation passes, so skip client-side re-validation
-    // Server will validate as the final gate
     if (!currentApplication?.id) {
       toast.error('No application found. Please save your draft first.');
       return;
     }
 
-    // Submit the application
-    submitMutation.mutate(
-      { applicationId: currentApplication.id },
-      {
-        onSuccess: () => {
-          toast.success('Application submitted successfully');
-          // Redirect to applications page after successful submission
-          window.location.href = '/applications';
-        },
-        onError: (e) => {
-          toast.error(`Failed to submit application: ${String(e)}`);
-        },
+    if (isSubmitting) {
+      // Prevent double submission
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Step 1: Save draft first to ensure form state (especially arrays) is synced to database
+      // This is critical because server-side validation queries the database, not form state
+      toast.info('Saving draft...');
+      await new Promise<void>((resolve, reject) => {
+        if (isReadOnly) {
+          reject(new Error('Application is read-only'));
+          return;
+        }
+
+        const values = form.getValues();
+
+        // Helper function to convert Date objects to ISO strings
+        const convertDateToString = (
+          date: string | Date | null | undefined
+        ): string | null => {
+          if (!date) return null;
+          if (typeof date === 'string') return date;
+          if (date instanceof Date) return date.toISOString().split('T')[0];
+          return null;
+        };
+
+        // Clean up empty strings for date fields
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { disabilities, prior_education, ...valuesWithoutArrays } =
+          values;
+
+        const cleanedValues = {
+          ...valuesWithoutArrays,
+          date_of_birth: values.date_of_birth
+            ? typeof values.date_of_birth === 'string'
+              ? values.date_of_birth
+              : values.date_of_birth.toISOString()
+            : null,
+          proposed_commencement_date: convertDateToString(
+            values.proposed_commencement_date
+          ),
+          payment_anchor_date: convertDateToString(values.payment_anchor_date),
+          passport_issue_date: convertDateToString(values.passport_issue_date),
+          passport_expiry_date: convertDateToString(
+            values.passport_expiry_date
+          ),
+          welfare_start_date: convertDateToString(values.welfare_start_date),
+          oshc_start_date: convertDateToString(values.oshc_start_date),
+          oshc_end_date: convertDateToString(values.oshc_end_date),
+          english_test_date: convertDateToString(values.english_test_date),
+          // Normalize flags: null/undefined → '@' to ensure consistency with validation
+          disability_flag:
+            values.disability_flag === null ||
+            values.disability_flag === undefined
+              ? '@'
+              : values.disability_flag,
+          prior_education_flag:
+            values.prior_education_flag === null ||
+            values.prior_education_flag === undefined
+              ? '@'
+              : values.prior_education_flag,
+          email: values.email || null,
+          alternative_email: values.alternative_email || null,
+          g_email: values.g_email || null,
+          agent_id: values.agent_id === 'none' ? null : values.agent_id || null,
+          timetable_id: values.timetable_id || null,
+          program_id: values.program_id || null,
+          payment_plan_template_id: values.payment_plan_template_id || null,
+        };
+
+        const afterPersistDisabilitiesAndPriorEducation = async (
+          applicationId: string
+        ) => {
+          const supabase = createClient();
+          const { data: sessionData } = await supabase.auth.getSession();
+          const rtoId = (
+            sessionData.session?.user?.app_metadata as Record<string, unknown>
+          )?.rto_id as string;
+          if (!rtoId) {
+            throw new Error(
+              'Failed to save draft: User RTO not found in session metadata. Please refresh the page and try again.'
+            );
+          }
+
+          // Defensive check: ensure arrays are defined
+          const formDisabilities = values.disabilities || [];
+          const formPriorEducation = values.prior_education || [];
+
+          // Delete all existing disabilities
+          const { error: deleteDisErr } = await supabase
+            .from('application_disabilities')
+            .delete()
+            .eq('application_id', applicationId);
+
+          if (deleteDisErr) {
+            throw new Error(
+              `Failed to save draft: Could not delete existing disabilities. ${deleteDisErr.message}`
+            );
+          }
+
+          // Insert new disabilities
+          if (formDisabilities.length > 0) {
+            const disabilityInserts = formDisabilities.map((d) => ({
+              application_id: applicationId,
+              rto_id: rtoId,
+              disability_type_id: d.disability_type_id,
+            }));
+
+            const { error: insertDisErr } = await supabase
+              .from('application_disabilities')
+              .insert(disabilityInserts);
+
+            if (insertDisErr) {
+              throw new Error(
+                `Failed to save draft: Could not save disabilities. ${insertDisErr.message}`
+              );
+            }
+          }
+
+          // Delete all existing prior education
+          const { error: deletePriorEdErr } = await supabase
+            .from('application_prior_education')
+            .delete()
+            .eq('application_id', applicationId);
+
+          if (deletePriorEdErr) {
+            throw new Error(
+              `Failed to save draft: Could not delete existing prior education. ${deletePriorEdErr.message}`
+            );
+          }
+
+          // Insert new prior education
+          if (formPriorEducation.length > 0) {
+            const priorEdInserts = formPriorEducation.map((e) => ({
+              application_id: applicationId,
+              rto_id: rtoId,
+              prior_achievement_id: e.prior_achievement_id,
+              recognition_type: e.recognition_type || null,
+            }));
+
+            const { error: insertPriorEdErr } = await supabase
+              .from('application_prior_education')
+              .insert(priorEdInserts);
+
+            if (insertPriorEdErr) {
+              throw new Error(
+                `Failed to save draft: Could not save prior education. ${insertPriorEdErr.message}`
+              );
+            }
+          }
+        };
+
+        // Update application and persist arrays
+        updateMutation.mutate(
+          { id: currentApplication.id, ...cleanedValues },
+          {
+            onSuccess: async () => {
+              try {
+                await afterPersistDisabilitiesAndPriorEducation(
+                  currentApplication.id
+                );
+                resolve();
+              } catch (e) {
+                reject(e);
+              }
+            },
+            onError: (error) => {
+              reject(
+                new Error(
+                  `Failed to save draft: ${error.message}. Please check your connection and try again.`
+                )
+              );
+            },
+          }
+        );
+      });
+
+      // Step 2: Fetch complete application state from database and validate
+      // This ensures validation matches what the server will validate
+      toast.info('Validating application...');
+      const supabase = createClient();
+
+      // Fetch application from database
+      const { data: savedApplication, error: fetchError } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('id', currentApplication.id)
+        .single();
+
+      if (fetchError) {
+        console.error(
+          '[Submit Application] Error fetching application:',
+          fetchError
+        );
+        toast.error(
+          `Failed to fetch application for validation: ${fetchError.message}`
+        );
+        setIsSubmitting(false);
+        return;
       }
-    );
+
+      // Fetch arrays from junction tables
+      const { data: disabilitiesData, error: disabilitiesErr } = await supabase
+        .from('application_disabilities')
+        .select('disability_type_id')
+        .eq('application_id', currentApplication.id);
+
+      if (disabilitiesErr) {
+        console.error(
+          '[Submit Application] Error fetching disabilities:',
+          disabilitiesErr
+        );
+        toast.error(
+          `Failed to fetch disabilities for validation: ${disabilitiesErr.message}`
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { data: priorEdData, error: priorEdErr } = await supabase
+        .from('application_prior_education')
+        .select('prior_achievement_id, recognition_type')
+        .eq('application_id', currentApplication.id);
+
+      if (priorEdErr) {
+        console.error(
+          '[Submit Application] Error fetching prior education:',
+          priorEdErr
+        );
+        toast.error(
+          `Failed to fetch prior education for validation: ${priorEdErr.message}`
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Transform to match schema format
+      const applicationWithArrays = {
+        ...savedApplication,
+        disabilities: (disabilitiesData || []).map((d) => ({
+          disability_type_id: d.disability_type_id,
+        })),
+        prior_education: (priorEdData || []).map((e) => ({
+          prior_achievement_id: e.prior_achievement_id,
+          recognition_type: e.recognition_type || undefined,
+        })),
+      };
+
+      // Validate the database state (not form state)
+      const validation = validateSubmission(applicationWithArrays);
+
+      if (!validation.ok) {
+        console.error(
+          '[Submit Application] Validation failed:',
+          validation.issues
+        );
+        console.error(
+          '[Submit Application] Application data that failed:',
+          applicationWithArrays
+        );
+        const errorMessages = validation.issues
+          .map((i) => `${i.path}: ${i.message}`)
+          .join(', ');
+        toast.error(
+          `Validation failed. Please fix the following issues: ${errorMessages}`
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Step 3: Submit the application
+      toast.info('Submitting application...');
+      submitMutation.mutate(
+        { applicationId: currentApplication.id },
+        {
+          onSuccess: () => {
+            setIsSubmitting(false);
+            toast.success('Application submitted successfully');
+            window.location.href = '/applications';
+          },
+          onError: (e) => {
+            setIsSubmitting(false);
+            toast.error(`Failed to submit application: ${String(e)}`);
+          },
+        }
+      );
+    } catch (error) {
+      console.error('Submit application error:', error);
+      setIsSubmitting(false);
+      toast.error(
+        `Failed to prepare application for submission: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   };
 
   // Debounced readiness engine (single subscription; avoids heavy useWatch arrays)
-  const { isReady: isFormReadyForSubmission, isValidating } =
-    useSubmissionReadiness(form);
+  const {
+    isReady: isFormReadyForSubmission,
+    isValidating,
+    missing: missingFields,
+  } = useSubmissionReadiness(form);
+  const readinessPreview = useMemo(() => {
+    const preview = missingFields.slice(0, 5);
+    const remainder =
+      missingFields.length > preview.length
+        ? missingFields.length - preview.length
+        : 0;
+    return { preview, remainder };
+  }, [missingFields]);
 
   const StepContent = useMemo(() => {
     if (activeStep === 0) return <Step1_PersonalDetails />;
@@ -785,28 +1087,69 @@ export function NewApplicationWizard({ applicationId }: Props) {
               {StepContent}
             </div>
           </CardContent>
-          <CardFooter className="flex items-center justify-between">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => goStep(Math.max(0, activeStep - 1))}
-                disabled={isReadOnly}
-                aria-label="Previous step"
+          <CardFooter className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-4 lg:w-2/3">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => goStep(Math.max(0, activeStep - 1))}
+                  disabled={isReadOnly}
+                  aria-label="Previous step"
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    goStep(Math.min(steps.length - 1, activeStep + 1))
+                  }
+                  disabled={isReadOnly}
+                  aria-label="Next step"
+                >
+                  Next
+                </Button>
+              </div>
+              <div
+                aria-live="polite"
+                className="border-muted-foreground/40 bg-muted/30 text-muted-foreground rounded-md border border-dashed p-3 text-sm"
               >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() =>
-                  goStep(Math.min(steps.length - 1, activeStep + 1))
-                }
-                disabled={isReadOnly}
-                aria-label="Next step"
-              >
-                Next
-              </Button>
+                {isValidating ? (
+                  <span>Checking submission readiness…</span>
+                ) : missingFields.length === 0 ? (
+                  <span className="text-emerald-600">
+                    All mandatory fields are completed. You can submit.
+                  </span>
+                ) : (
+                  <>
+                    <p className="text-foreground">
+                      {missingFields.length} requirement
+                      {missingFields.length === 1 ? '' : 's'} remaining before
+                      you can submit:
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {readinessPreview.preview.map((field) => (
+                        <Badge
+                          key={field}
+                          variant="secondary"
+                          className="text-xs font-normal"
+                        >
+                          {formatFieldLabel(field)}
+                        </Badge>
+                      ))}
+                      {readinessPreview.remainder > 0 && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-normal"
+                        >
+                          +{readinessPreview.remainder} more
+                        </Badge>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 lg:w-1/3">
               {/* Inline uploader */}
               <label className="relative inline-flex">
                 <input
@@ -893,10 +1236,11 @@ export function NewApplicationWizard({ applicationId }: Props) {
                   disabled={
                     submitMutation.isPending ||
                     !currentApplication?.id ||
-                    isValidating
+                    isValidating ||
+                    isSubmitting
                   }
                 >
-                  {submitMutation.isPending
+                  {isSubmitting || submitMutation.isPending
                     ? 'Submitting...'
                     : 'Submit Application'}
                 </MagneticButton>

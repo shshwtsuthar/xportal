@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CountrySelect } from '@/components/ui/country-select';
-import { ApplicationFormValues } from '@/src/schemas';
+import { ApplicationFormValues } from '@/src/lib/applicationSchema';
 import { useGetAgents } from '@/src/hooks/useGetAgents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 

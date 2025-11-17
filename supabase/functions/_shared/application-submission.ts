@@ -1,6 +1,8 @@
 import {
   applicationSchema,
   type ApplicationFormValues,
+  isAustralianAddress,
+  deriveIsInternational,
 } from './application.ts';
 
 // Use master schema for submission validation - ensures consistency
@@ -35,16 +37,47 @@ function normalizeIncomingValues(values: unknown): unknown {
   ) {
     withUndef.is_international = withUndef.is_international_student;
   }
+  if (typeof withUndef.citizenship_status_code === 'string') {
+    withUndef.is_international = deriveIsInternational(
+      withUndef.citizenship_status_code
+    );
+  }
   // Normalize boolean-like flags to AVETMISS enums expected by schema
+  // Ensure flags are never undefined - default to '@' if missing
   withUndef.at_school_flag = normalizeBooleanFlagToAvetmiss(
     withUndef.at_school_flag
   );
-  withUndef.disability_flag = normalizeBooleanFlagToAvetmiss(
-    withUndef.disability_flag
-  );
-  withUndef.prior_education_flag = normalizeBooleanFlagToAvetmiss(
-    withUndef.prior_education_flag
-  );
+  withUndef.disability_flag =
+    normalizeBooleanFlagToAvetmiss(withUndef.disability_flag) ?? '@';
+  withUndef.prior_education_flag =
+    normalizeBooleanFlagToAvetmiss(withUndef.prior_education_flag) ?? '@';
+  // Normalize Date objects to ISO string format (YYYY-MM-DD)
+  // This ensures both client and server validation handle dates consistently
+  const dateFields: Array<keyof typeof withUndef> = [
+    'date_of_birth',
+    'proposed_commencement_date',
+    'payment_anchor_date',
+    'passport_issue_date',
+    'passport_expiry_date',
+    'welfare_start_date',
+    'oshc_start_date',
+    'oshc_end_date',
+    'english_test_date',
+  ];
+  for (const field of dateFields) {
+    const value = withUndef[field];
+    if (value instanceof Date) {
+      // Convert Date to ISO string and extract YYYY-MM-DD portion
+      withUndef[field] = value.toISOString().split('T')[0];
+    } else if (value && typeof value === 'string') {
+      // Ensure string dates are in YYYY-MM-DD format if they're valid ISO dates
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        // If it's a valid date string, normalize to YYYY-MM-DD
+        withUndef[field] = date.toISOString().split('T')[0];
+      }
+    }
+  }
   return withUndef;
 }
 
@@ -200,6 +233,26 @@ export function getSubmissionMissingFields(values: SubmissionValues): string[] {
   if (values.prior_education_flag === undefined)
     missing.push('prior_education_flag');
 
+  // If disability_flag is 'Y', disabilities array must have at least one item
+  // Use defensive defaults to handle undefined/null arrays gracefully
+  // This matches client-side validation in application-submission.ts
+  if (values.disability_flag === 'Y') {
+    const disabilities = values.disabilities || [];
+    if (disabilities.length === 0) {
+      missing.push('disabilities');
+    }
+  }
+
+  // If prior_education_flag is 'Y', prior_education array must have at least one item
+  // Use defensive defaults to handle undefined/null arrays gracefully
+  // This matches client-side validation in application-submission.ts
+  if (values.prior_education_flag === 'Y') {
+    const priorEducation = values.prior_education || [];
+    if (priorEducation.length === 0) {
+      missing.push('prior_education');
+    }
+  }
+
   // CRICOS: if international
   if (values.is_international === true) {
     // Country of citizenship
@@ -216,10 +269,7 @@ export function getSubmissionMissingFields(values: SubmissionValues): string[] {
     }
 
     // Passport number if student "in Australia"
-    const inAustralia =
-      values.street_country === 'AU' ||
-      (values.state && values.state.trim() !== '');
-    if (inAustralia) {
+    if (isAustralianAddress(values.state, values.street_country)) {
       if (
         !values.passport_number ||
         values.passport_number.trim().length === 0

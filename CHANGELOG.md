@@ -1,4 +1,9 @@
 ## [Unreleased]
+- fix(applications): Align wizard validation with edge functions
+  - Promoted `src/lib/applicationSchema.ts` as the single source of truth and re-exported it into Supabase edge code to eliminate drift.
+  - Restored domestic USI exemptions, derived under-18 welfare checks, and Australian-only passport rules on both client and server.
+  - `is_international` now derives from citizenship; CRICOS step shows a read-only badge instead of a second toggle.
+  - `useSubmissionReadiness` derives flags before validation and surfaces the remaining blocking fields beside the Submit action.
 - feat(commissions): Agent commission calculation and tracking system
   - Added commission fields to agents table (rate, active status, validity dates)
   - Created commission_invoices table to track commission invoices generated from student payments
