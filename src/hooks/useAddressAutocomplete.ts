@@ -105,19 +105,33 @@ const buildStreetNumberName = (address: RawMappifyAddress) => {
     address.numberLast !== address.numberFirst;
   const numberPart = hasRange
     ? `${address.numberFirst}-${address.numberLast}`
-    : (address.numberFirst ?? '');
+    : (address.numberFirst?.toString() ?? '');
   const streetParts = [
     address.streetName,
     address.streetType,
     address.streetSuffixCode,
-  ].filter(Boolean);
-  const streetName = streetParts.join(' ').trim();
+  ]
+    .map((part) => formatTitleCase(part))
+    .filter(Boolean)
+    .join(' ')
+    .trim();
 
-  if (address.streetAddress) {
-    return address.streetAddress;
+  return [numberPart, streetParts].filter(Boolean).join(' ').trim();
+};
+
+/**
+ * Normalizes casing to Title Case for improved readability.
+ */
+const formatTitleCase = (value?: string | null) => {
+  if (!value) {
+    return '';
   }
-
-  return [numberPart, streetName].filter(Boolean).join(' ').trim();
+  return value
+    .toLowerCase()
+    .split(' ')
+    .filter(Boolean)
+    .map((segment) => segment[0].toUpperCase() + segment.slice(1))
+    .join(' ');
 };
 
 const buildUnitDetails = (address: RawMappifyAddress) => {
@@ -142,9 +156,9 @@ const toSuggestion = (
   const fields: AddressFormFields = {
     street_building_name: address.buildingName ?? '',
     street_unit_details: buildUnitDetails(address),
-    street_number_name: label,
+    street_number_name: buildStreetNumberName(address),
     street_po_box: '',
-    suburb: address.suburb ?? '',
+    suburb: formatTitleCase(address.suburb),
     state: address.state ?? '',
     postcode: address.postCode ?? '',
     street_country: 'AU',
