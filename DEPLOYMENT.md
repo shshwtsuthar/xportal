@@ -1,3 +1,28 @@
+### Address Card UI Refresh (2025-11-18)
+
+1) Client deployment
+- Redeploy the Next.js app to ship the updated address card layout and styling changes.
+- No database migrations or environment variables required.
+
+2) Post-deployment verification
+- Open `/applications/new` and verify:
+  - Street and postal address cards no longer show subheadings.
+  - Address search buttons are positioned inline with the street number/name and postal street number/name inputs.
+  - Hover states on search buttons and selected items in the address search dialog use sidebar-accent colors.
+  - Scrollbar is hidden in the address search results list while scrolling remains functional.
+
+### Address Autocomplete Wizard (2025-11-18)
+
+1) Environment variables
+- Ensure `NEXT_PUBLIC_MAPPIFY_API_KEY` is defined for every environment (local, preview, production). The key powers the client-side Mappify autocomplete requests.
+
+2) Client deployment
+- Redeploy the Next.js app so the new `AddressSearchCommand` component and TanStack Query hook ship together.
+
+3) Post-deployment verification
+- Open `/applications/new`, use the Street Address “Search address” action, and confirm suggestions populate all street fields and, when toggled, the postal block.
+- Uncheck “postal same as street,” search with the postal command, and verify the checkbox remains unchecked while the postal fields are filled independently.
+
 ### Validation Alignment & Readiness UI (2025-11-17)
 
 1) Database migrations

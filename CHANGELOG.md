@@ -1,4 +1,12 @@
 ## [Unreleased]
+- refactor(applications): Improve address card layout and styling in new application wizard
+  - Removed subheadings ("Search and autofill via Mappify", "Keep enabled only when different from street") from street and postal address cards.
+  - Moved address search buttons inline with the relevant input fields (street number/name and postal street number/name).
+  - Updated AddressSearchCommand hover and selected states to use sidebar-accent colors for consistency with sidebar navigation.
+  - Hidden scrollbar in address search results list (scrollbar-none utility) while maintaining scroll functionality.
+- feat(applications): Address autocomplete via Mappify
+  - Added TanStack Query hook `useAddressAutocomplete` and `AddressSearchCommand` UI to surface Mappify suggestions.
+  - Street and postal cards in the new application wizard now include in-card command palettes that search, select, and auto-fill both address blocks (with postal sync awareness).
 - feat(applications): Animate submission readiness counter
   - Extracted readiness summary into `SubmissionReadinessCard` to minimize rerenders.
   - Replaced the static missing-fields count with `NumberFlow` for smooth animated transitions.

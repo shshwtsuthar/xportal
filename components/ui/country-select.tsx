@@ -16,6 +16,7 @@ type CountrySelectProps = {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  allowedCountries?: string[];
 };
 
 /**
@@ -28,8 +29,21 @@ export const CountrySelect = ({
   placeholder = 'Select country',
   disabled = false,
   className = 'w-full',
+  allowedCountries,
 }: CountrySelectProps) => {
   const countries = useMemo(() => getAllCountries(), []);
+  const filteredCountries = useMemo(() => {
+    if (!allowedCountries || allowedCountries.length === 0) {
+      return countries;
+    }
+    const normalized = new Set(
+      allowedCountries.map((code) => code.trim().toUpperCase())
+    );
+    const subset = countries.filter((country) =>
+      normalized.has(country.code.toUpperCase())
+    );
+    return subset.length > 0 ? subset : countries;
+  }, [allowedCountries, countries]);
 
   return (
     <Select
@@ -41,7 +55,7 @@ export const CountrySelect = ({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {countries.map((country) => (
+        {filteredCountries.map((country) => (
           <SelectItem key={country.code} value={country.code}>
             {country.name}
           </SelectItem>

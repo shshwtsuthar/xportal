@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import {
   FormControl,
@@ -19,9 +20,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CountrySelect } from '@/components/ui/country-select';
+import { StateSelect } from '@/components/ui/state-select';
 import { ApplicationFormValues } from '@/src/lib/applicationSchema';
 import { useGetAgents } from '@/src/hooks/useGetAgents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AddressSearchCommand } from '@/app/(app)/applications/_components/wizard/AddressSearchCommand';
+import type { AddressSuggestion } from '@/src/hooks/useAddressAutocomplete';
 
 // Extracted to avoid re-creation on every parent render which can close dropdowns
 const AgentSelector = () => {
@@ -69,6 +73,71 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
     control: form.control,
     name: 'is_international',
   });
+  const streetCountry = useWatch({
+    control: form.control,
+    name: 'street_country',
+  });
+  const postalCountry = useWatch({
+    control: form.control,
+    name: 'postal_country',
+  });
+  const setFieldValue = useCallback(
+    (field: keyof ApplicationFormValues, value: string) => {
+      form.setValue(field, value, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: false,
+      });
+    },
+    [form]
+  );
+
+  const handleStreetSearchSelect = useCallback(
+    (suggestion: AddressSuggestion) => {
+      const { fields } = suggestion;
+      setFieldValue('street_building_name', fields.street_building_name);
+      setFieldValue('street_unit_details', fields.street_unit_details);
+      setFieldValue('street_number_name', fields.street_number_name);
+      setFieldValue('street_po_box', fields.street_po_box);
+      setFieldValue('suburb', fields.suburb);
+      setFieldValue('state', fields.state);
+      setFieldValue('postcode', fields.postcode);
+      setFieldValue('street_country', fields.street_country);
+
+      if (form.getValues('postal_is_same_as_street')) {
+        setFieldValue('postal_building_name', fields.street_building_name);
+        setFieldValue('postal_unit_details', fields.street_unit_details);
+        setFieldValue('postal_number_name', fields.street_number_name);
+        setFieldValue('postal_po_box', fields.street_po_box);
+        setFieldValue('postal_suburb', fields.suburb);
+        setFieldValue('postal_state', fields.state);
+        setFieldValue('postal_postcode', fields.postcode);
+        setFieldValue('postal_country', fields.street_country);
+      }
+    },
+    [form, setFieldValue]
+  );
+
+  const handlePostalSearchSelect = useCallback(
+    (suggestion: AddressSuggestion) => {
+      const { fields } = suggestion;
+      form.setValue('postal_is_same_as_street', false, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: false,
+      });
+      setFieldValue('postal_building_name', fields.street_building_name);
+      setFieldValue('postal_unit_details', fields.street_unit_details);
+      setFieldValue('postal_number_name', fields.street_number_name);
+      setFieldValue('postal_po_box', fields.street_po_box);
+      setFieldValue('postal_suburb', fields.suburb);
+      setFieldValue('postal_state', fields.state);
+      setFieldValue('postal_postcode', fields.postcode);
+      setFieldValue('postal_country', fields.street_country);
+    },
+    [form, setFieldValue]
+  );
+
   return (
     <div className="grid gap-8">
       <Card>
@@ -247,6 +316,13 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
           <CardTitle className="text-lg font-medium">Street address</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
+          <div className="md:col-span-3">
+            <AddressSearchCommand
+              onSelect={handleStreetSearchSelect}
+              label="Search street address"
+              placeholder="e.g. 252 Botany Road"
+            />
+          </div>
           <FormField
             control={form.control}
             name="street_building_name"
@@ -319,7 +395,12 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
               <FormItem>
                 <FormLabel>State *</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="VIC" />
+                  <StateSelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    countryCode={streetCountry}
+                    placeholder="VIC"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -352,6 +433,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
                     value={field.value}
                     onValueChange={field.onChange}
                     placeholder="Select country"
+                    allowedCountries={['AU']}
                   />
                 </FormControl>
                 <FormMessage />
@@ -388,6 +470,13 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
           />
           {!samePostal && (
             <div className="grid gap-4 md:grid-cols-3">
+              <div className="md:col-span-3">
+                <AddressSearchCommand
+                  onSelect={handlePostalSearchSelect}
+                  label="Search postal address"
+                  placeholder="e.g. PO Box 123 Richmond"
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="postal_building_name"
@@ -418,7 +507,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
                 control={form.control}
                 name="postal_number_name"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="md:col-span-3">
                     <FormLabel>Postal street number/name</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="123 Example St" />
@@ -460,7 +549,12 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
                   <FormItem>
                     <FormLabel>Postal state</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="VIC" />
+                      <StateSelect
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        countryCode={postalCountry}
+                        placeholder="VIC"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -490,6 +584,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Select country"
+                        allowedCountries={['AU']}
                       />
                     </FormControl>
                     <FormMessage />
