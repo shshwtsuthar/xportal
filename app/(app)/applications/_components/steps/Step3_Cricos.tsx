@@ -10,6 +10,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { DateInput } from '@/components/ui/date-input';
 import {
   Select,
   SelectContent,
@@ -162,18 +163,9 @@ export const Step3_Cricos = () => {
                   <FormItem>
                     <FormLabel>Passport issue date</FormLabel>
                     <FormControl>
-                      <Input
-                        type="date"
-                        value={
-                          field.value
-                            ? typeof field.value === 'string'
-                              ? field.value
-                              : field.value instanceof Date
-                                ? field.value.toISOString().split('T')[0]
-                                : ''
-                            : ''
-                        }
-                        onChange={(e) => field.onChange(e.target.value || '')}
+                      <DateInput
+                        value={field.value}
+                        onChange={(value) => field.onChange(value || '')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -188,18 +180,9 @@ export const Step3_Cricos = () => {
                   <FormItem>
                     <FormLabel>Passport expiry date</FormLabel>
                     <FormControl>
-                      <Input
-                        type="date"
-                        value={
-                          field.value
-                            ? typeof field.value === 'string'
-                              ? field.value
-                              : field.value instanceof Date
-                                ? field.value.toISOString().split('T')[0]
-                                : ''
-                            : ''
-                        }
-                        onChange={(e) => field.onChange(e.target.value || '')}
+                      <DateInput
+                        value={field.value}
+                        onChange={(value) => field.onChange(value || '')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -362,20 +345,9 @@ export const Step3_Cricos = () => {
                         <FormItem>
                           <FormLabel>Nominated welfare start date *</FormLabel>
                           <FormControl>
-                            <Input
-                              type="date"
-                              value={
-                                field.value
-                                  ? typeof field.value === 'string'
-                                    ? field.value
-                                    : field.value instanceof Date
-                                      ? field.value.toISOString().split('T')[0]
-                                      : ''
-                                  : ''
-                              }
-                              onChange={(e) =>
-                                field.onChange(e.target.value || '')
-                              }
+                            <DateInput
+                              value={field.value}
+                              onChange={(value) => field.onChange(value || '')}
                             />
                           </FormControl>
                           <FormMessage />
@@ -526,20 +498,9 @@ export const Step3_Cricos = () => {
                       <FormItem>
                         <FormLabel>OSHC Start Date *</FormLabel>
                         <FormControl>
-                          <Input
-                            type="date"
-                            value={
-                              field.value
-                                ? typeof field.value === 'string'
-                                  ? field.value
-                                  : field.value instanceof Date
-                                    ? field.value.toISOString().split('T')[0]
-                                    : ''
-                                : ''
-                            }
-                            onChange={(e) =>
-                              field.onChange(e.target.value || '')
-                            }
+                          <DateInput
+                            value={field.value}
+                            onChange={(value) => field.onChange(value || '')}
                           />
                         </FormControl>
                         <FormMessage />
@@ -554,20 +515,9 @@ export const Step3_Cricos = () => {
                       <FormItem>
                         <FormLabel>OSHC End Date *</FormLabel>
                         <FormControl>
-                          <Input
-                            type="date"
-                            value={
-                              field.value
-                                ? typeof field.value === 'string'
-                                  ? field.value
-                                  : field.value instanceof Date
-                                    ? field.value.toISOString().split('T')[0]
-                                    : ''
-                                : ''
-                            }
-                            onChange={(e) =>
-                              field.onChange(e.target.value || '')
-                            }
+                          <DateInput
+                            value={field.value}
+                            onChange={(value) => field.onChange(value || '')}
                           />
                         </FormControl>
                         <FormDescription className="md:col-span-2">
@@ -661,20 +611,9 @@ export const Step3_Cricos = () => {
                       <FormItem>
                         <FormLabel>Test Date</FormLabel>
                         <FormControl>
-                          <Input
-                            type="date"
-                            value={
-                              field.value
-                                ? typeof field.value === 'string'
-                                  ? field.value
-                                  : field.value instanceof Date
-                                    ? field.value.toISOString().split('T')[0]
-                                    : ''
-                                : ''
-                            }
-                            onChange={(e) =>
-                              field.onChange(e.target.value || '')
-                            }
+                          <DateInput
+                            value={field.value}
+                            onChange={(value) => field.onChange(value || '')}
                           />
                         </FormControl>
                         <FormMessage />

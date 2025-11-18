@@ -9,6 +9,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { DateInput } from '@/components/ui/date-input';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
@@ -150,18 +151,9 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
               <FormItem>
                 <FormLabel>Date of birth *</FormLabel>
                 <FormControl>
-                  <Input
-                    type="date"
-                    value={
-                      field.value
-                        ? typeof field.value === 'string'
-                          ? field.value
-                          : field.value instanceof Date
-                            ? field.value.toISOString().split('T')[0]
-                            : ''
-                        : ''
-                    }
-                    onChange={(e) => field.onChange(e.target.value || '')}
+                  <DateInput
+                    value={field.value}
+                    onChange={(value) => field.onChange(value || '')}
                   />
                 </FormControl>
                 <FormMessage />
