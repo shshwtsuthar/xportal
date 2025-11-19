@@ -70,6 +70,7 @@ import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
 import { SendOfferDialog } from './SendOfferDialog';
 import { useApproveApplication } from '@/src/hooks/useApproveApplication';
 import { useGenerateOfferLetter } from '@/src/hooks/useGenerateOfferLetter';
+import { ArchiveIcon, type ArchiveIconHandle } from '@/components/ui/archive';
 import {
   getApplicationsTableKey,
   useGetTablePreferences,
@@ -87,6 +88,25 @@ import type { ApplicationFilters } from '@/src/hooks/useApplicationsFilters';
 
 type Props = {
   filters?: ApplicationFilters;
+};
+
+// Archive button component that handles hover animation
+const ArchiveButton = ({ onArchive }: { onArchive: () => void }) => {
+  const archiveIconRef = useRef<ArchiveIconHandle>(null);
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-8 w-8 p-0"
+      onClick={onArchive}
+      onMouseEnter={() => archiveIconRef.current?.startAnimation()}
+      onMouseLeave={() => archiveIconRef.current?.stopAnimation()}
+      aria-label="Archive application"
+    >
+      <ArchiveIcon ref={archiveIconRef} size={16} />
+    </Button>
+  );
 };
 
 export type ApplicationsDataTableRef = {
@@ -496,6 +516,24 @@ export const ApplicationsDataTable = forwardRef<
       );
     }
 
+    // For DRAFT status, show Edit and Archive buttons
+    if (app.status === 'DRAFT') {
+      return (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            asChild
+            aria-label="Edit application"
+          >
+            <Link href={`/applications/edit/${app.id}`}>Edit</Link>
+          </Button>
+          <ArchiveButton onArchive={() => handleArchive(app.id)} />
+        </div>
+      );
+    }
+
     // For other statuses, show dropdown menu
     return (
       <DropdownMenu>
@@ -509,78 +547,7 @@ export const ApplicationsDataTable = forwardRef<
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {app.status === 'DRAFT' && (
-            <DropdownMenuItem asChild>
-              <Link href={`/applications/edit/${app.id}`}>Continue</Link>
-            </DropdownMenuItem>
-          )}
-          {app.status === 'DRAFT' && (
-            <>
-              <DropdownMenuSeparator />
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem
-                    onSelect={(e) => e.preventDefault()}
-                    className="text-amber-600 focus:text-amber-600"
-                  >
-                    Archive
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Archive application</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will mark the application as archived and make it
-                      read-only. You can still view it under the Archived tab.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => handleArchive(app.id)}
-                      className="bg-amber-600 text-white hover:bg-amber-600/90"
-                    >
-                      Archive
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
-          {app.status === 'DRAFT' && (
-            <>
-              <DropdownMenuSeparator />
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={(e) => e.preventDefault()}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Application</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure? This will permanently delete this
-                      application. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => handleDelete(app.id)}
-                      className="bg-destructive hover:bg-destructive/90 text-white"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
+          {/* Other status actions can go here if needed */}
         </DropdownMenuContent>
       </DropdownMenu>
     );
