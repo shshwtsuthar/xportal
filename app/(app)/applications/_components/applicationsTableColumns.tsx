@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
+import { CopyToClipboardBadge } from '@/components/ui/copy-to-clipboard-badge';
 import { format } from 'date-fns';
 import { Tables } from '@/database.types';
 import { getCountryName } from '@/lib/utils/country';
@@ -124,7 +125,12 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       width: 260,
       sortable: true,
       sortAccessor: (r) => r.application_id_display || r.id,
-      render: (r) => r.application_id_display || r.id,
+      render: (r) => (
+        <CopyToClipboardBadge
+          value={r.application_id_display || r.id}
+          label="Application ID"
+        />
+      ),
       group: 'Identity',
     },
     {
@@ -219,7 +225,12 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       width: 220,
       sortable: true,
       sortAccessor: (r) => r.email || '',
-      render: (r) => r.email || '—',
+      render: (r) =>
+        r.email ? (
+          <CopyToClipboardBadge value={r.email} label="Email address" />
+        ) : (
+          '—'
+        ),
       group: 'Contact',
     },
     {
@@ -228,7 +239,15 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       width: 220,
       sortable: true,
       sortAccessor: (r) => r.alternative_email || '',
-      render: (r) => r.alternative_email || '—',
+      render: (r) =>
+        r.alternative_email ? (
+          <CopyToClipboardBadge
+            value={r.alternative_email}
+            label="Alternative email address"
+          />
+        ) : (
+          '—'
+        ),
       group: 'Contact',
     },
     {
