@@ -16,6 +16,14 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useSendEmail } from '@/src/hooks/useSendEmail';
+import { useGetMailTemplates } from '@/src/hooks/useGetMailTemplates';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -41,11 +49,22 @@ export function ComposeEmailDialog({
   const [bccRecipients, setBccRecipients] = React.useState<string[]>([]);
   const [subject, setSubject] = React.useState('');
   const [html, setHtml] = React.useState('');
+  const [selectedTemplateId, setSelectedTemplateId] = React.useState<
+    string | undefined
+  >();
   const [attachments, setAttachments] = React.useState<
     Array<{ file: File; id: string }>
   >([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { mutateAsync, isPending } = useSendEmail();
+
+  // Fetch mail templates for the dropdown
+  const { data: templatesData } = useGetMailTemplates({
+    page: 1,
+    pageSize: 100, // Fetch enough templates for dropdown
+    sort: { column: 'created_at', desc: true },
+  });
+  const templates = templatesData?.items ?? [];
 
   const close = () => onOpenChange(false);
 
@@ -73,8 +92,9 @@ export function ComposeEmailDialog({
       setCcInput('');
       setBccInput('');
       setAttachments([]);
-      setShowCc(false);
-      setShowBcc(false);
+      setSelectedTemplateId(undefined);
+      // Keep Cc and Bcc fields displayed/open by default
+      // Don't reset showCc and showBcc to false
     }
   }, [open, initialRecipients]);
 
@@ -244,7 +264,26 @@ export function ComposeEmailDialog({
       setBccInput('');
       setAttachments([]);
       setIsFullscreen(false);
+      setSelectedTemplateId(undefined);
     }, 0);
+  };
+
+  // Handle template selection
+  const handleTemplateChange = (value: string) => {
+    if (value === 'none') {
+      // "None" option selected - clear template selection
+      setSelectedTemplateId(undefined);
+      return;
+    }
+
+    // Find the selected template
+    const selectedTemplate = templates.find((t) => t.id === value);
+    if (selectedTemplate) {
+      setSelectedTemplateId(value);
+      // Replace Subject and Body with template content
+      setSubject(selectedTemplate.subject);
+      setHtml(selectedTemplate.html_body);
+    }
   };
 
   return (
@@ -456,6 +495,31 @@ export function ComposeEmailDialog({
           <div>
             <label
               className="text-muted-foreground mb-1 block text-xs"
+              htmlFor="template-select"
+            >
+              Select a Template (optional)
+            </label>
+            <Select
+              value={selectedTemplateId || 'none'}
+              onValueChange={handleTemplateChange}
+            >
+              <SelectTrigger id="template-select" className="w-full">
+                <SelectValue placeholder="Select a template..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label
+              className="text-muted-foreground mb-1 block text-xs"
               htmlFor="subject"
             >
               Subject
@@ -494,7 +558,7 @@ export function ComposeEmailDialog({
 
           <div className="mt-2">
             <MinimalTiptap
-              content=""
+              content={html}
               onChange={setHtml}
               placeholder="Start typing..."
             />
