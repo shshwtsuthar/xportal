@@ -70,11 +70,23 @@ serve(async (req: Request) => {
       );
     }
 
-    // Determine anchor date with precedence: user-selected first, then template rule
+    // Payment plan template and anchor date are required
     if (!app.payment_plan_template_id) {
       return new Response(
         JSON.stringify({
-          error: 'payment_plan_template_id not set on application',
+          error: 'payment_plan_template_id is required',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
+    if (!app.payment_anchor_date) {
+      return new Response(
+        JSON.stringify({
+          error: 'payment_anchor_date is required',
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -98,17 +110,8 @@ serve(async (req: Request) => {
       );
     }
 
-    // Anchor precedence: user-selected > commencement > offer
-    let anchorDate: string | null = null;
-    if (app.payment_anchor_date) {
-      anchorDate = app.payment_anchor_date as string;
-    } else if (app.proposed_commencement_date) {
-      anchorDate = app.proposed_commencement_date as string;
-    } else if (app.offer_generated_at) {
-      anchorDate = new Date(app.offer_generated_at as string)
-        .toISOString()
-        .slice(0, 10);
-    }
+    // Use the required payment anchor date
+    const anchorDate = app.payment_anchor_date as string;
 
     if (!anchorDate) {
       return new Response(

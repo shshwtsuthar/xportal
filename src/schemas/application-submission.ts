@@ -253,6 +253,17 @@ export function getSubmissionMissingFields(values: SubmissionValues): string[] {
     }
   }
 
+  // Payment Plan: template and anchor date are always required
+  if (
+    !values.payment_plan_template_id ||
+    values.payment_plan_template_id.trim() === ''
+  ) {
+    missing.push('payment_plan_template_id');
+  }
+  if (!values.payment_anchor_date || values.payment_anchor_date.trim() === '') {
+    missing.push('payment_anchor_date');
+  }
+
   // CRICOS: if international
   if (values.is_international === true) {
     // Country of citizenship

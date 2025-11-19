@@ -38,19 +38,33 @@ const generateBreadcrumbs = (pathname: string): Crumb[] => {
   let hrefAcc = '';
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
-    hrefAcc += `/${seg}`;
 
     // If the path looks like edit/[id], prefer "Edit" and skip the id label
     if (seg === 'edit' && i + 1 < segments.length) {
-      crumbs.push({
-        label: SEGMENT_LABELS[segments[i - 1]] ?? 'Edit',
-        href: hrefAcc,
-      });
+      // Add the parent segment (e.g., "Applications") if it exists
+      if (i > 0) {
+        const parentLabel =
+          SEGMENT_LABELS[segments[i - 1]] ??
+          segments[i - 1].charAt(0).toUpperCase() + segments[i - 1].slice(1);
+        // Build parent href by joining segments up to (but not including) "edit"
+        const parentHref = '/' + segments.slice(0, i).join('/');
+        crumbs.push({
+          label: parentLabel,
+          href: parentHref,
+        });
+      }
       // The id segment will be the last; display as page (no link)
       crumbs.push({ label: 'Details' });
       break;
     }
 
+    // Skip adding current segment if next segment is "edit" (will be handled above)
+    if (i + 1 < segments.length && segments[i + 1] === 'edit') {
+      hrefAcc += `/${seg}`;
+      continue;
+    }
+
+    hrefAcc += `/${seg}`;
     // Name each segment if known
     const label =
       SEGMENT_LABELS[seg] ?? seg.charAt(0).toUpperCase() + seg.slice(1);

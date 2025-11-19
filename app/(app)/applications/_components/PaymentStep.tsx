@@ -4,9 +4,22 @@ import { useMemo, useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Tables } from '@/database.types';
 import { ApplicationFormValues } from '@/src/lib/applicationSchema';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -34,6 +47,7 @@ import { cn } from '@/lib/utils';
 import { formatDateToLocal, calculateDueDates } from '@/lib/utils/date';
 import { useGetPaymentPlanTemplates } from '@/src/hooks/useGetPaymentPlanTemplates';
 import { useGetTemplateInstallments } from '@/src/hooks/useGetTemplateInstallments';
+import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 
 // Union type that can handle both draft and final application forms
 type FlexibleFormValues =
@@ -53,6 +67,7 @@ type Props = {
 
 export const PaymentStep = ({ application, form }: Props) => {
   const programId = form.watch('program_id');
+  const { data: programs = [], isLoading: programsLoading } = useGetPrograms();
   const {
     data: templates = [],
     isLoading: templatesLoading,
@@ -84,8 +99,10 @@ export const PaymentStep = ({ application, form }: Props) => {
 
   // Update form values when payment plan data changes
   useEffect(() => {
-    if (selectedTemplateId && anchorDate) {
+    if (selectedTemplateId) {
       form.setValue('payment_plan_template_id', selectedTemplateId);
+    }
+    if (anchorDate) {
       form.setValue('payment_anchor_date', formatDateToLocal(anchorDate));
     }
   }, [selectedTemplateId, anchorDate, form]);
@@ -98,56 +115,39 @@ export const PaymentStep = ({ application, form }: Props) => {
     return calculateDueDates(anchorDateString, installments);
   }, [anchorDate, installments]);
 
+  const [isDateOpen, setIsDateOpen] = useState(false);
+
   return (
     <div className="grid gap-6">
-      <div>
-        <h3 className="text-lg font-medium">Payment Plan Selection</h3>
-        <p className="text-muted-foreground text-sm">
-          Choose your payment plan and set the anchor date for calculating due
-          dates
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
             Payment Plan
           </CardTitle>
+          <CardDescription>
+            Select the payment plan for the program(s) and set the anchor date.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
           <div className="grid gap-2">
             <Label>Program</Label>
-            <div className="text-muted-foreground text-sm">
-              {programId ? `Program ID: ${programId}` : 'No program selected'}
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Template</Label>
-            <Select
-              value={selectedTemplateId}
-              onValueChange={setSelectedTemplateId}
-            >
-              <SelectTrigger aria-label="Select payment template">
-                <SelectValue placeholder="Select a template" />
+            <Select value={programId} disabled>
+              <SelectTrigger className="w-full" aria-label="Program">
+                <SelectValue placeholder="No program selected" />
               </SelectTrigger>
               <SelectContent>
-                {templatesLoading ? (
+                {programsLoading ? (
                   <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                    Loading templates...
+                    Loading programs...
                   </div>
-                ) : templatesError ? (
-                  <div className="px-2 py-1.5 text-sm text-red-500">
-                    Error loading templates
-                  </div>
-                ) : templates.length === 0 ? (
+                ) : programs.length === 0 ? (
                   <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                    No templates available for this program
+                    No programs available
                   </div>
                 ) : (
-                  templates.map((t) => (
-                    <SelectItem key={t.id} value={t.id as string}>
-                      {t.name} {t.is_default ? '(Default)' : ''}
+                  programs.map((p) => (
+                    <SelectItem key={p.id} value={p.id as string}>
+                      {p.name}
                     </SelectItem>
                   ))
                 )}
@@ -155,80 +155,159 @@ export const PaymentStep = ({ application, form }: Props) => {
             </Select>
           </div>
 
-          <div className="grid gap-2">
-            <Label>Anchor Date *</Label>
-            <p className="text-muted-foreground text-sm">
-              Select the date from which payment due dates will be calculated
-            </p>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !anchorDate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {anchorDate ? format(anchorDate, 'PPP') : 'Pick a date'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={anchorDate}
-                  onSelect={setAnchorDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <FormField
+            control={form.control}
+            name="payment_plan_template_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Template *</FormLabel>
+                <FormControl>
+                  <Select
+                    value={field.value || selectedTemplateId}
+                    onValueChange={(value) => {
+                      setSelectedTemplateId(value);
+                      field.onChange(value);
+                    }}
+                  >
+                    <SelectTrigger
+                      className="w-full"
+                      aria-label="Select payment template"
+                    >
+                      <SelectValue placeholder="Select a template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templatesLoading ? (
+                        <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                          Loading templates...
+                        </div>
+                      ) : templatesError ? (
+                        <div className="px-2 py-1.5 text-sm text-red-500">
+                          Error loading templates
+                        </div>
+                      ) : templates.length === 0 ? (
+                        <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                          No templates available for this program
+                        </div>
+                      ) : (
+                        templates.map((t) => (
+                          <SelectItem key={t.id} value={t.id as string}>
+                            {t.name} {t.is_default ? '(Default)' : ''}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          <div className="grid gap-2">
-            <Label>Schedule Preview</Label>
-            <div className="w-full overflow-hidden rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="divide-x">
-                    <TableHead>Name</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Due</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y">
-                  {installmentsLoading ? (
-                    <TableRow className="divide-x">
-                      <TableCell colSpan={3}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Anchor Date *</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="payment_anchor_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div className="grid gap-2">
+                        <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !anchorDate && 'text-muted-foreground'
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {anchorDate
+                                ? format(anchorDate, 'PPP')
+                                : 'Pick a date'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={anchorDate}
+                              onSelect={(d) => {
+                                if (d) {
+                                  setAnchorDate(d);
+                                  const iso = formatDateToLocal(d);
+                                  field.onChange(iso);
+                                  setIsDateOpen(false);
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <p className="text-muted-foreground text-sm">
-                          Loading installments...
+                          Select the date from which payment due dates will be
+                          calculated
                         </p>
-                      </TableCell>
-                    </TableRow>
-                  ) : preview.length === 0 ? (
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Schedule Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full overflow-hidden rounded-md border">
+                <Table>
+                  <TableHeader>
                     <TableRow className="divide-x">
-                      <TableCell colSpan={3}>
-                        <p className="text-muted-foreground text-sm">
-                          {!selectedTemplateId
-                            ? 'Select a template to see schedule'
-                            : !anchorDate
-                              ? 'Select an anchor date to see schedule'
-                              : 'No installments found'}
-                        </p>
-                      </TableCell>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Due</TableHead>
                     </TableRow>
-                  ) : (
-                    preview.map((row, idx) => (
-                      <TableRow key={idx} className="divide-x">
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell>${row.amount.toFixed(2)}</TableCell>
-                        <TableCell>{row.due}</TableCell>
+                  </TableHeader>
+                  <TableBody className="divide-y">
+                    {installmentsLoading ? (
+                      <TableRow className="divide-x">
+                        <TableCell colSpan={3}>
+                          <p className="text-muted-foreground text-sm">
+                            Loading installments...
+                          </p>
+                        </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+                    ) : preview.length === 0 ? (
+                      <TableRow className="divide-x">
+                        <TableCell colSpan={3}>
+                          <p className="text-muted-foreground text-sm">
+                            {!selectedTemplateId
+                              ? 'Select a template to see schedule'
+                              : !anchorDate
+                                ? 'Select an anchor date to see schedule'
+                                : 'No installments found'}
+                          </p>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      preview.map((row, idx) => (
+                        <TableRow key={idx} className="divide-x">
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell>${row.amount.toFixed(2)}</TableCell>
+                          <TableCell>{row.due}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </CardContent>
       </Card>
     </div>

@@ -16,7 +16,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MagneticButton } from '@/components/ui/magnetic-button';
-import { XButton } from '@/components/ui/x-button';
 import { draftApplicationSchema } from '@/src/schemas';
 import type { ApplicationFormValues } from '@/src/lib/applicationSchema';
 import { useSubmissionReadiness } from '@/src/hooks/useSubmissionReadiness';
@@ -475,10 +474,8 @@ export function NewApplicationWizard({ applicationId }: Props) {
               toast.error('Saved draft, but failed to persist learning plan');
               return;
             }
-            toast.success('Draft saved and learning plan updated');
-          } else {
-            toast.success('Draft saved');
           }
+          toast.success('Draft saved');
         } catch (e) {
           console.error('Draft learning plan error:', e);
           toast.error('Saved draft, but failed to persist learning plan');
@@ -1122,7 +1119,8 @@ export function NewApplicationWizard({ applicationId }: Props) {
         </div>
         <div className="flex gap-2">
           {!isFormReadyForSubmission ? (
-            <XButton
+            <MagneticButton
+              type="button"
               variant="outline"
               onClick={handleSaveDraft}
               disabled={
@@ -1137,7 +1135,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
                 <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
                 <Kbd>S</Kbd>
               </KbdGroup>
-            </XButton>
+            </MagneticButton>
           ) : (
             <Button
               variant="outline"
@@ -1290,23 +1288,23 @@ export function NewApplicationWizard({ applicationId }: Props) {
                     </KbdGroup>
                   </Button>
                 )}
+                {isFormReadyForSubmission && (
+                  <MagneticButton
+                    type="button"
+                    onClick={handleSubmitApplication}
+                    disabled={
+                      submitMutation.isPending ||
+                      !currentApplication?.id ||
+                      isValidating ||
+                      isSubmitting
+                    }
+                  >
+                    {isSubmitting || submitMutation.isPending
+                      ? 'Submitting...'
+                      : 'Submit Application'}
+                  </MagneticButton>
+                )}
               </div>
-              {isFormReadyForSubmission && (
-                <MagneticButton
-                  type="button"
-                  onClick={handleSubmitApplication}
-                  disabled={
-                    submitMutation.isPending ||
-                    !currentApplication?.id ||
-                    isValidating ||
-                    isSubmitting
-                  }
-                >
-                  {isSubmitting || submitMutation.isPending
-                    ? 'Submitting...'
-                    : 'Submit Application'}
-                </MagneticButton>
-              )}
             </div>
           </CardFooter>
         </Form>

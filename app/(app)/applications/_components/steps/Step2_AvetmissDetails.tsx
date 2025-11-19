@@ -26,6 +26,83 @@ import {
   deriveIsInternational,
 } from '@/src/lib/applicationSchema';
 
+// AVETMISS Language Codes (NAT00080: Language Identifier)
+// Standard 4-digit codes used in Australian VET data collection
+const LANGUAGE_CODES = [
+  { code: '1201', label: 'English' },
+  { code: '2101', label: 'Afrikaans' },
+  { code: '2201', label: 'Albanian' },
+  { code: '2301', label: 'Amharic' },
+  { code: '2401', label: 'Arabic' },
+  { code: '2501', label: 'Armenian' },
+  { code: '2601', label: 'Assyrian' },
+  { code: '2701', label: 'Azerbaijani' },
+  { code: '2801', label: 'Bengali' },
+  { code: '2901', label: 'Bosnian' },
+  { code: '3001', label: 'Bulgarian' },
+  { code: '3101', label: 'Burmese' },
+  { code: '3201', label: 'Cantonese' },
+  { code: '3301', label: 'Catalan' },
+  { code: '3401', label: 'Croatian' },
+  { code: '3501', label: 'Czech' },
+  { code: '3601', label: 'Danish' },
+  { code: '3701', label: 'Dari' },
+  { code: '3801', label: 'Dutch' },
+  { code: '3901', label: 'Estonian' },
+  { code: '4001', label: 'Fijian' },
+  { code: '4101', label: 'Filipino (Tagalog)' },
+  { code: '4201', label: 'Finnish' },
+  { code: '4301', label: 'French' },
+  { code: '4401', label: 'German' },
+  { code: '4501', label: 'Greek' },
+  { code: '4601', label: 'Gujarati' },
+  { code: '4701', label: 'Hakka' },
+  { code: '4801', label: 'Hebrew' },
+  { code: '4901', label: 'Hindi' },
+  { code: '5001', label: 'Hungarian' },
+  { code: '5101', label: 'Indonesian' },
+  { code: '5201', label: 'Italian' },
+  { code: '5301', label: 'Japanese' },
+  { code: '5401', label: 'Khmer (Cambodian)' },
+  { code: '5501', label: 'Korean' },
+  { code: '5601', label: 'Kurdish' },
+  { code: '5701', label: 'Lao' },
+  { code: '5801', label: 'Latvian' },
+  { code: '5901', label: 'Lithuanian' },
+  { code: '6001', label: 'Macedonian' },
+  { code: '6101', label: 'Malay' },
+  { code: '6201', label: 'Maltese' },
+  { code: '6301', label: 'Mandarin' },
+  { code: '6401', label: 'Nepali' },
+  { code: '6501', label: 'Norwegian' },
+  { code: '6601', label: 'Persian (Farsi)' },
+  { code: '6701', label: 'Polish' },
+  { code: '6801', label: 'Portuguese' },
+  { code: '6901', label: 'Punjabi' },
+  { code: '7001', label: 'Romanian' },
+  { code: '7101', label: 'Russian' },
+  { code: '7201', label: 'Samoan' },
+  { code: '7301', label: 'Serbian' },
+  { code: '7401', label: 'Sinhalese' },
+  { code: '7501', label: 'Slovak' },
+  { code: '7601', label: 'Slovenian' },
+  { code: '7701', label: 'Somali' },
+  { code: '7801', label: 'Spanish' },
+  { code: '7901', label: 'Swedish' },
+  { code: '8001', label: 'Tamil' },
+  { code: '8101', label: 'Telugu' },
+  { code: '8201', label: 'Thai' },
+  { code: '8301', label: 'Tigrinya' },
+  { code: '8401', label: 'Tongan' },
+  { code: '8501', label: 'Turkish' },
+  { code: '8601', label: 'Ukrainian' },
+  { code: '8701', label: 'Urdu' },
+  { code: '8801', label: 'Vietnamese' },
+  { code: '8901', label: 'Yiddish' },
+  { code: '9001', label: 'Yoruba' },
+  { code: '9101', label: 'Other' },
+] as const;
+
 export const Step2_AvetmissDetails = () => {
   const form = useFormContext<ApplicationFormValues>();
 
@@ -169,11 +246,14 @@ export const Step2_AvetmissDetails = () => {
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder="Select language" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1201">English</SelectItem>
-                      <SelectItem value="...">Other</SelectItem>
+                      {LANGUAGE_CODES.map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -451,12 +531,6 @@ export const Step2_AvetmissDetails = () => {
                       maxLength={10}
                     />
                   </FormControl>
-                  {!isDomestic && (
-                    <FormDescription>
-                      International students studying in Australia should obtain
-                      a USI
-                    </FormDescription>
-                  )}
                   <FormMessage />
                 </FormItem>
               );

@@ -125,8 +125,10 @@ export const applicationSchema = z
       .min(1, 'Commencement date is required'),
 
     // Payment Plan
-    payment_plan_template_id: z.string().optional(),
-    payment_anchor_date: z.string().optional(),
+    payment_plan_template_id: z
+      .string()
+      .min(1, 'Payment plan template is required'),
+    payment_anchor_date: z.string().min(1, 'Payment anchor date is required'),
 
     // Agent
     agent_id: z
