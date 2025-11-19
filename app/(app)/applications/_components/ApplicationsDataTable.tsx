@@ -53,14 +53,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  MoreHorizontal,
-  Trash2,
-  Check,
-  X,
-  GripVertical,
-  Search,
-} from 'lucide-react';
+import { MoreHorizontal, Trash2, GripVertical, Search } from 'lucide-react';
 // removed unused date-fns import
 import { Tables } from '@/database.types';
 import { Input } from '@/components/ui/input';
@@ -75,6 +68,12 @@ import {
   WashingMachineIcon,
   type WashingMachineIconHandle,
 } from '@/components/ui/washing-machine';
+import { UpvoteIcon, type UpvoteIconHandle } from '@/components/ui/upvote';
+import {
+  DownvoteIcon,
+  type DownvoteIconHandle,
+} from '@/components/ui/downvote';
+import { BlocksIcon, type BlocksIconHandle } from '@/components/ui/blocks';
 import {
   getApplicationsTableKey,
   useGetTablePreferences,
@@ -109,6 +108,76 @@ const ArchiveButton = ({ onArchive }: { onArchive: () => void }) => {
       aria-label="Archive application"
     >
       <ArchiveIcon ref={archiveIconRef} size={16} />
+    </Button>
+  );
+};
+
+// Accept/Reject button group component that handles hover animations
+const AcceptRejectButtonGroup = ({
+  onAccept,
+  onReject,
+}: {
+  onAccept: () => void;
+  onReject: () => void;
+}) => {
+  const upvoteIconRef = useRef<UpvoteIconHandle>(null);
+  const downvoteIconRef = useRef<DownvoteIconHandle>(null);
+
+  return (
+    <div className="flex w-full -space-x-px rounded-md shadow-sm">
+      <Button
+        variant="outline"
+        size="sm"
+        className="hover:bg-primary/10 hover:text-primary flex-1 justify-start gap-2 rounded-none rounded-l-md shadow-none transition-all duration-200 focus-visible:z-10"
+        onClick={onAccept}
+        onMouseEnter={() => upvoteIconRef.current?.startAnimation()}
+        onMouseLeave={() => upvoteIconRef.current?.stopAnimation()}
+        aria-label="Accept application"
+      >
+        <UpvoteIcon ref={upvoteIconRef} size={16} className="shrink-0" />
+        <span className="whitespace-nowrap">Accept</span>
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="hover:bg-destructive/10 hover:text-destructive flex-1 justify-end gap-2 rounded-none rounded-r-md shadow-none transition-all duration-200 focus-visible:z-10"
+        onClick={onReject}
+        onMouseEnter={() => downvoteIconRef.current?.startAnimation()}
+        onMouseLeave={() => downvoteIconRef.current?.stopAnimation()}
+        aria-label="Reject application"
+      >
+        <span className="whitespace-nowrap">Reject</span>
+        <DownvoteIcon ref={downvoteIconRef} size={16} className="shrink-0" />
+      </Button>
+    </div>
+  );
+};
+
+// Approve button component that handles hover animation
+const ApproveButton = ({
+  onApprove,
+  isPending,
+  className,
+}: {
+  onApprove: () => void;
+  isPending: boolean;
+  className?: string;
+}) => {
+  const blocksIconRef = useRef<BlocksIconHandle>(null);
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className={className}
+      onClick={onApprove}
+      onMouseEnter={() => blocksIconRef.current?.startAnimation()}
+      onMouseLeave={() => blocksIconRef.current?.stopAnimation()}
+      disabled={isPending}
+      aria-label="Approve application"
+    >
+      <BlocksIcon ref={blocksIconRef} size={16} className="mr-2 shrink-0" />
+      {isPending ? 'Approving...' : 'Approve'}
     </Button>
   );
 };
@@ -447,57 +516,35 @@ export const ApplicationsDataTable = forwardRef<
     // For OFFER_SENT status, show Accept/Reject button group
     if (app.status === 'OFFER_SENT') {
       return (
-        <div className="flex w-full -space-x-px rounded-md shadow-sm">
-          <Button
-            variant="outline"
-            size="sm"
-            className="group hover:bg-primary/10 hover:text-primary flex-1 justify-start gap-2 overflow-hidden rounded-none rounded-l-md shadow-none transition-all duration-200 focus-visible:z-10"
-            onClick={() => handleAccept(app.id)}
-            aria-label="Accept application"
-          >
-            <Check className="h-4 w-4 shrink-0" />
-            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover:max-w-xs group-hover:opacity-100">
-              Accept
-            </span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="group hover:bg-destructive/10 hover:text-destructive flex-1 justify-end gap-2 overflow-hidden rounded-none rounded-r-md shadow-none transition-all duration-200 focus-visible:z-10"
-            onClick={() => handleReject(app.id)}
-            aria-label="Reject application"
-          >
-            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover:max-w-xs group-hover:opacity-100">
-              Reject
-            </span>
-            <X className="h-4 w-4 shrink-0" />
-          </Button>
-        </div>
+        <AcceptRejectButtonGroup
+          onAccept={() => handleAccept(app.id)}
+          onReject={() => handleReject(app.id)}
+        />
       );
     }
 
-    // For ACCEPTED status, show Approve button
+    // For ACCEPTED status, show Approve button and Archive button
     if (app.status === 'ACCEPTED') {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={async () => {
-            try {
-              await approveMutation.mutateAsync({ applicationId: app.id });
-              toast.success('Application approved');
-            } catch (e) {
-              toast.error(
-                `Approve failed: ${String((e as Error).message || e)}`
-              );
-            }
-          }}
-          disabled={approveMutation.isPending}
-          aria-label="Approve application"
-        >
-          <Check className="mr-2 h-4 w-4" />
-          {approveMutation.isPending ? 'Approving...' : 'Approve'}
-        </Button>
+        <div className="flex w-full min-w-0 items-center gap-2">
+          <ApproveButton
+            onApprove={async () => {
+              try {
+                await approveMutation.mutateAsync({ applicationId: app.id });
+                toast.success('Application approved');
+              } catch (e) {
+                toast.error(
+                  `Approve failed: ${String((e as Error).message || e)}`
+                );
+              }
+            }}
+            isPending={approveMutation.isPending}
+            className="min-w-0 flex-1 shrink overflow-hidden"
+          />
+          <div className="shrink-0">
+            <ArchiveButton onArchive={() => handleArchive(app.id)} />
+          </div>
+        </div>
       );
     }
 
