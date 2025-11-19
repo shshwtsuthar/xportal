@@ -67,7 +67,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
 import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
-import { SendOfferDialog } from './SendOfferDialog';
+import { SendOfferComposeDialog } from '@/components/emails/SendOfferComposeDialog';
 import { useApproveApplication } from '@/src/hooks/useApproveApplication';
 import { useGenerateOfferLetter } from '@/src/hooks/useGenerateOfferLetter';
 import { ArchiveIcon, type ArchiveIconHandle } from '@/components/ui/archive';
@@ -127,8 +127,8 @@ export const ApplicationsDataTable = forwardRef<
   const updateMutation = useUpdateApplication();
   const [sendOfferDialog, setSendOfferDialog] = useState<{
     open: boolean;
-    application: Tables<'applications'> | null;
-  }>({ open: false, application: null });
+    applicationId: string | null;
+  }>({ open: false, applicationId: null });
   const [offerGeneratingId, setOfferGeneratingId] = useState<string | null>(
     null
   );
@@ -552,18 +552,25 @@ export const ApplicationsDataTable = forwardRef<
       );
     }
 
-    // For OFFER_GENERATED status, show Send Offer button
+    // For OFFER_GENERATED status, show Send Offer button and Archive button
     if (app.status === 'OFFER_GENERATED') {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={() => setSendOfferDialog({ open: true, application: app })}
-          aria-label="Send Offer"
-        >
-          Send Offer
-        </Button>
+        <div className="flex w-full min-w-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-w-0 flex-1 shrink overflow-hidden"
+            onClick={() =>
+              setSendOfferDialog({ open: true, applicationId: app.id })
+            }
+            aria-label="Send Offer"
+          >
+            <span className="truncate">Send Offer</span>
+          </Button>
+          <div className="shrink-0">
+            <ArchiveButton onArchive={() => handleArchive(app.id)} />
+          </div>
+        </div>
       );
     }
 
@@ -835,14 +842,14 @@ export const ApplicationsDataTable = forwardRef<
         )}
       </div>
 
-      {sendOfferDialog.application && (
-        <SendOfferDialog
-          application={sendOfferDialog.application}
+      {sendOfferDialog.applicationId && (
+        <SendOfferComposeDialog
+          applicationId={sendOfferDialog.applicationId}
           open={sendOfferDialog.open}
           onOpenChange={(open) =>
             setSendOfferDialog({
               open,
-              application: open ? sendOfferDialog.application : null,
+              applicationId: open ? sendOfferDialog.applicationId : null,
             })
           }
         />

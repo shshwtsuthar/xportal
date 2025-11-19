@@ -8,7 +8,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import {
   Select,
@@ -450,7 +449,7 @@ export const Step2_AvetmissDetails = () => {
             Student Identifiers
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
+        <CardContent className="grid gap-4">
           {/* NAT00080: Victorian Student Number (VSN) - conditional display */}
           {showVSN && (
             <FormField
@@ -465,7 +464,7 @@ export const Step2_AvetmissDetails = () => {
                         {...field}
                         placeholder="123456789"
                         maxLength={9}
-                        className="md:max-w-xs"
+                        className="w-full"
                         onChange={(e) => {
                           // Only allow digits
                           const value = e.target.value.replace(/\D/g, '');
@@ -494,86 +493,85 @@ export const Step2_AvetmissDetails = () => {
                       </div>
                     </div>
                   </FormControl>
-                  <FormDescription>
-                    Your 9-digit Victorian Student Number. Find this on your VCE
-                    certificate or contact your previous school.
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
           )}
 
-          {/* NAT00080: USI - required for domestic students */}
-          <FormField
-            control={form.control}
-            name="usi"
-            render={({ field }) => {
-              const isDomestic = isInternational === false;
-              return (
+          {/* USI Row - 2 columns */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* NAT00080: USI - required for domestic students */}
+            <FormField
+              control={form.control}
+              name="usi"
+              render={({ field }) => {
+                const isDomestic = isInternational === false;
+                return (
+                  <FormItem>
+                    <FormLabel>
+                      USI (Unique Student Identifier)
+                      {isDomestic && ' *'}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter your 10-character USI"
+                        className="w-full"
+                        onChange={(e) => {
+                          // Convert to uppercase and remove spaces
+                          const value = e.target.value
+                            .toUpperCase()
+                            .replace(/\s/g, '');
+                          field.onChange(value);
+                        }}
+                        maxLength={10}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            {/* USI Exemption */}
+            <FormField
+              control={form.control}
+              name="usi_exemption_code"
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    USI (Unique Student Identifier)
-                    {isDomestic && ' *'}
-                  </FormLabel>
+                  <FormLabel>USI exemption (if applicable)</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="Enter your 10-character USI"
-                      className="w-full"
-                      onChange={(e) => {
-                        // Convert to uppercase and remove spaces
-                        const value = e.target.value
-                          .toUpperCase()
-                          .replace(/\s/g, '');
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        // Use 'none' to clear the exemption
+                        if (value === 'none') {
+                          form.setValue('usi_exemption_code', undefined);
+                          return;
+                        }
                         field.onChange(value);
                       }}
-                      maxLength={10}
-                    />
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select exemption (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No exemption</SelectItem>
+                        <SelectItem value="INDIV">
+                          INDIV - Individual Exemption
+                        </SelectItem>
+                        <SelectItem value="INTOFF">
+                          INTOFF - Overseas/International
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
-              );
-            }}
-          />
-
-          {/* USI Exemption */}
-          <FormField
-            control={form.control}
-            name="usi_exemption_code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>USI exemption (if applicable)</FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => {
-                      // Use 'none' to clear the exemption
-                      if (value === 'none') {
-                        form.setValue('usi_exemption_code', undefined);
-                        return;
-                      }
-                      field.onChange(value);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select exemption (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No exemption</SelectItem>
-                      <SelectItem value="INDIV">
-                        INDIV - Individual Exemption
-                      </SelectItem>
-                      <SelectItem value="INTOFF">
-                        INTOFF - Overseas/International
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              )}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

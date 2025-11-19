@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Tables } from '@/database.types';
 import { ApplicationFormValues } from '@/src/lib/applicationSchema';
@@ -81,7 +81,7 @@ export const PaymentStep = ({ application, form }: Props) => {
   const { data: installments = [], isLoading: installmentsLoading } =
     useGetTemplateInstallments(selectedTemplateId);
 
-  const [anchorDate, setAnchorDate] = useState<Date | undefined>(
+  const [localAnchorDate, setLocalAnchorDate] = useState<Date | undefined>(
     application.payment_anchor_date
       ? new Date(application.payment_anchor_date)
       : undefined
@@ -100,12 +100,37 @@ export const PaymentStep = ({ application, form }: Props) => {
   // Update form values when payment plan data changes
   useEffect(() => {
     if (selectedTemplateId) {
-      form.setValue('payment_plan_template_id', selectedTemplateId);
+      form.setValue('payment_plan_template_id', selectedTemplateId, {
+        shouldValidate: false,
+      });
     }
-    if (anchorDate) {
-      form.setValue('payment_anchor_date', formatDateToLocal(anchorDate));
+  }, [selectedTemplateId, form]);
+
+  // Use local state as primary source (matching Enrollment pattern exactly)
+  // Memoize to ensure stable Date reference - only change when date value actually changes
+  const anchorDate = useMemo(() => {
+    return localAnchorDate;
+  }, [localAnchorDate ? localAnchorDate.getTime() : null]);
+
+  // Initialize local state from form on mount or when application changes
+  useEffect(() => {
+    const formAnchorDate = form.getValues('payment_anchor_date');
+    if (formAnchorDate && typeof formAnchorDate === 'string') {
+      try {
+        const parsedDate = new Date(formAnchorDate);
+        // Only set if we don't have a local date or if it's different
+        if (
+          !localAnchorDate ||
+          parsedDate.getTime() !== localAnchorDate.getTime()
+        ) {
+          setLocalAnchorDate(parsedDate);
+        }
+      } catch {
+        // Invalid date string, ignore
+      }
     }
-  }, [selectedTemplateId, anchorDate, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [application.payment_anchor_date]);
 
   const preview = useMemo(() => {
     if (!anchorDate || installments.length === 0)
@@ -116,6 +141,18 @@ export const PaymentStep = ({ application, form }: Props) => {
   }, [anchorDate, installments]);
 
   const [isDateOpen, setIsDateOpen] = useState(false);
+
+  // Memoize the date selection handler to prevent Calendar re-renders
+  const handleDateSelect = useCallback((d: Date | undefined) => {
+    if (!d) return;
+    const iso = formatDateToLocal(d);
+    form.setValue('payment_anchor_date', iso, {
+      shouldValidate: false,
+      shouldDirty: true,
+    });
+    setLocalAnchorDate(d); // Update local state immediately
+    setIsDateOpen(false);
+  }, []);
 
   return (
     <div className="grid gap-6">
@@ -208,54 +245,43 @@ export const PaymentStep = ({ application, form }: Props) => {
               <CardTitle className="text-lg">Anchor Date *</CardTitle>
             </CardHeader>
             <CardContent>
-              <FormField
-                control={form.control}
-                name="payment_anchor_date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="grid gap-2">
-                        <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full justify-start text-left font-normal',
-                                !anchorDate && 'text-muted-foreground'
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {anchorDate
-                                ? format(anchorDate, 'PPP')
-                                : 'Pick a date'}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={anchorDate}
-                              onSelect={(d) => {
-                                if (d) {
-                                  setAnchorDate(d);
-                                  const iso = formatDateToLocal(d);
-                                  field.onChange(iso);
-                                  setIsDateOpen(false);
-                                }
-                              }}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <p className="text-muted-foreground text-sm">
-                          Select the date from which payment due dates will be
-                          calculated
-                        </p>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid gap-2">
+                <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        !anchorDate && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {anchorDate ? format(anchorDate, 'PPP') : 'Pick a date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={anchorDate}
+                      onSelect={handleDateSelect}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-muted-foreground text-sm">
+                  Select the date from which payment due dates will be
+                  calculated
+                </p>
+                <FormField
+                  control={form.control}
+                  name="payment_anchor_date"
+                  render={() => (
+                    <FormItem>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 

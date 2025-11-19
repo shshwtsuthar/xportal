@@ -16,7 +16,7 @@ import { Archive, Download, Mail } from 'lucide-react';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
 import { useApplicationsFilters } from '@/src/hooks/useApplicationsFilters';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { PlusIcon, type PlusIconHandle } from '@/components/ui/plus';
 import { useComposeEmail } from '@/components/providers/compose-email';
 import { toast } from 'sonner';
 
@@ -24,6 +24,7 @@ type ApplicationStatus = Database['public']['Enums']['application_status'];
 
 export default function ApplicationsPage() {
   const tableRef = useRef<ApplicationsDataTableRef>(null);
+  const plusIconRef = useRef<PlusIconHandle>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const { openWithRecipients } = useComposeEmail();
   const getRowsForExport = useCallback(() => {
@@ -85,8 +86,12 @@ export default function ApplicationsPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/applications/new">
-            <Plus className="mr-2 h-4 w-4" />
+          <Link
+            href="/applications/new"
+            onMouseEnter={() => plusIconRef.current?.startAnimation()}
+            onMouseLeave={() => plusIconRef.current?.stopAnimation()}
+          >
+            <PlusIcon ref={plusIconRef} size={16} className="mr-2" />
             New Application
           </Link>
         </Button>
