@@ -7,7 +7,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { DateInput } from '@/components/ui/date-input';
@@ -107,11 +106,11 @@ export const Step3_Cricos = () => {
       {/* Show CRICOS fields only if international */}
       {isInternational && (
         <>
-          {/* Passport & Visa Information */}
+          {/* Passport Information */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-medium">
-                Passport & Visa Information
+                Passport Information
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
@@ -137,23 +136,6 @@ export const Step3_Cricos = () => {
                     </FormItem>
                   );
                 }}
-              />
-
-              <FormField
-                control={form.control}
-                name="holds_visa"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={!!field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel>Holds Australian visa</FormLabel>
-                    <FormMessage />
-                  </FormItem>
-                )}
               />
 
               <FormField
@@ -206,54 +188,6 @@ export const Step3_Cricos = () => {
 
               <FormField
                 control={form.control}
-                name="visa_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Visa type</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Student (subclass 500)" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="visa_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Visa number
-                      {holdsVisa && ' *'}
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="0123ABC456" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="visa_application_office"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>
-                      Department of Home Affairs office where visa application
-                      was made or will be made
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g., Sydney, Melbourne" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="country_of_citizenship"
                 render={({ field }) => (
                   <FormItem>
@@ -269,6 +203,91 @@ export const Step3_Cricos = () => {
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
+
+          {/* Visa Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">
+                Visa Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <FormField
+                control={form.control}
+                name="holds_visa"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <Checkbox
+                        checked={!!field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel>Holds Australian visa</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {holdsVisa && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="visa_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Visa type</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="Student (subclass 500)"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="visa_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Visa number
+                          <span className="text-destructive"> *</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="0123ABC456" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="visa_application_office"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>
+                          Department of Home Affairs office where visa
+                          application was made or will be made
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="e.g., Sydney, Melbourne"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -305,7 +324,7 @@ export const Step3_Cricos = () => {
                     control={form.control}
                     name="provider_accepting_welfare_responsibility"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="md:col-span-2">
                         <FormLabel>
                           Provider accepting responsibility for welfare
                           arrangements? *
@@ -323,7 +342,7 @@ export const Step3_Cricos = () => {
                               field.onChange(value === 'yes');
                             }}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select" />
                             </SelectTrigger>
                             <SelectContent>
@@ -471,7 +490,7 @@ export const Step3_Cricos = () => {
                             value={field.value}
                             onValueChange={field.onChange}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select OSHC provider" />
                             </SelectTrigger>
                             <SelectContent>
@@ -499,6 +518,7 @@ export const Step3_Cricos = () => {
                         <FormLabel>OSHC Start Date *</FormLabel>
                         <FormControl>
                           <DateInput
+                            className="w-full"
                             value={field.value}
                             onChange={(value) => field.onChange(value || '')}
                           />
@@ -516,14 +536,11 @@ export const Step3_Cricos = () => {
                         <FormLabel>OSHC End Date *</FormLabel>
                         <FormControl>
                           <DateInput
+                            className="w-full"
                             value={field.value}
                             onChange={(value) => field.onChange(value || '')}
                           />
                         </FormControl>
-                        <FormDescription className="md:col-span-2">
-                          OSHC must cover entire visa duration, typically 2-3
-                          months after course end date
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -573,7 +590,7 @@ export const Step3_Cricos = () => {
                             value={field.value}
                             onValueChange={field.onChange}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select test type" />
                             </SelectTrigger>
                             <SelectContent>
@@ -597,7 +614,11 @@ export const Step3_Cricos = () => {
                       <FormItem>
                         <FormLabel>Test Score *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g., 6.5" />
+                          <Input
+                            className="w-full"
+                            {...field}
+                            placeholder="e.g., 6.5"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -612,6 +633,7 @@ export const Step3_Cricos = () => {
                         <FormLabel>Test Date</FormLabel>
                         <FormControl>
                           <DateInput
+                            className="w-full"
                             value={field.value}
                             onChange={(value) => field.onChange(value || '')}
                           />
@@ -661,7 +683,11 @@ export const Step3_Cricos = () => {
                       <FormItem>
                         <FormLabel>Previous Provider Name *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Previous RTO name" />
+                          <Input
+                            className="w-full"
+                            {...field}
+                            placeholder="Previous RTO name"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -689,7 +715,7 @@ export const Step3_Cricos = () => {
                               field.onChange(value === 'yes');
                             }}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select" />
                             </SelectTrigger>
                             <SelectContent>
@@ -724,7 +750,7 @@ export const Step3_Cricos = () => {
                               field.onChange(value === 'yes');
                             }}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select" />
                             </SelectTrigger>
                             <SelectContent>

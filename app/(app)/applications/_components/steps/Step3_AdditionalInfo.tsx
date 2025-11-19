@@ -463,7 +463,7 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Has the student SUCCESSFULLY completed any of the
+                  Has the student successfully completed any of the
                   qualifications listed below? *
                 </FormLabel>
                 <FormControl>

@@ -20,13 +20,11 @@ import {
 import { CountrySelect } from '@/components/ui/country-select';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ApplicationFormValues,
   deriveIsInternational,
 } from '@/src/lib/applicationSchema';
-import { ExternalLink } from 'lucide-react';
 
 export const Step2_AvetmissDetails = () => {
   const form = useFormContext<ApplicationFormValues>();
@@ -66,8 +64,8 @@ export const Step2_AvetmissDetails = () => {
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const years: { value: string; label: string }[] = [];
-    // From current year - 5 to current year - 70
-    for (let i = 5; i <= 70; i++) {
+    // From current year to current year - 70
+    for (let i = 0; i <= 70; i++) {
       const year = currentYear - i;
       const twoDigit = String(year).slice(-2);
       years.push({ value: twoDigit, label: String(year) });
@@ -265,17 +263,19 @@ export const Step2_AvetmissDetails = () => {
           />
 
           {/* NAT00080: Year Highest School Level Completed */}
-          {highestSchoolLevel && highestSchoolLevel !== '02' && (
-            <FormField
-              control={form.control}
-              name="year_highest_school_level_completed"
-              render={({ field }) => (
+          <FormField
+            control={form.control}
+            name="year_highest_school_level_completed"
+            render={({ field }) => {
+              const isDisabled = highestSchoolLevel === '02';
+              return (
                 <FormItem>
                   <FormLabel>Year completed *</FormLabel>
                   <FormControl>
                     <Select
                       value={field.value || ''}
                       onValueChange={field.onChange}
+                      disabled={isDisabled}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select year" />
@@ -292,9 +292,9 @@ export const Step2_AvetmissDetails = () => {
                   </FormControl>
                   <FormMessage />
                 </FormItem>
-              )}
-            />
-          )}
+              );
+            }}
+          />
 
           {/* NAT00085 fields */}
           <FormField
@@ -437,45 +437,26 @@ export const Step2_AvetmissDetails = () => {
                     {isDomestic && ' *'}
                   </FormLabel>
                   <FormControl>
-                    <div className="space-y-2">
-                      <Input
-                        {...field}
-                        placeholder="Enter your 10-character USI"
-                        className="md:max-w-xs"
-                        onChange={(e) => {
-                          // Convert to uppercase and remove spaces
-                          const value = e.target.value
-                            .toUpperCase()
-                            .replace(/\s/g, '');
-                          field.onChange(value);
-                        }}
-                        maxLength={10}
-                      />
-                      {isDomestic && (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              window.open(
-                                'https://www.usi.gov.au/students/create-usi',
-                                '_blank'
-                              );
-                            }}
-                          >
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            Create USI
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                    <Input
+                      {...field}
+                      placeholder="Enter your 10-character USI"
+                      className="w-full"
+                      onChange={(e) => {
+                        // Convert to uppercase and remove spaces
+                        const value = e.target.value
+                          .toUpperCase()
+                          .replace(/\s/g, '');
+                        field.onChange(value);
+                      }}
+                      maxLength={10}
+                    />
                   </FormControl>
-                  <FormDescription>
-                    {isDomestic
-                      ? "Your USI is required to receive your certificate. Don't have one? Create it now at usi.gov.au (takes 3 minutes)"
-                      : 'International students studying in Australia should obtain a USI'}
-                  </FormDescription>
+                  {!isDomestic && (
+                    <FormDescription>
+                      International students studying in Australia should obtain
+                      a USI
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               );
