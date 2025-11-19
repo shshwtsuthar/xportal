@@ -89,6 +89,18 @@ serve(async (req: Request) => {
     }
 
     // 4. Perform business rule validation.
+    if (application.status === 'ARCHIVED') {
+      return new Response(
+        JSON.stringify({
+          error: 'Archived applications are read-only and cannot be submitted.',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 409,
+        }
+      );
+    }
+
     // Rule: An application can only be submitted if it's currently a 'DRAFT'.
     if (application.status !== 'DRAFT') {
       return new Response(

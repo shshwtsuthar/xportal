@@ -1,4 +1,8 @@
 ## [Unreleased]
+- feat(applications): Introduce ARCHIVED status and read-only workflows
+  - Added migration `20251119090000_add_archived_application_status.sql` which appends the `ARCHIVED` enum value and installs a trigger preventing updates/deletes once archived (except pure status flips).
+  - Updated Supabase Edge Functions (`submit-application`, `approve-application`) to fail fast when invoked against archived applications.
+  - Applications UI now hides archived rows from the default "All" view, adds a dedicated "Archived" tab/filter, renders a read-only badge in the table, and blocks inline actions for archived records.
 - refactor(applications): Improve address card layout and styling in new application wizard
   - Removed subheadings ("Search and autofill via Mappify", "Keep enabled only when different from street") from street and postal address cards.
   - Moved address search buttons inline with the relevant input fields (street number/name and postal street number/name).

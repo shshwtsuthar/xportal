@@ -7,6 +7,7 @@ import { serializeFilters } from './useApplicationsFilters';
 /**
  * Fetch applications with comprehensive filters.
  * @param filters optional application filters object
+ * @param options toggles like includeArchived to override default guards
  * @returns TanStack Query result with list of applications
  */
 
@@ -15,7 +16,14 @@ type ApplicationWithAgent = Tables<'applications'> & {
   programs?: Pick<Tables<'programs'>, 'name'> | null;
 };
 
-export const useGetApplications = (filters?: ApplicationFilters) => {
+type UseGetApplicationsOptions = {
+  includeArchived?: boolean;
+};
+
+export const useGetApplications = (
+  filters?: ApplicationFilters,
+  options?: UseGetApplicationsOptions
+) => {
   return useQuery({
     queryKey: ['applications', filters ? serializeFilters(filters) : 'all'],
     queryFn: async (): Promise<ApplicationWithAgent[]> => {
@@ -24,6 +32,15 @@ export const useGetApplications = (filters?: ApplicationFilters) => {
         .from('applications')
         .select('*, agents(name), programs(name)')
         .order('updated_at', { ascending: false });
+
+      const includeArchived = options?.includeArchived ?? false;
+      const statusesFilter = filters?.statuses ?? [];
+      const shouldGuardArchived =
+        !includeArchived && statusesFilter.length === 0;
+
+      if (shouldGuardArchived) {
+        query = query.neq('status', 'ARCHIVED');
+      }
 
       if (!filters) {
         const { data, error } = await query;
@@ -39,8 +56,8 @@ export const useGetApplications = (filters?: ApplicationFilters) => {
         );
       }
 
-      if (filters.statuses?.length) {
-        query = query.in('status', filters.statuses);
+      if (statusesFilter.length) {
+        query = query.in('status', statusesFilter);
       }
 
       if (filters.agentIds?.length) {

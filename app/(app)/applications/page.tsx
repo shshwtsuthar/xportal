@@ -12,7 +12,7 @@ import { ApplicationStats } from './_components/ApplicationStats';
 import { ApplicationsFilter } from './_components/ApplicationsFilter';
 import { ApplicationsColumnsMenu } from './_components/ApplicationsColumnsMenu';
 import { ExportDialog } from './_components/ExportDialog';
-import { Download, Mail } from 'lucide-react';
+import { Archive, Download, Mail } from 'lucide-react';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
 import { useApplicationsFilters } from '@/src/hooks/useApplicationsFilters';
 import Link from 'next/link';
@@ -36,7 +36,9 @@ export default function ApplicationsPage() {
   );
 
   // Fetch all applications for stats
-  const { data: allApplications, isLoading } = useGetApplications();
+  const { data: allApplications, isLoading } = useGetApplications(undefined, {
+    includeArchived: true,
+  });
 
   // Handle quick status tab clicks
   const handleStatusClick = (status: ApplicationStatus | undefined) => {
@@ -163,6 +165,14 @@ export default function ApplicationsPage() {
                 onClick={() => handleStatusClick('REJECTED')}
               >
                 Rejected
+              </Button>
+              <Button
+                variant={quickStatus === 'ARCHIVED' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStatusClick('ARCHIVED')}
+                aria-label="View archived applications"
+              >
+                <Archive className="h-4 w-4" />
               </Button>
             </div>
             <div className="flex items-center gap-2">

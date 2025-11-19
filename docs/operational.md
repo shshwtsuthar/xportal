@@ -177,7 +177,8 @@ Your Postgres database should not be a dumb data store. We will build the busine
 - **Schema Design:**
   - Use UUIDs (`uuid_generate_v4()`) as primary keys for all major tables (`applications`, `students`, `users`, `qualifications`, etc.). This prevents enumerable URLs and is better for distributed systems.
   - Use foreign key constraints religiously to maintain relational integrity. An `enrollment` must be linked to a real `student` and a real `qualification`.
-  - For application statuses, use a Postgres `ENUM` type: `CREATE TYPE application_status AS ENUM ('draft', 'submitted', 'offer_generated', ...);`. This makes invalid statuses impossible at the database level.
+- For application statuses, use a Postgres `ENUM` type: `CREATE TYPE application_status AS ENUM ('DRAFT', 'SUBMITTED', 'OFFER_GENERATED', 'OFFER_SENT', 'ACCEPTED', 'REJECTED', 'APPROVED', 'ARCHIVED');`. This makes invalid statuses impossible at the database level and encodes the full lifecycle.
+- `ARCHIVED` is a terminal, manual-only state. A trigger (`prevent_archived_application_edits`) blocks all UPDATE/DELETE operations once an application is archived (with the sole exception of status-only transitions to support deliberate un-archiving). UI surfaces must treat archived records as read-only and hide them from default dashboards.
 
 - **Row-Level Security (RLS) - NON-NEGOTIABLE:**
   - **This is the cornerstone of your security and multi-tenancy.** Enable RLS on _every table_ containing sensitive or segregated data.

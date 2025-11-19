@@ -348,6 +348,16 @@ export const ApplicationsDataTable = forwardRef<
     );
   };
 
+  const handleArchive = (id: string) => {
+    updateMutation.mutate(
+      { id, status: 'ARCHIVED' },
+      {
+        onSuccess: () => toast.success('Application archived successfully'),
+        onError: (error) => toast.error(`Failed to archive: ${error.message}`),
+      }
+    );
+  };
+
   if (isLoading) {
     return (
       <p className="text-muted-foreground text-sm">Loading applications…</p>
@@ -360,6 +370,14 @@ export const ApplicationsDataTable = forwardRef<
   }
 
   const renderActions = (app: Tables<'applications'>) => {
+    if (app.status === 'ARCHIVED') {
+      return (
+        <span className="text-muted-foreground text-xs font-semibold">
+          Archived
+        </span>
+      );
+    }
+
     const handleGenerateOffer = async () => {
       if (generateOfferMutation.isPending) {
         return;
@@ -495,6 +513,39 @@ export const ApplicationsDataTable = forwardRef<
             <DropdownMenuItem asChild>
               <Link href={`/applications/edit/${app.id}`}>Continue</Link>
             </DropdownMenuItem>
+          )}
+          {app.status === 'DRAFT' && (
+            <>
+              <DropdownMenuSeparator />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                    className="text-amber-600 focus:text-amber-600"
+                  >
+                    Archive
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Archive application</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will mark the application as archived and make it
+                      read-only. You can still view it under the Archived tab.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleArchive(app.id)}
+                      className="bg-amber-600 text-white hover:bg-amber-600/90"
+                    >
+                      Archive
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           )}
           {app.status === 'DRAFT' && (
             <>

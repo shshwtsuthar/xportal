@@ -1,3 +1,26 @@
+### Archived Applications Workflow (2025-11-19)
+
+1) Database migration
+- Run `supabase db reset` (or `supabase migration up`) so `20251119090000_add_archived_application_status.sql` is applied. This extends the `application_status` enum with `ARCHIVED` and installs the `prevent_archived_application_edits` trigger that blocks UPDATE/DELETE operations once a record is archived (status-only transitions remain allowed for manual un-archiving).
+
+2) Regenerate types
+- Commands:
+  - `supabase gen types typescript --local > database.types.ts`
+  - `supabase gen types typescript --local > supabase/functions/_shared/database.types.ts`
+
+3) Edge Function deployment
+- Redeploy both `submit-application` and `approve-application` so the new archived guardrails return early instead of relying solely on database errors:
+  - `supabase functions deploy submit-application`
+  - `supabase functions deploy approve-application`
+
+4) Client deployment
+- Redeploy the Next.js app so the Applications page picks up the “Archived” quick filter/tab, the implicit exclusion from “All,” and the read-only action states.
+
+5) Post-deployment verification
+- Open `/applications` and confirm archived rows are hidden from the “All” tab, visible only when “Archived” quick filter is active, and show a muted “Archived” label in the Actions column.
+- Attempt to edit or delete an archived application (Edge Function, wizard, or PostgREST) and verify the operation is blocked with the new error messaging.
+- Confirm that manual archiving (changing an application’s status to `ARCHIVED`) must still be initiated by an operator—no automatic transitions were introduced.
+
 ### Address Card UI Refresh (2025-11-18)
 
 1) Client deployment

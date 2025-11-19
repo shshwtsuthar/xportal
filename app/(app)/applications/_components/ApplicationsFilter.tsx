@@ -49,6 +49,7 @@ const APPLICATION_STATUSES: { value: ApplicationStatus; label: string }[] = [
   { value: 'ACCEPTED', label: 'ACCEPTED' },
   { value: 'APPROVED', label: 'APPROVED' },
   { value: 'REJECTED', label: 'REJECTED' },
+  { value: 'ARCHIVED', label: 'ARCHIVED (read only)' },
 ];
 
 interface ApplicationsFilterProps {

@@ -71,7 +71,9 @@ export const getApplicationsColumns = (): ColumnDef[] => {
               ? 'destructive'
               : r.status === 'SUBMITTED'
                 ? 'default'
-                : 'secondary'
+                : r.status === 'ARCHIVED'
+                  ? 'outline'
+                  : 'secondary'
           }
         >
           {r.status === 'OFFER_GENERATED'
@@ -88,7 +90,9 @@ export const getApplicationsColumns = (): ColumnDef[] => {
                       ? 'REJECTED'
                       : r.status === 'APPROVED'
                         ? 'APPROVED'
-                        : (r.status as unknown as string).toUpperCase()}
+                        : r.status === 'ARCHIVED'
+                          ? 'ARCHIVED'
+                          : (r.status as unknown as string).toUpperCase()}
         </Badge>
       ),
       group: 'Identity',

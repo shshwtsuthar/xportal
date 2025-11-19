@@ -58,6 +58,18 @@ serve(async (req: Request) => {
       });
     }
 
+    if (app.status === 'ARCHIVED') {
+      return new Response(
+        JSON.stringify({
+          error: 'Archived applications cannot be approved or edited.',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 409,
+        }
+      );
+    }
+
     if (app.status !== 'ACCEPTED') {
       return new Response(
         JSON.stringify({
