@@ -259,11 +259,20 @@ serve(async (req: Request) => {
     }
 
     // 2) Create enrollment and copy template id
+    if (!app.program_id) {
+      return new Response(
+        JSON.stringify({ error: 'Application program_id is required' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
     const { data: enrollment, error: enrErr } = await supabase
       .from('enrollments')
       .insert({
         student_id: student.id,
-        program_id: app.program_id, // align with current schema
+        program_id: app.program_id,
         rto_id: app.rto_id,
         status: 'ACTIVE',
         commencement_date: anchorDate,
@@ -573,6 +582,18 @@ serve(async (req: Request) => {
       const inserts: Db['public']['Tables']['student_contacts_emergency']['Insert'][] =
         [];
       if (app.ec_name || app.ec_phone_number || app.ec_relationship) {
+        if (!app.ec_name) {
+          return new Response(
+            JSON.stringify({
+              error:
+                'Emergency contact name is required when other emergency contact fields are provided',
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400,
+            }
+          );
+        }
         inserts.push({
           student_id: student.id,
           rto_id: app.rto_id,
@@ -596,6 +617,18 @@ serve(async (req: Request) => {
         }
       }
       if (app.g_name || app.g_email || app.g_phone_number) {
+        if (!app.g_name) {
+          return new Response(
+            JSON.stringify({
+              error:
+                'Guardian contact name is required when other guardian contact fields are provided',
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400,
+            }
+          );
+        }
         const { error: gErr } = await supabase
           .from('student_contacts_guardians')
           .insert({
@@ -628,21 +661,17 @@ serve(async (req: Request) => {
         .eq('application_id', app.id)
         .order('sequence_order', { ascending: true });
       if (!subjErr && subjects && subjects.length > 0) {
-        const rows = subjects.map(
-          (
-            s: Db['public']['Tables']['application_learning_subjects']['Row']
-          ) => ({
-            enrollment_id: enrollment.id,
-            program_plan_subject_id: s.program_plan_subject_id,
-            outcome_code: null,
-            start_date: s.planned_start_date,
-            end_date: s.planned_end_date,
-            is_catch_up: s.is_catch_up,
-            delivery_location_id: null,
-            delivery_mode_id: null,
-            scheduled_hours: null,
-          })
-        );
+        const rows = subjects.map((s) => ({
+          enrollment_id: enrollment.id,
+          program_plan_subject_id: s.program_plan_subject_id,
+          outcome_code: null,
+          start_date: s.planned_start_date,
+          end_date: s.planned_end_date,
+          is_catch_up: s.is_catch_up,
+          delivery_location_id: null,
+          delivery_mode_id: null,
+          scheduled_hours: null,
+        }));
         const { error: insErr } = await supabase
           .from('enrollment_subjects')
           .insert(rows);
@@ -667,22 +696,18 @@ serve(async (req: Request) => {
         )
         .eq('application_id', app.id);
       if (!clsErr && classes && classes.length > 0) {
-        const rows = classes.map(
-          (
-            c: Db['public']['Tables']['application_learning_classes']['Row']
-          ) => ({
-            enrollment_id: enrollment.id,
-            program_plan_class_id: c.program_plan_class_id,
-            class_date: c.class_date,
-            start_time: c.start_time,
-            end_time: c.end_time,
-            trainer_id: c.trainer_id,
-            location_id: c.location_id,
-            classroom_id: c.classroom_id,
-            class_type: c.class_type,
-            notes: null,
-          })
-        );
+        const rows = classes.map((c) => ({
+          enrollment_id: enrollment.id,
+          program_plan_class_id: c.program_plan_class_id,
+          class_date: c.class_date,
+          start_time: c.start_time,
+          end_time: c.end_time,
+          trainer_id: c.trainer_id,
+          location_id: c.location_id,
+          classroom_id: c.classroom_id,
+          class_type: c.class_type,
+          notes: null,
+        }));
         const { error: insErr } = await supabase
           .from('enrollment_classes')
           .insert(rows);
@@ -733,7 +758,7 @@ serve(async (req: Request) => {
     // This is done asynchronously so failures don't block application approval
     try {
       const xeroSyncUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/xero-sync-contact`;
-      const xeroSyncResponse = fetch(xeroSyncUrl, {
+      fetch(xeroSyncUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
