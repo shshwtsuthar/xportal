@@ -1,6 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
-import { Tables } from '@/database.types';
+import { Tables, TablesInsert } from '@/database.types';
+
+// Omit application_id_display from Insert type since trigger generates it
+type ApplicationInsert = Omit<
+  TablesInsert<'applications'>,
+  'application_id_display'
+>;
 
 /**
  * Insert a new DRAFT application for the current user's RTO context.
@@ -55,17 +61,21 @@ export const useCreateApplication = () => {
       }
 
       // Create application with initial data if provided
-      const applicationData = {
+      // Exclude application_id_display - trigger will generate it automatically
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { application_id_display: _, ...initialDataWithoutDisplayId } =
+        initialData || {};
+      const applicationData: ApplicationInsert = {
         status: 'DRAFT' as const,
         rto_id: rtoId,
-        ...initialData, // Include any initial form data
+        ...initialDataWithoutDisplayId, // Include any initial form data (excluding application_id_display)
       };
 
       console.log('Creating application with data:', applicationData);
 
       const { data, error } = await supabase
         .from('applications')
-        .insert(applicationData)
+        .insert(applicationData as unknown as TablesInsert<'applications'>) // Type assertion needed because Insert type requires application_id_display, but trigger generates it
         .select('*')
         .single();
 

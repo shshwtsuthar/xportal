@@ -123,8 +123,8 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       label: 'ID',
       width: 260,
       sortable: true,
-      sortAccessor: (r) => r.id,
-      render: (r) => r.id,
+      sortAccessor: (r) => r.application_id_display || r.id,
+      render: (r) => r.application_id_display || r.id,
       group: 'Identity',
     },
     {

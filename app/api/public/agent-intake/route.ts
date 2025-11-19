@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { TablesInsert } from '@/database.types';
+
+// Omit application_id_display from Insert type since trigger generates it
+type ApplicationInsert = Omit<
+  TablesInsert<'applications'>,
+  'application_id_display'
+>;
 
 // Minimal schema: mirror draft application fields we allow via public form
 const payloadSchema = z.object({
@@ -95,7 +102,8 @@ export async function POST(request: Request) {
       !v ? null : typeof v === 'string' ? v : (v as Date).toISOString();
 
     // Prepare insert payload
-    const insertData = {
+    // Exclude application_id_display - trigger will generate it automatically
+    const insertData: ApplicationInsert = {
       rto_id: agent.rto_id,
       status: 'DRAFT' as const,
       agent_id: agent.id,
@@ -157,11 +165,11 @@ export async function POST(request: Request) {
       requested_start_date: input.requested_start_date
         ? toDateString(input.requested_start_date)
         : null,
-    } as const;
+    };
 
     const { data: app, error } = await supabase
       .from('applications')
-      .insert(insertData)
+      .insert(insertData as unknown as TablesInsert<'applications'>) // Type assertion needed because Insert type requires application_id_display, but trigger generates it
       .select('id')
       .single();
     if (error) throw error;
