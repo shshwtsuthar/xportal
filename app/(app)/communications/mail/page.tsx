@@ -21,8 +21,7 @@ import {
   type EmailListItem,
 } from '@/src/hooks/useGetEmails';
 import { useGetEmailById } from '@/src/hooks/useGetEmailById';
-import { Mail, Plus, X, Search } from 'lucide-react';
-import { useComposeEmail } from '@/components/providers/compose-email';
+import { X, Search } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -40,6 +39,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import { TemplateNameDialog } from '@/components/emails/TemplateNameDialog';
+import { TemplateComposeDialog } from '@/components/emails/TemplateComposeDialog';
+import {
+  useGetMailTemplates,
+  type MailTemplatesFilters,
+  type MailTemplateListItem,
+} from '@/src/hooks/useGetMailTemplates';
 
 const StatusBadge = ({ status }: { status: string }) => {
   // Use semantic Badge variants per ui.md guidelines
@@ -54,23 +60,75 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 export default function MailPage() {
-  const { open } = useComposeEmail();
-
   const [filters, setFilters] = useState<EmailsFilters>({
+    page: 1,
+    pageSize: 20,
+    sort: { column: 'created_at', desc: true },
+  });
+  const [templateFilters, setTemplateFilters] = useState<MailTemplatesFilters>({
     page: 1,
     pageSize: 20,
     sort: { column: 'created_at', desc: true },
   });
   const { data: stats } = useGetEmailStats();
   const { data: list } = useGetEmails(filters);
+  const { data: templates } = useGetMailTemplates(templateFilters);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: detail } = useGetEmailById(selectedId);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [templateSearchQuery, setTemplateSearchQuery] = useState<string>('');
 
   const total = list?.total ?? 0;
   const items = list?.items ?? [];
   const totalPages = Math.max(1, Math.ceil(total / (filters.pageSize ?? 20)));
+  const templateTotal = templates?.total ?? 0;
+  const templateItems = templates?.items ?? [];
+  const templateTotalPages = Math.max(
+    1,
+    Math.ceil(templateTotal / (templateFilters.pageSize ?? 20))
+  );
+
+  const [isTemplateNameDialogOpen, setIsTemplateNameDialogOpen] =
+    useState(false);
+  const [isTemplateComposeDialogOpen, setIsTemplateComposeDialogOpen] =
+    useState(false);
+  const [pendingTemplateName, setPendingTemplateName] = useState('');
+  const [editingTemplate, setEditingTemplate] =
+    useState<MailTemplateListItem | null>(null);
+
+  const beginTemplateFlow = () => {
+    setPendingTemplateName('');
+    setEditingTemplate(null);
+    setIsTemplateNameDialogOpen(true);
+  };
+
+  const handleEditTemplate = (template: MailTemplateListItem) => {
+    setEditingTemplate(template);
+    setPendingTemplateName(template.name);
+    setIsTemplateComposeDialogOpen(true);
+  };
+
+  const handleTemplateNameContinue = (name: string) => {
+    setPendingTemplateName(name);
+    setIsTemplateNameDialogOpen(false);
+    setTimeout(() => setIsTemplateComposeDialogOpen(true), 0);
+  };
+
+  const handleTemplateNameOpenChange = (open: boolean) => {
+    setIsTemplateNameDialogOpen(open);
+    if (!open && !isTemplateComposeDialogOpen) {
+      setPendingTemplateName('');
+    }
+  };
+
+  const handleTemplateComposeOpenChange = (open: boolean) => {
+    setIsTemplateComposeDialogOpen(open);
+    if (!open) {
+      setPendingTemplateName('');
+      setEditingTemplate(null);
+    }
+  };
 
   // Client-side search filtering
   const filteredItems = useMemo(() => {
@@ -103,6 +161,26 @@ export default function MailPage() {
       );
     });
   }, [items, searchQuery]);
+
+  const filteredTemplates = useMemo(() => {
+    if (!templateSearchQuery.trim()) return templateItems;
+    const query = templateSearchQuery.toLowerCase().trim();
+    return templateItems.filter((template: MailTemplateListItem) => {
+      const creatorName = template.creator_profile
+        ? [
+            template.creator_profile.first_name,
+            template.creator_profile.last_name,
+          ]
+            .filter(Boolean)
+            .join(' ')
+        : (template.created_by ?? '');
+      return (
+        template.name.toLowerCase().includes(query) ||
+        template.subject.toLowerCase().includes(query) ||
+        creatorName.toLowerCase().includes(query)
+      );
+    });
+  }, [templateItems, templateSearchQuery]);
 
   const clearFilters = () =>
     setFilters({ page: 1, pageSize: filters.pageSize, sort: filters.sort });
@@ -139,6 +217,24 @@ export default function MailPage() {
     });
   };
 
+  const handleTemplateSort = (column: 'name' | 'created_at') => {
+    setTemplateFilters((prev) => {
+      const currentSort = prev.sort;
+      if (currentSort?.column === column) {
+        return {
+          ...prev,
+          page: 1,
+          sort: { column, desc: !currentSort.desc },
+        };
+      }
+      return {
+        ...prev,
+        page: 1,
+        sort: { column, desc: true },
+      };
+    });
+  };
+
   const statusOptions = useMemo(
     () => ['QUEUED', 'SENT', 'DELIVERED', 'FAILED', 'BOUNCED', 'COMPLAINED'],
     []
@@ -153,8 +249,12 @@ export default function MailPage() {
             View and manage outbound emails
           </p>
         </div>
-        <Button type="button" onClick={open} aria-label="Compose mail">
-          <Plus className="mr-2 h-4 w-4" /> Compose
+        <Button
+          type="button"
+          onClick={beginTemplateFlow}
+          aria-label="Create mail template"
+        >
+          New Mail Template +
         </Button>
       </div>
 
@@ -268,10 +368,10 @@ export default function MailPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={open}
-                aria-label="Compose mail"
+                onClick={beginTemplateFlow}
+                aria-label="Create mail template"
               >
-                <Mail className="mr-2 h-4 w-4" /> Mail
+                New Mail Template +
               </Button>
             </div>
           </div>
@@ -475,6 +575,250 @@ export default function MailPage() {
         </CardContent>
       </Card>
 
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold tracking-tight">
+            Mail Templates
+          </CardTitle>
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <div />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={beginTemplateFlow}
+              aria-label="Create mail template"
+            >
+              New Mail Template +
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="w-full overflow-hidden rounded-md border">
+            <div className="border-b p-3">
+              <div className="relative">
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                <Input
+                  type="text"
+                  placeholder="Search templates…"
+                  value={templateSearchQuery}
+                  onChange={(event) =>
+                    setTemplateSearchQuery(event.target.value)
+                  }
+                  className="pl-9 text-sm"
+                  aria-label="Search templates table"
+                />
+              </div>
+            </div>
+            <Table className="table-fixed">
+              <TableHeader>
+                <TableRow className="divide-x">
+                  <SortableTableHead
+                    onSort={() => handleTemplateSort('name')}
+                    sortDirection={
+                      templateFilters.sort?.column === 'name'
+                        ? templateFilters.sort.desc
+                          ? 'desc'
+                          : 'asc'
+                        : null
+                    }
+                  >
+                    Template Name
+                  </SortableTableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>Created By</TableHead>
+                  <SortableTableHead
+                    onSort={() => handleTemplateSort('created_at')}
+                    sortDirection={
+                      templateFilters.sort?.column === 'created_at'
+                        ? templateFilters.sort.desc
+                          ? 'desc'
+                          : 'asc'
+                        : null
+                    }
+                  >
+                    Created At
+                  </SortableTableHead>
+                  <TableHead
+                    style={{ width: 200 }}
+                    className="bg-background before:bg-border sticky right-0 z-20 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
+                  >
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y">
+                {filteredTemplates.map((template) => {
+                  const creatorName = template.creator_profile
+                    ? [
+                        template.creator_profile.first_name,
+                        template.creator_profile.last_name,
+                      ]
+                        .filter(Boolean)
+                        .join(' ')
+                    : (template.created_by ?? '—');
+                  return (
+                    <TableRow key={template.id} className="divide-x">
+                      <TableCell
+                        className="truncate px-4"
+                        title={template.name}
+                      >
+                        {template.name}
+                      </TableCell>
+                      <TableCell
+                        className="truncate px-4"
+                        title={template.subject}
+                      >
+                        {template.subject}
+                      </TableCell>
+                      <TableCell className="truncate px-4" title={creatorName}>
+                        {creatorName}
+                      </TableCell>
+                      <TableCell className="px-4">
+                        {new Date(template.created_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell
+                        style={{ width: 200 }}
+                        className="bg-background before:bg-border sticky right-0 z-10 px-4 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
+                      >
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => handleEditTemplate(template)}
+                          aria-label="Edit template"
+                        >
+                          Edit
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filteredTemplates.length === 0 && (
+                  <TableRow className="divide-x">
+                    <TableCell
+                      colSpan={5}
+                      className="text-muted-foreground px-4 py-6 text-sm"
+                    >
+                      {templateSearchQuery.trim() ||
+                      templateFilters.nameQuery ||
+                      templateFilters.subjectQuery
+                        ? 'No templates match your search.'
+                        : 'No templates found.'}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            {filteredTemplates.length > 0 && (
+              <div className="flex flex-col gap-4 border-t px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground text-sm whitespace-nowrap">
+                    Rows per page:
+                  </span>
+                  <Select
+                    value={(templateFilters.pageSize ?? 20).toString()}
+                    onValueChange={(value) =>
+                      setTemplateFilters((prev) => ({
+                        ...prev,
+                        page: 1,
+                        pageSize: Number(value),
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-[70px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-center sm:justify-end">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() =>
+                            setTemplateFilters((prev) => ({
+                              ...prev,
+                              page: Math.max(1, (prev.page ?? 1) - 1),
+                            }))
+                          }
+                          className={
+                            (templateFilters.page ?? 1) === 1
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                        />
+                      </PaginationItem>
+                      {Array.from(
+                        { length: Math.min(templateTotalPages, 7) },
+                        (_, index) => {
+                          let pageNum;
+                          if (templateTotalPages <= 7) {
+                            pageNum = index + 1;
+                          } else if ((templateFilters.page ?? 1) <= 4) {
+                            pageNum = index + 1;
+                          } else if (
+                            (templateFilters.page ?? 1) >=
+                            templateTotalPages - 3
+                          ) {
+                            pageNum = templateTotalPages - 6 + index;
+                          } else {
+                            pageNum = (templateFilters.page ?? 1) - 3 + index;
+                          }
+                          return (
+                            <PaginationItem key={`template-page-${pageNum}`}>
+                              <PaginationLink
+                                onClick={() =>
+                                  setTemplateFilters((prev) => ({
+                                    ...prev,
+                                    page: pageNum,
+                                  }))
+                                }
+                                isActive={
+                                  (templateFilters.page ?? 1) === pageNum
+                                }
+                                className="cursor-pointer"
+                              >
+                                {pageNum}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        }
+                      )}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() =>
+                            setTemplateFilters((prev) => ({
+                              ...prev,
+                              page: Math.min(
+                                templateTotalPages,
+                                (prev.page ?? 1) + 1
+                              ),
+                            }))
+                          }
+                          className={
+                            (templateFilters.page ?? 1) >= templateTotalPages
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Side drawer preview */}
       <Dialog
         open={!!selectedId}
@@ -506,6 +850,20 @@ export default function MailPage() {
           />
         </DialogContent>
       </Dialog>
+      <TemplateNameDialog
+        open={isTemplateNameDialogOpen}
+        onOpenChange={handleTemplateNameOpenChange}
+        onContinue={handleTemplateNameContinue}
+        initialName={pendingTemplateName}
+      />
+      <TemplateComposeDialog
+        open={isTemplateComposeDialogOpen}
+        onOpenChange={handleTemplateComposeOpenChange}
+        templateName={pendingTemplateName}
+        templateId={editingTemplate?.id}
+        initialSubject={editingTemplate?.subject}
+        initialHtml={editingTemplate?.html_body}
+      />
     </div>
   );
 }

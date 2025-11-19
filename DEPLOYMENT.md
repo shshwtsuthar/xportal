@@ -1,3 +1,22 @@
+### Mail Templates Creation Flow (2025-11-19)
+
+1) Database migration
+- Apply `supabase/migrations/20251119100000_create_mail_templates.sql`. It introduces the `mail_templates` table, indexes, trigger (`mail_templates_set_rto_id`), and RLS policies scoped by `get_my_rto_id()/is_admin()`.
+- Command: `supabase db reset` (or `supabase migration up` in CI).
+
+2) Regenerate types
+- Commands:
+  - `supabase gen types typescript --local > database.types.ts`
+  - `supabase gen types typescript --local > supabase/functions/_shared/database.types.ts`
+
+3) Client deployment
+- Redeploy the Next.js app so the Mail page picks up the Template Name dialog, simplified compose dialog, and the `useCreateMailTemplate` hook.
+
+4) Post-deployment verification
+- Navigate to `/communications/mail`, click "New Mail Template +" (top right or toolbar) and enter a template name.
+- Fill in a Subject/Body, click "Save Template," and confirm the success toast appears.
+- Inspect `public.mail_templates` to verify the inserted row has the correct `rto_id`, subject/body, and `created_by`.
+
 ### Archived Applications Workflow (2025-11-19)
 
 1) Database migration

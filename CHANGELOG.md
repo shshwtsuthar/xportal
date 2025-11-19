@@ -1,4 +1,8 @@
 ## [Unreleased]
+- feat(mail): Introduce per-RTO mail templates
+  - Added migration `20251119100000_create_mail_templates.sql` defining the `mail_templates` table, RLS policies, and default `rto_id` trigger.
+  - Regenerated Supabase types (`database.types.ts` + `supabase/functions/_shared/database.types.ts`) and added TanStack mutation hook `useCreateMailTemplate`.
+  - Replaced the Mail page Compose button with a two-step template flow (TemplateNameDialog + TemplateComposeDialog) so Subject/Body pairs can be saved via the new hook.
 - feat(applications): Introduce ARCHIVED status and read-only workflows
   - Added migration `20251119090000_add_archived_application_status.sql` which appends the `ARCHIVED` enum value and installs a trigger preventing updates/deletes once archived (except pure status flips).
   - Updated Supabase Edge Functions (`submit-application`, `approve-application`) to fail fast when invoked against archived applications.

@@ -33,10 +33,10 @@ export function ComposeEmailDialog({
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const [recipientInput, setRecipientInput] = React.useState('');
   const [recipients, setRecipients] = React.useState<string[]>([]);
-  const [showCc, setShowCc] = React.useState(false);
+  const [showCc, setShowCc] = React.useState(true);
   const [ccInput, setCcInput] = React.useState('');
   const [ccRecipients, setCcRecipients] = React.useState<string[]>([]);
-  const [showBcc, setShowBcc] = React.useState(false);
+  const [showBcc, setShowBcc] = React.useState(true);
   const [bccInput, setBccInput] = React.useState('');
   const [bccRecipients, setBccRecipients] = React.useState<string[]>([]);
   const [subject, setSubject] = React.useState('');

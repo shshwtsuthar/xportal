@@ -58,6 +58,14 @@ export function MinimalTiptap({
     editor.setEditable(editable);
   }, [editor, editable]);
 
+  React.useEffect(() => {
+    if (!editor) return;
+    const currentContent = editor.getHTML();
+    if (currentContent !== content) {
+      editor.commands.setContent(content || '');
+    }
+  }, [editor, content]);
+
   return (
     <div className={cn('flex flex-col rounded-md border', className)}>
       <div className="flex flex-wrap items-center gap-1 p-2">
