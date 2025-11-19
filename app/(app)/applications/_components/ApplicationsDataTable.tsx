@@ -72,6 +72,10 @@ import { useApproveApplication } from '@/src/hooks/useApproveApplication';
 import { useGenerateOfferLetter } from '@/src/hooks/useGenerateOfferLetter';
 import { ArchiveIcon, type ArchiveIconHandle } from '@/components/ui/archive';
 import {
+  WashingMachineIcon,
+  type WashingMachineIconHandle,
+} from '@/components/ui/washing-machine';
+import {
   getApplicationsTableKey,
   useGetTablePreferences,
   useUpsertTablePreferences,
@@ -127,6 +131,9 @@ export const ApplicationsDataTable = forwardRef<
   }>({ open: false, application: null });
   const [offerGeneratingId, setOfferGeneratingId] = useState<string | null>(
     null
+  );
+  const washingMachineRefs = useRef<Map<string, WashingMachineIconHandle>>(
+    new Map()
   );
   const [sortConfig, setSortConfig] = useState<{
     key: string;
@@ -312,6 +319,21 @@ export const ApplicationsDataTable = forwardRef<
     setCurrentPage(1);
   }, [data, searchQuery]);
 
+  // Control washing machine animation based on offerGeneratingId
+  useEffect(() => {
+    // Use setTimeout to ensure refs are registered after render
+    const timeoutId = setTimeout(() => {
+      washingMachineRefs.current.forEach((ref, appId) => {
+        if (appId === offerGeneratingId) {
+          ref.startAnimation();
+        } else {
+          ref.stopAnimation();
+        }
+      });
+    }, 0);
+    return () => clearTimeout(timeoutId);
+  }, [offerGeneratingId]);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -487,17 +509,46 @@ export const ApplicationsDataTable = forwardRef<
     // For SUBMITTED status, show Generate Offer button
     if (app.status === 'SUBMITTED') {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={handleGenerateOffer}
-          disabled={isRowGenerating}
-          aria-busy={isRowGenerating}
-          aria-label="Generate Offer"
-        >
-          {isRowGenerating ? 'Generating…' : 'Generate Offer'}
-        </Button>
+        <div className="flex w-full min-w-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-w-0 flex-1 shrink overflow-hidden"
+            onClick={handleGenerateOffer}
+            disabled={isRowGenerating}
+            aria-busy={isRowGenerating}
+            aria-label="Generate Offer"
+          >
+            <span className="flex min-w-0 items-center truncate">
+              {isRowGenerating && (
+                <WashingMachineIcon
+                  ref={(node) => {
+                    if (node) {
+                      washingMachineRefs.current.set(app.id, node);
+                      // Start animation immediately if this app is generating
+                      // Use requestAnimationFrame to ensure the component is fully mounted
+                      requestAnimationFrame(() => {
+                        if (offerGeneratingId === app.id) {
+                          node.startAnimation();
+                        }
+                      });
+                    } else {
+                      washingMachineRefs.current.delete(app.id);
+                    }
+                  }}
+                  size={16}
+                  className="mr-2 shrink-0"
+                />
+              )}
+              <span className="truncate">
+                {isRowGenerating ? 'Generating…' : 'Generate Offer'}
+              </span>
+            </span>
+          </Button>
+          <div className="shrink-0">
+            <ArchiveButton onArchive={() => handleArchive(app.id)} />
+          </div>
+        </div>
       );
     }
 
@@ -651,7 +702,7 @@ export const ApplicationsDataTable = forwardRef<
                 );
               })}
               <TableHead
-                style={{ width: 160 }}
+                style={{ width: 200 }}
                 className="bg-background before:bg-border sticky right-0 z-20 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
               >
                 Actions
@@ -685,7 +736,7 @@ export const ApplicationsDataTable = forwardRef<
                   );
                 })}
                 <TableCell
-                  style={{ width: 160 }}
+                  style={{ width: 200 }}
                   className="bg-background before:bg-border sticky right-0 z-10 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
                 >
                   {renderActions(app)}
