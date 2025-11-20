@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,9 +21,15 @@ import {
 } from '@/src/hooks/useTablePreferences';
 
 export const ApplicationsColumnsMenu = () => {
+  const [mounted, setMounted] = useState(false);
   const tableKey = getApplicationsTableKey();
   const { data: prefs } = useGetTablePreferences(tableKey);
   const upsertPrefs = useUpsertTablePreferences();
+
+  // Ensure component only renders on client to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const allColumns = getApplicationsColumns();
   const visible = (
@@ -41,6 +48,16 @@ export const ApplicationsColumnsMenu = () => {
       column_widths: (prefs?.column_widths as Record<string, number>) ?? {},
     });
   };
+
+  // Prevent hydration mismatch by only rendering DropdownMenu after mount
+  if (!mounted) {
+    return (
+      <Button variant="outline" size="sm" aria-label="Toggle columns" disabled>
+        <Plus className="mr-2 h-4 w-4" />
+        Columns
+      </Button>
+    );
+  }
 
   return (
     <DropdownMenu>

@@ -67,10 +67,12 @@ import {
   GripVertical,
   Search,
   Archive,
+  ArchiveRestore,
 } from 'lucide-react';
 // removed unused date-fns import
 import { Tables } from '@/database.types';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
 import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
@@ -514,9 +516,99 @@ export const ApplicationsDataTable = forwardRef<
     );
   };
 
+  const handleUnarchive = (id: string) => {
+    updateMutation.mutate(
+      { id, status: 'DRAFT' },
+      {
+        onSuccess: () => toast.success('Application unarchived successfully'),
+        onError: (error) =>
+          toast.error(`Failed to unarchive: ${error.message}`),
+      }
+    );
+  };
+
   if (isLoading) {
+    // Show skeleton table structure while loading
+    const skeletonRowCount = rowsPerPage || 10;
+    const defaultVisibleColumns =
+      visibleColumns.length > 0 ? visibleColumns : DEFAULT_VISIBLE_COLUMNS;
+
     return (
-      <p className="text-muted-foreground text-sm">Loading applications…</p>
+      <div className="w-full overflow-hidden rounded-md border">
+        <div className="border-b p-3">
+          <div className="relative">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Skeleton className="h-9 w-full pl-9" />
+          </div>
+        </div>
+        <Table className="table-fixed">
+          <TableHeader>
+            <TableRow className="divide-x">
+              <TableHead className="w-10 px-2 text-center" />
+              {defaultVisibleColumns.map((id, index) => {
+                const c = colById.get(id)!;
+                const baseWidth = columnWidths[id] ?? c.width ?? 160;
+                const minWidth = c.minWidth;
+                const width = minWidth
+                  ? Math.max(baseWidth, minWidth)
+                  : baseWidth;
+                const isLastColumn = index === defaultVisibleColumns.length - 1;
+                return (
+                  <TableHead
+                    key={id}
+                    style={{ width, ...(minWidth && { minWidth }) }}
+                    className={`text-muted-foreground group relative h-12 px-0 text-left align-middle font-medium ${isLastColumn ? 'border-r-0' : ''}`}
+                  >
+                    <div className="flex w-full items-center gap-2 px-4">
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                  </TableHead>
+                );
+              })}
+              <TableHead
+                style={{ width: 240 }}
+                className="bg-background before:bg-border sticky right-0 z-20 border-l-0 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
+              >
+                <Skeleton className="ml-auto h-4 w-16" />
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y">
+            {Array.from({ length: skeletonRowCount }).map((_, index) => (
+              <TableRow key={index} className="divide-x">
+                <TableCell className="w-8 px-2">
+                  <Skeleton className="h-4 w-4" />
+                </TableCell>
+                {defaultVisibleColumns.map((id, colIndex) => {
+                  const c = colById.get(id)!;
+                  const baseWidth = columnWidths[id] ?? c.width ?? 160;
+                  const minWidth = c.minWidth;
+                  const width = minWidth
+                    ? Math.max(baseWidth, minWidth)
+                    : baseWidth;
+                  const isLastColumn =
+                    colIndex === defaultVisibleColumns.length - 1;
+                  return (
+                    <TableCell
+                      key={`skeleton-${index}-${id}`}
+                      style={{ width, ...(minWidth && { minWidth }) }}
+                      className={`px-4 ${isLastColumn ? 'border-r-0' : ''}`}
+                    >
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  );
+                })}
+                <TableCell
+                  style={{ width: 240 }}
+                  className="bg-background before:bg-border sticky right-0 z-10 border-l-0 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
+                >
+                  <Skeleton className="ml-auto h-8 w-24" />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     );
   }
   if (isError) {
@@ -528,9 +620,16 @@ export const ApplicationsDataTable = forwardRef<
   const renderActions = (app: Tables<'applications'>) => {
     if (app.status === 'ARCHIVED') {
       return (
-        <span className="text-muted-foreground text-xs font-semibold">
-          Archived
-        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => handleUnarchive(app.id)}
+          aria-label="Unarchive application"
+        >
+          <ArchiveRestore className="mr-2 h-4 w-4" />
+          Unarchive
+        </Button>
       );
     }
 
@@ -596,6 +695,11 @@ export const ApplicationsDataTable = forwardRef<
     // For REJECTED status, show no actions
     if (app.status === 'REJECTED') {
       return <span className="text-muted-foreground">—</span>;
+    }
+
+    // For APPROVED status, show no actions
+    if (app.status === 'APPROVED') {
+      return null;
     }
 
     // For SUBMITTED status, show Generate Offer button

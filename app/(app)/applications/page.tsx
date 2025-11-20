@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 import type { Database } from '@/database.types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   ApplicationsDataTable,
   type ApplicationsDataTableRef,
@@ -100,7 +101,19 @@ export default function ApplicationsPage() {
       {/* Application Statistics Cards */}
       <div className="mb-6">
         {isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading statistics...</p>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Card key={index}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         ) : (
           <ApplicationStats applications={allApplications ?? []} />
         )}

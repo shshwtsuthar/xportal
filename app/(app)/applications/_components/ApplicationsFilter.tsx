@@ -67,6 +67,12 @@ export function ApplicationsFilter({
 }: ApplicationsFilterProps) {
   const [open, setOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState<ApplicationFilters>(filters);
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component only renders on client to avoid hydration mismatch
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: agents = [] } = useGetAgents();
   const { data: programs = [] } = useGetPrograms();
@@ -205,6 +211,29 @@ export function ApplicationsFilter({
       </div>
     </div>
   );
+
+  // Prevent hydration mismatch by only rendering Sheet after mount
+  if (!mounted) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="relative"
+        aria-label="Open filters"
+        disabled
+      >
+        <Funnel className="h-4 w-4" />
+        {activeFilterCount > 0 && (
+          <Badge
+            variant="secondary"
+            className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
+          >
+            {activeFilterCount}
+          </Badge>
+        )}
+      </Button>
+    );
+  }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
