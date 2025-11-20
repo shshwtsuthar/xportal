@@ -8,7 +8,8 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { Badge, type badgeVariants } from '@/components/ui/badge';
-import { Check, Copy } from 'lucide-react';
+import { CopyIcon, type CopyIconHandle } from '@/components/ui/copy';
+import { CheckIcon, type CheckIconHandle } from '@/components/ui/check';
 import { cn } from '@/lib/utils';
 
 type CopyToClipboardBadgeProps = {
@@ -30,6 +31,8 @@ export const CopyToClipboardBadge = ({
 }: CopyToClipboardBadgeProps) => {
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const copyIconRef = useRef<CopyIconHandle>(null);
+  const checkIconRef = useRef<CheckIconHandle>(null);
 
   useEffect(() => {
     return () => {
@@ -38,6 +41,12 @@ export const CopyToClipboardBadge = ({
       }
     };
   }, []);
+
+  useEffect(() => {
+    // Reset copy icon to normal state whenever copied state changes
+    // This ensures it starts from the beginning when it becomes visible again
+    copyIconRef.current?.stopAnimation();
+  }, [copied]);
 
   const reset = useCallback(() => {
     if (timeoutRef.current) {
@@ -51,6 +60,7 @@ export const CopyToClipboardBadge = ({
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
+      checkIconRef.current?.startAnimation();
       reset();
     } catch (error) {
       console.error('Failed to copy text:', error);
@@ -67,8 +77,21 @@ export const CopyToClipboardBadge = ({
     [handleCopy]
   );
 
-  const iconClassName =
-    'h-3.5 w-3.5 transition-all duration-200 group-data-[copied=true]:scale-90';
+  const handleMouseEnter = useCallback(() => {
+    if (!copied) {
+      copyIconRef.current?.startAnimation();
+    } else {
+      checkIconRef.current?.startAnimation();
+    }
+  }, [copied]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (!copied) {
+      copyIconRef.current?.stopAnimation();
+    } else {
+      checkIconRef.current?.stopAnimation();
+    }
+  }, [copied]);
 
   return (
     <Badge
@@ -84,6 +107,8 @@ export const CopyToClipboardBadge = ({
         type="button"
         onClick={handleCopy}
         onKeyDown={handleKeyDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         aria-label={`Copy ${label ?? 'value'} to clipboard`}
         aria-live="polite"
         tabIndex={0}
@@ -98,21 +123,21 @@ export const CopyToClipboardBadge = ({
           )}
           aria-hidden="true"
         >
-          <Copy
+          <CopyIcon
+            ref={copyIconRef}
+            size={14}
             className={cn(
-              iconClassName,
-              'absolute inset-0 m-auto translate-y-0 opacity-100 transition-all duration-200',
-              copied && '-translate-y-2 opacity-0'
+              'absolute inset-0 flex scale-100 items-center justify-center opacity-100 transition-all duration-300 ease-in-out',
+              copied && 'scale-75 opacity-0'
             )}
-            strokeWidth={1}
           />
-          <Check
+          <CheckIcon
+            ref={checkIconRef}
+            size={14}
             className={cn(
-              iconClassName,
-              'absolute inset-0 m-auto translate-y-2 opacity-0 transition-all duration-200',
-              copied && 'translate-y-0 opacity-100'
+              'absolute inset-0 flex scale-75 items-center justify-center opacity-0 transition-all duration-300 ease-in-out',
+              copied && 'scale-100 opacity-100'
             )}
-            strokeWidth={1}
           />
         </span>
       </button>

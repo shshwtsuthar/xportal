@@ -756,7 +756,7 @@ export const ApplicationsDataTable = forwardRef<
                 );
               })}
               <TableHead
-                style={{ width: 200 }}
+                style={{ width: 240 }}
                 className="bg-background before:bg-border sticky right-0 z-20 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
               >
                 Actions
@@ -790,7 +790,7 @@ export const ApplicationsDataTable = forwardRef<
                   );
                 })}
                 <TableCell
-                  style={{ width: 200 }}
+                  style={{ width: 240 }}
                   className="bg-background before:bg-border sticky right-0 z-10 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
                 >
                   {renderActions(app)}
