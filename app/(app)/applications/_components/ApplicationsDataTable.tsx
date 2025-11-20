@@ -7,6 +7,7 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
+  Fragment,
 } from 'react';
 import { useCallback } from 'react';
 import Link from 'next/link';
@@ -26,6 +27,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,17 +61,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { MoreHorizontal, Trash2, GripVertical, Search } from 'lucide-react';
+import {
+  MoreHorizontal,
+  Trash2,
+  GripVertical,
+  Search,
+  Archive,
+} from 'lucide-react';
 // removed unused date-fns import
 import { Tables } from '@/database.types';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
 import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
+import { useRecreateDraftApplication } from '@/src/hooks/useRecreateDraftApplication';
 import { SendOfferComposeDialog } from '@/components/emails/SendOfferComposeDialog';
 import { useApproveApplication } from '@/src/hooks/useApproveApplication';
 import { useGenerateOfferLetter } from '@/src/hooks/useGenerateOfferLetter';
 import { ArchiveIcon, type ArchiveIconHandle } from '@/components/ui/archive';
+import {
+  RefreshCCWIcon,
+  type RefreshCCWIconHandle,
+} from '@/components/ui/refresh-ccw';
 import {
   WashingMachineIcon,
   type WashingMachineIconHandle,
@@ -182,6 +201,30 @@ const ApproveButton = ({
   );
 };
 
+// Recreate Draft context menu item component that handles hover animation
+const RecreateDraftMenuItem = ({
+  onRecreateDraft,
+}: {
+  onRecreateDraft: () => void;
+}) => {
+  const refreshIconRef = useRef<RefreshCCWIconHandle>(null);
+
+  return (
+    <ContextMenuItem
+      onClick={onRecreateDraft}
+      onMouseEnter={() => refreshIconRef.current?.startAnimation()}
+      onMouseLeave={() => refreshIconRef.current?.stopAnimation()}
+    >
+      <RefreshCCWIcon
+        ref={refreshIconRef}
+        size={16}
+        className="mr-2 shrink-0"
+      />
+      Recreate Draft
+    </ContextMenuItem>
+  );
+};
+
 export type ApplicationsDataTableRef = {
   getRows: () => RowType[];
 };
@@ -239,6 +282,7 @@ export const ApplicationsDataTable = forwardRef<
   }, [prefs]);
 
   const approveMutation = useApproveApplication();
+  const recreateDraftMutation = useRecreateDraftApplication();
 
   const handleSort = (key: string) => {
     setSortConfig((prevConfig) => {
@@ -277,10 +321,11 @@ export const ApplicationsDataTable = forwardRef<
   const startResize = (id: string, startX: number) => {
     const col = colById.get(id);
     const base = columnWidths[id] ?? col?.width ?? 160;
+    const minWidth = col?.minWidth ?? 100;
     let latestWidth = base;
     const onMove = (e: MouseEvent) => {
       const delta = e.clientX - startX;
-      const next = Math.max(100, Math.min(600, base + delta));
+      const next = Math.max(minWidth, Math.min(600, base + delta));
       latestWidth = next;
       setColumnWidths((prev) => ({ ...prev, [id]: next }));
     };
@@ -696,16 +741,21 @@ export const ApplicationsDataTable = forwardRef<
                 className="w-10 px-2 text-center"
                 aria-label="Manual order column"
               />
-              {visibleColumns.map((id) => {
+              {visibleColumns.map((id, index) => {
                 const c = colById.get(id)!;
-                const width = columnWidths[id] ?? c.width ?? 160;
+                const baseWidth = columnWidths[id] ?? c.width ?? 160;
+                const minWidth = c.minWidth;
+                const width = minWidth
+                  ? Math.max(baseWidth, minWidth)
+                  : baseWidth;
                 const active =
                   sortConfig?.key === id ? sortConfig.direction : null;
+                const isLastColumn = index === visibleColumns.length - 1;
                 return (
                   <TableHead
                     key={id}
-                    style={{ width }}
-                    className={`text-muted-foreground group relative h-12 px-0 text-left align-middle font-medium`}
+                    style={{ width, ...(minWidth && { minWidth }) }}
+                    className={`text-muted-foreground group relative h-12 px-0 text-left align-middle font-medium ${isLastColumn ? 'border-r-0' : ''}`}
                   >
                     <button
                       type="button"
@@ -739,8 +789,9 @@ export const ApplicationsDataTable = forwardRef<
                         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
                           e.preventDefault();
                           const delta = e.key === 'ArrowLeft' ? -8 : 8;
+                          const minWidth = c.minWidth ?? 100;
                           const next = Math.max(
-                            100,
+                            minWidth,
                             Math.min(
                               600,
                               (columnWidths[id] ?? c.width ?? 160) + delta
@@ -757,46 +808,91 @@ export const ApplicationsDataTable = forwardRef<
               })}
               <TableHead
                 style={{ width: 240 }}
-                className="bg-background before:bg-border sticky right-0 z-20 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
+                className="bg-background before:bg-border sticky right-0 z-20 border-l-0 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
               >
                 Actions
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y">
-            {paginatedRows.map((app) => (
-              <TableRow
-                key={app.id}
-                className="divide-x"
-                draggable
-                onDragStart={() => onDragStart(app.id)}
-                onDragEnter={() => onDragEnter(app.id)}
-                onDragEnd={onDragEnd}
-              >
-                <TableCell className="text-muted-foreground w-8">
-                  <GripVertical className="h-4 w-4" />
-                </TableCell>
-                {visibleColumns.map((id) => {
-                  const c = colById.get(id)!;
-                  const width = columnWidths[id] ?? c.width ?? 160;
-                  return (
-                    <TableCell
-                      key={`${app.id}-${id}`}
-                      style={{ width }}
-                      className="truncate px-4"
-                    >
-                      {c.render(app as RowType)}
-                    </TableCell>
-                  );
-                })}
-                <TableCell
-                  style={{ width: 240 }}
-                  className="bg-background before:bg-border sticky right-0 z-10 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
+            {paginatedRows.map((app) => {
+              const shouldShowContextMenu =
+                app.status !== 'ARCHIVED' && app.status !== 'APPROVED';
+
+              const tableRow = (
+                <TableRow
+                  className="divide-x"
+                  draggable
+                  onDragStart={() => onDragStart(app.id)}
+                  onDragEnter={() => onDragEnter(app.id)}
+                  onDragEnd={onDragEnd}
                 >
-                  {renderActions(app)}
-                </TableCell>
-              </TableRow>
-            ))}
+                  <TableCell className="text-muted-foreground w-8">
+                    <GripVertical className="h-4 w-4" />
+                  </TableCell>
+                  {visibleColumns.map((id, index) => {
+                    const c = colById.get(id)!;
+                    const baseWidth = columnWidths[id] ?? c.width ?? 160;
+                    const minWidth = c.minWidth;
+                    const width = minWidth
+                      ? Math.max(baseWidth, minWidth)
+                      : baseWidth;
+                    const isLastColumn = index === visibleColumns.length - 1;
+                    return (
+                      <TableCell
+                        key={`${app.id}-${id}`}
+                        style={{ width, ...(minWidth && { minWidth }) }}
+                        className={`${c.noTruncate ? 'px-4' : 'truncate px-4'} ${isLastColumn ? 'border-r-0' : ''}`}
+                      >
+                        {c.render(app as RowType)}
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell
+                    style={{ width: 240 }}
+                    className="bg-background before:bg-border sticky right-0 z-10 border-l-0 px-4 text-right before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:content-['']"
+                  >
+                    {renderActions(app)}
+                  </TableCell>
+                </TableRow>
+              );
+
+              if (!shouldShowContextMenu) {
+                return <Fragment key={app.id}>{tableRow}</Fragment>;
+              }
+
+              return (
+                <ContextMenu key={app.id}>
+                  <ContextMenuTrigger asChild>{tableRow}</ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <RecreateDraftMenuItem
+                      onRecreateDraft={async () => {
+                        try {
+                          const result =
+                            await recreateDraftMutation.mutateAsync({
+                              applicationId: app.id,
+                            });
+                          toast.success(
+                            `Draft recreated successfully! New application: ${result.newApplicationDisplayId}`
+                          );
+                        } catch (error) {
+                          toast.error(
+                            `Failed to recreate draft: ${error instanceof Error ? error.message : 'Unknown error'}`
+                          );
+                        }
+                      }}
+                    />
+                    <ContextMenuSeparator />
+                    {app.status !== 'ARCHIVED' && (
+                      <ContextMenuItem onClick={() => handleArchive(app.id)}>
+                        <Archive className="mr-2 h-4 w-4" />
+                        Archive
+                      </ContextMenuItem>
+                    )}
+                  </ContextMenuContent>
+                </ContextMenu>
+              );
+            })}
             {paginatedRows.length === 0 && (
               <TableRow className="divide-x">
                 <TableCell colSpan={visibleColumns.length + 2}>

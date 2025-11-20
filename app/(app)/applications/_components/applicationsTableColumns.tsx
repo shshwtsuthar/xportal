@@ -15,10 +15,12 @@ export type ColumnDef = {
   id: string;
   label: string;
   width?: number;
+  minWidth?: number; // Minimum width for columns (especially useful for noTruncate columns)
   sortable?: boolean;
   sortAccessor?: (row: RowType) => string | number;
   render: (row: RowType) => React.ReactNode;
   group?: string;
+  noTruncate?: boolean; // Set to true for columns that render badges/pills
 };
 
 const YES_NO = (v: unknown) => (v ? 'Set' : 'Not set');
@@ -62,6 +64,7 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       id: 'status',
       label: 'Status',
       width: 140,
+      minWidth: 180, // Minimum width to fit longest status "OFFER GENERATED"
       sortable: true,
       sortAccessor: (r) => r.status as unknown as string,
       render: (r) => (
@@ -96,6 +99,7 @@ export const getApplicationsColumns = (): ColumnDef[] => {
         </Badge>
       ),
       group: 'Identity',
+      noTruncate: true,
     },
     {
       id: 'requested_start',
@@ -127,6 +131,7 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       id: 'id',
       label: 'ID',
       width: 260,
+      minWidth: 300, // Minimum width to fit UUIDs and application IDs with badge padding
       sortable: true,
       sortAccessor: (r) => r.application_id_display || r.id,
       render: (r) => (
@@ -136,6 +141,7 @@ export const getApplicationsColumns = (): ColumnDef[] => {
         />
       ),
       group: 'Identity',
+      noTruncate: true,
     },
     {
       id: 'assigned_to',
@@ -227,6 +233,7 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       id: 'email',
       label: 'Email',
       width: 220,
+      minWidth: 280, // Minimum width to fit typical email addresses with badge padding
       sortable: true,
       sortAccessor: (r) => r.email || '',
       render: (r) =>
@@ -236,11 +243,13 @@ export const getApplicationsColumns = (): ColumnDef[] => {
           '—'
         ),
       group: 'Contact',
+      noTruncate: true,
     },
     {
       id: 'alternative_email',
       label: 'Alt. Email',
       width: 220,
+      minWidth: 280, // Minimum width to fit typical email addresses with badge padding
       sortable: true,
       sortAccessor: (r) => r.alternative_email || '',
       render: (r) =>
@@ -253,6 +262,7 @@ export const getApplicationsColumns = (): ColumnDef[] => {
           '—'
         ),
       group: 'Contact',
+      noTruncate: true,
     },
     {
       id: 'phone_number',
