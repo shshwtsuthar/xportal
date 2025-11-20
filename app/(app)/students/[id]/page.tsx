@@ -4,6 +4,9 @@ import { use, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CopyToClipboardBadge } from '@/components/ui/copy-to-clipboard-badge';
+import { Mail } from 'lucide-react';
+import { useComposeEmail } from '@/components/providers/compose-email';
 import { useGetStudentById } from '@/src/hooks/useGetStudentById';
 import { useGetStudentAddresses } from '@/src/hooks/useGetStudentAddresses';
 import { useGetStudentAvetmiss } from '@/src/hooks/useGetStudentAvetmiss';
@@ -58,6 +61,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default function StudentPage({ params }: PageProps) {
   const { id } = use(params);
   const [activeTab, setActiveTab] = useState(0);
+  const { openWithRecipients } = useComposeEmail();
 
   const { data: student, isLoading, isError } = useGetStudentById(id);
   const { data: addresses } = useGetStudentAddresses(id);
@@ -1271,9 +1275,17 @@ export default function StudentPage({ params }: PageProps) {
       <div className="mb-6 flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">{fullName}</h1>
         <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
-          <span>ID: {student.student_id_display}</span>
+          <CopyToClipboardBadge
+            value={student.student_id_display}
+            label="Student ID"
+            variant="outline"
+          />
           <span>•</span>
-          <span>{student.email}</span>
+          <CopyToClipboardBadge
+            value={student.email || ''}
+            label="Email"
+            variant="outline"
+          />
           <span>•</span>
           <Badge
             variant={
@@ -1292,18 +1304,33 @@ export default function StudentPage({ params }: PageProps) {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
-            <div className="flex items-center gap-2">
-              {tabs.map((tab, i) => (
-                <Button
-                  key={tab}
-                  size="sm"
-                  variant={i === activeTab ? 'default' : 'outline'}
-                  onClick={() => setActiveTab(i)}
-                  aria-label={`Go to ${tab}`}
-                >
-                  {tab}
-                </Button>
-              ))}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {tabs.map((tab, i) => (
+                  <Button
+                    key={tab}
+                    size="sm"
+                    variant={i === activeTab ? 'default' : 'outline'}
+                    onClick={() => setActiveTab(i)}
+                    aria-label={`Go to ${tab}`}
+                  >
+                    {tab}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (student.email) {
+                    openWithRecipients([student.email]);
+                  }
+                }}
+                aria-label="Email student"
+                disabled={!student.email}
+              >
+                <Mail className="mr-2 h-4 w-4" /> Mail
+              </Button>
             </div>
           </CardTitle>
         </CardHeader>
