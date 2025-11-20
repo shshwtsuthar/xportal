@@ -351,6 +351,22 @@ export default function StudentPage({ params }: PageProps) {
                       {format(new Date(student.created_at), 'dd MMM yyyy')}
                     </div>
                   </div>
+                  <div className="space-y-1">
+                    <div className="text-muted-foreground text-sm">
+                      Application ID
+                    </div>
+                    <div className="text-base font-medium">
+                      {student.application_id || '—'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-muted-foreground text-sm">
+                      Xero Contact ID
+                    </div>
+                    <div className="text-base font-medium">
+                      {student.xero_contact_id || '—'}
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -388,21 +404,21 @@ export default function StudentPage({ params }: PageProps) {
                             a.po_box,
                           ]
                             .filter(Boolean)
-                            .join(', ')}
+                            .join(', ') || '—'}
                         </div>
                         <div className="text-base font-medium">
                           {[a.suburb, a.state, a.postcode]
                             .filter(Boolean)
-                            .join(' ')}
+                            .join(' ') || '—'}
                         </div>
                         <div className="text-muted-foreground text-sm">
-                          {a.country}
+                          {a.country || '—'}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-sm">No addresses.</p>
+                  <p className="text-muted-foreground text-sm">—</p>
                 )}
               </CardContent>
             </Card>
@@ -415,104 +431,100 @@ export default function StudentPage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {contacts &&
-                (contacts.emergency.length > 0 ||
-                  contacts.guardians.length > 0) ? (
-                  <div className="grid gap-6">
-                    {contacts.emergency.length > 0 && (
-                      <div>
-                        <h3 className="mb-4 text-lg font-medium">
-                          Emergency Contacts
-                        </h3>
-                        <div className="grid gap-6">
-                          {contacts.emergency.map((c) => (
-                            <div
-                              key={`${c.name}-${c.phone_number}`}
-                              className="grid grid-cols-1 gap-6 md:grid-cols-2"
-                            >
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Name
-                                </div>
-                                <div className="text-base font-medium">
-                                  {c.name || '—'}
-                                </div>
+                <div className="grid gap-6">
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">
+                      Emergency Contacts
+                    </h3>
+                    {contacts && contacts.emergency.length > 0 ? (
+                      <div className="grid gap-6">
+                        {contacts.emergency.map((c) => (
+                          <div
+                            key={`${c.name}-${c.phone_number}`}
+                            className="grid grid-cols-1 gap-6 md:grid-cols-2"
+                          >
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Name
                               </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Relationship
-                                </div>
-                                <div className="text-base font-medium">
-                                  {c.relationship || '—'}
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Phone Number
-                                </div>
-                                <div className="text-base font-medium">
-                                  {c.phone_number || '—'}
-                                </div>
+                              <div className="text-base font-medium">
+                                {c.name || '—'}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {contacts.guardians.length > 0 && (
-                      <div>
-                        <h3 className="mb-4 text-lg font-medium">
-                          Parent / Guardian
-                        </h3>
-                        <div className="grid gap-6">
-                          {contacts.guardians.map((g) => (
-                            <div
-                              key={`${g.name}-${g.email}`}
-                              className="grid grid-cols-1 gap-6 md:grid-cols-2"
-                            >
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Name
-                                </div>
-                                <div className="text-base font-medium">
-                                  {g.name || '—'}
-                                </div>
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Relationship
                               </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Email
-                                </div>
-                                <div className="text-base font-medium">
-                                  {g.email || '—'}
-                                </div>
+                              <div className="text-base font-medium">
+                                {c.relationship || '—'}
                               </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Phone Number
-                                </div>
-                                <div className="text-base font-medium">
-                                  {g.phone_number || '—'}
-                                </div>
-                              </div>
-                              {g.relationship && (
-                                <div className="space-y-1">
-                                  <div className="text-muted-foreground text-sm">
-                                    Relationship
-                                  </div>
-                                  <div className="text-base font-medium">
-                                    {g.relationship}
-                                  </div>
-                                </div>
-                              )}
                             </div>
-                          ))}
-                        </div>
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Phone Number
+                              </div>
+                              <div className="text-base font-medium">
+                                {c.phone_number || '—'}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">—</p>
                     )}
                   </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">No contacts.</p>
-                )}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">
+                      Parent / Guardian
+                    </h3>
+                    {contacts && contacts.guardians.length > 0 ? (
+                      <div className="grid gap-6">
+                        {contacts.guardians.map((g) => (
+                          <div
+                            key={`${g.name}-${g.email}`}
+                            className="grid grid-cols-1 gap-6 md:grid-cols-2"
+                          >
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Name
+                              </div>
+                              <div className="text-base font-medium">
+                                {g.name || '—'}
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Email
+                              </div>
+                              <div className="text-base font-medium">
+                                {g.email || '—'}
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Phone Number
+                              </div>
+                              <div className="text-base font-medium">
+                                {g.phone_number || '—'}
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Relationship
+                              </div>
+                              <div className="text-base font-medium">
+                                {g.relationship || '—'}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">—</p>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -524,577 +536,717 @@ export default function StudentPage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {avetmiss ? (
-                  <div className="space-y-6">
-                    {/* Demographics Section */}
-                    <div>
-                      <h3 className="mb-4 text-lg font-medium">Demographics</h3>
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Gender (NAT00080)
-                          </div>
-                          <div className="text-base font-medium">
-                            {formatGender(avetmiss.gender)}
-                          </div>
+                <div className="space-y-6">
+                  {/* Demographics Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">Demographics</h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Gender (NAT00080)
                         </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Indigenous Status (NAT00080)
-                          </div>
-                          <div className="text-base font-medium">
-                            {formatIndigenousStatus(
-                              avetmiss.indigenous_status_id
-                            )}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Country of Birth (NAT00080)
-                          </div>
-                          <div className="text-base font-medium">
-                            {avetmiss.country_of_birth_id || '—'}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Language Code (NAT00080)
-                          </div>
-                          <div className="text-base font-medium">
-                            {avetmiss.language_code || '—'}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Citizenship Status (NAT00080)
-                          </div>
-                          <div className="text-base font-medium">
-                            {avetmiss.citizenship_status_code || '—'}
-                          </div>
+                        <div className="text-base font-medium">
+                          {avetmiss ? formatGender(avetmiss.gender) : '—'}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Education Section */}
-                    <div>
-                      <h3 className="mb-4 text-lg font-medium">Education</h3>
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Highest School Level Completed (NAT00080)
-                          </div>
-                          <div className="text-base font-medium">
-                            {formatHighestSchoolLevel(
-                              avetmiss.highest_school_level_id
-                            )}
-                          </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Indigenous Status (NAT00080)
                         </div>
-                        {avetmiss.year_highest_school_level_completed && (
-                          <div className="space-y-1">
-                            <div className="text-muted-foreground text-sm">
-                              Year Completed (NAT00080)
-                            </div>
-                            <div className="text-base font-medium">
-                              {avetmiss.year_highest_school_level_completed ===
-                              '@@'
-                                ? 'Not provided'
-                                : avetmiss.year_highest_school_level_completed}
-                            </div>
-                          </div>
-                        )}
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Currently at School (NAT00085)
-                          </div>
-                          <div className="text-base font-medium">
-                            {avetmiss.at_school_flag === 'Y'
-                              ? 'Yes'
-                              : avetmiss.at_school_flag === 'N'
-                                ? 'No'
-                                : '—'}
-                          </div>
+                        <div className="text-base font-medium">
+                          {avetmiss
+                            ? formatIndigenousStatus(
+                                avetmiss.indigenous_status_id
+                              )
+                            : '—'}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Employment Section */}
-                    <div>
-                      <h3 className="mb-4 text-lg font-medium">Employment</h3>
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Labour Force Status (NAT00080)
-                          </div>
-                          <div className="text-base font-medium">
-                            {formatLabourForceStatus(
-                              avetmiss.labour_force_status_id
-                            )}
-                          </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Country of Birth (NAT00080)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.country_of_birth_id || '—'}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Identifiers Section */}
-                    <div>
-                      <h3 className="mb-4 text-lg font-medium">Identifiers</h3>
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            USI (Unique Student Identifier)
-                          </div>
-                          <div className="text-base font-medium">
-                            {avetmiss.usi || '—'}
-                          </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Language Code (NAT00080)
                         </div>
-                        {showVSN && (
-                          <div className="space-y-1">
-                            <div className="text-muted-foreground text-sm">
-                              VSN (Victorian Student Number)
-                            </div>
-                            <div className="text-base font-medium">
-                              {avetmiss.vsn || '—'}
-                            </div>
-                          </div>
-                        )}
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Survey Contact Status (NAT00080)
-                          </div>
-                          <div className="text-base font-medium">
-                            {avetmiss.survey_contact_status || '—'}
-                          </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.language_code || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Citizenship Status (NAT00080)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.citizenship_status_code || '—'}
                         </div>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">
-                    No AVETMISS data.
-                  </p>
-                )}
+
+                  {/* Education Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">Education</h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Highest School Level Completed (NAT00080)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss
+                            ? formatHighestSchoolLevel(
+                                avetmiss.highest_school_level_id
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Year Completed (NAT00080)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.year_highest_school_level_completed
+                            ? avetmiss.year_highest_school_level_completed ===
+                              '@@'
+                              ? 'Not provided'
+                              : avetmiss.year_highest_school_level_completed
+                            : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Currently at School (NAT00085)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.at_school_flag === 'Y'
+                            ? 'Yes'
+                            : avetmiss?.at_school_flag === 'N'
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Employment Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">Employment</h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Labour Force Status (NAT00080)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss
+                            ? formatLabourForceStatus(
+                                avetmiss.labour_force_status_id
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Identifiers Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">Identifiers</h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          USI (Unique Student Identifier)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.usi || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          USI Exemption Code
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.usi_exemption_code || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          USI Exemption Flag
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.usi_exemption_flag === true
+                            ? 'Yes'
+                            : avetmiss?.usi_exemption_flag === false
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          USI Exemption Evidence Path
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.usi_exemption_evidence_path || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          USI Status Verified At
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.usi_status_verified_at
+                            ? format(
+                                new Date(avetmiss.usi_status_verified_at),
+                                'dd MMM yyyy'
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          VSN (Victorian Student Number)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.vsn || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Survey Contact Status (NAT00080)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.survey_contact_status || '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
             {/* Additional Information Card */}
-            {(avetmiss?.disability_flag ||
-              disabilities.length > 0 ||
-              avetmiss?.prior_education_flag ||
-              priorEducation.length > 0) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl font-semibold tracking-tight">
-                    Additional Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {/* Disabilities Section */}
-                    <div>
-                      <h3 className="mb-4 text-lg font-medium">Disabilities</h3>
-                      <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold tracking-tight">
+                  Additional Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Disabilities Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">Disabilities</h3>
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Disability Flag (NAT00080)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.disability_flag === 'Y'
+                            ? 'Yes'
+                            : avetmiss?.disability_flag === 'N'
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      {disabilities.length > 0 ? (
                         <div className="space-y-1">
                           <div className="text-muted-foreground text-sm">
-                            Disability Flag (NAT00080)
+                            Disability Types (NAT00090)
                           </div>
-                          <div className="text-base font-medium">
-                            {avetmiss?.disability_flag === 'Y'
-                              ? 'Yes'
-                              : avetmiss?.disability_flag === 'N'
-                                ? 'No'
-                                : 'Not stated'}
+                          <div className="space-y-2">
+                            {disabilities.map((d) => (
+                              <div key={d.id} className="text-base font-medium">
+                                • {getDisabilityLabel(d.disability_type_id)}
+                              </div>
+                            ))}
                           </div>
                         </div>
-                        {avetmiss?.disability_flag === 'Y' &&
-                          disabilities.length > 0 && (
-                            <div className="space-y-1">
-                              <div className="text-muted-foreground text-sm">
-                                Disability Types (NAT00090)
-                              </div>
-                              <div className="space-y-2">
-                                {disabilities.map((d) => (
-                                  <div
-                                    key={d.id}
-                                    className="text-base font-medium"
-                                  >
-                                    • {getDisabilityLabel(d.disability_type_id)}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-
-                    {/* Prior Education Section */}
-                    <div>
-                      <h3 className="mb-4 text-lg font-medium">
-                        Prior Educational Achievement
-                      </h3>
-                      <div className="space-y-4">
+                      ) : (
                         <div className="space-y-1">
                           <div className="text-muted-foreground text-sm">
-                            Prior Education Flag (NAT00085)
+                            Disability Types (NAT00090)
                           </div>
-                          <div className="text-base font-medium">
-                            {avetmiss?.prior_education_flag === 'Y'
-                              ? 'Yes'
-                              : avetmiss?.prior_education_flag === 'N'
-                                ? 'No'
-                                : 'Not stated'}
-                          </div>
+                          <div className="text-base font-medium">—</div>
                         </div>
-                        {avetmiss?.prior_education_flag === 'Y' &&
-                          priorEducation.length > 0 && (
-                            <div className="space-y-1">
-                              <div className="text-muted-foreground text-sm">
-                                Qualifications (NAT00085)
-                              </div>
-                              <div className="space-y-2">
-                                {priorEducation.map((pe) => (
-                                  <div
-                                    key={pe.id}
-                                    className="text-base font-medium"
-                                  >
-                                    •{' '}
-                                    {getPriorEducationLabel(
-                                      pe.prior_achievement_id
-                                    )}
-                                    {pe.recognition_type && (
-                                      <span className="text-muted-foreground ml-2 text-sm font-normal">
-                                        (
-                                        {getRecognitionTypeLabel(
-                                          pe.recognition_type
-                                        )}
-                                        )
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                      </div>
+                      )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+
+                  {/* Prior Education Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">
+                      Prior Educational Achievement
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Prior Education Flag (NAT00085)
+                        </div>
+                        <div className="text-base font-medium">
+                          {avetmiss?.prior_education_flag === 'Y'
+                            ? 'Yes'
+                            : avetmiss?.prior_education_flag === 'N'
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      {priorEducation.length > 0 ? (
+                        <div className="space-y-1">
+                          <div className="text-muted-foreground text-sm">
+                            Qualifications (NAT00085)
+                          </div>
+                          <div className="space-y-2">
+                            {priorEducation.map((pe) => (
+                              <div
+                                key={pe.id}
+                                className="text-base font-medium"
+                              >
+                                •{' '}
+                                {getPriorEducationLabel(
+                                  pe.prior_achievement_id
+                                )}
+                                {pe.recognition_type && (
+                                  <span className="text-muted-foreground ml-2 text-sm font-normal">
+                                    (
+                                    {getRecognitionTypeLabel(
+                                      pe.recognition_type
+                                    )}
+                                    )
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="text-muted-foreground text-sm">
+                            Qualifications (NAT00085)
+                          </div>
+                          <div className="text-base font-medium">—</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* CRICOS Information Card */}
-            {cricos && cricos.is_international && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl font-semibold tracking-tight">
-                    CRICOS Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {/* Passport & Visa Section */}
-                    <div>
-                      <h3 className="mb-4 text-lg font-medium">
-                        Passport & Visa Information
-                      </h3>
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Passport Number
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.passport_number || '—'}
-                          </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold tracking-tight">
+                  CRICOS Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Passport & Visa Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">
+                      Passport & Visa Information
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Is International
                         </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Passport Issue Date
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.passport_issue_date
-                              ? format(
-                                  new Date(cricos.passport_issue_date),
-                                  'dd MMM yyyy'
-                                )
+                        <div className="text-base font-medium">
+                          {cricos?.is_international === true
+                            ? 'Yes'
+                            : cricos?.is_international === false
+                              ? 'No'
                               : '—'}
-                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Passport Expiry Date
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.passport_expiry_date
-                              ? format(
-                                  new Date(cricos.passport_expiry_date),
-                                  'dd MMM yyyy'
-                                )
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          CoE Number
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.coe_number || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Passport Number
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.passport_number || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Passport Issue Date
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.passport_issue_date
+                            ? format(
+                                new Date(cricos.passport_issue_date),
+                                'dd MMM yyyy'
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Passport Expiry Date
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.passport_expiry_date
+                            ? format(
+                                new Date(cricos.passport_expiry_date),
+                                'dd MMM yyyy'
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Place of Birth
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.place_of_birth || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Visa Type
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.visa_type || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Visa Number
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.visa_number || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Visa Expiry Date
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.visa_expiry_date
+                            ? format(
+                                new Date(cricos.visa_expiry_date),
+                                'dd MMM yyyy'
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Visa Grant Date
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.visa_grant_date
+                            ? format(
+                                new Date(cricos.visa_grant_date),
+                                'dd MMM yyyy'
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Holds Visa
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.holds_visa === true
+                            ? 'Yes'
+                            : cricos?.holds_visa === false
+                              ? 'No'
                               : '—'}
-                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Place of Birth
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.place_of_birth || '—'}
-                          </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Visa Application Office
                         </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Visa Type
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.visa_type || '—'}
-                          </div>
+                        <div className="text-base font-medium">
+                          {cricos?.visa_application_office || '—'}
                         </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Visa Number
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.visa_number || '—'}
-                          </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Country of Citizenship
                         </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Visa Application Office
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.visa_application_office || '—'}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Country of Citizenship
-                          </div>
-                          <div className="text-base font-medium">
-                            {cricos.country_of_citizenship || '—'}
-                          </div>
+                        <div className="text-base font-medium">
+                          {cricos?.country_of_citizenship || '—'}
                         </div>
                       </div>
                     </div>
-
-                    {/* Under 18 Welfare Section */}
-                    {cricos.is_under_18 !== null && (
-                      <div>
-                        <h3 className="mb-4 text-lg font-medium">
-                          Under 18 Welfare Arrangements
-                        </h3>
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                          <div className="space-y-1">
-                            <div className="text-muted-foreground text-sm">
-                              Is Under 18
-                            </div>
-                            <div className="text-base font-medium">
-                              {cricos.is_under_18 ? 'Yes' : 'No'}
-                            </div>
-                          </div>
-                          {cricos.is_under_18 && (
-                            <>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Provider Accepting Welfare Responsibility
-                                </div>
-                                <div className="text-base font-medium">
-                                  {cricos.provider_accepting_welfare_responsibility ===
-                                  true
-                                    ? 'Yes (CAAW)'
-                                    : cricos.provider_accepting_welfare_responsibility ===
-                                        false
-                                      ? 'No'
-                                      : '—'}
-                                </div>
-                              </div>
-                              {cricos.provider_accepting_welfare_responsibility ===
-                                true && (
-                                <div className="space-y-1">
-                                  <div className="text-muted-foreground text-sm">
-                                    Welfare Start Date
-                                  </div>
-                                  <div className="text-base font-medium">
-                                    {cricos.welfare_start_date
-                                      ? format(
-                                          new Date(cricos.welfare_start_date),
-                                          'dd MMM yyyy'
-                                        )
-                                      : '—'}
-                                  </div>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* OSHC Section */}
-                    {cricos.provider_arranged_oshc !== null && (
-                      <div>
-                        <h3 className="mb-4 text-lg font-medium">
-                          Overseas Student Health Cover (OSHC)
-                        </h3>
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                          <div className="space-y-1">
-                            <div className="text-muted-foreground text-sm">
-                              Provider Arranged OSHC
-                            </div>
-                            <div className="text-base font-medium">
-                              {cricos.provider_arranged_oshc ? 'Yes' : 'No'}
-                            </div>
-                          </div>
-                          {cricos.provider_arranged_oshc && (
-                            <>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  OSHC Provider Name
-                                </div>
-                                <div className="text-base font-medium">
-                                  {cricos.oshc_provider_name || '—'}
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  OSHC Start Date
-                                </div>
-                                <div className="text-base font-medium">
-                                  {cricos.oshc_start_date
-                                    ? format(
-                                        new Date(cricos.oshc_start_date),
-                                        'dd MMM yyyy'
-                                      )
-                                    : '—'}
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  OSHC End Date
-                                </div>
-                                <div className="text-base font-medium">
-                                  {cricos.oshc_end_date
-                                    ? format(
-                                        new Date(cricos.oshc_end_date),
-                                        'dd MMM yyyy'
-                                      )
-                                    : '—'}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* English Proficiency Section */}
-                    {cricos.has_english_test !== null && (
-                      <div>
-                        <h3 className="mb-4 text-lg font-medium">
-                          English Language Proficiency
-                        </h3>
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                          <div className="space-y-1">
-                            <div className="text-muted-foreground text-sm">
-                              Has English Test
-                            </div>
-                            <div className="text-base font-medium">
-                              {cricos.has_english_test ? 'Yes' : 'No'}
-                            </div>
-                          </div>
-                          {cricos.has_english_test && (
-                            <>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Test Type
-                                </div>
-                                <div className="text-base font-medium">
-                                  {cricos.english_test_type || '—'}
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Test Score
-                                </div>
-                                <div className="text-base font-medium">
-                                  {cricos.ielts_score || '—'}
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Test Date
-                                </div>
-                                <div className="text-base font-medium">
-                                  {cricos.english_test_date
-                                    ? format(
-                                        new Date(cricos.english_test_date),
-                                        'dd MMM yyyy'
-                                      )
-                                    : '—'}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Previous Study Section */}
-                    {cricos.has_previous_study_australia !== null && (
-                      <div>
-                        <h3 className="mb-4 text-lg font-medium">
-                          Previous Study in Australia
-                        </h3>
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                          <div className="space-y-1">
-                            <div className="text-muted-foreground text-sm">
-                              Has Previous Study
-                            </div>
-                            <div className="text-base font-medium">
-                              {cricos.has_previous_study_australia
-                                ? 'Yes'
-                                : 'No'}
-                            </div>
-                          </div>
-                          {cricos.has_previous_study_australia && (
-                            <>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Previous Provider Name
-                                </div>
-                                <div className="text-base font-medium">
-                                  {cricos.previous_provider_name || '—'}
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Completed Previous Course
-                                </div>
-                                <div className="text-base font-medium">
-                                  {cricos.completed_previous_course === true
-                                    ? 'Yes'
-                                    : cricos.completed_previous_course === false
-                                      ? 'No'
-                                      : '—'}
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground text-sm">
-                                  Has Release Letter
-                                </div>
-                                <div className="text-base font-medium">
-                                  {cricos.has_release_letter === true
-                                    ? 'Yes'
-                                    : cricos.has_release_letter === false
-                                      ? 'No'
-                                      : '—'}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+
+                  {/* Under 18 Welfare Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">
+                      Under 18 Welfare Arrangements
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Is Under 18
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.is_under_18 === true
+                            ? 'Yes'
+                            : cricos?.is_under_18 === false
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Provider Accepting Welfare Responsibility
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.provider_accepting_welfare_responsibility ===
+                          true
+                            ? 'Yes (CAAW)'
+                            : cricos?.provider_accepting_welfare_responsibility ===
+                                false
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Welfare Start Date
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.welfare_start_date
+                            ? format(
+                                new Date(cricos.welfare_start_date),
+                                'dd MMM yyyy'
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* OSHC Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">
+                      Overseas Student Health Cover (OSHC)
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Provider Arranged OSHC
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.provider_arranged_oshc === true
+                            ? 'Yes'
+                            : cricos?.provider_arranged_oshc === false
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          OSHC Provider Name
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.oshc_provider_name || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          OSHC Policy Number
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.oshc_policy_number || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          OSHC Start Date
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.oshc_start_date
+                            ? format(
+                                new Date(cricos.oshc_start_date),
+                                'dd MMM yyyy'
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          OSHC End Date
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.oshc_end_date
+                            ? format(
+                                new Date(cricos.oshc_end_date),
+                                'dd MMM yyyy'
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* English Proficiency Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">
+                      English Language Proficiency
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Has English Test
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.has_english_test === true
+                            ? 'Yes'
+                            : cricos?.has_english_test === false
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Test Type
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.english_test_type || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Test Score
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.ielts_score || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Test Date
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.english_test_date
+                            ? format(
+                                new Date(cricos.english_test_date),
+                                'dd MMM yyyy'
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Previous Study Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">
+                      Previous Study in Australia
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Has Previous Study
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.has_previous_study_australia === true
+                            ? 'Yes'
+                            : cricos?.has_previous_study_australia === false
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Previous Provider Name
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.previous_provider_name || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Completed Previous Course
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.completed_previous_course === true
+                            ? 'Yes'
+                            : cricos?.completed_previous_course === false
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Has Release Letter
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.has_release_letter === true
+                            ? 'Yes'
+                            : cricos?.has_release_letter === false
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Agreements & Compliance Section */}
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">
+                      Agreements & Compliance
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Privacy Notice Accepted
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.privacy_notice_accepted === true
+                            ? 'Yes'
+                            : cricos?.privacy_notice_accepted === false
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Written Agreement Accepted
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.written_agreement_accepted === true
+                            ? 'Yes'
+                            : cricos?.written_agreement_accepted === false
+                              ? 'No'
+                              : '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Written Agreement Date
+                        </div>
+                        <div className="text-base font-medium">
+                          {cricos?.written_agreement_date
+                            ? format(
+                                new Date(cricos.written_agreement_date),
+                                'dd MMM yyyy'
+                              )
+                            : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 

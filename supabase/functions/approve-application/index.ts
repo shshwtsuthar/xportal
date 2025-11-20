@@ -562,14 +562,19 @@ serve(async (req: Request) => {
         place_of_birth: app.place_of_birth,
         visa_type: app.visa_type,
         visa_number: app.visa_number,
+        visa_expiry_date: app.visa_expiry_date,
+        visa_grant_date: app.visa_grant_date,
         visa_application_office: app.visa_application_office,
+        holds_visa: app.holds_visa,
         country_of_citizenship: app.country_of_citizenship,
+        coe_number: app.coe_number,
         is_under_18: app.is_under_18,
         provider_accepting_welfare_responsibility:
           app.provider_accepting_welfare_responsibility,
         welfare_start_date: app.welfare_start_date,
         provider_arranged_oshc: app.provider_arranged_oshc,
         oshc_provider_name: app.oshc_provider_name,
+        oshc_policy_number: app.oshc_policy_number,
         oshc_start_date: app.oshc_start_date,
         oshc_end_date: app.oshc_end_date,
         has_english_test: app.has_english_test,
@@ -580,6 +585,9 @@ serve(async (req: Request) => {
         previous_provider_name: app.previous_provider_name,
         completed_previous_course: app.completed_previous_course,
         has_release_letter: app.has_release_letter,
+        privacy_notice_accepted: app.privacy_notice_accepted,
+        written_agreement_accepted: app.written_agreement_accepted,
+        written_agreement_date: app.written_agreement_date,
       });
       if (crErr) {
         return new Response(
