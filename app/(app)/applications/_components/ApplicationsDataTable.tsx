@@ -246,6 +246,7 @@ export const ApplicationsDataTable = forwardRef<
   const [offerGeneratingId, setOfferGeneratingId] = useState<string | null>(
     null
   );
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const washingMachineRefs = useRef<Map<string, WashingMachineIconHandle>>(
     new Map()
   );
@@ -669,10 +670,15 @@ export const ApplicationsDataTable = forwardRef<
 
     // For ACCEPTED status, show Approve button and Archive button
     if (app.status === 'ACCEPTED') {
+      const isRowApproving = approvingId === app.id;
       return (
         <div className="flex w-full min-w-0 items-center gap-2">
           <ApproveButton
             onApprove={async () => {
+              if (approveMutation.isPending) {
+                return;
+              }
+              setApprovingId(app.id);
               try {
                 await approveMutation.mutateAsync({ applicationId: app.id });
                 toast.success('Application approved');
@@ -680,9 +686,11 @@ export const ApplicationsDataTable = forwardRef<
                 toast.error(
                   `Approve failed: ${String((e as Error).message || e)}`
                 );
+              } finally {
+                setApprovingId(null);
               }
             }}
-            isPending={approveMutation.isPending}
+            isPending={isRowApproving}
             className="min-w-0 flex-1 shrink overflow-hidden"
           />
           <div className="shrink-0">
