@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Search, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Tables } from '@/database.types';
@@ -252,7 +253,56 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
     );
 
     if (isLoading) {
-      return <p className="text-muted-foreground text-sm">Loading students…</p>;
+      // Show skeleton table structure while loading
+      const skeletonRowCount = rowsPerPage || 10;
+      const defaultVisibleColumns =
+        visibleColumns.length > 0 ? visibleColumns : DEFAULT_VISIBLE_COLUMNS;
+
+      return (
+        <div className="w-full overflow-hidden rounded-md border">
+          <div className="border-b p-3">
+            <div className="relative">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Skeleton className="h-9 w-full pl-9" />
+            </div>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="divide-x">
+                <TableHead className="w-10 px-2 text-center" />
+                {defaultVisibleColumns.map((id) => {
+                  const c = colById.get(id)!;
+                  return (
+                    <TableHead key={id} className="px-4">
+                      <Skeleton className="h-4 w-24" />
+                    </TableHead>
+                  );
+                })}
+                <TableHead className="px-4 text-right">
+                  <Skeleton className="ml-auto h-4 w-16" />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y">
+              {Array.from({ length: skeletonRowCount }).map((_, index) => (
+                <TableRow key={index} className="divide-x">
+                  <TableCell className="w-8 px-2">
+                    <Skeleton className="h-4 w-4" />
+                  </TableCell>
+                  {defaultVisibleColumns.map((id) => (
+                    <TableCell key={`skeleton-${index}-${id}`} className="px-4">
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                  <TableCell className="px-4 text-right">
+                    <Skeleton className="ml-auto h-8 w-24" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      );
     }
     if (isError) {
       return (

@@ -1,41 +1,14 @@
 'use client';
 
-import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, UserCheck, Calendar, TrendingUp } from 'lucide-react';
-import { Tables } from '@/database.types';
-import { startOfWeek, isAfter, isSameDay } from 'date-fns';
+import type { StudentStats as StudentStatsType } from '@/src/hooks/useGetStudentStats';
 
 type Props = {
-  students: Tables<'students'>[];
+  stats: StudentStatsType;
 };
 
-export function StudentStats({ students }: Props) {
-  const stats = useMemo(() => {
-    const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-
-    const totalStudents = students.length;
-    const activeStudents = students.filter(
-      (student) => student.status === 'ACTIVE'
-    ).length;
-    const studentsToday = students.filter(
-      (student) =>
-        student.created_at && isSameDay(new Date(student.created_at), now)
-    ).length;
-    const studentsThisWeek = students.filter(
-      (student) =>
-        student.created_at && isAfter(new Date(student.created_at), weekStart)
-    ).length;
-
-    return {
-      totalStudents,
-      activeStudents,
-      studentsToday,
-      studentsThisWeek,
-    };
-  }, [students]);
-
+export function StudentStats({ stats }: Props) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       <Card>

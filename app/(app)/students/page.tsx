@@ -13,9 +13,10 @@ import { StudentStats } from './_components/StudentStats';
 import { Download, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStudentsFilters } from '@/src/hooks/useStudentsFilters';
-import { useGetStudents } from '@/src/hooks/useGetStudents';
+import { useGetStudentStats } from '@/src/hooks/useGetStudentStats';
 import { useComposeEmail } from '@/components/providers/compose-email';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Database } from '@/database.types';
 
 type StudentStatus = Database['public']['Enums']['student_status'];
@@ -33,8 +34,8 @@ export default function StudentsPage() {
     filters.statuses?.length === 1 ? filters.statuses[0] : undefined
   );
 
-  // Fetch all students for stats
-  const { data: allStudents, isLoading } = useGetStudents();
+  // Fetch optimized stats (uses aggregation instead of fetching all rows)
+  const { data: stats, isLoading: statsLoading } = useGetStudentStats();
 
   // Handle quick status tab clicks
   const handleStatusClick = (status: StudentStatus | undefined) => {
@@ -82,11 +83,23 @@ export default function StudentsPage() {
 
       {/* Student Statistics Cards */}
       <div className="mb-6">
-        {isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading statistics...</p>
-        ) : (
-          <StudentStats students={allStudents ?? []} />
-        )}
+        {statsLoading ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Card key={index}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : stats ? (
+          <StudentStats stats={stats} />
+        ) : null}
       </div>
 
       <Card>
