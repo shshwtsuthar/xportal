@@ -363,7 +363,6 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
                   {col.label}
                 </SortableTableHead>
               ))}
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y">
@@ -398,19 +397,12 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
                   }
                   return <TableCell key={col.id}>{col.render(s)}</TableCell>;
                 })}
-                <TableCell className="text-right">
-                  <Link
-                    href={`/students/${s.student_id_display}`}
-                    className="text-primary"
-                  >
-                    View
-                  </Link>
-                </TableCell>
+                {/* Name already links to student record, so no trailing actions cell */}
               </TableRow>
             ))}
             {paginatedRows.length === 0 && (
               <TableRow className="divide-x">
-                <TableCell colSpan={visibleCols.length + 2}>
+                <TableCell colSpan={visibleCols.length + 1}>
                   <p className="text-muted-foreground text-sm">
                     {searchQuery.trim()
                       ? 'No students match your search.'

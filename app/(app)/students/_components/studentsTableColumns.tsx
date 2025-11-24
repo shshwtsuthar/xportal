@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
+import { CopyToClipboardBadge } from '@/components/ui/copy-to-clipboard-badge';
 import { format } from 'date-fns';
 import { Tables } from '@/database.types';
 
@@ -40,7 +41,15 @@ export const getStudentsColumns = (): ColumnDef[] => {
       width: 160,
       sortable: true,
       sortAccessor: (r) => r.student_id_display || '',
-      render: (r) => r.student_id_display || '—',
+      render: (r) =>
+        r.student_id_display ? (
+          <CopyToClipboardBadge
+            value={r.student_id_display}
+            label="Student ID"
+          />
+        ) : (
+          '—'
+        ),
       group: 'Identity',
     },
     {
@@ -49,7 +58,12 @@ export const getStudentsColumns = (): ColumnDef[] => {
       width: 240,
       sortable: true,
       sortAccessor: (r) => r.email || '',
-      render: (r) => r.email || '—',
+      render: (r) =>
+        r.email ? (
+          <CopyToClipboardBadge value={r.email} label="Email address" />
+        ) : (
+          '—'
+        ),
       group: 'Identity',
     },
     {
