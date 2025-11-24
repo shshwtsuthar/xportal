@@ -1,3 +1,14 @@
+### Student Attendance Tab (2025-11-24)
+
+1) Client deployment
+- Redeploy the Next.js app so the new Attendance tab, `StudentAttendanceTable`, and `useGetStudentAllClasses` hook ship together.
+- No database migrations or Supabase type regeneration required.
+
+2) Post-deployment verification
+- Open any `students/{id}` page and confirm the tabs now include “Attendance”.
+- Switch to the Attendance tab and verify the table lists every class with Date, Start/End times, Location, Classroom, and Status.
+- Toggle attendance via the checkbox and reset button; confirm toast notifications appear and the checked state updates immediately.
+
 ### Mail Templates Creation Flow (2025-11-19)
 
 1) Database migration

@@ -18,6 +18,7 @@ import { CourseProgressionCard } from '../_components/CourseProgressionCard';
 import { FinancePane } from './_components/FinancePane';
 import { StudentDocumentsPane } from '../_components/StudentDocumentsPane';
 import { AssignmentsPane } from '../_components/AssignmentsPane';
+import { StudentAttendanceTable } from '../_components/StudentAttendanceTable';
 import { format } from 'date-fns';
 
 // AVETMISS Disability Type Codes and Labels
@@ -122,6 +123,7 @@ export default function StudentPage({ params }: PageProps) {
     'Documents',
     'Assignments',
     'Finance',
+    'Attendance',
   ];
 
   if (isLoading) {
@@ -1499,6 +1501,8 @@ export default function StudentPage({ params }: PageProps) {
         return <AssignmentsPane studentId={studentUuid ?? ''} />;
       case 4: // Finance
         return <FinancePane studentId={studentUuid ?? ''} />;
+      case 5: // Attendance
+        return <StudentAttendanceTable studentId={studentUuid ?? ''} />;
 
       default:
         return null;

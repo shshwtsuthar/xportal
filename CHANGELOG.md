@@ -1,4 +1,7 @@
 ## [Unreleased]
+- feat(students): Add Attendance tab to student profile page
+  - Added `StudentAttendanceTable` and Attendance tab on `students/{id}` with a full classes data table mirroring Course Progression styling.
+  - Introduced `useGetStudentAllClasses` hook to fetch enrollment classes with delivery location, classroom, and attendance data, wired to the existing attendance mutation.
 - feat(mail): Introduce per-RTO mail templates
   - Added migration `20251119100000_create_mail_templates.sql` defining the `mail_templates` table, RLS policies, and default `rto_id` trigger.
   - Regenerated Supabase types (`database.types.ts` + `supabase/functions/_shared/database.types.ts`) and added TanStack mutation hook `useCreateMailTemplate`.
