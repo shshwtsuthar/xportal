@@ -385,7 +385,7 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
                     return (
                       <TableCell key={col.id}>
                         <Link
-                          href={`/students/${s.id}`}
+                          href={`/students/${s.student_id_display}`}
                           className="hover:underline"
                           aria-label={`View ${[s.first_name, s.last_name]
                             .filter(Boolean)
@@ -399,7 +399,10 @@ export const StudentsDataTable = forwardRef<StudentsDataTableRef, Props>(
                   return <TableCell key={col.id}>{col.render(s)}</TableCell>;
                 })}
                 <TableCell className="text-right">
-                  <Link href={`/students/${s.id}`} className="text-primary">
+                  <Link
+                    href={`/students/${s.student_id_display}`}
+                    className="text-primary"
+                  >
                     View
                   </Link>
                 </TableCell>

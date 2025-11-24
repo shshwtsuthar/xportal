@@ -59,17 +59,28 @@ const RECOGNITION_TYPES = [
 type PageProps = { params: Promise<{ id: string }> };
 
 export default function StudentPage({ params }: PageProps) {
-  const { id } = use(params);
+  // id param now contains student_id_display (e.g., STU-25-0001)
+  const { id: studentIdDisplay } = use(params);
   const [activeTab, setActiveTab] = useState(0);
   const { openWithRecipients } = useComposeEmail();
 
-  const { data: student, isLoading, isError } = useGetStudentById(id);
-  const { data: addresses } = useGetStudentAddresses(id);
-  const { data: avetmiss } = useGetStudentAvetmiss(id);
-  const { data: cricos } = useGetStudentCricos(id);
-  const { data: contacts } = useGetStudentContacts(id);
-  const { data: disabilities = [] } = useGetStudentDisabilities(id);
-  const { data: priorEducation = [] } = useGetStudentPriorEducation(id);
+  const {
+    data: student,
+    isLoading,
+    isError,
+  } = useGetStudentById(studentIdDisplay);
+  // Use student.id (UUID) for other hooks that require UUID
+  const studentUuid = student?.id;
+  const { data: addresses } = useGetStudentAddresses(studentUuid ?? '');
+  const { data: avetmiss } = useGetStudentAvetmiss(studentUuid ?? '');
+  const { data: cricos } = useGetStudentCricos(studentUuid ?? '');
+  const { data: contacts } = useGetStudentContacts(studentUuid ?? '');
+  const { data: disabilities = [] } = useGetStudentDisabilities(
+    studentUuid ?? ''
+  );
+  const { data: priorEducation = [] } = useGetStudentPriorEducation(
+    studentUuid ?? ''
+  );
 
   // Check if postal address is same as street
   const postalSameAsStreet = useMemo(() => {
@@ -211,47 +222,57 @@ export default function StudentPage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Salutation
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Salutation
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.salutation || '—'}
+                      </div>
                     </div>
-                    <div className="text-base font-medium">
-                      {student.salutation || '—'}
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        First Name
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.first_name || '—'}
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      First Name
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Middle Name
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.middle_name || '—'}
+                      </div>
                     </div>
-                    <div className="text-base font-medium">
-                      {student.first_name || '—'}
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Last Name
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.last_name || '—'}
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Middle Name
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Preferred Name
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.preferred_name || '—'}
+                      </div>
                     </div>
-                    <div className="text-base font-medium">
-                      {student.middle_name || '—'}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Last Name
-                    </div>
-                    <div className="text-base font-medium">
-                      {student.last_name || '—'}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Preferred Name
-                    </div>
-                    <div className="text-base font-medium">
-                      {student.preferred_name || '—'}
-                    </div>
-                  </div>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
@@ -264,37 +285,45 @@ export default function StudentPage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">Email</div>
-                    <div className="text-base font-medium">
-                      {student.email || '—'}
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">Email</div>
+                      <div className="text-base font-medium">
+                        {student.email || '—'}
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Alternative Email
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Alternative Email
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.alternative_email || '—'}
+                      </div>
                     </div>
-                    <div className="text-base font-medium">
-                      {student.alternative_email || '—'}
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Work Phone
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.work_phone || '—'}
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Work Phone
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Mobile Phone
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.mobile_phone || '—'}
+                      </div>
                     </div>
-                    <div className="text-base font-medium">
-                      {student.work_phone || '—'}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Mobile Phone
-                    </div>
-                    <div className="text-base font-medium">
-                      {student.mobile_phone || '—'}
-                    </div>
-                  </div>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
@@ -307,70 +336,87 @@ export default function StudentPage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Student ID
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Student ID
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.student_id_display}
+                      </div>
                     </div>
-                    <div className="text-base font-medium">
-                      {student.student_id_display}
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Status
+                      </div>
+                      <div>
+                        <Badge
+                          variant={
+                            student.status === 'WITHDRAWN'
+                              ? 'destructive'
+                              : student.status === 'ACTIVE'
+                                ? 'default'
+                                : 'secondary'
+                          }
+                        >
+                          {student.status}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">Status</div>
-                    <div>
-                      <Badge
-                        variant={
-                          student.status === 'WITHDRAWN'
-                            ? 'destructive'
-                            : student.status === 'ACTIVE'
-                              ? 'default'
-                              : 'secondary'
-                        }
-                      >
-                        {student.status}
-                      </Badge>
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Date of Birth
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.date_of_birth
+                          ? format(
+                              new Date(
+                                student.date_of_birth as unknown as string
+                              ),
+                              'dd MMM yyyy'
+                            )
+                          : '—'}
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Date of Birth
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Account Created
+                      </div>
+                      <div className="text-base font-medium">
+                        {format(new Date(student.created_at), 'dd MMM yyyy')}
+                      </div>
                     </div>
-                    <div className="text-base font-medium">
-                      {student.date_of_birth
-                        ? format(
-                            new Date(
-                              student.date_of_birth as unknown as string
-                            ),
-                            'dd MMM yyyy'
-                          )
-                        : '—'}
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Application ID
+                      </div>
+                      <div className="text-base font-medium">
+                        {'application_id_display' in student &&
+                        student.application_id_display
+                          ? student.application_id_display
+                          : student.application_id || '—'}
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Account Created
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground text-sm">
+                        Xero Contact ID
+                      </div>
+                      <div className="text-base font-medium">
+                        {student.xero_contact_id || '—'}
+                      </div>
                     </div>
-                    <div className="text-base font-medium">
-                      {format(new Date(student.created_at), 'dd MMM yyyy')}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Application ID
-                    </div>
-                    <div className="text-base font-medium">
-                      {student.application_id || '—'}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-sm">
-                      Xero Contact ID
-                    </div>
-                    <div className="text-base font-medium">
-                      {student.xero_contact_id || '—'}
-                    </div>
-                  </div>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
@@ -383,151 +429,227 @@ export default function StudentPage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {addresses && addresses.length > 0 ? (
-                  <div className="grid gap-6">
-                    {addresses.map((a) => (
-                      <div
-                        key={`${a.type}-${a.postcode}-${a.suburb}`}
-                        className="space-y-2"
-                      >
-                        <div className="text-base font-medium capitalize">
-                          {a.type === 'street'
-                            ? 'Street Address'
-                            : 'Postal Address'}
-                        </div>
-                        {postalSameAsStreet && a.type === 'street' && (
-                          <div className="text-muted-foreground text-sm italic">
-                            (Postal address same as street address)
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  {/* Street Address Card */}
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Street Address
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      {(() => {
+                        const streetAddress = addresses?.find(
+                          (a) => a.type === 'street'
+                        );
+                        if (!streetAddress) return '—';
+                        const addressParts = [
+                          streetAddress.building_name,
+                          streetAddress.unit_details,
+                          streetAddress.number_name,
+                          streetAddress.po_box,
+                          streetAddress.suburb,
+                          streetAddress.state,
+                          streetAddress.postcode,
+                          streetAddress.country,
+                        ]
+                          .filter(Boolean)
+                          .join(', ');
+                        return (
+                          <div className="text-base font-medium">
+                            {addressParts || '—'}
                           </div>
-                        )}
-                        <div className="text-base font-medium">
-                          {[
-                            a.building_name,
-                            a.unit_details,
-                            a.number_name,
-                            a.po_box,
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+
+                  {/* Postal Address Card */}
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Postal Address
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      {(() => {
+                        if (postalSameAsStreet) {
+                          const streetAddress = addresses?.find(
+                            (a) => a.type === 'street'
+                          );
+                          if (!streetAddress) return '—';
+                          const addressParts = [
+                            streetAddress.building_name,
+                            streetAddress.unit_details,
+                            streetAddress.number_name,
+                            streetAddress.po_box,
+                            streetAddress.suburb,
+                            streetAddress.state,
+                            streetAddress.postcode,
+                            streetAddress.country,
                           ]
                             .filter(Boolean)
-                            .join(', ') || '—'}
-                        </div>
-                        <div className="text-base font-medium">
-                          {[a.suburb, a.state, a.postcode]
-                            .filter(Boolean)
-                            .join(' ') || '—'}
-                        </div>
-                        <div className="text-muted-foreground text-sm">
-                          {a.country || '—'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">—</p>
-                )}
+                            .join(', ');
+                          return (
+                            <div className="text-base font-medium">
+                              {addressParts || '—'}
+                            </div>
+                          );
+                        }
+                        const postalAddress = addresses?.find(
+                          (a) => a.type === 'postal'
+                        );
+                        if (!postalAddress) return '—';
+                        const addressParts = [
+                          postalAddress.building_name,
+                          postalAddress.unit_details,
+                          postalAddress.number_name,
+                          postalAddress.po_box,
+                          postalAddress.suburb,
+                          postalAddress.state,
+                          postalAddress.postcode,
+                          postalAddress.country,
+                        ]
+                          .filter(Boolean)
+                          .join(', ');
+                        return (
+                          <div className="text-base font-medium">
+                            {addressParts || '—'}
+                          </div>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Contact Information Card */}
+            {/* Emergency Contact Information Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl font-semibold tracking-tight">
-                  Contact Information
+                  Emergency Contact Information
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-6">
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">
-                      Emergency Contacts
-                    </h3>
-                    {contacts && contacts.emergency.length > 0 ? (
-                      <div className="grid gap-6">
-                        {contacts.emergency.map((c) => (
-                          <div
-                            key={`${c.name}-${c.phone_number}`}
-                            className="grid grid-cols-1 gap-6 md:grid-cols-2"
-                          >
-                            <div className="space-y-1">
-                              <div className="text-muted-foreground text-sm">
-                                Name
-                              </div>
-                              <div className="text-base font-medium">
-                                {c.name || '—'}
-                              </div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {/* Emergency Contact Card */}
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Emergency Contact
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      {contacts && contacts.emergency.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-2">
+                          {contacts.emergency.map((c) => (
+                            <div
+                              key={`${c.name}-${c.phone_number}`}
+                              className="grid grid-cols-1 gap-2"
+                            >
+                              <Card className="px-3 py-2">
+                                <div className="space-y-1">
+                                  <div className="text-muted-foreground text-sm">
+                                    Name
+                                  </div>
+                                  <div className="text-base font-medium">
+                                    {c.name || '—'}
+                                  </div>
+                                </div>
+                              </Card>
+                              <Card className="px-3 py-2">
+                                <div className="space-y-1">
+                                  <div className="text-muted-foreground text-sm">
+                                    Relationship
+                                  </div>
+                                  <div className="text-base font-medium">
+                                    {c.relationship || '—'}
+                                  </div>
+                                </div>
+                              </Card>
+                              <Card className="px-3 py-2">
+                                <div className="space-y-1">
+                                  <div className="text-muted-foreground text-sm">
+                                    Phone Number
+                                  </div>
+                                  <div className="text-base font-medium">
+                                    {c.phone_number || '—'}
+                                  </div>
+                                </div>
+                              </Card>
                             </div>
-                            <div className="space-y-1">
-                              <div className="text-muted-foreground text-sm">
-                                Relationship
-                              </div>
-                              <div className="text-base font-medium">
-                                {c.relationship || '—'}
-                              </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground text-sm">—</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Parent / Guardian Card */}
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Parent / Guardian
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      {contacts && contacts.guardians.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-2">
+                          {contacts.guardians.map((g) => (
+                            <div
+                              key={`${g.name}-${g.email}`}
+                              className="grid grid-cols-1 gap-2 md:grid-cols-2"
+                            >
+                              <Card className="px-3 py-2">
+                                <div className="space-y-1">
+                                  <div className="text-muted-foreground text-sm">
+                                    Name
+                                  </div>
+                                  <div className="text-base font-medium">
+                                    {g.name || '—'}
+                                  </div>
+                                </div>
+                              </Card>
+                              <Card className="px-3 py-2">
+                                <div className="space-y-1">
+                                  <div className="text-muted-foreground text-sm">
+                                    Email
+                                  </div>
+                                  <div className="text-base font-medium">
+                                    {g.email || '—'}
+                                  </div>
+                                </div>
+                              </Card>
+                              <Card className="px-3 py-2">
+                                <div className="space-y-1">
+                                  <div className="text-muted-foreground text-sm">
+                                    Phone Number
+                                  </div>
+                                  <div className="text-base font-medium">
+                                    {g.phone_number || '—'}
+                                  </div>
+                                </div>
+                              </Card>
+                              <Card className="px-3 py-2">
+                                <div className="space-y-1">
+                                  <div className="text-muted-foreground text-sm">
+                                    Relationship
+                                  </div>
+                                  <div className="text-base font-medium">
+                                    {g.relationship || '—'}
+                                  </div>
+                                </div>
+                              </Card>
                             </div>
-                            <div className="space-y-1">
-                              <div className="text-muted-foreground text-sm">
-                                Phone Number
-                              </div>
-                              <div className="text-base font-medium">
-                                {c.phone_number || '—'}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm">—</p>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">
-                      Parent / Guardian
-                    </h3>
-                    {contacts && contacts.guardians.length > 0 ? (
-                      <div className="grid gap-6">
-                        {contacts.guardians.map((g) => (
-                          <div
-                            key={`${g.name}-${g.email}`}
-                            className="grid grid-cols-1 gap-6 md:grid-cols-2"
-                          >
-                            <div className="space-y-1">
-                              <div className="text-muted-foreground text-sm">
-                                Name
-                              </div>
-                              <div className="text-base font-medium">
-                                {g.name || '—'}
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="text-muted-foreground text-sm">
-                                Email
-                              </div>
-                              <div className="text-base font-medium">
-                                {g.email || '—'}
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="text-muted-foreground text-sm">
-                                Phone Number
-                              </div>
-                              <div className="text-base font-medium">
-                                {g.phone_number || '—'}
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="text-muted-foreground text-sm">
-                                Relationship
-                              </div>
-                              <div className="text-base font-medium">
-                                {g.relationship || '—'}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm">—</p>
-                    )}
-                  </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground text-sm">—</p>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
@@ -540,192 +662,248 @@ export default function StudentPage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   {/* Demographics Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">Demographics</h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Gender (NAT00080)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss ? formatGender(avetmiss.gender) : '—'}
-                        </div>
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Demographics
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Gender (NAT00080)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss ? formatGender(avetmiss.gender) : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Indigenous Status (NAT00080)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss
+                                ? formatIndigenousStatus(
+                                    avetmiss.indigenous_status_id
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Country of Birth (NAT00080)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.country_of_birth_id || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Language Code (NAT00080)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.language_code || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Citizenship Status (NAT00080)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.citizenship_status_code || '—'}
+                            </div>
+                          </div>
+                        </Card>
                       </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Indigenous Status (NAT00080)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss
-                            ? formatIndigenousStatus(
-                                avetmiss.indigenous_status_id
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Country of Birth (NAT00080)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.country_of_birth_id || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Language Code (NAT00080)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.language_code || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Citizenship Status (NAT00080)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.citizenship_status_code || '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
                   {/* Education Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">Education</h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Highest School Level Completed (NAT00080)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss
-                            ? formatHighestSchoolLevel(
-                                avetmiss.highest_school_level_id
-                              )
-                            : '—'}
-                        </div>
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Education
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Highest School Level Completed (NAT00080)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss
+                                ? formatHighestSchoolLevel(
+                                    avetmiss.highest_school_level_id
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Year Completed (NAT00080)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.year_highest_school_level_completed
+                                ? avetmiss.year_highest_school_level_completed ===
+                                  '@@'
+                                  ? 'Not provided'
+                                  : avetmiss.year_highest_school_level_completed
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Currently at School (NAT00085)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.at_school_flag === 'Y'
+                                ? 'Yes'
+                                : avetmiss?.at_school_flag === 'N'
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
                       </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Year Completed (NAT00080)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.year_highest_school_level_completed
-                            ? avetmiss.year_highest_school_level_completed ===
-                              '@@'
-                              ? 'Not provided'
-                              : avetmiss.year_highest_school_level_completed
-                            : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Currently at School (NAT00085)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.at_school_flag === 'Y'
-                            ? 'Yes'
-                            : avetmiss?.at_school_flag === 'N'
-                              ? 'No'
-                              : '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
                   {/* Employment Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">Employment</h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Labour Force Status (NAT00080)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss
-                            ? formatLabourForceStatus(
-                                avetmiss.labour_force_status_id
-                              )
-                            : '—'}
-                        </div>
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Employment
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Labour Force Status (NAT00080)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss
+                                ? formatLabourForceStatus(
+                                    avetmiss.labour_force_status_id
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
                       </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
                   {/* Identifiers Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">Identifiers</h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          USI (Unique Student Identifier)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.usi || '—'}
-                        </div>
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Identifiers
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              USI (Unique Student Identifier)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.usi || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              USI Exemption Code
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.usi_exemption_code || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              USI Exemption Flag
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.usi_exemption_flag === true
+                                ? 'Yes'
+                                : avetmiss?.usi_exemption_flag === false
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              USI Exemption Evidence Path
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.usi_exemption_evidence_path || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              USI Status Verified At
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.usi_status_verified_at
+                                ? format(
+                                    new Date(avetmiss.usi_status_verified_at),
+                                    'dd MMM yyyy'
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              VSN (Victorian Student Number)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.vsn || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Survey Contact Status (NAT00080)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.survey_contact_status || '—'}
+                            </div>
+                          </div>
+                        </Card>
                       </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          USI Exemption Code
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.usi_exemption_code || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          USI Exemption Flag
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.usi_exemption_flag === true
-                            ? 'Yes'
-                            : avetmiss?.usi_exemption_flag === false
-                              ? 'No'
-                              : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          USI Exemption Evidence Path
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.usi_exemption_evidence_path || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          USI Status Verified At
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.usi_status_verified_at
-                            ? format(
-                                new Date(avetmiss.usi_status_verified_at),
-                                'dd MMM yyyy'
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          VSN (Victorian Student Number)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.vsn || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Survey Contact Status (NAT00080)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.survey_contact_status || '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
@@ -738,103 +916,128 @@ export default function StudentPage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   {/* Disabilities Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">Disabilities</h3>
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Disability Flag (NAT00080)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.disability_flag === 'Y'
-                            ? 'Yes'
-                            : avetmiss?.disability_flag === 'N'
-                              ? 'No'
-                              : '—'}
-                        </div>
-                      </div>
-                      {disabilities.length > 0 ? (
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Disability Types (NAT00090)
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Disabilities
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Disability Flag (NAT00080)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.disability_flag === 'Y'
+                                ? 'Yes'
+                                : avetmiss?.disability_flag === 'N'
+                                  ? 'No'
+                                  : '—'}
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            {disabilities.map((d) => (
-                              <div key={d.id} className="text-base font-medium">
-                                • {getDisabilityLabel(d.disability_type_id)}
+                        </Card>
+                        {disabilities.length > 0 ? (
+                          <Card className="px-3 py-2">
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Disability Types (NAT00090)
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Disability Types (NAT00090)
-                          </div>
-                          <div className="text-base font-medium">—</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                              <div className="space-y-2">
+                                {disabilities.map((d) => (
+                                  <div
+                                    key={d.id}
+                                    className="text-base font-medium"
+                                  >
+                                    • {getDisabilityLabel(d.disability_type_id)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </Card>
+                        ) : (
+                          <Card className="px-3 py-2">
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Disability Types (NAT00090)
+                              </div>
+                              <div className="text-base font-medium">—</div>
+                            </div>
+                          </Card>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   {/* Prior Education Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">
-                      Prior Educational Achievement
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Prior Education Flag (NAT00085)
-                        </div>
-                        <div className="text-base font-medium">
-                          {avetmiss?.prior_education_flag === 'Y'
-                            ? 'Yes'
-                            : avetmiss?.prior_education_flag === 'N'
-                              ? 'No'
-                              : '—'}
-                        </div>
-                      </div>
-                      {priorEducation.length > 0 ? (
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Qualifications (NAT00085)
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Prior Educational Achievement
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Prior Education Flag (NAT00085)
+                            </div>
+                            <div className="text-base font-medium">
+                              {avetmiss?.prior_education_flag === 'Y'
+                                ? 'Yes'
+                                : avetmiss?.prior_education_flag === 'N'
+                                  ? 'No'
+                                  : '—'}
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            {priorEducation.map((pe) => (
-                              <div
-                                key={pe.id}
-                                className="text-base font-medium"
-                              >
-                                •{' '}
-                                {getPriorEducationLabel(
-                                  pe.prior_achievement_id
-                                )}
-                                {pe.recognition_type && (
-                                  <span className="text-muted-foreground ml-2 text-sm font-normal">
-                                    (
-                                    {getRecognitionTypeLabel(
-                                      pe.recognition_type
-                                    )}
-                                    )
-                                  </span>
-                                )}
+                        </Card>
+                        {priorEducation.length > 0 ? (
+                          <Card className="px-3 py-2">
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Qualifications (NAT00085)
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-sm">
-                            Qualifications (NAT00085)
-                          </div>
-                          <div className="text-base font-medium">—</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                              <div className="space-y-2">
+                                {priorEducation.map((pe) => (
+                                  <div
+                                    key={pe.id}
+                                    className="text-base font-medium"
+                                  >
+                                    •{' '}
+                                    {getPriorEducationLabel(
+                                      pe.prior_achievement_id
+                                    )}
+                                    {pe.recognition_type && (
+                                      <span className="text-muted-foreground ml-2 text-sm font-normal">
+                                        (
+                                        {getRecognitionTypeLabel(
+                                          pe.recognition_type
+                                        )}
+                                        )
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </Card>
+                        ) : (
+                          <Card className="px-3 py-2">
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground text-sm">
+                                Qualifications (NAT00085)
+                              </div>
+                              <div className="text-base font-medium">—</div>
+                            </div>
+                          </Card>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
@@ -847,407 +1050,439 @@ export default function StudentPage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   {/* Passport & Visa Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">
-                      Passport & Visa Information
-                    </h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Is International
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.is_international === true
-                            ? 'Yes'
-                            : cricos?.is_international === false
-                              ? 'No'
-                              : '—'}
-                        </div>
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Passport & Visa Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Is International
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.is_international === true
+                                ? 'Yes'
+                                : cricos?.is_international === false
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              CoE Number
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.coe_number || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Passport Number
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.passport_number || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Passport Issue Date
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.passport_issue_date
+                                ? format(
+                                    new Date(cricos.passport_issue_date),
+                                    'dd MMM yyyy'
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Passport Expiry Date
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.passport_expiry_date
+                                ? format(
+                                    new Date(cricos.passport_expiry_date),
+                                    'dd MMM yyyy'
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Place of Birth
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.place_of_birth || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Visa Type
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.visa_type || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Visa Number
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.visa_number || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Visa Expiry Date
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.visa_expiry_date
+                                ? format(
+                                    new Date(cricos.visa_expiry_date),
+                                    'dd MMM yyyy'
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Visa Grant Date
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.visa_grant_date
+                                ? format(
+                                    new Date(cricos.visa_grant_date),
+                                    'dd MMM yyyy'
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Holds Visa
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.holds_visa === true
+                                ? 'Yes'
+                                : cricos?.holds_visa === false
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Visa Application Office
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.visa_application_office || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Country of Citizenship
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.country_of_citizenship || '—'}
+                            </div>
+                          </div>
+                        </Card>
                       </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          CoE Number
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.coe_number || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Passport Number
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.passport_number || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Passport Issue Date
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.passport_issue_date
-                            ? format(
-                                new Date(cricos.passport_issue_date),
-                                'dd MMM yyyy'
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Passport Expiry Date
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.passport_expiry_date
-                            ? format(
-                                new Date(cricos.passport_expiry_date),
-                                'dd MMM yyyy'
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Place of Birth
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.place_of_birth || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Visa Type
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.visa_type || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Visa Number
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.visa_number || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Visa Expiry Date
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.visa_expiry_date
-                            ? format(
-                                new Date(cricos.visa_expiry_date),
-                                'dd MMM yyyy'
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Visa Grant Date
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.visa_grant_date
-                            ? format(
-                                new Date(cricos.visa_grant_date),
-                                'dd MMM yyyy'
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Holds Visa
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.holds_visa === true
-                            ? 'Yes'
-                            : cricos?.holds_visa === false
-                              ? 'No'
-                              : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Visa Application Office
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.visa_application_office || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Country of Citizenship
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.country_of_citizenship || '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
                   {/* Under 18 Welfare Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">
-                      Under 18 Welfare Arrangements
-                    </h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Is Under 18
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.is_under_18 === true
-                            ? 'Yes'
-                            : cricos?.is_under_18 === false
-                              ? 'No'
-                              : '—'}
-                        </div>
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Under 18 Welfare Arrangements
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Is Under 18
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.is_under_18 === true
+                                ? 'Yes'
+                                : cricos?.is_under_18 === false
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Provider Accepting Welfare Responsibility
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.provider_accepting_welfare_responsibility ===
+                              true
+                                ? 'Yes (CAAW)'
+                                : cricos?.provider_accepting_welfare_responsibility ===
+                                    false
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Welfare Start Date
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.welfare_start_date
+                                ? format(
+                                    new Date(cricos.welfare_start_date),
+                                    'dd MMM yyyy'
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
                       </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Provider Accepting Welfare Responsibility
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.provider_accepting_welfare_responsibility ===
-                          true
-                            ? 'Yes (CAAW)'
-                            : cricos?.provider_accepting_welfare_responsibility ===
-                                false
-                              ? 'No'
-                              : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Welfare Start Date
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.welfare_start_date
-                            ? format(
-                                new Date(cricos.welfare_start_date),
-                                'dd MMM yyyy'
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
                   {/* OSHC Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">
-                      Overseas Student Health Cover (OSHC)
-                    </h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Provider Arranged OSHC
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.provider_arranged_oshc === true
-                            ? 'Yes'
-                            : cricos?.provider_arranged_oshc === false
-                              ? 'No'
-                              : '—'}
-                        </div>
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Overseas Student Health Cover (OSHC)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Provider Arranged OSHC
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.provider_arranged_oshc === true
+                                ? 'Yes'
+                                : cricos?.provider_arranged_oshc === false
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              OSHC Provider Name
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.oshc_provider_name || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              OSHC Policy Number
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.oshc_policy_number || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              OSHC Start Date
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.oshc_start_date
+                                ? format(
+                                    new Date(cricos.oshc_start_date),
+                                    'dd MMM yyyy'
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              OSHC End Date
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.oshc_end_date
+                                ? format(
+                                    new Date(cricos.oshc_end_date),
+                                    'dd MMM yyyy'
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
                       </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          OSHC Provider Name
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.oshc_provider_name || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          OSHC Policy Number
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.oshc_policy_number || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          OSHC Start Date
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.oshc_start_date
-                            ? format(
-                                new Date(cricos.oshc_start_date),
-                                'dd MMM yyyy'
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          OSHC End Date
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.oshc_end_date
-                            ? format(
-                                new Date(cricos.oshc_end_date),
-                                'dd MMM yyyy'
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
                   {/* English Proficiency Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">
-                      English Language Proficiency
-                    </h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Has English Test
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.has_english_test === true
-                            ? 'Yes'
-                            : cricos?.has_english_test === false
-                              ? 'No'
-                              : '—'}
-                        </div>
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        English Language Proficiency
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Has English Test
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.has_english_test === true
+                                ? 'Yes'
+                                : cricos?.has_english_test === false
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Test Type
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.english_test_type || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Test Score
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.ielts_score || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Test Date
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.english_test_date
+                                ? format(
+                                    new Date(cricos.english_test_date),
+                                    'dd MMM yyyy'
+                                  )
+                                : '—'}
+                            </div>
+                          </div>
+                        </Card>
                       </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Test Type
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.english_test_type || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Test Score
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.ielts_score || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Test Date
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.english_test_date
-                            ? format(
-                                new Date(cricos.english_test_date),
-                                'dd MMM yyyy'
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
                   {/* Previous Study Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">
-                      Previous Study in Australia
-                    </h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Has Previous Study
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.has_previous_study_australia === true
-                            ? 'Yes'
-                            : cricos?.has_previous_study_australia === false
-                              ? 'No'
-                              : '—'}
-                        </div>
+                  <Card className="px-0 py-0">
+                    <CardHeader className="px-3 pt-3 pb-1">
+                      <CardTitle className="text-base font-semibold">
+                        Previous Study in Australia
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 pt-0 pb-3">
+                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Has Previous Study
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.has_previous_study_australia === true
+                                ? 'Yes'
+                                : cricos?.has_previous_study_australia === false
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Previous Provider Name
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.previous_provider_name || '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Completed Previous Course
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.completed_previous_course === true
+                                ? 'Yes'
+                                : cricos?.completed_previous_course === false
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
+                        <Card className="px-3 py-2">
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-sm">
+                              Has Release Letter
+                            </div>
+                            <div className="text-base font-medium">
+                              {cricos?.has_release_letter === true
+                                ? 'Yes'
+                                : cricos?.has_release_letter === false
+                                  ? 'No'
+                                  : '—'}
+                            </div>
+                          </div>
+                        </Card>
                       </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Previous Provider Name
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.previous_provider_name || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Completed Previous Course
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.completed_previous_course === true
-                            ? 'Yes'
-                            : cricos?.completed_previous_course === false
-                              ? 'No'
-                              : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Has Release Letter
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.has_release_letter === true
-                            ? 'Yes'
-                            : cricos?.has_release_letter === false
-                              ? 'No'
-                              : '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Agreements & Compliance Section */}
-                  <div>
-                    <h3 className="mb-4 text-lg font-medium">
-                      Agreements & Compliance
-                    </h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Privacy Notice Accepted
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.privacy_notice_accepted === true
-                            ? 'Yes'
-                            : cricos?.privacy_notice_accepted === false
-                              ? 'No'
-                              : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Written Agreement Accepted
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.written_agreement_accepted === true
-                            ? 'Yes'
-                            : cricos?.written_agreement_accepted === false
-                              ? 'No'
-                              : '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-sm">
-                          Written Agreement Date
-                        </div>
-                        <div className="text-base font-medium">
-                          {cricos?.written_agreement_date
-                            ? format(
-                                new Date(cricos.written_agreement_date),
-                                'dd MMM yyyy'
-                              )
-                            : '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
@@ -1255,15 +1490,15 @@ export default function StudentPage({ params }: PageProps) {
         );
 
       case 1: // Course Progression
-        return <CourseProgressionCard studentId={id} />;
+        return <CourseProgressionCard studentId={studentUuid ?? ''} />;
 
       case 2: // Documents
-        return <StudentDocumentsPane studentId={id} />;
+        return <StudentDocumentsPane studentId={studentUuid ?? ''} />;
 
       case 3: // Assignments
-        return <AssignmentsPane studentId={id} />;
+        return <AssignmentsPane studentId={studentUuid ?? ''} />;
       case 4: // Finance
-        return <FinancePane studentId={id} />;
+        return <FinancePane studentId={studentUuid ?? ''} />;
 
       default:
         return null;
