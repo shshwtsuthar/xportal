@@ -1,0 +1,567 @@
+"filename", "language", "TypeScript", "JSON", "Markdown", "TypeScript JSX", "JSON with Comments", "CSS", "HTML", "XML", "JavaScript", "MS SQL", "PowerShell", "comment", "blank", "total"
+"c:\Users\Shashwat Suthar\Desktop\xportal\.cursor\plans\finance-f8c5fce1.plan.md", "Markdown", 0, 0, 242, 0, 0, 0, 0, 0, 0, 0, 0, 0, 58, 300
+"c:\Users\Shashwat Suthar\Desktop\xportal\.cursor\rules\red-line.mdc", "Markdown", 0, 0, 68, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 76
+"c:\Users\Shashwat Suthar\Desktop\xportal\.prettierrc.json", "JSON", 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 7
+"c:\Users\Shashwat Suthar\Desktop\xportal\CHANGELOG.md", "Markdown", 0, 0, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 130
+"c:\Users\Shashwat Suthar\Desktop\xportal\DEPLOYMENT.md", "Markdown", 0, 0, 246, 0, 0, 0, 0, 0, 0, 0, 0, 0, 66, 312
+"c:\Users\Shashwat Suthar\Desktop\xportal\README.md", "Markdown", 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 51
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\agents\_components\AgentForm.tsx", "TypeScript JSX", 0, 0, 0, 222, 0, 0, 0, 0, 0, 0, 0, 4, 15, 241
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\agents\_components\AgentsDataTable.tsx", "TypeScript JSX", 0, 0, 0, 213, 0, 0, 0, 0, 0, 0, 0, 0, 10, 223
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\agents\_components\DocumentsPane.tsx", "TypeScript JSX", 0, 0, 0, 201, 0, 0, 0, 0, 0, 0, 0, 0, 15, 216
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\agents\_components\NewAgentWizard.tsx", "TypeScript JSX", 0, 0, 0, 274, 0, 0, 0, 0, 0, 0, 0, 10, 19, 303
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\agents\edit\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\agents\new\page.tsx", "TypeScript JSX", 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 3, 8
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\agents\page.tsx", "TypeScript JSX", 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 4, 40
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\ApplicationStats.tsx", "TypeScript JSX", 0, 0, 0, 91, 0, 0, 0, 0, 0, 0, 0, 0, 11, 102
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\ApplicationsChart.tsx", "TypeScript JSX", 0, 0, 0, 155, 0, 0, 0, 0, 0, 0, 0, 2, 16, 173
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\ApplicationsColumnsMenu.tsx", "TypeScript JSX", 0, 0, 0, 78, 0, 0, 0, 0, 0, 0, 0, 2, 8, 88
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\ApplicationsDataTable.tsx", "TypeScript JSX", 0, 0, 0, 1023, 0, 0, 0, 0, 0, 0, 0, 33, 59, 1115
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\ApplicationsFilter.tsx", "TypeScript JSX", 0, 0, 0, 557, 0, 0, 0, 0, 0, 0, 0, 11, 35, 603
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\DocumentsPane.tsx", "TypeScript JSX", 0, 0, 0, 205, 0, 0, 0, 0, 0, 0, 0, 0, 15, 220
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\EnrollmentPreview.tsx", "TypeScript JSX", 0, 0, 0, 118, 0, 0, 0, 0, 0, 0, 0, 0, 7, 125
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\ExportDialog.tsx", "TypeScript JSX", 0, 0, 0, 93, 0, 0, 0, 0, 0, 0, 0, 0, 9, 102
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\NewApplicationWizard.tsx", "TypeScript JSX", 0, 0, 0, 1166, 0, 0, 0, 0, 0, 0, 0, 66, 83, 1315
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\OngoingSubjectPreview.tsx", "TypeScript JSX", 0, 0, 0, 113, 0, 0, 0, 0, 0, 0, 0, 3, 12, 128
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\PaymentStep.tsx", "TypeScript JSX", 0, 0, 0, 312, 0, 0, 0, 0, 0, 0, 0, 10, 20, 342
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\applicationsTableColumns.tsx", "TypeScript JSX", 0, 0, 0, 662, 0, 0, 0, 0, 0, 0, 0, 8, 14, 684
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\steps\Step1_PersonalDetails.tsx", "TypeScript JSX", 0, 0, 0, 685, 0, 0, 0, 0, 0, 0, 0, 2, 16, 703
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\steps\Step2_AvetmissDetails.tsx", "TypeScript JSX", 0, 0, 0, 538, 0, 0, 0, 0, 0, 0, 0, 22, 20, 580
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\steps\Step3_AdditionalInfo.tsx", "TypeScript JSX", 0, 0, 0, 487, 0, 0, 0, 0, 0, 0, 0, 47, 41, 575
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\steps\Step3_Cricos.tsx", "TypeScript JSX", 0, 0, 0, 731, 0, 0, 0, 0, 0, 0, 0, 10, 34, 775
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\steps\Step4_Enrollment.tsx", "TypeScript JSX", 0, 0, 0, 311, 0, 0, 0, 0, 0, 0, 0, 15, 26, 352
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\_components\wizard\AddressSearchCommand.tsx", "TypeScript JSX", 0, 0, 0, 155, 0, 0, 0, 0, 0, 0, 0, 7, 10, 172
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\edit\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 4, 12
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\new\page.tsx", "TypeScript JSX", 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 3, 8
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\applications\page.tsx", "TypeScript JSX", 0, 0, 0, 217, 0, 0, 0, 0, 0, 0, 0, 7, 15, 239
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\attendance\page.tsx", "TypeScript JSX", 0, 0, 0, 508, 0, 0, 0, 0, 0, 0, 0, 6, 15, 529
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\communications\mail\page.tsx", "TypeScript JSX", 0, 0, 0, 839, 0, 0, 0, 0, 0, 0, 0, 8, 23, 870
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\communications\sms\page.tsx", "TypeScript JSX", 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 2, 15
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\communications\whatsapp\page.tsx", "TypeScript JSX", 0, 0, 0, 67, 0, 0, 0, 0, 0, 0, 0, 1, 7, 75
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\dashboard\_components\CumulativeMetricsChart.tsx", "TypeScript JSX", 0, 0, 0, 274, 0, 0, 0, 0, 0, 0, 0, 1, 20, 295
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\dashboard\_components\DateRangePicker.tsx", "TypeScript JSX", 0, 0, 0, 83, 0, 0, 0, 0, 0, 0, 0, 2, 12, 97
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\dashboard\page.tsx", "TypeScript JSX", 0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 3, 14, 115
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\commissions\_components\CommissionsDataTable.tsx", "TypeScript JSX", 0, 0, 0, 408, 0, 0, 0, 0, 0, 0, 0, 2, 28, 438
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\commissions\_components\commissionsTableColumns.tsx", "TypeScript JSX", 0, 0, 0, 152, 0, 0, 0, 0, 0, 0, 0, 0, 10, 162
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\commissions\page.tsx", "TypeScript JSX", 0, 0, 0, 73, 0, 0, 0, 0, 0, 0, 0, 0, 7, 80
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\invoices\_components\ExportDialogInvoices.tsx", "TypeScript JSX", 0, 0, 0, 108, 0, 0, 0, 0, 0, 0, 0, 0, 9, 117
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\invoices\_components\InvoiceStats.tsx", "TypeScript JSX", 0, 0, 0, 112, 0, 0, 0, 0, 0, 0, 0, 3, 15, 130
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\invoices\_components\InvoicesColumnsMenu.tsx", "TypeScript JSX", 0, 0, 0, 65, 0, 0, 0, 0, 0, 0, 0, 0, 6, 71
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\invoices\_components\InvoicesDataTable.tsx", "TypeScript JSX", 0, 0, 0, 476, 0, 0, 0, 0, 0, 0, 0, 9, 30, 515
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\invoices\_components\InvoicesFilter.tsx", "TypeScript JSX", 0, 0, 0, 378, 0, 0, 0, 0, 0, 0, 0, 4, 21, 403
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\invoices\_components\RecordPaymentDialog.tsx", "TypeScript JSX", 0, 0, 0, 130, 0, 0, 0, 0, 0, 0, 0, 5, 15, 150
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\invoices\_components\StudentInvoicesTable.tsx", "TypeScript JSX", 0, 0, 0, 146, 0, 0, 0, 0, 0, 0, 0, 1, 11, 158
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\invoices\_components\invoicesTableColumns.tsx", "TypeScript JSX", 0, 0, 0, 206, 0, 0, 0, 0, 0, 0, 0, 3, 10, 219
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\invoices\page.tsx", "TypeScript JSX", 0, 0, 0, 115, 0, 0, 0, 0, 0, 0, 0, 2, 12, 129
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\page.tsx", "TypeScript JSX", 0, 0, 0, 44, 0, 0, 0, 0, 0, 0, 0, 0, 4, 48
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\payment-confirmations\page.tsx", "TypeScript JSX", 0, 0, 0, 186, 0, 0, 0, 0, 0, 0, 0, 0, 12, 198
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\payments\page.tsx", "TypeScript JSX", 0, 0, 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 3, 25
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\templates\_components\PaymentPlanTemplateForm.tsx", "TypeScript JSX", 0, 0, 0, 238, 0, 0, 0, 0, 0, 0, 0, 4, 11, 253
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\templates\_components\PaymentPlanTemplatesTable.tsx", "TypeScript JSX", 0, 0, 0, 111, 0, 0, 0, 0, 0, 0, 0, 2, 10, 123
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\templates\edit\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 189, 0, 0, 0, 0, 0, 0, 0, 6, 23, 218
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\templates\new\page.tsx", "TypeScript JSX", 0, 0, 0, 117, 0, 0, 0, 0, 0, 0, 0, 2, 13, 132
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\financial\templates\page.tsx", "TypeScript JSX", 0, 0, 0, 38, 0, 0, 0, 0, 0, 0, 0, 0, 4, 42
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\layout.tsx", "TypeScript JSX", 0, 0, 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, 2, 27
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\locations\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 171, 0, 0, 0, 0, 0, 0, 0, 3, 21, 195
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\locations\_components\ClassroomForm.tsx", "TypeScript JSX", 0, 0, 0, 136, 0, 0, 0, 0, 0, 0, 0, 0, 10, 146
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\locations\_components\ClassroomsDataTable.tsx", "TypeScript JSX", 0, 0, 0, 311, 0, 0, 0, 0, 0, 0, 0, 0, 16, 327
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\locations\_components\LocationForm.tsx", "TypeScript JSX", 0, 0, 0, 165, 0, 0, 0, 0, 0, 0, 0, 0, 13, 178
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\locations\_components\LocationsDataTable.tsx", "TypeScript JSX", 0, 0, 0, 246, 0, 0, 0, 0, 0, 0, 0, 0, 10, 256
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\locations\new\page.tsx", "TypeScript JSX", 0, 0, 0, 77, 0, 0, 0, 0, 0, 0, 0, 0, 6, 83
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\locations\page.tsx", "TypeScript JSX", 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 4, 40
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\program-plans\_components\ClassesManager.tsx", "TypeScript JSX", 0, 0, 0, 401, 0, 0, 0, 0, 0, 0, 0, 2, 18, 421
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\program-plans\_components\ProgramPlanWizard.tsx", "TypeScript JSX", 0, 0, 0, 428, 0, 0, 0, 0, 0, 0, 0, 3, 20, 451
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\program-plans\edit\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 1, 8, 50
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\program-plans\new\page.tsx", "TypeScript JSX", 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 3, 8
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\program-plans\page.tsx", "TypeScript JSX", 0, 0, 0, 138, 0, 0, 0, 0, 0, 0, 0, 0, 7, 145
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\programs\_components\ProgramForm.tsx", "TypeScript JSX", 0, 0, 0, 210, 0, 0, 0, 0, 0, 0, 0, 0, 13, 223
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\programs\_components\ProgramsDataTable.tsx", "TypeScript JSX", 0, 0, 0, 222, 0, 0, 0, 0, 0, 0, 0, 0, 10, 232
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\programs\edit\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 104, 0, 0, 0, 0, 0, 0, 0, 0, 8, 112
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\programs\new\page.tsx", "TypeScript JSX", 0, 0, 0, 77, 0, 0, 0, 0, 0, 0, 0, 0, 6, 83
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\programs\page.tsx", "TypeScript JSX", 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 4, 40
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\rto\_components\RtoForm.tsx", "TypeScript JSX", 0, 0, 0, 233, 0, 0, 0, 0, 0, 0, 0, 0, 18, 251
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\rto\_components\RtoProfileImageSection.tsx", "TypeScript JSX", 0, 0, 0, 169, 0, 0, 0, 0, 0, 0, 0, 0, 19, 188
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\rto\page.tsx", "TypeScript JSX", 0, 0, 0, 207, 0, 0, 0, 0, 0, 0, 0, 5, 14, 226
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\settings\twilio\TwilioSettingsClient.tsx", "TypeScript JSX", 0, 0, 0, 426, 0, 0, 0, 0, 0, 0, 0, 0, 18, 444
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\settings\twilio\page.tsx", "TypeScript JSX", 0, 0, 0, 81, 0, 0, 0, 0, 0, 0, 0, 0, 10, 91
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\[id]\_components\FinancePane.tsx", "TypeScript JSX", 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 1498, 0, 0, 0, 0, 0, 0, 0, 38, 45, 1581
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\AssignmentsPane.tsx", "TypeScript JSX", 0, 0, 0, 958, 0, 0, 0, 0, 0, 0, 0, 5, 45, 1008
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\CourseProgressionCard.tsx", "TypeScript JSX", 0, 0, 0, 212, 0, 0, 0, 0, 0, 0, 0, 1, 11, 224
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\ExportDialog.tsx", "TypeScript JSX", 0, 0, 0, 90, 0, 0, 0, 0, 0, 0, 0, 0, 9, 99
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\StudentAttendanceTable.tsx", "TypeScript JSX", 0, 0, 0, 163, 0, 0, 0, 0, 0, 0, 0, 5, 10, 178
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\StudentDocumentsPane.tsx", "TypeScript JSX", 0, 0, 0, 205, 0, 0, 0, 0, 0, 0, 0, 0, 15, 220
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\StudentStats.tsx", "TypeScript JSX", 0, 0, 0, 65, 0, 0, 0, 0, 0, 0, 0, 0, 7, 72
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\StudentsColumnsMenu.tsx", "TypeScript JSX", 0, 0, 0, 78, 0, 0, 0, 0, 0, 0, 0, 2, 8, 88
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\StudentsDataTable.tsx", "TypeScript JSX", 0, 0, 0, 454, 0, 0, 0, 0, 0, 0, 0, 15, 28, 497
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\StudentsFilter.tsx", "TypeScript JSX", 0, 0, 0, 284, 0, 0, 0, 0, 0, 0, 0, 6, 21, 311
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\SubjectClassesTable.tsx", "TypeScript JSX", 0, 0, 0, 164, 0, 0, 0, 0, 0, 0, 0, 0, 11, 175
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\_components\studentsTableColumns.tsx", "TypeScript JSX", 0, 0, 0, 112, 0, 0, 0, 0, 0, 0, 0, 1, 7, 120
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\students\page.tsx", "TypeScript JSX", 0, 0, 0, 169, 0, 0, 0, 0, 0, 0, 0, 6, 14, 189
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\subjects\_components\SubjectForm.tsx", "TypeScript JSX", 0, 0, 0, 112, 0, 0, 0, 0, 0, 0, 0, 0, 8, 120
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\subjects\_components\SubjectsDataTable.tsx", "TypeScript JSX", 0, 0, 0, 224, 0, 0, 0, 0, 0, 0, 0, 0, 10, 234
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\subjects\edit\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 96, 0, 0, 0, 0, 0, 0, 0, 0, 8, 104
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\subjects\new\page.tsx", "TypeScript JSX", 0, 0, 0, 73, 0, 0, 0, 0, 0, 0, 0, 0, 6, 79
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\subjects\page.tsx", "TypeScript JSX", 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 4, 40
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\timetables\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 329, 0, 0, 0, 0, 0, 0, 0, 3, 16, 348
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\timetables\_components\CloneProgramPlanDialog.tsx", "TypeScript JSX", 0, 0, 0, 122, 0, 0, 0, 0, 0, 0, 0, 0, 15, 137
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\timetables\new\page.tsx", "TypeScript JSX", 0, 0, 0, 183, 0, 0, 0, 0, 0, 0, 0, 1, 15, 199
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\timetables\page.tsx", "TypeScript JSX", 0, 0, 0, 143, 0, 0, 0, 0, 0, 0, 0, 0, 7, 150
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\users\_components\InviteUserDialog.tsx", "TypeScript JSX", 0, 0, 0, 194, 0, 0, 0, 0, 0, 0, 0, 0, 7, 201
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\users\_components\UsersDataTable.tsx", "TypeScript JSX", 0, 0, 0, 213, 0, 0, 0, 0, 0, 0, 0, 1, 11, 225
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\(app)\users\page.tsx", "TypeScript JSX", 0, 0, 0, 34, 0, 0, 0, 0, 0, 0, 0, 0, 4, 38
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\_providers\AuthErrorHandler.tsx", "TypeScript JSX", 0, 0, 0, 66, 0, 0, 0, 0, 0, 0, 0, 9, 13, 88
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\_providers\QueryProvider.tsx", "TypeScript JSX", 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 3, 21
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\_providers\ThemeInitializer.tsx", "TypeScript JSX", 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 7, 3, 16
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\communications\whatsapp\bulk\route.ts", "TypeScript", 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 70
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\communications\whatsapp\messages\route.ts", "TypeScript", 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6, 59
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\communications\whatsapp\send\route.ts", "TypeScript", 73, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 79
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\communications\whatsapp\status\route.ts", "TypeScript", 85, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 11, 97
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\communications\whatsapp\templates\route.ts", "TypeScript", 79, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 85
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\communications\whatsapp\threads\route.ts", "TypeScript", 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 46
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\communications\whatsapp\webhook\route.ts", "TypeScript", 134, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 14, 157
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\emails\send\invoice\route.ts", "TypeScript", 49, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 8, 59
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\emails\send\route.ts", "TypeScript", 312, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 39, 365
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\generate-offer-letter\route.tsx", "TypeScript JSX", 0, 0, 0, 115, 0, 0, 0, 0, 0, 0, 0, 1, 14, 130
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\invoices\[invoiceId]\generate-pdf\route.tsx", "TypeScript JSX", 0, 0, 0, 169, 0, 0, 0, 0, 0, 0, 0, 11, 21, 201
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\public\agent-intake\route.ts", "TypeScript", 163, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 10, 185
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\public\agent\route.ts", "TypeScript", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 24
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\send-offer-letter\route.ts", "TypeScript", 306, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 44, 369
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\settings\twilio\config\route.ts", "TypeScript", 163, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 178
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\settings\twilio\config\test\route.ts", "TypeScript", 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\settings\twilio\senders\[id]\route.ts", "TypeScript", 121, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 129
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\settings\twilio\senders\route.ts", "TypeScript", 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 136
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\users\invite\route.ts", "TypeScript", 203, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 27, 245
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\users\route.ts", "TypeScript", 68, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 13, 87
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\webhooks\resend\route.ts", "TypeScript", 124, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 19, 153
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\xero\callback\route.ts", "TypeScript", 134, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 23, 176
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\xero\connect\route.ts", "TypeScript", 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 13, 91
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\api\xero\webhook\route.ts", "TypeScript", 539, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 78, 77, 694
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\apply\agent\[slug]\page.tsx", "TypeScript JSX", 0, 0, 0, 215, 0, 0, 0, 0, 0, 0, 0, 2, 14, 231
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\apply\layout.tsx", "TypeScript JSX", 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 1, 1, 7
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\auth\auth-error\page.tsx", "TypeScript JSX", 0, 0, 0, 70, 0, 0, 0, 0, 0, 0, 0, 0, 6, 76
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\auth\callback\page.tsx", "TypeScript JSX", 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 4, 10, 68
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\auth\reset-password\_components\ResetPasswordForm.tsx", "TypeScript JSX", 0, 0, 0, 57, 0, 0, 0, 0, 0, 0, 0, 1, 9, 67
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\auth\reset-password\confirm\page.tsx", "TypeScript JSX", 0, 0, 0, 37, 0, 0, 0, 0, 0, 0, 0, 0, 2, 39
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\auth\reset-password\page.tsx", "TypeScript JSX", 0, 0, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 2, 30
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\auth\update-password\_components\UpdatePasswordForm.tsx", "TypeScript JSX", 0, 0, 0, 85, 0, 0, 0, 0, 0, 0, 0, 1, 11, 97
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\auth\update-password\page.tsx", "TypeScript JSX", 0, 0, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 2, 30
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\globals.css", "CSS", 0, 0, 0, 0, 0, 1850, 0, 0, 0, 0, 0, 83, 94, 2027
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\layout.tsx", "TypeScript JSX", 0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 5, 6, 109
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\login\_components\InviteHashCatcher.tsx", "TypeScript JSX", 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 2, 6, 24
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\login\_components\LoginForm.tsx", "TypeScript JSX", 0, 0, 0, 83, 0, 0, 0, 0, 0, 0, 0, 1, 9, 93
+"c:\Users\Shashwat Suthar\Desktop\xportal\app\login\page.tsx", "TypeScript JSX", 0, 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 2, 4, 47
+"c:\Users\Shashwat Suthar\Desktop\xportal\components.json", "JSON", 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 23
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\account-switcher.tsx", "TypeScript JSX", 0, 0, 0, 166, 0, 0, 0, 0, 0, 0, 0, 4, 12, 182
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\app-sidebar.tsx", "TypeScript JSX", 0, 0, 0, 206, 0, 0, 0, 0, 0, 0, 0, 0, 8, 214
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\app-topbar.tsx", "TypeScript JSX", 0, 0, 0, 105, 0, 0, 0, 0, 0, 0, 0, 7, 13, 125
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\emails\ComposeEmailDialog.tsx", "TypeScript JSX", 0, 0, 0, 545, 0, 0, 0, 0, 0, 0, 0, 20, 39, 604
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\emails\MinimalTiptap.tsx", "TypeScript JSX", 0, 0, 0, 200, 0, 0, 0, 0, 0, 0, 0, 0, 7, 207
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\emails\SendOfferComposeDialog.tsx", "TypeScript JSX", 0, 0, 0, 587, 0, 0, 0, 0, 0, 0, 0, 18, 48, 653
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\emails\TemplateComposeDialog.tsx", "TypeScript JSX", 0, 0, 0, 144, 0, 0, 0, 0, 0, 0, 0, 8, 8, 160
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\emails\TemplateNameDialog.tsx", "TypeScript JSX", 0, 0, 0, 103, 0, 0, 0, 0, 0, 0, 0, 11, 8, 122
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\profile-dialog.tsx", "TypeScript JSX", 0, 0, 0, 287, 0, 0, 0, 0, 0, 0, 0, 4, 30, 321
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\providers\compose-email.tsx", "TypeScript JSX", 0, 0, 0, 61, 0, 0, 0, 0, 0, 0, 0, 1, 12, 74
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\theme-switcher.tsx", "TypeScript JSX", 0, 0, 0, 271, 0, 0, 0, 0, 0, 0, 0, 30, 33, 334
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\accordion.tsx", "TypeScript JSX", 0, 0, 0, 59, 0, 0, 0, 0, 0, 0, 0, 0, 8, 67
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\alert-dialog.tsx", "TypeScript JSX", 0, 0, 0, 152, 0, 0, 0, 0, 0, 0, 0, 0, 15, 167
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\alert.tsx", "TypeScript JSX", 0, 0, 0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 7, 67
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\archive.tsx", "TypeScript JSX", 0, 0, 0, 117, 0, 0, 0, 0, 0, 0, 0, 0, 16, 133
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\aspect-ratio.tsx", "TypeScript JSX", 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 4, 12
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\avatar.tsx", "TypeScript JSX", 0, 0, 0, 47, 0, 0, 0, 0, 0, 0, 0, 0, 7, 54
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\badge.tsx", "TypeScript JSX", 0, 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 0, 6, 47
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\blocks.tsx", "TypeScript JSX", 0, 0, 0, 79, 0, 0, 0, 0, 0, 0, 0, 0, 14, 93
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\breadcrumb.tsx", "TypeScript JSX", 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0, 0, 11, 110
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\button-group.tsx", "TypeScript JSX", 0, 0, 0, 76, 0, 0, 0, 0, 0, 0, 0, 0, 8, 84
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\button.tsx", "TypeScript JSX", 0, 0, 0, 55, 0, 0, 0, 0, 0, 0, 0, 0, 6, 61
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\calendar.tsx", "TypeScript JSX", 0, 0, 0, 203, 0, 0, 0, 0, 0, 0, 0, 0, 11, 214
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\card.tsx", "TypeScript JSX", 0, 0, 0, 83, 0, 0, 0, 0, 0, 0, 0, 0, 10, 93
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\carousel.tsx", "TypeScript JSX", 0, 0, 0, 214, 0, 0, 0, 0, 0, 0, 0, 0, 28, 242
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\chart.tsx", "TypeScript JSX", 0, 0, 0, 319, 0, 0, 0, 0, 0, 0, 0, 2, 37, 358
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\check.tsx", "TypeScript JSX", 0, 0, 0, 95, 0, 0, 0, 0, 0, 0, 0, 0, 14, 109
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\checkbox.tsx", "TypeScript JSX", 0, 0, 0, 78, 0, 0, 0, 0, 0, 0, 0, 0, 11, 89
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\collapsible.tsx", "TypeScript JSX", 0, 0, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 6, 34
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\command.tsx", "TypeScript JSX", 0, 0, 0, 172, 0, 0, 0, 0, 0, 0, 0, 0, 13, 185
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\context-menu.tsx", "TypeScript JSX", 0, 0, 0, 234, 0, 0, 0, 0, 0, 0, 0, 0, 19, 253
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\copy-to-clipboard-badge.tsx", "TypeScript JSX", 0, 0, 0, 132, 0, 0, 0, 0, 0, 0, 0, 2, 13, 147
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\copy.tsx", "TypeScript JSX", 0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 0, 13, 111
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\country-select.tsx", "TypeScript JSX", 0, 0, 0, 58, 0, 0, 0, 0, 0, 0, 0, 4, 5, 67
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\date-input.tsx", "TypeScript JSX", 0, 0, 0, 84, 0, 0, 0, 0, 0, 0, 0, 10, 14, 108
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\dialog.tsx", "TypeScript JSX", 0, 0, 0, 130, 0, 0, 0, 0, 0, 0, 0, 0, 14, 144
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\downvote.tsx", "TypeScript JSX", 0, 0, 0, 84, 0, 0, 0, 0, 0, 0, 0, 0, 13, 97
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\drawer.tsx", "TypeScript JSX", 0, 0, 0, 122, 0, 0, 0, 0, 0, 0, 0, 0, 14, 136
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\dropdown-menu.tsx", "TypeScript JSX", 0, 0, 0, 241, 0, 0, 0, 0, 0, 0, 0, 0, 19, 260
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\empty.tsx", "TypeScript JSX", 0, 0, 0, 95, 0, 0, 0, 0, 0, 0, 0, 0, 10, 105
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\field.tsx", "TypeScript JSX", 0, 0, 0, 225, 0, 0, 0, 0, 0, 0, 0, 0, 20, 245
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\form.tsx", "TypeScript JSX", 0, 0, 0, 144, 0, 0, 0, 0, 0, 0, 0, 0, 25, 169
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\hover-card.tsx", "TypeScript JSX", 0, 0, 0, 38, 0, 0, 0, 0, 0, 0, 0, 0, 7, 45
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\input-group.tsx", "TypeScript JSX", 0, 0, 0, 152, 0, 0, 0, 0, 0, 0, 0, 3, 16, 171
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\input-otp.tsx", "TypeScript JSX", 0, 0, 0, 69, 0, 0, 0, 0, 0, 0, 0, 0, 9, 78
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\input.tsx", "TypeScript JSX", 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 4, 22
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\item.tsx", "TypeScript JSX", 0, 0, 0, 179, 0, 0, 0, 0, 0, 0, 0, 0, 15, 194
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\kbd.tsx", "TypeScript JSX", 0, 0, 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, 4, 29
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\label.tsx", "TypeScript JSX", 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 5, 25
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\magnetic-button.tsx", "TypeScript JSX", 0, 0, 0, 61, 0, 0, 0, 0, 0, 0, 0, 0, 14, 75
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\menubar.tsx", "TypeScript JSX", 0, 0, 0, 257, 0, 0, 0, 0, 0, 0, 0, 0, 20, 277
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\navigation-menu.tsx", "TypeScript JSX", 0, 0, 0, 157, 0, 0, 0, 0, 0, 0, 0, 0, 12, 169
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\pagination.tsx", "TypeScript JSX", 0, 0, 0, 117, 0, 0, 0, 0, 0, 0, 0, 0, 11, 128
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\plus.tsx", "TypeScript JSX", 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 13, 93
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\popover.tsx", "TypeScript JSX", 0, 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 0, 8, 49
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\progress.tsx", "TypeScript JSX", 0, 0, 0, 27, 0, 0, 0, 0, 0, 0, 0, 0, 5, 32
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\radio-group.tsx", "TypeScript JSX", 0, 0, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 6, 46
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\refresh-ccw.tsx", "TypeScript JSX", 0, 0, 0, 75, 0, 0, 0, 0, 0, 0, 0, 0, 12, 87
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\resizable.tsx", "TypeScript JSX", 0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 7, 57
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\scroll-area.tsx", "TypeScript JSX", 0, 0, 0, 53, 0, 0, 0, 0, 0, 0, 0, 0, 6, 59
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\select.tsx", "TypeScript JSX", 0, 0, 0, 174, 0, 0, 0, 0, 0, 0, 0, 0, 14, 188
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\separator.tsx", "TypeScript JSX", 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 5, 29
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\sheet.tsx", "TypeScript JSX", 0, 0, 0, 126, 0, 0, 0, 0, 0, 0, 0, 0, 14, 140
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 660, 0, 0, 0, 0, 0, 0, 0, 12, 55, 727
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\skeleton.tsx", "TypeScript JSX", 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\slider.tsx", "TypeScript JSX", 0, 0, 0, 58, 0, 0, 0, 0, 0, 0, 0, 0, 6, 64
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\sonner.tsx", "TypeScript JSX", 0, 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 5, 36
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\sortable-table-head.tsx", "TypeScript JSX", 0, 0, 0, 53, 0, 0, 0, 0, 0, 0, 0, 0, 4, 57
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\spinner.tsx", "TypeScript JSX", 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 4, 17
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\spotlight-card.tsx", "TypeScript JSX", 0, 0, 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 10, 73
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\state-select.tsx", "TypeScript JSX", 0, 0, 0, 92, 0, 0, 0, 0, 0, 0, 0, 3, 14, 109
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\switch.tsx", "TypeScript JSX", 0, 0, 0, 27, 0, 0, 0, 0, 0, 0, 0, 0, 5, 32
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\table.tsx", "TypeScript JSX", 0, 0, 0, 105, 0, 0, 0, 0, 0, 0, 0, 0, 12, 117
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\tabs.tsx", "TypeScript JSX", 0, 0, 0, 59, 0, 0, 0, 0, 0, 0, 0, 0, 8, 67
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\textarea.tsx", "TypeScript JSX", 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 4, 19
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\toggle-group.tsx", "TypeScript JSX", 0, 0, 0, 66, 0, 0, 0, 0, 0, 0, 0, 0, 8, 74
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\toggle.tsx", "TypeScript JSX", 0, 0, 0, 42, 0, 0, 0, 0, 0, 0, 0, 0, 6, 48
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\tooltip.tsx", "TypeScript JSX", 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 0, 8, 62
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\upvote.tsx", "TypeScript JSX", 0, 0, 0, 84, 0, 0, 0, 0, 0, 0, 0, 0, 13, 97
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\washing-machine.tsx", "TypeScript JSX", 0, 0, 0, 121, 0, 0, 0, 0, 0, 0, 0, 0, 12, 133
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\ui\x-button.tsx", "TypeScript JSX", 0, 0, 0, 114, 0, 0, 0, 0, 0, 0, 0, 7, 22, 143
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\whatsapp\BulkForm.tsx", "TypeScript JSX", 0, 0, 0, 222, 0, 0, 0, 0, 0, 0, 0, 0, 7, 229
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\whatsapp\Composer.tsx", "TypeScript JSX", 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 0, 3, 6, 265
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\whatsapp\MessagePane.tsx", "TypeScript JSX", 0, 0, 0, 228, 0, 0, 0, 0, 0, 0, 0, 0, 11, 239
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\whatsapp\SenderTabs.tsx", "TypeScript JSX", 0, 0, 0, 58, 0, 0, 0, 0, 0, 0, 0, 0, 6, 64
+"c:\Users\Shashwat Suthar\Desktop\xportal\components\whatsapp\ThreadList.tsx", "TypeScript JSX", 0, 0, 0, 131, 0, 0, 0, 0, 0, 0, 0, 0, 6, 137
+"c:\Users\Shashwat Suthar\Desktop\xportal\database.types.ts", "TypeScript", 7955, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7955
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\application-to-student-field-mapping.md", "Markdown", 0, 0, 718, 0, 0, 0, 0, 0, 0, 0, 0, 0, 129, 847
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\commissions.md", "Markdown", 0, 0, 161, 0, 0, 0, 0, 0, 0, 0, 0, 0, 61, 222
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\new-application-wizard-complete-guide.md", "Markdown", 0, 0, 1048, 0, 0, 0, 0, 0, 0, 0, 0, 0, 275, 1323
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\operational.md", "Markdown", 0, 0, 173, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84, 257
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\pipeline.md", "Markdown", 0, 0, 208, 0, 0, 0, 0, 0, 0, 0, 0, 0, 90, 298
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\resend-webhook-setup.md", "Markdown", 0, 0, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 46, 162
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\student-data-structure.md", "Markdown", 0, 0, 155, 0, 0, 0, 0, 0, 0, 0, 0, 0, 49, 204
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\testing-daily-finance-tick.md", "Markdown", 0, 0, 143, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 185
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\twilio-whatsapp.md", "Markdown", 0, 0, 1568, 0, 0, 0, 0, 0, 0, 0, 0, 0, 302, 1870
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\ui.md", "Markdown", 0, 0, 74, 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 105
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\xero-api-invoicing.md", "Markdown", 0, 0, 830, 0, 0, 0, 0, 0, 0, 0, 0, 0, 139, 969
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\xero-integration-implementation.md", "Markdown", 0, 0, 463, 0, 0, 0, 0, 0, 0, 0, 0, 0, 181, 644
+"c:\Users\Shashwat Suthar\Desktop\xportal\docs\xero.md", "Markdown", 0, 0, 1630, 0, 0, 0, 0, 0, 0, 0, 0, 0, 397, 2027
+"c:\Users\Shashwat Suthar\Desktop\xportal\eslint.config.mjs", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 0, 22, 0, 0, 0, 5, 27
+"c:\Users\Shashwat Suthar\Desktop\xportal\hooks\reporting\useGetDashboardCumulativeMetrics.ts", "TypeScript", 152, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 33, 185
+"c:\Users\Shashwat Suthar\Desktop\xportal\hooks\use-mobile.ts", "TypeScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 22
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\csv\contacts.ts", "TypeScript", 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 28
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\pdf\InvoiceTemplate.tsx", "TypeScript JSX", 0, 0, 0, 69, 0, 0, 0, 0, 0, 0, 0, 0, 8, 77
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\pdf\OfferLetterTemplate.tsx", "TypeScript JSX", 0, 0, 0, 785, 0, 0, 0, 0, 0, 0, 0, 16, 19, 820
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\pdf\buildInvoiceData.ts", "TypeScript", 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 39
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\pdf\buildOfferLetterData.ts", "TypeScript", 327, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 335
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\supabase\admin.ts", "TypeScript", 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 20
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\supabase\client.ts", "TypeScript", 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 9
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\supabase\middleware.ts", "TypeScript", 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 60
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\supabase\server.ts", "TypeScript", 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 31
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\twilio\client.ts", "TypeScript", 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 49
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\twilio\credentials.ts", "TypeScript", 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 49
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\twilio\phone.ts", "TypeScript", 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 11
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\twilio\send.ts", "TypeScript", 132, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 12, 146
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\twilio\templates.ts", "TypeScript", 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 5
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\usePhysicsButton.ts", "TypeScript", 158, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 36, 215
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\utils.ts", "TypeScript", 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 7
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\utils\country.ts", "TypeScript", 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 5, 32
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\utils\crypto.ts", "TypeScript", 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 49
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\utils\date-input.ts", "TypeScript", 54, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 34, 19, 107
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\utils\date.ts", "TypeScript", 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 5, 61
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\utils\export.ts", "TypeScript", 124, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 10, 153
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\utils\exportInvoices.ts", "TypeScript", 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 111
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\utils\exportStudents.ts", "TypeScript", 82, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 9, 110
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\utils\status.ts", "TypeScript", 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 6, 34
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\utils\url.ts", "TypeScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 19
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\validators\agent.ts", "TypeScript", 41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 3, 48
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\validators\classroom.ts", "TypeScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 25
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\validators\location.ts", "TypeScript", 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 31
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\validators\program.ts", "TypeScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 23
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\validators\rto.ts", "TypeScript", 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 42
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\validators\subject.ts", "TypeScript", 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 22
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\xero\client.ts", "TypeScript", 191, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 33, 32, 256
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\xero\encryption.ts", "TypeScript", 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 16, 70
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\xero\webhook.ts", "TypeScript", 110, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 46, 19, 175
+"c:\Users\Shashwat Suthar\Desktop\xportal\lib\xero\xero-client-node.ts", "TypeScript", 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 21, 166
+"c:\Users\Shashwat Suthar\Desktop\xportal\middleware.ts", "TypeScript", 87, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 27, 17, 131
+"c:\Users\Shashwat Suthar\Desktop\xportal\newman\XPortal.postman_collection.json", "JSON", 0, 297, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 297
+"c:\Users\Shashwat Suthar\Desktop\xportal\next.config.ts", "TypeScript", 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 8
+"c:\Users\Shashwat Suthar\Desktop\xportal\package-lock.json", "JSON", 0, 11647, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 11648
+"c:\Users\Shashwat Suthar\Desktop\xportal\package.json", "JSON", 0, 132, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 133
+"c:\Users\Shashwat Suthar\Desktop\xportal\playwright-report\index.html", "HTML", 0, 0, 0, 0, 0, 0, 73, 0, 0, 0, 0, 0, 3, 76
+"c:\Users\Shashwat Suthar\Desktop\xportal\playwright.config.ts", "TypeScript", 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 28
+"c:\Users\Shashwat Suthar\Desktop\xportal\postcss.config.mjs", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 6
+"c:\Users\Shashwat Suthar\Desktop\xportal\public\file.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1
+"c:\Users\Shashwat Suthar\Desktop\xportal\public\globe.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1
+"c:\Users\Shashwat Suthar\Desktop\xportal\public\next.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1
+"c:\Users\Shashwat Suthar\Desktop\xportal\public\vercel.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1
+"c:\Users\Shashwat Suthar\Desktop\xportal\public\window.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1
+"c:\Users\Shashwat Suthar\Desktop\xportal\scripts\seed-first-admin.ts", "TypeScript", 151, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 30, 200
+"c:\Users\Shashwat Suthar\Desktop\xportal\scripts\test-daily-finance-tick.ps1", "PowerShell", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 4, 14, 68
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\communications\whatsapp\useBulkSendWhatsApp.ts", "TypeScript", 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 41
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\communications\whatsapp\useListMessages.ts", "TypeScript", 69, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 74
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\communications\whatsapp\useListSenders.ts", "TypeScript", 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 12
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\communications\whatsapp\useListTemplates.ts", "TypeScript", 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 28
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\communications\whatsapp\useListThreads.ts", "TypeScript", 54, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 59
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\communications\whatsapp\useSendWhatsAppMessage.ts", "TypeScript", 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 48
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\communications\whatsapp\useUploadMedia.ts", "TypeScript", 29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 37
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\settings\twilio\useTestTwilioConfig.ts", "TypeScript", 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 28
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useAddProgramPlansToTimetable.ts", "TypeScript", 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 33
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useAddressAutocomplete.ts", "TypeScript", 228, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 29, 272
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useAgentFiles.ts", "TypeScript", 78, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 6, 104
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useApplicationFiles.ts", "TypeScript", 78, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 6, 104
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useApplicationRelations.ts", "TypeScript", 108, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 11, 133
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useApplicationsFilters.ts", "TypeScript", 239, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 36, 296
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useApproveApplication.ts", "TypeScript", 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 3, 30
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCalculateEnrollmentProgression.ts", "TypeScript", 217, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 45, 33, 295
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCloneProgramPlan.ts", "TypeScript", 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 13, 80
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useConfirmPayment.ts", "TypeScript", 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 11, 57
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCreateAgent.ts", "TypeScript", 46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 6, 57
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCreateApplication.ts", "TypeScript", 73, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 13, 94
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCreateClassroom.ts", "TypeScript", 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 6, 53
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCreateLocation.ts", "TypeScript", 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 6, 56
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCreateMailTemplate.ts", "TypeScript", 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 11, 80
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCreateProgram.ts", "TypeScript", 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 6, 56
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCreateSubject.ts", "TypeScript", 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 6, 50
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCreateTimetable.ts", "TypeScript", 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 6, 52
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useCreateTwilioSender.ts", "TypeScript", 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 40
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteAgent.ts", "TypeScript", 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 20
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteApplication.ts", "TypeScript", 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 23
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteClassroom.ts", "TypeScript", 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 20
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteLocation.ts", "TypeScript", 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 23
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteProgram.ts", "TypeScript", 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 17
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteProgramPlan.ts", "TypeScript", 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 23
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteProgramPlanClass.ts", "TypeScript", 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 23
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteProgramPlanSubject.ts", "TypeScript", 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 28
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteSubject.ts", "TypeScript", 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 20
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteTimetable.ts", "TypeScript", 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 23
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDeleteTwilioSender.ts", "TypeScript", 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 28
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useDownloadOfferLetter.ts", "TypeScript", 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 14, 69
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGenerateInvoicePdf.ts", "TypeScript", 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 37
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGenerateOfferLetter.ts", "TypeScript", 59, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 4, 75
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetAgent.ts", "TypeScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 2, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetAgents.ts", "TypeScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 22
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetApplication.ts", "TypeScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 21
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetApplicationLearningPlan.ts", "TypeScript", 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 9, 60
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetApplicationRelations.ts", "TypeScript", 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 3, 44
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetApplicationWithAgent.ts", "TypeScript", 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 3, 34
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetApplications.ts", "TypeScript", 121, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 24, 152
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetClassrooms.ts", "TypeScript", 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 4, 27
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetCommissionInvoices.ts", "TypeScript", 79, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 13, 102
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetCurrentUser.ts", "TypeScript", 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 9, 58
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetEmailById.ts", "TypeScript", 46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 4, 59
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetEmailStats.ts", "TypeScript", 47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 8, 70
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetEmails.ts", "TypeScript", 78, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 13, 106
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetEnrollmentSubjectClasses.ts", "TypeScript", 70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 86
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetInvoices.ts", "TypeScript", 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 15, 145
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetLocation.ts", "TypeScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 2, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetLocations.ts", "TypeScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 22
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetMailTemplates.ts", "TypeScript", 62, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 11, 81
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetPaymentPlanTemplate.ts", "TypeScript", 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetPaymentPlanTemplates.ts", "TypeScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 25
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetProfilesMinimal.ts", "TypeScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 24
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetProgramFields.ts", "TypeScript", 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 18
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetProgramLevels.ts", "TypeScript", 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 18
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetProgramPlanClasses.ts", "TypeScript", 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 36
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetProgramPlanSubjects.ts", "TypeScript", 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 36
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetProgramPlans.ts", "TypeScript", 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 21
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetProgramRecognitions.ts", "TypeScript", 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 18
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetPrograms.ts", "TypeScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 22
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetRto.ts", "TypeScript", 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 5, 34
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentAddresses.ts", "TypeScript", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentAllClasses.ts", "TypeScript", 58, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 10, 74
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentAttendanceSummary.ts", "TypeScript", 117, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 13, 133
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentAvetmiss.ts", "TypeScript", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 2, 28
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentById.ts", "TypeScript", 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 5, 45
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentContacts.ts", "TypeScript", 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 6, 39
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentCricos.ts", "TypeScript", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentDisabilities.ts", "TypeScript", 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentDocuments.ts", "TypeScript", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentEnrollmentSubjects.ts", "TypeScript", 54, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 11, 73
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentEnrollments.ts", "TypeScript", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentInvoices.ts", "TypeScript", 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 48
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentPriorEducation.ts", "TypeScript", 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudentStats.ts", "TypeScript", 47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 7, 64
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetStudents.ts", "TypeScript", 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 8, 55
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetSubjects.ts", "TypeScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 22
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetTemplateInstallments.ts", "TypeScript", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 27
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetTimetable.ts", "TypeScript", 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 35
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetTimetables.ts", "TypeScript", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 28
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetTodayClassesForAttendance.ts", "TypeScript", 88, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 10, 102
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetTrainers.ts", "TypeScript", 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 29
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetTwilioConfig.ts", "TypeScript", 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 12, 78
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetUnconfirmedPayments.ts", "TypeScript", 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 8, 63
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useGetUsers.ts", "TypeScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 25
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useInvoicesFilters.ts", "TypeScript", 213, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 34, 250
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useListTwilioSenders.ts", "TypeScript", 57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 12, 74
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useProfileImage.ts", "TypeScript", 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 14, 118
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useRecordPayment.ts", "TypeScript", 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 3, 46
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useRecreateDraftApplication.ts", "TypeScript", 38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 8, 51
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useRemoveProgramPlanFromTimetable.ts", "TypeScript", 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 32
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useRtoProfileImage.ts", "TypeScript", 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 14, 118
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useSendEmail.ts", "TypeScript", 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 6, 61
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useSendOfferLetter.ts", "TypeScript", 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 45
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useStudentFiles.ts", "TypeScript", 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 5, 102
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useStudentSubmissions.ts", "TypeScript", 157, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 8, 179
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useStudentsFilters.ts", "TypeScript", 82, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 19, 117
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useSubjectAssignments.ts", "TypeScript", 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 11, 155
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useSubmissionReadiness.ts", "TypeScript", 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 15, 156
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useSubmitApplication.ts", "TypeScript", 38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 8, 49
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useSyncTheme.ts", "TypeScript", 57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 13, 91
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useTablePreferences.ts", "TypeScript", 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 17, 119
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpdateAgent.ts", "TypeScript", 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 33
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpdateApplication.ts", "TypeScript", 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 3, 35
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpdateMailTemplate.ts", "TypeScript", 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9, 69
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpdateProfile.ts", "TypeScript", 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 50
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpdateProgram.ts", "TypeScript", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 27
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpdateRto.ts", "TypeScript", 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 7, 57
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpdateSubject.ts", "TypeScript", 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 33
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpdateTimetable.ts", "TypeScript", 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 33
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpdateTwilioSender.ts", "TypeScript", 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 46
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpsertEnrollmentClassAttendance.ts", "TypeScript", 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 6, 48
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpsertPaymentPlanTemplate.ts", "TypeScript", 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 8, 58
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpsertProgramPlan.ts", "TypeScript", 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 8, 67
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpsertProgramPlanClass.ts", "TypeScript", 47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 55
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpsertProgramPlanSubject.ts", "TypeScript", 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 52
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpsertTemplateInstallments.ts", "TypeScript", 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 6, 42
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\hooks\useUpsertTwilioConfig.ts", "TypeScript", 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 4, 48
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\lib\applicationSchema.ts", "TypeScript", 533, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 72, 45, 650
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\schemas\application-draft.ts", "TypeScript", 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 6
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\schemas\application-submission.ts", "TypeScript", 309, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 35, 31, 375
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\schemas\application.ts", "TypeScript", 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5
+"c:\Users\Shashwat Suthar\Desktop\xportal\src\schemas\index.ts", "TypeScript", 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 8
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\_shared\application-draft.ts", "TypeScript", 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 6
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\_shared\application-submission.ts", "TypeScript", 300, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 34, 30, 364
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\_shared\application.ts", "TypeScript", 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 7
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\_shared\database.types.ts", "TypeScript", 7739, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7739
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\_shared\xero-client.ts", "TypeScript", 244, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 41, 44, 329
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\approve-application\deno.json", "JSON", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 12
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\approve-application\index.ts", "TypeScript", 958, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 56, 78, 1092
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\calculate-agent-commission\deno.json", "JSON", 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 8
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\calculate-agent-commission\index.ts", "TypeScript", 371, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 44, 447
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\daily-finance-tick\index.ts", "TypeScript", 217, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 25, 253
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\generate-offer-letter\deno.json", "JSON", 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 16
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\generate-offer-letter\index.ts", "TypeScript", 167, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 20, 196
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\generate-offer-letter\template.tsx", "TypeScript JSX", 0, 0, 0, 642, 0, 0, 0, 0, 0, 0, 0, 14, 19, 675
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\generate-offer-letter\transform.ts", "TypeScript", 220, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 9, 230
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\handle-new-user\index.ts", "TypeScript", 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 9, 80
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\recreate-draft-application\deno.json", "JSON", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 13
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\recreate-draft-application\index.ts", "TypeScript", 364, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 49, 443
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\submit-application\deno.json", "JSON", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 12
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\submit-application\index.ts", "TypeScript", 265, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 46, 31, 342
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\xero-sync-contact\deno.json", "JSON", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 13
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\xero-sync-contact\index.ts", "TypeScript", 191, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 26, 234
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\xero-sync-invoice\deno.json", "JSON", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 13
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\xero-sync-invoice\index.ts", "TypeScript", 370, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 53, 463
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\xero-sync-invoices-batch\deno.json", "JSON", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 13
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\xero-sync-invoices-batch\index.ts", "TypeScript", 134, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 20, 170
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\xero-sync-payment\deno.json", "JSON", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 13
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\functions\xero-sync-payment\index.ts", "TypeScript", 270, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 41, 333
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251004065651_initial_setup.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 2, 0, 9
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251004065705_tenancy_and_users.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 33, 0, 3, 3, 39
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251004065715_academic_framework.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 29, 0, 3, 3, 35
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251004065726_application_process.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 51, 0, 6, 4, 61
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251004065916_students_and_enrollments.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 0, 3, 3, 28
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251004065943_timetabling.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 0, 2, 2, 27
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251004070004_financial_engine.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 2, 0, 6
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251004070025_rls_policies.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 5, 2, 43
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251005024114_auth_profile_sync.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 0, 10, 7, 59
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251007090000_add_enhanced_application_fields.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 60, 0, 14, 14, 88
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251007093010_setup_application_storage.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 0, 7, 8, 45
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251007111000_rename_qualifications_to_programs.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 27, 0, 4, 13, 44
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251007111500_program_lookups_and_fks.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 5, 18, 85
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251007113000_programs_rls_policies.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 3, 7, 24
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251007130000_payments_anchors_and_statuses.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 60, 0, 7, 15, 82
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251007130010_invoice_status_default_and_backfill.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 2, 6, 12
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251007140000_add_installments_rls_policy.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 2, 3, 16
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251007150000_remove_anchor_type_from_templates.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 3, 7
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251008003539_make_record_payment_notes_optional.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 1, 3, 28
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251008003540_refactor_academic_scheduling_v2.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 118, 0, 14, 17, 149
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251008043326_setup_agent_storage.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 0, 7, 6, 43
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251011063807_refactor_delivery_location_address.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 3, 3, 17
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251011071405_create_classrooms_table.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 28, 0, 3, 6, 37
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251011093046_enhance_program_plan_subjects_with_resources.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 7, 7, 34
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251011095446_rollback_program_plan_subjects_resources.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 3, 4, 14
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251011095501_create_program_plan_classes_table.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 49, 0, 9, 13, 71
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251012024820_create_timetables_table.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 0, 5, 9, 39
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251012054120_refactor_timetable_program_plan_relationship.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 0, 5, 8, 44
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251012060644_update_applications_timetable_id.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 3, 5, 14
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251014090000_application_learning_plan.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 372, 0, 10, 29, 411
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251014090500_upsert_learning_plan_draft.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 3, 7, 27
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251014091000_application_payment_schedule.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 134, 0, 7, 26, 167
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251014091500_payment_schedule_anchor_override.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 55, 0, 3, 14, 72
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251014092000_create_offer_letters_table.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 59, 0, 7, 12, 78
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251015090000_normalize_student_domain.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 109, 0, 13, 19, 141
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251015090500_offer_letters_link_student.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 4, 8
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251015100000_add_student_status.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 5, 9, 38
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251018130108_fix_program_plan_classes_rls_policy.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 26, 0, 5, 6, 37
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251018143907_fix_enrollment_subjects_duplicates.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 293, 0, 21, 15, 329
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251019050949_attendance_enrollment_class_attendances.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 60, 0, 4, 5, 69
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251019101500_assignments_system.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 0, 14, 33, 217
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251019112000_fix_rto_id_assignment_triggers.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 2, 6, 25
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251019113500_assignments_rls_fallback.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 84, 0, 7, 14, 105
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251019113738_add_rtos_update_policy.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 2
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251019120000_relax_storage_rls_assignments.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 3, 11, 76
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251019121500_assignments_set_rto_from_fk.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 28, 0, 3, 9, 40
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251019123000_assignments_rls_subject_student_based.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 34, 0, 3, 7, 44
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251019124500_admin_bypass_assignments.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 111, 0, 6, 14, 131
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251020100000_add_auth_user_trigger.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 33, 0, 6, 7, 46
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251020100500_seed_wrapper_function.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 41, 0, 4, 7, 52
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251020101000_update_auth_user_trigger_profile_insert.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 3, 11, 62
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251020110000_rls_normalization.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 358, 0, 24, 41, 423
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251021120000_agent_public_intake.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 45, 0, 9, 12, 66
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251025070000_user_table_preferences.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 4, 9, 45
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251027090000_invoices_storage_and_cols.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 0, 7, 9, 38
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251031110000_student_display_id.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 103, 0, 11, 17, 131
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251102094500_assignment_grading_status.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 76, 0, 1, 15, 92
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251102120000_rto_profile_image.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 38, 0, 2, 7, 47
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251105100000_email_logging.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 218, 0, 11, 29, 258
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251106103000_twilio_settings.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 119, 0, 15, 29, 163
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251106120000_whatsapp_logging.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 0, 9, 28, 158
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251107110000_whatsapp_media_bucket.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 0, 6, 9, 45
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251108050511_add_missing_avetmiss_fields.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 18, 18, 164
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251108051315_fix_usi_constraint_allow_empty_string.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 4, 5, 26
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251108051502_fix_vsn_constraint_allow_empty_string.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 34, 0, 6, 7, 47
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251108052009_fix_all_constraints_allow_empty_strings.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 85, 0, 7, 13, 105
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251108091024_add_cricos_compliance_fields.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 92, 0, 25, 22, 139
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251108143841_add_personal_details_to_students.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 1, 3, 11
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251108143906_add_contact_details_to_students.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 1, 3, 11
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251108143917_add_relationship_to_guardian_contacts.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 3, 7
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251108143926_add_usi_to_student_avetmiss.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 3, 7
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251109000000_add_guardian_relationship_field.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 3, 4, 10
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251109000001_remove_cricos_course_and_financial_fields.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 4, 5, 29
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251110000000_setup_students_storage.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 0, 7, 7, 44
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251111000000_add_disability_prior_education_flags.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 6, 8, 23
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251111000001_add_student_disabilities_prior_education.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 7, 7, 38
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251112151600_simplify_student_id_format.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 117, 0, 22, 16, 155
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251112151601_wizard_submission_constraints.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 76, 0, 8, 7, 91
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251112151602_add-usi-exemption-and-cricos-fields.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 0, 6, 7, 35
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251112151603_new-application-wizard-char.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 0, 8, 9, 59
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251112160000_add_is_commissionable_to_installments.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 1, 5, 11
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251113000001_add_agent_commission_fields.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 2, 6, 27
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251113000002_create_commission_invoices_table.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 0, 11, 20, 106
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251113000003_create_commission_payments_table.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 4, 10, 38
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251113000004_update_record_payment_return_id.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 0, 3, 10, 44
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251114000001_add_xero_integration_fields.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 52, 0, 8, 16, 76
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251115235439_create_xero_webhook_events_table.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 33, 0, 6, 10, 49
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251116235001_add_profile_image_support.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 38, 0, 2, 7, 47
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251117005118_add_theme_to_profiles.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 3, 7
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251118000000_add_application_display_id.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 0, 26, 22, 148
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251119090000_add_archived_application_status.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 0, 2, 10, 43
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251119100000_create_mail_templates.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 44, 0, 4, 13, 61
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251120000000_add_students_performance_indexes.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 8, 11, 37
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251125100000_finance_lines_internal_status.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 0, 3, 11, 56
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\migrations\20251125102000_record_payment_internal_status.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 35, 0, 1, 10, 46
+"c:\Users\Shashwat Suthar\Desktop\xportal\supabase\seed.sql", "MS SQL", 0, 0, 0, 0, 0, 0, 0, 0, 0, 939, 0, 123, 106, 1168
+"c:\Users\Shashwat Suthar\Desktop\xportal\test-results\.last-run.json", "JSON", 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4
+"c:\Users\Shashwat Suthar\Desktop\xportal\tests\auth.spec.ts", "TypeScript", 62, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 12, 80
+"c:\Users\Shashwat Suthar\Desktop\xportal\tsconfig.json", "JSON with Comments", 0, 0, 0, 0, 45, 0, 0, 0, 0, 0, 0, 0, 1, 46
+"c:\Users\Shashwat Suthar\Desktop\xportal\types\export-libs.d.ts", "TypeScript", 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5
+"c:\Users\Shashwat Suthar\Desktop\xportal\types\number-flow-react.d.ts", "TypeScript", 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 28
+"Total", "-", 32280, 12204, 7999, 37379, 45, 1850, 73, 5, 26, 6016, 50, 3227, 8091, 109245

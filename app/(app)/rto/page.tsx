@@ -40,6 +40,7 @@ export default function RtoPage() {
       contact_name: '',
       statistical_area_1_id: '',
       statistical_area_2_id: '',
+      cricos_code: '',
     },
   });
 
@@ -70,6 +71,7 @@ export default function RtoPage() {
         statistical_area_1_id: rto.statistical_area_1_id || '',
         statistical_area_2_id: rto.statistical_area_2_id || '',
         profile_image_path: rto.profile_image_path || undefined,
+        cricos_code: rto.cricos_code || '',
       });
     }
   }, [rto, form]);
@@ -77,7 +79,9 @@ export default function RtoPage() {
   const handleSaveDraft = async () => {
     try {
       const values = form.getValues();
-      const { profile_image_path: _profileImagePath, ...formValues } = values;
+      const { profile_image_path: _unusedProfileImagePath, ...formValues } =
+        values;
+      void _unusedProfileImagePath;
 
       // Validate format before saving
       const validationResult = rtoSchema.safeParse(values);

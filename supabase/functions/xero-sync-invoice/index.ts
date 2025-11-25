@@ -240,49 +240,101 @@ serve(async (req: Request) => {
     const installmentName = paymentSchedule?.name || 'Installment';
     const programName = program?.name || 'Course';
 
-    // 8. Initialize Xero client
+    // 8. Fetch invoice_lines snapshot for this invoice
+    const { data: invoiceLines, error: linesErr } = await supabase
+      .from('invoice_lines')
+      .select(
+        'name, description, amount_cents, sequence_order, xero_account_code, xero_tax_type, xero_item_code'
+      )
+      .eq('invoice_id', invoice.id)
+      .order('sequence_order', { ascending: true });
+
+    if (linesErr) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Failed to fetch invoice lines: ${linesErr.message}`,
+        } as SyncInvoiceResponse),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    // 9. Initialize Xero client
     const xeroClient = new XeroClient(invoice.rto_id);
 
-    // 9. Build Xero Invoice payload
-    // Ensure exactly 2 decimal places for monetary values
-    const invoiceAmount = Number(
-      ((invoice.amount_due_cents ?? 0) / 100).toFixed(2)
-    );
-
+    // 10. Build Xero Invoice payload
     // Format dates to YYYY-MM-DD format
     const issueDate = formatDateForXero(invoice.issue_date);
     const dueDate = formatDateForXero(invoice.due_date);
 
-    // Build description and reference with length validation
-    const description = truncateString(
-      `${programName} - ${installmentName}`,
-      4000
-    );
+    // Build reference with length validation
     const reference = truncateString(
       `SMS Invoice #${invoice.invoice_number}`,
       255
     );
 
-    // Build line item
-    // Note: TaxType is intentionally omitted - Xero will use the default tax code
-    // for the account. TaxType can be added later once valid tax types for the
-    // organization are determined.
-    const lineItem: {
+    // Build line items from invoice_lines when available; fallback to a single aggregate line.
+    const xeroLineItems: Array<{
       Description: string;
       Quantity: number;
       UnitAmount: number;
       AccountCode: string;
       ItemCode?: string;
-    } = {
-      Description: description,
-      Quantity: 1.0,
-      UnitAmount: invoiceAmount,
-      AccountCode: template?.xero_account_code || '200',
-    };
+    }> = [];
 
-    // Add ItemCode if provided
-    if (template?.xero_item_code) {
-      lineItem.ItemCode = template.xero_item_code;
+    if (invoiceLines && invoiceLines.length > 0) {
+      for (const line of invoiceLines) {
+        const cents = line.amount_cents ?? 0;
+        const unitAmount = Number((cents / 100).toFixed(2));
+        const description = truncateString(
+          line.description || line.name || programName || 'Course fee',
+          4000
+        );
+
+        xeroLineItems.push({
+          Description: description,
+          Quantity: 1.0,
+          UnitAmount: unitAmount,
+          AccountCode:
+            line.xero_account_code || template?.xero_account_code || '200',
+          ...(line.xero_item_code
+            ? { ItemCode: line.xero_item_code }
+            : template?.xero_item_code
+              ? { ItemCode: template.xero_item_code }
+              : {}),
+        });
+      }
+    } else {
+      // Fallback: single line using the total invoice amount and generic description.
+      const invoiceAmount = Number(
+        ((invoice.amount_due_cents ?? 0) / 100).toFixed(2)
+      );
+      const description = truncateString(
+        `${programName} - ${installmentName}`,
+        4000
+      );
+
+      const fallbackLine: {
+        Description: string;
+        Quantity: number;
+        UnitAmount: number;
+        AccountCode: string;
+        ItemCode?: string;
+      } = {
+        Description: description,
+        Quantity: 1.0,
+        UnitAmount: invoiceAmount,
+        AccountCode: template?.xero_account_code || '200',
+      };
+
+      if (template?.xero_item_code) {
+        fallbackLine.ItemCode = template.xero_item_code;
+      }
+
+      xeroLineItems.push(fallbackLine);
     }
 
     const invoicePayload = {
@@ -298,7 +350,7 @@ serve(async (req: Request) => {
           Status: 'AUTHORISED',
           CurrencyCode: 'AUD',
           InvoiceNumber: invoice.invoice_number,
-          LineItems: [lineItem],
+          LineItems: xeroLineItems,
         },
       ],
     };

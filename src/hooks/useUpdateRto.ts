@@ -37,6 +37,7 @@ export const useUpdateRto = () => {
         contact_name: payload.contact_name || null,
         statistical_area_1_id: payload.statistical_area_1_id || null,
         statistical_area_2_id: payload.statistical_area_2_id || null,
+        cricos_code: payload.cricos_code || null,
       };
 
       const { data, error } = await supabase

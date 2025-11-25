@@ -93,7 +93,9 @@ serve(async (req: Request) => {
     // 3. Fetch invoice to get Xero InvoiceID
     const { data: invoice, error: invoiceErr } = await supabase
       .from('invoices')
-      .select('id, xero_invoice_id, invoice_number')
+      .select(
+        'id, xero_invoice_id, invoice_number, amount_due_cents, internal_payment_status'
+      )
       .eq('id', payment.invoice_id)
       .single();
 
@@ -271,6 +273,36 @@ serve(async (req: Request) => {
     if (updateErr) {
       console.error('Failed to update payment with Xero PaymentID:', updateErr);
       // Still return success since Xero payment was created
+    }
+
+    // 11. If all payments covering this invoice are synced in Xero and cover the invoice amount,
+    //     mark the invoice as PAID_CONFIRMED / PAID.
+    try {
+      const { data: allPayments, error: allPayErr } = await supabase
+        .from('payments')
+        .select('amount_cents, xero_sync_status')
+        .eq('invoice_id', payment.invoice_id);
+
+      if (!allPayErr && allPayments) {
+        const confirmedTotal = allPayments
+          .filter((p) => p.xero_sync_status === 'synced')
+          .reduce((sum, p) => sum + (p.amount_cents ?? 0), 0);
+
+        if (confirmedTotal >= (invoice.amount_due_cents ?? 0)) {
+          await supabase
+            .from('invoices')
+            .update({
+              internal_payment_status: 'PAID_CONFIRMED',
+              status: 'PAID',
+            })
+            .eq('id', invoice.id);
+        }
+      }
+    } catch (e) {
+      console.warn(
+        'Failed to update invoice internal_payment_status after Xero payment sync:',
+        e
+      );
     }
 
     return new Response(

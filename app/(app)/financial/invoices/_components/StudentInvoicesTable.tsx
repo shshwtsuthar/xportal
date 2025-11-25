@@ -81,6 +81,7 @@ export function StudentInvoicesTable({ studentId }: Props) {
               <TableHead className="text-right">Amount Due</TableHead>
               <TableHead className="text-right">Amount Paid</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Payment (Internal/Xero)</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -99,6 +100,28 @@ export function StudentInvoicesTable({ studentId }: Props) {
                   ${((inv.amount_paid_cents ?? 0) / 100).toFixed(2)}
                 </TableCell>
                 <TableCell>{getStatusBadge(inv)}</TableCell>
+                <TableCell>
+                  {(() => {
+                    const value = String(
+                      (inv.internal_payment_status as unknown as string) ||
+                        'UNPAID'
+                    );
+                    if (value === 'PAID_CONFIRMED') {
+                      return (
+                        <Badge variant="default">Paid (Xero confirmed)</Badge>
+                      );
+                    }
+                    if (value === 'PAID_INTERNAL') {
+                      return (
+                        <Badge variant="secondary">Paid (internal only)</Badge>
+                      );
+                    }
+                    if (value === 'PARTIALLY_PAID') {
+                      return <Badge variant="secondary">Partially paid</Badge>;
+                    }
+                    return <Badge variant="secondary">Unpaid</Badge>;
+                  })()}
+                </TableCell>
                 <TableCell className="text-right">
                   {inv.status !== 'PAID' && inv.status !== 'VOID' && (
                     <Button

@@ -12,135 +12,178 @@ const corsHeaders = {
 
 type Db = Database;
 
+function formatCurrencyAud(cents: number): string {
+  const dollars = (cents ?? 0) / 100;
+  return dollars.toLocaleString('en-AU', {
+    style: 'currency',
+    currency: 'AUD',
+  });
+}
+
+function yyyy(date: Date | string) {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return String(d.getFullYear());
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  try {
-    const supabase = createClient<Db>(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+  const supabase = createClient<Db>(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    {
+      global: {
+        headers: { Authorization: req.headers.get('Authorization')! },
+      },
+    }
+  );
+
+  // Service role client for storage operations that bypass RLS
+  const service = createClient<Db>(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  const { applicationId } = await req.json();
+  if (!applicationId) {
+    return new Response(
+      JSON.stringify({ error: 'applicationId is required' }),
       {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
       }
     );
+  }
 
-    // Service role client for storage operations that bypass RLS
-    const service = createClient<Db>(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+  // Fetch application with needed fields
+  const { data: app, error: appErr } = await supabase
+    .from('applications')
+    .select('*')
+    .eq('id', applicationId)
+    .single();
+  if (appErr || !app) {
+    return new Response(JSON.stringify({ error: 'Application not found' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 404,
+    });
+  }
 
-    const { applicationId } = await req.json();
-    if (!applicationId) {
-      return new Response(
-        JSON.stringify({ error: 'applicationId is required' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
-    // Fetch application with needed fields
-    const { data: app, error: appErr } = await supabase
-      .from('applications')
-      .select('*')
-      .eq('id', applicationId)
-      .single();
-    if (appErr || !app) {
-      return new Response(JSON.stringify({ error: 'Application not found' }), {
+  if (app.status === 'ARCHIVED') {
+    return new Response(
+      JSON.stringify({
+        error: 'Archived applications cannot be approved or edited.',
+      }),
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 404,
-      });
-    }
+        status: 409,
+      }
+    );
+  }
 
-    if (app.status === 'ARCHIVED') {
-      return new Response(
-        JSON.stringify({
-          error: 'Archived applications cannot be approved or edited.',
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 409,
-        }
-      );
-    }
+  if (app.status !== 'ACCEPTED') {
+    return new Response(
+      JSON.stringify({
+        error: `Application must be ACCEPTED to approve. Current: ${app.status}`,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 409,
+      }
+    );
+  }
 
-    if (app.status !== 'ACCEPTED') {
-      return new Response(
-        JSON.stringify({
-          error: `Application must be ACCEPTED to approve. Current: ${app.status}`,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 409,
-        }
-      );
-    }
+  // Payment plan template and anchor date are required
+  if (!app.payment_plan_template_id) {
+    return new Response(
+      JSON.stringify({
+        error: 'payment_plan_template_id is required',
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      }
+    );
+  }
 
-    // Payment plan template and anchor date are required
-    if (!app.payment_plan_template_id) {
-      return new Response(
-        JSON.stringify({
-          error: 'payment_plan_template_id is required',
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
+  if (!app.payment_anchor_date) {
+    return new Response(
+      JSON.stringify({
+        error: 'payment_anchor_date is required',
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      }
+    );
+  }
 
-    if (!app.payment_anchor_date) {
-      return new Response(
-        JSON.stringify({
-          error: 'payment_anchor_date is required',
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
+  const { data: template, error: tplErr } = await supabase
+    .from('payment_plan_templates')
+    .select('id')
+    .eq('id', app.payment_plan_template_id)
+    .single();
+  if (tplErr || !template) {
+    return new Response(
+      JSON.stringify({ error: 'Payment plan template not found' }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      }
+    );
+  }
 
-    const { data: template, error: tplErr } = await supabase
-      .from('payment_plan_templates')
-      .select('id')
-      .eq('id', app.payment_plan_template_id)
-      .single();
-    if (tplErr || !template) {
-      return new Response(
-        JSON.stringify({ error: 'Payment plan template not found' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
+  // Use the required payment anchor date
+  const anchorDate = app.payment_anchor_date as string;
 
-    // Use the required payment anchor date
-    const anchorDate = app.payment_anchor_date as string;
+  if (!anchorDate) {
+    return new Response(
+      JSON.stringify({
+        error: 'Anchor date cannot be determined for template',
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      }
+    );
+  }
 
-    if (!anchorDate) {
-      return new Response(
-        JSON.stringify({
-          error: 'Anchor date cannot be determined for template',
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
+  // Begin approval transaction using PostgREST sequential operations
+  // 1) Create student (or fetch existing if already created - idempotent)
+  // Note: student_id_display will be auto-generated by trigger if empty/null
+  // TypeScript types mark it as required, but the database trigger handles empty strings
 
-    // Begin approval transaction using PostgREST sequential operations
-    // 1) Create student
-    // Note: student_id_display will be auto-generated by trigger if empty/null
-    // TypeScript types mark it as required, but the database trigger handles empty strings
+  // Check if student already exists for this application (idempotency)
+  let student: Db['public']['Tables']['students']['Row'] | null = null;
+  const { data: existingStudent, error: checkErr } = await supabase
+    .from('students')
+    .select('*')
+    .eq('application_id', app.id)
+    .maybeSingle();
+
+  if (checkErr) {
+    console.error('Error checking for existing student:', checkErr);
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to check for existing student',
+        details: checkErr.message,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+
+  if (existingStudent) {
+    // Student already exists - use it (idempotent behavior)
+    console.log(
+      `Student already exists for application ${app.id}, using existing student ${existingStudent.id}`
+    );
+    student = existingStudent;
+  } else {
+    // Create new student
     const studentInsert = {
       rto_id: app.rto_id,
       application_id: app.id,
@@ -159,12 +202,13 @@ serve(async (req: Request) => {
       student_id_display: '',
     } as Db['public']['Tables']['students']['Insert'];
 
-    const { data: student, error: studentErr } = await supabase
+    const { data: newStudent, error: studentErr } = await supabase
       .from('students')
       .insert(studentInsert)
       .select('*')
       .single();
-    if (studentErr || !student) {
+
+    if (studentErr || !newStudent) {
       console.error('Student creation error:', studentErr);
       return new Response(
         JSON.stringify({
@@ -177,113 +221,141 @@ serve(async (req: Request) => {
         }
       );
     }
+    student = newStudent;
+  }
 
-    // 1b) Copy files from applications bucket to students bucket
-    const fileCopyWarnings: string[] = [];
-    try {
-      // Recursively list all files in the application folder
-      const listFilesRecursively = async (
-        bucket: string,
-        prefix: string,
-        files: string[] = []
-      ): Promise<string[]> => {
-        const { data, error } = await service.storage
-          .from(bucket)
-          .list(prefix, {
-            limit: 1000,
-            sortBy: { column: 'name', order: 'asc' },
-          });
+  // 1b) Copy files from applications bucket to students bucket
+  const fileCopyWarnings: string[] = [];
+  try {
+    // Recursively list all files in the application folder
+    const listFilesRecursively = async (
+      bucket: string,
+      prefix: string,
+      files: string[] = []
+    ): Promise<string[]> => {
+      const { data, error } = await service.storage.from(bucket).list(prefix, {
+        limit: 1000,
+        sortBy: { column: 'name', order: 'asc' },
+      });
 
-        if (error) {
-          console.error(`Error listing files in ${prefix}:`, error);
-          return files;
-        }
-
-        if (!data || data.length === 0) {
-          return files;
-        }
-
-        for (const item of data) {
-          const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
-          // Files have an id property, folders don't
-          if (item.id) {
-            // It's a file
-            files.push(fullPath);
-          } else {
-            // It's a folder, recurse into it
-            await listFilesRecursively(bucket, fullPath, files);
-          }
-        }
-
+      if (error) {
+        console.error(`Error listing files in ${prefix}:`, error);
         return files;
-      };
+      }
 
-      const applicationFiles = await listFilesRecursively(
-        'applications',
-        app.id
-      );
+      if (!data || data.length === 0) {
+        return files;
+      }
 
-      // Copy each file to students bucket
-      for (const filePath of applicationFiles) {
-        try {
-          // Download from applications bucket
-          const { data: fileData, error: downloadErr } = await service.storage
-            .from('applications')
-            .download(filePath);
-
-          if (downloadErr || !fileData) {
-            fileCopyWarnings.push(
-              `Failed to download ${filePath}: ${downloadErr?.message || 'Unknown error'}`
-            );
-            continue;
-          }
-
-          // Calculate relative path (remove applicationId prefix)
-          const relativePath = filePath.startsWith(`${app.id}/`)
-            ? filePath.slice(`${app.id}/`.length)
-            : filePath;
-
-          // Upload to students bucket
-          const targetPath = `${student.id}/${relativePath}`;
-          // Get content type from file extension or metadata if available
-          const contentType = fileData.type || undefined;
-          const { error: uploadErr } = await service.storage
-            .from('students')
-            .upload(targetPath, fileData, {
-              contentType: contentType,
-              upsert: false,
-            });
-
-          if (uploadErr) {
-            fileCopyWarnings.push(
-              `Failed to upload ${targetPath}: ${uploadErr.message}`
-            );
-          }
-        } catch (fileErr) {
-          fileCopyWarnings.push(
-            `Error copying ${filePath}: ${fileErr instanceof Error ? fileErr.message : String(fileErr)}`
-          );
+      for (const item of data) {
+        const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
+        // Files have an id property, folders don't
+        if (item.id) {
+          // It's a file
+          files.push(fullPath);
+        } else {
+          // It's a folder, recurse into it
+          await listFilesRecursively(bucket, fullPath, files);
         }
       }
-    } catch (copyErr) {
-      // Log error but don't fail approval
-      console.error('Error during file copy:', copyErr);
-      fileCopyWarnings.push(
-        `File copy operation failed: ${copyErr instanceof Error ? copyErr.message : String(copyErr)}`
-      );
-    }
 
-    // 2) Create enrollment and copy template id
-    if (!app.program_id) {
-      return new Response(
-        JSON.stringify({ error: 'Application program_id is required' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
+      return files;
+    };
+
+    const applicationFiles = await listFilesRecursively('applications', app.id);
+
+    // Copy each file to students bucket
+    for (const filePath of applicationFiles) {
+      try {
+        // Download from applications bucket
+        const { data: fileData, error: downloadErr } = await service.storage
+          .from('applications')
+          .download(filePath);
+
+        if (downloadErr || !fileData) {
+          fileCopyWarnings.push(
+            `Failed to download ${filePath}: ${downloadErr?.message || 'Unknown error'}`
+          );
+          continue;
         }
-      );
+
+        // Calculate relative path (remove applicationId prefix)
+        const relativePath = filePath.startsWith(`${app.id}/`)
+          ? filePath.slice(`${app.id}/`.length)
+          : filePath;
+
+        // Upload to students bucket
+        const targetPath = `${student.id}/${relativePath}`;
+        // Get content type from file extension or metadata if available
+        const contentType = fileData.type || undefined;
+        const { error: uploadErr } = await service.storage
+          .from('students')
+          .upload(targetPath, fileData, {
+            contentType: contentType,
+            upsert: false,
+          });
+
+        if (uploadErr) {
+          fileCopyWarnings.push(
+            `Failed to upload ${targetPath}: ${uploadErr.message}`
+          );
+        }
+      } catch (fileErr) {
+        fileCopyWarnings.push(
+          `Error copying ${filePath}: ${fileErr instanceof Error ? fileErr.message : String(fileErr)}`
+        );
+      }
     }
-    const { data: enrollment, error: enrErr } = await supabase
+  } catch (copyErr) {
+    // Log error but don't fail approval
+    console.error('Error during file copy:', copyErr);
+    fileCopyWarnings.push(
+      `File copy operation failed: ${copyErr instanceof Error ? copyErr.message : String(copyErr)}`
+    );
+  }
+
+  // 2) Create enrollment and copy template id (idempotent check)
+  if (!app.program_id) {
+    return new Response(
+      JSON.stringify({ error: 'Application program_id is required' }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      }
+    );
+  }
+
+  // Check if enrollment already exists for this student and program
+  let enrollment: Db['public']['Tables']['enrollments']['Row'] | null = null;
+  const { data: existingEnrollment, error: checkEnrErr } = await supabase
+    .from('enrollments')
+    .select('*')
+    .eq('student_id', student.id)
+    .eq('program_id', app.program_id)
+    .maybeSingle();
+
+  if (checkEnrErr) {
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to check for existing enrollment',
+        details: checkEnrErr.message,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+
+  if (existingEnrollment) {
+    // Enrollment already exists - use it (idempotent behavior)
+    console.log(
+      `Enrollment already exists for student ${student.id} and program ${app.program_id}, using existing enrollment ${existingEnrollment.id}`
+    );
+    enrollment = existingEnrollment;
+  } else {
+    // Create new enrollment
+    const { data: newEnrollment, error: enrErr } = await supabase
       .from('enrollments')
       .insert({
         student_id: student.id,
@@ -295,230 +367,119 @@ serve(async (req: Request) => {
       })
       .select('*')
       .single();
-    if (enrErr || !enrollment) {
+    if (enrErr || !newEnrollment) {
       return new Response(
-        JSON.stringify({ error: 'Failed to create enrollment' }),
+        JSON.stringify({
+          error: 'Failed to create enrollment',
+          details: enrErr?.message || 'Unknown error',
+        }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
         }
       );
     }
+    enrollment = newEnrollment;
+  }
 
-    // 3) Use application_payment_schedule snapshot if present; fallback to on-the-fly calc
-    const { data: snapshot, error: snapErr } = await supabase
-      .from('application_payment_schedule')
-      .select('name, amount_cents, due_date')
-      .eq('application_id', app.id)
-      .order('sequence_order', { ascending: true })
-      .order('due_date', { ascending: true })
-      .order('name', { ascending: true });
+  // 3) Use application_payment_schedule snapshot if present; fallback to on-the-fly calc.
+  //    Always create invoices as SCHEDULED and attach at least one invoice_lines row per invoice.
+  //    Check if invoices already exist for this enrollment (idempotency)
+  let existingInvoices: Db['public']['Tables']['invoices']['Row'][] = [];
+  const { data: existingInvoicesData, error: checkInvErr } = await supabase
+    .from('invoices')
+    .select('*')
+    .eq('enrollment_id', enrollment.id);
 
-    let invoiceRows: Db['public']['Tables']['invoices']['Insert'][] = [];
-    if (!snapErr && snapshot && snapshot.length > 0) {
-      invoiceRows = snapshot.map((row, idx) => {
-        const isFirst = idx === 0;
-        return {
-          enrollment_id: enrollment.id,
-          rto_id: app.rto_id,
-          status: isFirst ? 'SENT' : 'SCHEDULED',
-          invoice_number: crypto.randomUUID(),
-          issue_date: isFirst
-            ? new Date().toISOString().slice(0, 10)
-            : (row.due_date as string),
-          due_date: row.due_date as string,
-          amount_due_cents: row.amount_cents as number,
-          amount_paid_cents: 0,
-        } as Db['public']['Tables']['invoices']['Insert'];
-      });
-    } else {
-      // Fallback: compute based on template installments and anchor
-      const { data: installments, error: instErr } = await supabase
-        .from('payment_plan_template_installments')
-        .select('id, name, amount_cents, due_date_rule_days')
-        .eq('template_id', template.id)
-        .order('due_date_rule_days', { ascending: true });
-      if (instErr) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to read installments' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
+  if (checkInvErr) {
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to check for existing invoices',
+        details: checkInvErr.message,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       }
-      const anchor = new Date(anchorDate);
-      invoiceRows = (installments ?? []).map((i, idx) => {
-        const due = new Date(anchor);
-        due.setDate(due.getDate() + Number(i.due_date_rule_days));
-        const dueDateStr = due.toISOString().slice(0, 10);
-        const isFirst = idx === 0;
-        return {
-          enrollment_id: enrollment.id,
-          rto_id: app.rto_id,
-          status: isFirst ? 'SENT' : 'SCHEDULED',
-          invoice_number: crypto.randomUUID(),
-          issue_date: isFirst
-            ? new Date().toISOString().slice(0, 10)
-            : dueDateStr,
-          due_date: dueDateStr,
-          amount_due_cents: i.amount_cents,
-          amount_paid_cents: 0,
-        } as Db['public']['Tables']['invoices']['Insert'];
-      });
+    );
+  }
+
+  if (existingInvoicesData && existingInvoicesData.length > 0) {
+    // Invoices already exist - use them (idempotent behavior)
+    console.log(
+      `Invoices already exist for enrollment ${enrollment.id}, using ${existingInvoicesData.length} existing invoices`
+    );
+    existingInvoices = existingInvoicesData;
+  }
+
+  const { data: snapshot, error: snapErr } = await supabase
+    .from('application_payment_schedule')
+    .select('name, amount_cents, due_date, template_installment_id')
+    .eq('application_id', app.id)
+    .order('sequence_order', { ascending: true })
+    .order('due_date', { ascending: true })
+    .order('name', { ascending: true });
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  const requestInvoiceNumber = async (issueDate: string) => {
+    const seed = crypto.randomUUID();
+    const { data, error } = await supabase.rpc('generate_invoice_number', {
+      p_created: issueDate,
+      p_uuid: seed,
+    });
+    if (error || !data) {
+      throw new Error(error?.message || 'Failed to generate invoice number');
     }
+    return data as string;
+  };
 
-    if (invoiceRows.length > 0) {
-      const { error: invErr } = await supabase
-        .from('invoices')
-        .insert(invoiceRows);
-      if (invErr) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to create invoices' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-    }
+  let invoiceRows: Db['public']['Tables']['invoices']['Insert'][] = [];
+  const invoiceLineTemplates: {
+    invoice_number: string;
+    name: string;
+    amount_cents: number;
+    sequence_order: number;
+    is_commissionable: boolean;
+    description: string | null;
+    xero_account_code: string | null;
+    xero_tax_type: string | null;
+    xero_item_code: string | null;
+  }[] = [];
 
-    // --- Extended copy: student domain normalization ---
-    // 3b) Addresses (street + postal)
-    {
-      const street = {
-        student_id: student.id,
-        rto_id: app.rto_id,
-        type: 'street',
-        building_name: app.street_building_name,
-        unit_details: app.street_unit_details,
-        number_name: app.street_number_name,
-        po_box: app.street_po_box,
-        suburb: app.suburb,
-        state: app.state,
-        postcode: app.postcode,
-        country: app.street_country,
-        is_primary: true,
-      } as const;
-      const postal = app.postal_is_same_as_street
-        ? null
-        : {
-            student_id: student.id,
-            rto_id: app.rto_id,
-            type: 'postal',
-            building_name: app.postal_building_name,
-            unit_details: app.postal_unit_details,
-            number_name: app.postal_number_name,
-            po_box: app.postal_po_box,
-            suburb: app.postal_suburb,
-            state: app.postal_state,
-            postcode: app.postal_postcode,
-            country: app.postal_country,
-            is_primary: false,
-          };
-      const addrRows = [street, postal].filter(
-        Boolean
-      ) as Db['public']['Tables']['student_addresses']['Insert'][];
-      if (addrRows.length > 0) {
-        const { error: addrErr } = await supabase
-          .from('student_addresses')
-          .insert(addrRows);
-        if (addrErr) {
-          return new Response(
-            JSON.stringify({ error: 'Failed to copy student addresses' }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500,
-            }
-          );
-        }
-      }
-    }
+  if (!snapErr && snapshot && snapshot.length > 0) {
+    // Fetch template lines for all installments in the snapshot
+    const installmentIds = snapshot
+      .map((row) => row.template_installment_id)
+      .filter((id): id is string => id !== null && id !== undefined);
 
-    // 3c) AVETMISS snapshot
-    {
-      const { error: avErr } = await supabase.from('student_avetmiss').insert({
-        student_id: student.id,
-        rto_id: app.rto_id,
-        gender: app.gender,
-        highest_school_level_id: app.highest_school_level_id,
-        year_highest_school_level_completed:
-          app.year_highest_school_level_completed,
-        indigenous_status_id: app.indigenous_status_id,
-        labour_force_status_id: app.labour_force_status_id,
-        country_of_birth_id: app.country_of_birth_id,
-        language_code: app.language_code,
-        citizenship_status_code: app.citizenship_status_code,
-        at_school_flag: app.at_school_flag,
-        disability_flag: app.disability_flag || null,
-        prior_education_flag: app.prior_education_flag || null,
-        survey_contact_status: app.survey_contact_status || 'A',
-        vsn: app.vsn || null,
-        usi: app.usi || null,
-      });
-      if (avErr) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to copy AVETMISS details' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-    }
+    const templateLinesMap = new Map<
+      string,
+      Array<{
+        name: string;
+        description: string | null;
+        amount_cents: number;
+        sequence_order: number;
+        is_commissionable: boolean;
+        xero_account_code: string | null;
+        xero_tax_type: string | null;
+        xero_item_code: string | null;
+      }>
+    >();
 
-    // 3c1) Copy disabilities from application to student
-    {
-      const { data: appDisabilities, error: fetchErr } = await supabase
-        .from('application_disabilities')
-        .select('disability_type_id')
-        .eq('application_id', app.id);
+    if (installmentIds.length > 0) {
+      const { data: installmentLines, error: linesErr } = await supabase
+        .from('payment_plan_template_installment_lines')
+        .select('*')
+        .in('installment_id', installmentIds)
+        .order('installment_id', { ascending: true })
+        .order('sequence_order', { ascending: true });
 
-      if (fetchErr) {
-        console.error('Error fetching application disabilities:', fetchErr);
-        return new Response(
-          JSON.stringify({ error: 'Failed to fetch application disabilities' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-
-      if (appDisabilities && appDisabilities.length > 0) {
-        const studentDisabilities = appDisabilities.map((d) => ({
-          student_id: student.id,
-          rto_id: app.rto_id,
-          disability_type_id: d.disability_type_id,
-        }));
-
-        const { error: disErr } = await supabase
-          .from('student_disabilities')
-          .insert(studentDisabilities);
-        if (disErr) {
-          return new Response(
-            JSON.stringify({ error: 'Failed to copy disabilities' }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500,
-            }
-          );
-        }
-      }
-    }
-
-    // 3c2) Copy prior education from application to student
-    {
-      const { data: appPriorEd, error: fetchErr } = await supabase
-        .from('application_prior_education')
-        .select('prior_achievement_id, recognition_type')
-        .eq('application_id', app.id);
-
-      if (fetchErr) {
-        console.error('Error fetching application prior education:', fetchErr);
+      if (linesErr) {
         return new Response(
           JSON.stringify({
-            error: 'Failed to fetch application prior education',
+            error: 'Failed to read template installment lines',
+            details: linesErr.message,
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -527,249 +488,111 @@ serve(async (req: Request) => {
         );
       }
 
-      if (appPriorEd && appPriorEd.length > 0) {
-        const studentPriorEd = appPriorEd.map((e) => ({
-          student_id: student.id,
-          rto_id: app.rto_id,
-          prior_achievement_id: e.prior_achievement_id,
-          recognition_type: e.recognition_type || null,
-        }));
-
-        const { error: priorEdErr } = await supabase
-          .from('student_prior_education')
-          .insert(studentPriorEd);
-        if (priorEdErr) {
-          return new Response(
-            JSON.stringify({ error: 'Failed to copy prior education' }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500,
-            }
-          );
+      // Group lines by installment_id
+      (installmentLines ?? []).forEach((line) => {
+        const instId = line.installment_id;
+        if (!templateLinesMap.has(instId)) {
+          templateLinesMap.set(instId, []);
         }
-      }
+        templateLinesMap.get(instId)!.push({
+          name: line.name,
+          description: line.description,
+          amount_cents: line.amount_cents,
+          sequence_order: line.sequence_order,
+          is_commissionable: line.is_commissionable,
+          xero_account_code: line.xero_account_code,
+          xero_tax_type: line.xero_tax_type,
+          xero_item_code: line.xero_item_code,
+        });
+      });
     }
 
-    // 3d) CRICOS snapshot
-    {
-      const { error: crErr } = await supabase.from('student_cricos').insert({
-        student_id: student.id,
-        rto_id: app.rto_id,
-        is_international: Boolean(app.is_international),
-        passport_number: app.passport_number,
-        passport_issue_date: app.passport_issue_date,
-        passport_expiry_date: app.passport_expiry_date,
-        place_of_birth: app.place_of_birth,
-        visa_type: app.visa_type,
-        visa_number: app.visa_number,
-        visa_expiry_date: app.visa_expiry_date,
-        visa_grant_date: app.visa_grant_date,
-        visa_application_office: app.visa_application_office,
-        holds_visa: app.holds_visa,
-        country_of_citizenship: app.country_of_citizenship,
-        coe_number: app.coe_number,
-        is_under_18: app.is_under_18,
-        provider_accepting_welfare_responsibility:
-          app.provider_accepting_welfare_responsibility,
-        welfare_start_date: app.welfare_start_date,
-        provider_arranged_oshc: app.provider_arranged_oshc,
-        oshc_provider_name: app.oshc_provider_name,
-        oshc_policy_number: app.oshc_policy_number,
-        oshc_start_date: app.oshc_start_date,
-        oshc_end_date: app.oshc_end_date,
-        has_english_test: app.has_english_test,
-        english_test_type: app.english_test_type,
-        english_test_date: app.english_test_date,
-        ielts_score: app.ielts_score,
-        has_previous_study_australia: app.has_previous_study_australia,
-        previous_provider_name: app.previous_provider_name,
-        completed_previous_course: app.completed_previous_course,
-        has_release_letter: app.has_release_letter,
-        privacy_notice_accepted: app.privacy_notice_accepted,
-        written_agreement_accepted: app.written_agreement_accepted,
-        written_agreement_date: app.written_agreement_date,
-      });
-      if (crErr) {
+    const rows: Db['public']['Tables']['invoices']['Insert'][] = [];
+
+    for (let idx = 0; idx < snapshot.length; idx++) {
+      const row = snapshot[idx];
+      const amountCents = row.amount_cents as number;
+      const templateInstallmentId = row.template_installment_id as string;
+      const issueDate =
+        idx === 0 ? todayIso : ((row.due_date as string) ?? todayIso);
+
+      let invoiceNumber: string;
+      try {
+        invoiceNumber = await requestInvoiceNumber(issueDate);
+      } catch (invNumErr) {
+        console.error(
+          'Failed to generate invoice number (snapshot path):',
+          invNumErr
+        );
         return new Response(
-          JSON.stringify({ error: 'Failed to copy CRICOS details' }),
+          JSON.stringify({
+            error: 'Failed to generate invoice number',
+            details:
+              invNumErr instanceof Error
+                ? invNumErr.message
+                : String(invNumErr),
+          }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 500,
           }
         );
       }
-    }
 
-    // 3e) Emergency and guardian contacts
-    {
-      const inserts: Db['public']['Tables']['student_contacts_emergency']['Insert'][] =
-        [];
-      if (app.ec_name || app.ec_phone_number || app.ec_relationship) {
-        if (!app.ec_name) {
-          return new Response(
-            JSON.stringify({
-              error:
-                'Emergency contact name is required when other emergency contact fields are provided',
-            }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 400,
-            }
-          );
-        }
-        inserts.push({
-          student_id: student.id,
-          rto_id: app.rto_id,
-          name: app.ec_name,
-          relationship: app.ec_relationship,
-          phone_number: app.ec_phone_number,
+      // Get template lines for this installment, or create a fallback line if none exist
+      const templateLines = templateLinesMap.get(templateInstallmentId) ?? [];
+
+      if (templateLines.length > 0) {
+        templateLines.forEach((line) => {
+          invoiceLineTemplates.push({
+            invoice_number: invoiceNumber,
+            name: line.name,
+            amount_cents: line.amount_cents,
+            sequence_order: line.sequence_order,
+            is_commissionable: line.is_commissionable,
+            description: line.description,
+            xero_account_code: line.xero_account_code,
+            xero_tax_type: line.xero_tax_type,
+            xero_item_code: line.xero_item_code,
+          });
+        });
+      } else {
+        invoiceLineTemplates.push({
+          invoice_number: invoiceNumber,
+          name: row.name ?? `Installment ${idx + 1}`,
+          amount_cents: amountCents,
+          sequence_order: idx,
+          is_commissionable: false,
+          description: null,
+          xero_account_code: null,
+          xero_tax_type: null,
+          xero_item_code: null,
         });
       }
-      if (inserts.length > 0) {
-        const { error: ecErr } = await supabase
-          .from('student_contacts_emergency')
-          .insert(inserts);
-        if (ecErr) {
-          return new Response(
-            JSON.stringify({ error: 'Failed to copy emergency contacts' }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500,
-            }
-          );
-        }
-      }
-      if (app.g_name || app.g_email || app.g_phone_number) {
-        if (!app.g_name) {
-          return new Response(
-            JSON.stringify({
-              error:
-                'Guardian contact name is required when other guardian contact fields are provided',
-            }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 400,
-            }
-          );
-        }
-        const { error: gErr } = await supabase
-          .from('student_contacts_guardians')
-          .insert({
-            student_id: student.id,
-            rto_id: app.rto_id,
-            name: app.g_name,
-            email: app.g_email,
-            phone_number: app.g_phone_number,
-            relationship: app.g_relationship,
-          });
-        if (gErr) {
-          return new Response(
-            JSON.stringify({ error: 'Failed to copy guardian contact' }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500,
-            }
-          );
-        }
-      }
+
+      rows.push({
+        enrollment_id: enrollment.id,
+        rto_id: app.rto_id,
+        status: 'SCHEDULED',
+        invoice_number: invoiceNumber,
+        issue_date: issueDate,
+        due_date: row.due_date as string,
+        amount_due_cents: amountCents,
+        amount_paid_cents: 0,
+      } as Db['public']['Tables']['invoices']['Insert']);
     }
 
-    // 3f) Learning plan subjects → enrollment_subjects
-    {
-      const { data: subjects, error: subjErr } = await supabase
-        .from('application_learning_subjects')
-        .select(
-          'program_plan_subject_id, subject_id, planned_start_date, planned_end_date, is_catch_up, is_prerequisite'
-        )
-        .eq('application_id', app.id)
-        .order('sequence_order', { ascending: true });
-      if (!subjErr && subjects && subjects.length > 0) {
-        const rows = subjects.map((s) => ({
-          enrollment_id: enrollment.id,
-          program_plan_subject_id: s.program_plan_subject_id,
-          outcome_code: null,
-          start_date: s.planned_start_date,
-          end_date: s.planned_end_date,
-          is_catch_up: s.is_catch_up,
-          delivery_location_id: null,
-          delivery_mode_id: null,
-          scheduled_hours: null,
-        }));
-        const { error: insErr } = await supabase
-          .from('enrollment_subjects')
-          .insert(rows);
-        if (insErr) {
-          return new Response(
-            JSON.stringify({ error: 'Failed to copy enrollment subjects' }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500,
-            }
-          );
-        }
-      }
-    }
-
-    // 3g) Learning plan classes → enrollment_classes
-    {
-      const { data: classes, error: clsErr } = await supabase
-        .from('application_learning_classes')
-        .select(
-          'program_plan_class_id, class_date, start_time, end_time, trainer_id, location_id, classroom_id, class_type'
-        )
-        .eq('application_id', app.id);
-      if (!clsErr && classes && classes.length > 0) {
-        const rows = classes.map((c) => ({
-          enrollment_id: enrollment.id,
-          program_plan_class_id: c.program_plan_class_id,
-          class_date: c.class_date,
-          start_time: c.start_time,
-          end_time: c.end_time,
-          trainer_id: c.trainer_id,
-          location_id: c.location_id,
-          classroom_id: c.classroom_id,
-          class_type: c.class_type,
-          notes: null,
-        }));
-        const { error: insErr } = await supabase
-          .from('enrollment_classes')
-          .insert(rows);
-        if (insErr) {
-          return new Response(
-            JSON.stringify({ error: 'Failed to copy enrollment classes' }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500,
-            }
-          );
-        }
-      }
-    }
-
-    // 3h) Update offer_letters to link to student
-    {
-      const { error: offerErr } = await service
-        .from('offer_letters')
-        .update({ student_id: student.id })
-        .eq('application_id', app.id)
-        .is('student_id', null);
-      if (offerErr) {
-        // Log but don't fail approval
-        console.error('Failed to link offer letters to student:', offerErr);
-        fileCopyWarnings.push(
-          `Failed to link offer letters: ${offerErr.message}`
-        );
-      }
-    }
-
-    // 4) Update application status to APPROVED
-    const { error: updErr } = await supabase
-      .from('applications')
-      .update({ status: 'APPROVED' })
-      .eq('id', app.id);
-    if (updErr) {
+    invoiceRows = rows;
+  } else {
+    // Fallback: compute based on template installments and anchor
+    const { data: installments, error: instErr } = await supabase
+      .from('payment_plan_template_installments')
+      .select('id, name, amount_cents, due_date_rule_days, is_commissionable')
+      .eq('template_id', template.id)
+      .order('due_date_rule_days', { ascending: true });
+    if (instErr) {
       return new Response(
-        JSON.stringify({ error: 'Failed to update application status' }),
+        JSON.stringify({ error: 'Failed to read installments' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
@@ -777,44 +600,811 @@ serve(async (req: Request) => {
       );
     }
 
-    // 5) Sync student to Xero as Contact (non-blocking)
-    // This is done asynchronously so failures don't block application approval
-    try {
-      const xeroSyncUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/xero-sync-contact`;
-      fetch(xeroSyncUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
-        },
-        body: JSON.stringify({ studentId: student.id }),
-      }).catch((err) => {
-        // Log but don't fail - Xero sync is non-critical for approval
-        console.warn('Xero contact sync failed (non-blocking):', err);
-      });
-      // Don't await - let it run in background
-    } catch (xeroErr) {
-      // Log but don't fail
-      console.warn('Xero contact sync error (non-blocking):', xeroErr);
+    // Fetch lines for each installment
+    const installmentIds = (installments ?? []).map((i) => i.id);
+    const { data: installmentLines, error: linesErr } = await supabase
+      .from('payment_plan_template_installment_lines')
+      .select('*')
+      .in('installment_id', installmentIds)
+      .order('installment_id', { ascending: true })
+      .order('sequence_order', { ascending: true });
+
+    if (linesErr) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to read installment lines' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
     }
 
+    // Group lines by installment_id
+    const linesByInstallment = new Map<string, typeof installmentLines>();
+    (installmentLines ?? []).forEach((line) => {
+      const instId = line.installment_id;
+      if (!linesByInstallment.has(instId)) {
+        linesByInstallment.set(instId, []);
+      }
+      linesByInstallment.get(instId)!.push(line);
+    });
+
+    const anchor = new Date(anchorDate);
+    const rows: Db['public']['Tables']['invoices']['Insert'][] = [];
+    const safeInstallments = installments ?? [];
+
+    for (let idx = 0; idx < safeInstallments.length; idx++) {
+      const installment = safeInstallments[idx];
+      const due = new Date(anchor);
+      due.setDate(due.getDate() + Number(installment.due_date_rule_days));
+      const dueDateStr = due.toISOString().slice(0, 10);
+      const issueDate = idx === 0 ? todayIso : dueDateStr;
+      const amountCents = installment.amount_cents as number;
+
+      let invoiceNumber: string;
+      try {
+        invoiceNumber = await requestInvoiceNumber(issueDate);
+      } catch (invNumErr) {
+        console.error(
+          'Failed to generate invoice number (template path):',
+          invNumErr
+        );
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to generate invoice number',
+            details:
+              invNumErr instanceof Error
+                ? invNumErr.message
+                : String(invNumErr),
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+
+      const lines = linesByInstallment.get(installment.id) ?? [];
+      if (lines.length > 0) {
+        lines.forEach((line) => {
+          invoiceLineTemplates.push({
+            invoice_number: invoiceNumber,
+            name: line.name,
+            amount_cents: line.amount_cents,
+            sequence_order: line.sequence_order,
+            is_commissionable: line.is_commissionable,
+            description: line.description ?? null,
+            xero_account_code: line.xero_account_code ?? null,
+            xero_tax_type: line.xero_tax_type ?? null,
+            xero_item_code: line.xero_item_code ?? null,
+          });
+        });
+      } else {
+        invoiceLineTemplates.push({
+          invoice_number: invoiceNumber,
+          name: installment.name ?? `Installment ${idx + 1}`,
+          amount_cents: amountCents,
+          sequence_order: idx,
+          is_commissionable: Boolean(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (installment as any).is_commissionable
+          ),
+          description: null,
+          xero_account_code: null,
+          xero_tax_type: null,
+          xero_item_code: null,
+        });
+      }
+
+      rows.push({
+        enrollment_id: enrollment.id,
+        rto_id: app.rto_id,
+        status: 'SCHEDULED',
+        invoice_number: invoiceNumber,
+        issue_date: issueDate,
+        due_date: dueDateStr,
+        amount_due_cents: amountCents,
+        amount_paid_cents: 0,
+      } as Db['public']['Tables']['invoices']['Insert']);
+    }
+
+    invoiceRows = rows;
+  }
+
+  // Only create invoices if they don't already exist (idempotency)
+  let insertedInvoices: Array<{ id: string; invoice_number: string }> = [];
+  if (existingInvoices.length > 0) {
+    // Use existing invoices
+    insertedInvoices = existingInvoices.map((inv) => ({
+      id: inv.id,
+      invoice_number: inv.invoice_number,
+    }));
+    console.log(
+      `Using ${insertedInvoices.length} existing invoices for enrollment ${enrollment.id}`
+    );
+  } else if (invoiceRows.length > 0) {
+    // Create new invoices
+    const { data: newInvoices, error: invErr } = await supabase
+      .from('invoices')
+      .insert(invoiceRows)
+      .select('id, invoice_number');
+    if (invErr || !newInvoices) {
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to create invoices',
+          details: invErr?.message || 'Unknown error',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+    insertedInvoices = newInvoices;
+  }
+
+  // Insert one invoice_lines row per invoice based on the templates prepared above.
+  // Only create invoice_lines if invoices were just created (not if using existing invoices)
+  if (existingInvoices.length === 0 && invoiceLineTemplates.length > 0) {
+    const invoiceLines: Db['public']['Tables']['invoice_lines']['Insert'][] =
+      [];
+
+    for (const tpl of invoiceLineTemplates) {
+      const invoice = insertedInvoices.find(
+        (inv) => inv.invoice_number === tpl.invoice_number
+      );
+      if (!invoice) continue;
+
+      invoiceLines.push({
+        invoice_id: invoice.id,
+        name: tpl.name,
+        description: tpl.description,
+        amount_cents: tpl.amount_cents,
+        sequence_order: tpl.sequence_order,
+        is_commissionable: tpl.is_commissionable,
+        xero_account_code: tpl.xero_account_code,
+        xero_tax_type: tpl.xero_tax_type,
+        xero_item_code: tpl.xero_item_code,
+      });
+    }
+
+    if (invoiceLines.length > 0) {
+      const { error: lineErr } = await supabase
+        .from('invoice_lines')
+        .insert(invoiceLines);
+      if (lineErr) {
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to create invoice lines',
+            details: lineErr.message,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+  } else if (existingInvoices.length > 0) {
+    console.log(
+      `Skipping invoice_lines creation - using existing invoices with existing lines`
+    );
+  }
+
+  // 3a) Auto-send invoices with issue_date <= today
+  const invoicesToSend = insertedInvoices.filter((inv) => {
+    const invoiceRow = invoiceRows.find(
+      (r) => r.invoice_number === inv.invoice_number
+    );
+    return invoiceRow && invoiceRow.issue_date <= todayIso;
+  });
+
+  if (invoicesToSend.length > 0) {
+    // Fetch student and RTO info for email
+    const { data: studentInfo } = await supabase
+      .from('students')
+      .select('id, first_name, last_name, email')
+      .eq('id', student.id)
+      .single();
+
+    const { data: rtoInfo } = await supabase
+      .from('rtos')
+      .select('id, name')
+      .eq('id', app.rto_id)
+      .single();
+
+    const studentName = studentInfo
+      ? [studentInfo.first_name, studentInfo.last_name]
+          .filter(Boolean)
+          .join(' ')
+      : 'Student';
+    const studentEmail = studentInfo?.email ?? null;
+
+    // Generate PDFs and send emails for invoices due today
+    for (const invToSend of invoicesToSend) {
+      const invoiceRow = invoiceRows.find(
+        (r) => r.invoice_number === invToSend.invoice_number
+      );
+      if (!invoiceRow) continue;
+
+      // Generate PDF using dynamic imports
+      // Import react-pdf/renderer which bundles React automatically
+      const reactPdf = await import(
+        'https://esm.sh/@react-pdf/renderer@3.4.3?target=deno&deps=@react-pdf/yoga@3.0.1'
+      );
+      const react = await import('https://esm.sh/react@18.2.0?target=deno');
+
+      const { Document, Page, Text, View, StyleSheet, renderToBuffer } =
+        reactPdf;
+      const { createElement } = react;
+
+      const styles = StyleSheet.create({
+        page: {
+          paddingTop: 40,
+          paddingBottom: 40,
+          paddingHorizontal: 42,
+          fontSize: 11,
+        },
+        h1: { fontSize: 18, marginBottom: 8 },
+        row: { marginTop: 6 },
+        right: { textAlign: 'right' },
+      });
+
+      const invoiceData = {
+        id: invToSend.id,
+        rto_id: app.rto_id,
+        invoice_number: String(invToSend.invoice_number),
+        due_date: invoiceRow.due_date,
+        issue_date: invoiceRow.issue_date,
+        amount_due_cents: invoiceRow.amount_due_cents,
+        student_name: studentName,
+        student_email: studentEmail,
+        rto_name: rtoInfo?.name ?? null,
+      };
+
+      const InvoiceDoc = ({ data }: { data: typeof invoiceData }) => {
+        return createElement(
+          Document,
+          { title: `Invoice ${data.invoice_number}` },
+          createElement(
+            Page,
+            { size: 'A4', style: styles.page },
+            createElement(
+              View,
+              {},
+              createElement(Text, { style: styles.h1 }, 'Tax Invoice'),
+              createElement(Text, {}, data.invoice_number)
+            ),
+            createElement(
+              View,
+              { style: styles.row },
+              createElement(Text, {}, `Issued: ${data.issue_date}`),
+              createElement(Text, {}, `Due: ${data.due_date}`)
+            ),
+            createElement(
+              View,
+              { style: styles.row },
+              createElement(Text, {}, `Bill To: ${data.student_name}`)
+            ),
+            createElement(
+              View,
+              { style: { marginTop: 16 } },
+              createElement(
+                Text,
+                {},
+                `Amount Due: ${formatCurrencyAud(data.amount_due_cents)}`
+              )
+            )
+          )
+        );
+      };
+
+      const element = createElement(InvoiceDoc, { data: invoiceData });
+      const pdfBuffer = await renderToBuffer(element);
+      const bytes = new Uint8Array(pdfBuffer);
+
+      const year = yyyy(invoiceRow.due_date);
+      const filePath = `${app.rto_id}/${year}/${invToSend.invoice_number}.pdf`;
+
+      const { error: uploadErr } = await service.storage
+        .from('invoices')
+        .upload(filePath, bytes, {
+          contentType: 'application/pdf',
+          upsert: true,
+        });
+
+      if (uploadErr) {
+        console.warn(
+          `PDF upload failed for invoice ${invToSend.invoice_number}:`,
+          uploadErr.message
+        );
+        continue; // Skip email if PDF failed
+      }
+
+      // Update invoice with PDF path
+      await supabase
+        .from('invoices')
+        .update({ pdf_path: filePath })
+        .eq('id', invToSend.id);
+
+      // Send email if Resend is configured
+      const resendKey = Deno.env.get('RESEND_API_KEY');
+      const resendFrom = Deno.env.get('RESEND_FROM');
+      if (resendKey && studentEmail) {
+        // Fetch signed URL for attachment
+        const { data: signed, error: signErr } = await service.storage
+          .from('invoices')
+          .createSignedUrl(filePath, 60 * 30);
+
+        if (!signErr && signed?.signedUrl) {
+          const emailRes = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${resendKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: resendFrom ?? 'no-reply@example.com',
+              to: studentEmail,
+              subject: `Invoice ${invToSend.invoice_number} - ${invoiceRow.due_date}`,
+              html: `<p>Dear ${studentName},</p><p>Your invoice ${invToSend.invoice_number} has been issued.</p><p>Amount: ${formatCurrencyAud(invoiceRow.amount_due_cents)}</p><p>Due Date: ${invoiceRow.due_date}</p><p><a href="${signed.signedUrl}">Download PDF</a></p>`,
+            }),
+          });
+
+          if (emailRes.ok) {
+            // Mark invoice as SENT and update last_email_sent_at
+            await supabase
+              .from('invoices')
+              .update({
+                status: 'SENT',
+                last_email_sent_at: new Date().toISOString(),
+              })
+              .eq('id', invToSend.id);
+          } else {
+            console.warn(
+              `Email send failed for invoice ${invToSend.invoice_number}`
+            );
+            // PDF was generated but email failed - invoice stays SCHEDULED
+          }
+        }
+      } else if (!resendKey) {
+        // No Resend configured - mark as SENT anyway since PDF was generated
+        await supabase
+          .from('invoices')
+          .update({
+            status: 'SENT',
+            last_email_sent_at: new Date().toISOString(),
+          })
+          .eq('id', invToSend.id);
+      }
+    }
+  }
+
+  // --- Extended copy: student domain normalization ---
+  // 3b) Addresses (street + postal)
+  {
+    const street = {
+      student_id: student.id,
+      rto_id: app.rto_id,
+      type: 'street',
+      building_name: app.street_building_name,
+      unit_details: app.street_unit_details,
+      number_name: app.street_number_name,
+      po_box: app.street_po_box,
+      suburb: app.suburb,
+      state: app.state,
+      postcode: app.postcode,
+      country: app.street_country,
+      is_primary: true,
+    } as const;
+    const postal = app.postal_is_same_as_street
+      ? null
+      : {
+          student_id: student.id,
+          rto_id: app.rto_id,
+          type: 'postal',
+          building_name: app.postal_building_name,
+          unit_details: app.postal_unit_details,
+          number_name: app.postal_number_name,
+          po_box: app.postal_po_box,
+          suburb: app.postal_suburb,
+          state: app.postal_state,
+          postcode: app.postal_postcode,
+          country: app.postal_country,
+          is_primary: false,
+        };
+    const addrRows = [street, postal].filter(
+      Boolean
+    ) as Db['public']['Tables']['student_addresses']['Insert'][];
+    if (addrRows.length > 0) {
+      const { error: addrErr } = await supabase
+        .from('student_addresses')
+        .insert(addrRows);
+      if (addrErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to copy student addresses' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+  }
+
+  // 3c) AVETMISS snapshot
+  {
+    const { error: avErr } = await supabase.from('student_avetmiss').insert({
+      student_id: student.id,
+      rto_id: app.rto_id,
+      gender: app.gender,
+      highest_school_level_id: app.highest_school_level_id,
+      year_highest_school_level_completed:
+        app.year_highest_school_level_completed,
+      indigenous_status_id: app.indigenous_status_id,
+      labour_force_status_id: app.labour_force_status_id,
+      country_of_birth_id: app.country_of_birth_id,
+      language_code: app.language_code,
+      citizenship_status_code: app.citizenship_status_code,
+      at_school_flag: app.at_school_flag,
+      disability_flag: app.disability_flag || null,
+      prior_education_flag: app.prior_education_flag || null,
+      survey_contact_status: app.survey_contact_status || 'A',
+      vsn: app.vsn || null,
+      usi: app.usi || null,
+    });
+    if (avErr) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to copy AVETMISS details' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+  }
+
+  // 3c1) Copy disabilities from application to student
+  {
+    const { data: appDisabilities, error: fetchErr } = await supabase
+      .from('application_disabilities')
+      .select('disability_type_id')
+      .eq('application_id', app.id);
+
+    if (fetchErr) {
+      console.error('Error fetching application disabilities:', fetchErr);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch application disabilities' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    if (appDisabilities && appDisabilities.length > 0) {
+      const studentDisabilities = appDisabilities.map((d) => ({
+        student_id: student.id,
+        rto_id: app.rto_id,
+        disability_type_id: d.disability_type_id,
+      }));
+
+      const { error: disErr } = await supabase
+        .from('student_disabilities')
+        .insert(studentDisabilities);
+      if (disErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to copy disabilities' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+  }
+
+  // 3c2) Copy prior education from application to student
+  {
+    const { data: appPriorEd, error: fetchErr } = await supabase
+      .from('application_prior_education')
+      .select('prior_achievement_id, recognition_type')
+      .eq('application_id', app.id);
+
+    if (fetchErr) {
+      console.error('Error fetching application prior education:', fetchErr);
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to fetch application prior education',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    if (appPriorEd && appPriorEd.length > 0) {
+      const studentPriorEd = appPriorEd.map((e) => ({
+        student_id: student.id,
+        rto_id: app.rto_id,
+        prior_achievement_id: e.prior_achievement_id,
+        recognition_type: e.recognition_type || null,
+      }));
+
+      const { error: priorEdErr } = await supabase
+        .from('student_prior_education')
+        .insert(studentPriorEd);
+      if (priorEdErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to copy prior education' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+  }
+
+  // 3d) CRICOS snapshot
+  {
+    const { error: crErr } = await supabase.from('student_cricos').insert({
+      student_id: student.id,
+      rto_id: app.rto_id,
+      is_international: Boolean(app.is_international),
+      passport_number: app.passport_number,
+      passport_issue_date: app.passport_issue_date,
+      passport_expiry_date: app.passport_expiry_date,
+      place_of_birth: app.place_of_birth,
+      visa_type: app.visa_type,
+      visa_number: app.visa_number,
+      visa_expiry_date: app.visa_expiry_date,
+      visa_grant_date: app.visa_grant_date,
+      visa_application_office: app.visa_application_office,
+      holds_visa: app.holds_visa,
+      country_of_citizenship: app.country_of_citizenship,
+      coe_number: app.coe_number,
+      is_under_18: app.is_under_18,
+      provider_accepting_welfare_responsibility:
+        app.provider_accepting_welfare_responsibility,
+      welfare_start_date: app.welfare_start_date,
+      provider_arranged_oshc: app.provider_arranged_oshc,
+      oshc_provider_name: app.oshc_provider_name,
+      oshc_policy_number: app.oshc_policy_number,
+      oshc_start_date: app.oshc_start_date,
+      oshc_end_date: app.oshc_end_date,
+      has_english_test: app.has_english_test,
+      english_test_type: app.english_test_type,
+      english_test_date: app.english_test_date,
+      ielts_score: app.ielts_score,
+      has_previous_study_australia: app.has_previous_study_australia,
+      previous_provider_name: app.previous_provider_name,
+      completed_previous_course: app.completed_previous_course,
+      has_release_letter: app.has_release_letter,
+      privacy_notice_accepted: app.privacy_notice_accepted,
+      written_agreement_accepted: app.written_agreement_accepted,
+      written_agreement_date: app.written_agreement_date,
+    });
+    if (crErr) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to copy CRICOS details' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+  }
+
+  // 3e) Emergency and guardian contacts
+  {
+    const inserts: Db['public']['Tables']['student_contacts_emergency']['Insert'][] =
+      [];
+    if (app.ec_name || app.ec_phone_number || app.ec_relationship) {
+      if (!app.ec_name) {
+        return new Response(
+          JSON.stringify({
+            error:
+              'Emergency contact name is required when other emergency contact fields are provided',
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
+      }
+      inserts.push({
+        student_id: student.id,
+        rto_id: app.rto_id,
+        name: app.ec_name,
+        relationship: app.ec_relationship,
+        phone_number: app.ec_phone_number,
+      });
+    }
+    if (inserts.length > 0) {
+      const { error: ecErr } = await supabase
+        .from('student_contacts_emergency')
+        .insert(inserts);
+      if (ecErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to copy emergency contacts' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+    if (app.g_name || app.g_email || app.g_phone_number) {
+      if (!app.g_name) {
+        return new Response(
+          JSON.stringify({
+            error:
+              'Guardian contact name is required when other guardian contact fields are provided',
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
+      }
+      const { error: gErr } = await supabase
+        .from('student_contacts_guardians')
+        .insert({
+          student_id: student.id,
+          rto_id: app.rto_id,
+          name: app.g_name,
+          email: app.g_email,
+          phone_number: app.g_phone_number,
+          relationship: app.g_relationship,
+        });
+      if (gErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to copy guardian contact' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+  }
+
+  // 3f) Learning plan subjects → enrollment_subjects
+  {
+    const { data: subjects, error: subjErr } = await supabase
+      .from('application_learning_subjects')
+      .select(
+        'program_plan_subject_id, subject_id, planned_start_date, planned_end_date, is_catch_up, is_prerequisite'
+      )
+      .eq('application_id', app.id)
+      .order('sequence_order', { ascending: true });
+    if (!subjErr && subjects && subjects.length > 0) {
+      const rows = subjects.map((s) => ({
+        enrollment_id: enrollment.id,
+        program_plan_subject_id: s.program_plan_subject_id,
+        outcome_code: null,
+        start_date: s.planned_start_date,
+        end_date: s.planned_end_date,
+        is_catch_up: s.is_catch_up,
+        delivery_location_id: null,
+        delivery_mode_id: null,
+        scheduled_hours: null,
+      }));
+      const { error: insErr } = await supabase
+        .from('enrollment_subjects')
+        .insert(rows);
+      if (insErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to copy enrollment subjects' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+  }
+
+  // 3g) Learning plan classes → enrollment_classes
+  {
+    const { data: classes, error: clsErr } = await supabase
+      .from('application_learning_classes')
+      .select(
+        'program_plan_class_id, class_date, start_time, end_time, trainer_id, location_id, classroom_id, class_type'
+      )
+      .eq('application_id', app.id);
+    if (!clsErr && classes && classes.length > 0) {
+      const rows = classes.map((c) => ({
+        enrollment_id: enrollment.id,
+        program_plan_class_id: c.program_plan_class_id,
+        class_date: c.class_date,
+        start_time: c.start_time,
+        end_time: c.end_time,
+        trainer_id: c.trainer_id,
+        location_id: c.location_id,
+        classroom_id: c.classroom_id,
+        class_type: c.class_type,
+        notes: null,
+      }));
+      const { error: insErr } = await supabase
+        .from('enrollment_classes')
+        .insert(rows);
+      if (insErr) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to copy enrollment classes' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+  }
+
+  // 3h) Update offer_letters to link to student
+  {
+    const { error: offerErr } = await service
+      .from('offer_letters')
+      .update({ student_id: student.id })
+      .eq('application_id', app.id)
+      .is('student_id', null);
+    if (offerErr) {
+      // Log but don't fail approval
+      console.error('Failed to link offer letters to student:', offerErr);
+      fileCopyWarnings.push(
+        `Failed to link offer letters: ${offerErr.message}`
+      );
+    }
+  }
+
+  // 4) Update application status to APPROVED
+  const { error: updErr } = await supabase
+    .from('applications')
+    .update({ status: 'APPROVED' })
+    .eq('id', app.id);
+  if (updErr) {
     return new Response(
-      JSON.stringify({
-        message: 'Application approved, invoices generated',
-        studentId: student.id,
-        enrollmentId: enrollment.id,
-        warnings: fileCopyWarnings.length > 0 ? fileCopyWarnings : undefined,
-      }),
+      JSON.stringify({ error: 'Failed to update application status' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        status: 500,
       }
     );
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return new Response(JSON.stringify({ error: msg }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
   }
+
+  // 5) Sync student to Xero as Contact (non-blocking)
+  // This is done asynchronously so failures don't block application approval
+  try {
+    const xeroSyncUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/xero-sync-contact`;
+    fetch(xeroSyncUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+      },
+      body: JSON.stringify({ studentId: student.id }),
+    }).catch((err) => {
+      // Log but don't fail - Xero sync is non-critical for approval
+      console.warn('Xero contact sync failed (non-blocking):', err);
+    });
+    // Don't await - let it run in background
+  } catch (xeroErr) {
+    // Log but don't fail
+    console.warn('Xero contact sync error (non-blocking):', xeroErr);
+  }
+
+  return new Response(
+    JSON.stringify({
+      message: 'Application approved, invoices generated',
+      studentId: student.id,
+      enrollmentId: enrollment.id,
+      warnings: fileCopyWarnings.length > 0 ? fileCopyWarnings : undefined,
+    }),
+    {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    }
+  );
 });

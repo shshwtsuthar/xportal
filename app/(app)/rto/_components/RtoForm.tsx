@@ -245,6 +245,20 @@ export function RtoForm({ form }: Props) {
           </FormItem>
         )}
       />
+
+      <FormField
+        control={form.control}
+        name="cricos_code"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>CRICOS Code</FormLabel>
+            <FormControl>
+              <Input placeholder="e.g. 12345A" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 }

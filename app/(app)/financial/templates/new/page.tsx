@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 import { PaymentPlanTemplateForm } from '../_components/PaymentPlanTemplateForm';
 import { useUpsertPaymentPlanTemplate } from '@/src/hooks/useUpsertPaymentPlanTemplate';
 import { useUpsertTemplateInstallments } from '@/src/hooks/useUpsertTemplateInstallments';
+import { useUpsertTemplateInstallmentLines } from '@/src/hooks/useUpsertTemplateInstallmentLines';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 
@@ -30,9 +32,39 @@ const templateSchema = z.object({
         amount_cents: z.number().min(1, 'Amount must be greater than 0'),
         due_date_rule_days: z.number().min(0, 'Offset must be 0 or greater'),
         is_commissionable: z.boolean(),
+        lines: z
+          .array(
+            z.object({
+              id: z.string().optional(),
+              name: z.string().min(1, 'Line name is required'),
+              description: z.string().optional(),
+              amount_cents: z.number().min(1, 'Amount must be greater than 0'),
+              sequence_order: z.number().min(0),
+              is_commissionable: z.boolean(),
+              xero_account_code: z.string().optional(),
+              xero_tax_type: z.string().optional(),
+              xero_item_code: z.string().optional(),
+            })
+          )
+          .min(1, 'At least one line is required'),
       })
     )
-    .min(1, 'At least one installment is required'),
+    .min(1, 'At least one installment is required')
+    .refine(
+      (installments) => {
+        return installments.every((inst) => {
+          const linesSum = inst.lines.reduce(
+            (sum, line) => sum + line.amount_cents,
+            0
+          );
+          return linesSum === inst.amount_cents;
+        });
+      },
+      {
+        message: 'Installment amount must equal the sum of its line amounts',
+        path: ['installments'],
+      }
+    ),
 });
 
 type TemplateFormValues = z.infer<typeof templateSchema>;
@@ -41,6 +73,7 @@ export default function NewPaymentPlanTemplatePage() {
   const router = useRouter();
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(templateSchema),
+    mode: 'onSubmit', // Only validate on submit, not on change
     defaultValues: {
       name: '',
       program_id: '',
@@ -51,6 +84,18 @@ export default function NewPaymentPlanTemplatePage() {
           amount_cents: 0,
           due_date_rule_days: 0,
           is_commissionable: false,
+          lines: [
+            {
+              name: '',
+              description: '',
+              amount_cents: 0,
+              sequence_order: 0,
+              is_commissionable: true,
+              xero_account_code: '',
+              xero_tax_type: '',
+              xero_item_code: '',
+            },
+          ],
         },
       ],
     },
@@ -58,6 +103,7 @@ export default function NewPaymentPlanTemplatePage() {
 
   const upsertTemplate = useUpsertPaymentPlanTemplate();
   const upsertInstallments = useUpsertTemplateInstallments();
+  const upsertInstallmentLines = useUpsertTemplateInstallmentLines();
 
   const handleSubmit = async (values: TemplateFormValues) => {
     try {
@@ -85,6 +131,43 @@ export default function NewPaymentPlanTemplatePage() {
       }));
 
       await upsertInstallments.mutateAsync(installmentPayloads);
+
+      // Fetch installments to get their IDs
+      const supabase = createClient();
+      const { data: savedInstallmentsData, error: fetchError } = await supabase
+        .from('payment_plan_template_installments')
+        .select('id')
+        .eq('template_id', templateId)
+        .order('due_date_rule_days', { ascending: true });
+
+      if (fetchError) throw new Error(fetchError.message);
+
+      // Create lines for each installment
+      for (let i = 0; i < values.installments.length; i++) {
+        const installment = values.installments[i];
+        const savedInstallmentId = savedInstallmentsData?.[i]?.id;
+
+        if (!savedInstallmentId) {
+          throw new Error(`Failed to find saved installment at index ${i}`);
+        }
+
+        const linePayloads = installment.lines.map((line) => ({
+          installment_id: savedInstallmentId,
+          name: line.name,
+          description: line.description || null,
+          amount_cents: line.amount_cents,
+          sequence_order: line.sequence_order,
+          is_commissionable: line.is_commissionable,
+          xero_account_code: line.xero_account_code || null,
+          xero_tax_type: line.xero_tax_type || null,
+          xero_item_code: line.xero_item_code || null,
+        }));
+
+        await upsertInstallmentLines.mutateAsync({
+          installmentId: savedInstallmentId,
+          lines: linePayloads,
+        });
+      }
 
       toast.success('Payment plan template created');
       router.push('/financial/templates');
@@ -116,10 +199,14 @@ export default function NewPaymentPlanTemplatePage() {
             <Button
               onClick={form.handleSubmit(handleSubmit)}
               disabled={
-                upsertTemplate.isPending || upsertInstallments.isPending
+                upsertTemplate.isPending ||
+                upsertInstallments.isPending ||
+                upsertInstallmentLines.isPending
               }
             >
-              {upsertTemplate.isPending || upsertInstallments.isPending
+              {upsertTemplate.isPending ||
+              upsertInstallments.isPending ||
+              upsertInstallmentLines.isPending
                 ? 'Creating…'
                 : 'Create Template'}
             </Button>

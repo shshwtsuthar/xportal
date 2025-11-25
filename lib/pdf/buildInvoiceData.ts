@@ -1,38 +1,113 @@
 import { Tables } from '@/database.types';
 import type { InvoicePdfData } from './InvoiceTemplate';
 
+type InvoiceInput = Tables<'invoices'> & {
+  enrollments?: Pick<Tables<'enrollments'>, 'id' | 'student_id'> | null;
+  students?: Pick<
+    Tables<'students'>,
+    'id' | 'first_name' | 'last_name' | 'email'
+  > | null;
+  rtos?: Tables<'rtos'> | null;
+  invoice_lines?: Tables<'invoice_lines'>[] | null;
+  student_addresses?: Tables<'student_addresses'>[] | null;
+};
+
 export function buildInvoiceData(input: {
-  invoice: Tables<'invoices'> & {
-    enrollments?: Pick<
-      Tables<'enrollments'>,
-      'id' | 'student_id' | 'rto_id'
-    > | null;
-    students?: Pick<
-      Tables<'students'>,
-      'id' | 'first_name' | 'last_name' | 'email'
-    > | null;
-    rtos?: Pick<
-      Tables<'rtos'>,
-      'id' | 'name' | 'address_line_1' | 'suburb' | 'state' | 'postcode'
-    > | null;
-  };
+  invoice: InvoiceInput;
 }): InvoicePdfData {
   const { invoice } = input;
+  const invoiceLines = invoice.invoice_lines ?? [];
+  const studentAddresses = invoice.student_addresses ?? [];
   const rto = invoice.rtos ?? null;
   const student = invoice.students ?? null;
-  return {
-    rtoName: rto?.name ?? 'RTO',
-    rtoAddress:
-      [rto?.address_line_1, rto?.suburb, rto?.state, rto?.postcode]
+
+  // 1. Logic to find the best address (Primary -> First available -> Empty)
+  const primaryAddress =
+    studentAddresses.find((addr) => addr.is_primary) || studentAddresses[0];
+
+  const formattedStudentAddress = primaryAddress
+    ? [
+        primaryAddress.building_name,
+        primaryAddress.unit_details,
+        primaryAddress.number_name,
+        primaryAddress.suburb,
+        primaryAddress.state,
+        primaryAddress.postcode,
+      ]
         .filter(Boolean)
-        .join(' ') || undefined,
+        .join(' ')
+        .toUpperCase()
+    : '';
+
+  // 2. Format RTO Address
+  const rtoAddress = [
+    rto?.address_line_1,
+    rto?.suburb,
+    rto?.state,
+    rto?.postcode,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  // 3. Calculate Financials
+  // Assuming amount_cents is stored as an integer (e.g. $10.00 = 1000)
+  const totalAmountCents = invoiceLines.reduce(
+    (acc, line) => acc + line.amount_cents,
+    0
+  );
+  const amountPaidCents = invoice.amount_paid_cents ?? 0;
+  const balanceDueCents = totalAmountCents - amountPaidCents;
+
+  return {
+    // RTO Details (Dynamic from DB)
+    rtoName: rto?.name ?? 'RTO Name',
+    rtoAddress: rtoAddress,
+    rtoCode: rto?.rto_code ?? '',
+    cricosCode: rto?.cricos_code ?? '',
+    rtoEmail: rto?.email_address ?? '',
+    rtoPhone: rto?.phone_number ?? '',
+    rtoLogoUrl: rto?.profile_image_path ?? null,
+
+    // Student Details
     studentName: [student?.first_name, student?.last_name]
       .filter(Boolean)
-      .join(' '),
-    studentEmail: student?.email ?? null,
-    invoiceNumber: String(invoice.invoice_number),
-    issueDate: String(invoice.issue_date),
-    dueDate: String(invoice.due_date),
-    amountDueCents: invoice.amount_due_cents ?? 0,
+      .join(' ')
+      .toUpperCase(),
+    studentAddress: formattedStudentAddress,
+
+    // Invoice Meta
+    invoiceNumber: invoice.invoice_number,
+    issueDate: new Date(invoice.issue_date).toLocaleDateString('en-AU'),
+    dueDate: new Date(invoice.due_date).toLocaleDateString('en-AU'),
+    // Instructions for Order No integration are below; hardcoded for now as requested.
+    orderNo: '',
+    datePaid:
+      amountPaidCents >= totalAmountCents
+        ? new Date().toLocaleDateString('en-AU') // Or use a specific 'paid_at' field if you have one
+        : '',
+
+    // Line Items
+    lines: invoiceLines
+      .sort((a, b) => (a.sequence_order ?? 0) - (b.sequence_order ?? 0))
+      .map((l) => ({
+        description: l.description || l.name,
+        amountCents: l.amount_cents,
+      })),
+
+    // Financial Totals
+    totalAmountCents,
+    amountPaidCents,
+    balanceDueCents,
+    // Assuming GST is included or calculated separately.
+    // If you need to calculate 10% GST from the total: totalAmountCents / 11
+    gstCents: 0,
+
+    // Bank Details (Dynamic from DB)
+    bankDetails: {
+      bankName: rto?.bank_name ?? '',
+      accountName: rto?.bank_account_name ?? '',
+      bsb: rto?.bank_bsb ?? '',
+      accountNo: rto?.bank_account_number ?? '',
+    },
   };
 }

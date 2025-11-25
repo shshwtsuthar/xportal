@@ -4,6 +4,7 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { InvoiceTemplate } from '@/lib/pdf/InvoiceTemplate';
 import { buildInvoiceData } from '@/lib/pdf/buildInvoiceData';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import type { Tables } from '@/database.types';
 
 export const runtime = 'nodejs';
 
@@ -26,7 +27,7 @@ export async function POST(
 
     const supabase = await createServerSupabase();
 
-    // Fetch invoice with related data
+    // Fetch invoice with related data including invoice_lines, student_addresses, and full RTO data
     const { data: invoice, error: invErr } = await supabase
       .from('invoices')
       .select(
@@ -37,17 +38,12 @@ export async function POST(
              id,
              first_name,
              last_name,
-             email
+             email,
+             student_addresses (*)
            )
          ),
-         rtos:rto_id (
-           id,
-           name,
-           address_line_1,
-           suburb,
-           state,
-           postcode
-         )`
+         invoice_lines (*),
+         rtos:rto_id (*)`
       )
       .eq('id', invoiceId)
       .single();
@@ -89,19 +85,49 @@ export async function POST(
         first_name: string | null;
         last_name: string | null;
         email: string | null;
+        student_addresses?: Array<{
+          id: string;
+          building_name: string | null;
+          unit_details: string | null;
+          number_name: string | null;
+          suburb: string | null;
+          state: string | null;
+          postcode: string | null;
+          is_primary: boolean;
+        }>;
       } | null;
     } | null;
 
-    const rto = invoice.rtos as unknown as {
-      id: string;
-      name: string | null;
-      address_line_1: string | null;
-      suburb: string | null;
-      state: string | null;
-      postcode: string | null;
-    } | null;
-
+    const rto = invoice.rtos as unknown as Tables<'rtos'> | null;
     const student = enrollment?.students ?? null;
+    const invoiceLines =
+      (invoice.invoice_lines as unknown as Tables<'invoice_lines'>[]) ?? [];
+    const studentAddresses =
+      (student?.student_addresses as unknown as Tables<'student_addresses'>[]) ??
+      [];
+
+    // Generate signed URL for RTO logo if it exists
+    let rtoLogoUrl: string | null = null;
+    if (rto?.profile_image_path) {
+      const admin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      const { data: signedLogo, error: logoErr } = await admin.storage
+        .from('rto-assets')
+        .createSignedUrl(rto.profile_image_path, 3600); // 1 hour expiry for PDF generation
+      if (!logoErr && signedLogo?.signedUrl) {
+        rtoLogoUrl = signedLogo.signedUrl;
+      }
+    }
+
+    // Create RTO object with logo URL
+    const rtoWithLogo = rto
+      ? {
+          ...rto,
+          profile_image_path: rtoLogoUrl,
+        }
+      : null;
 
     const pdfData = buildInvoiceData({
       invoice: {
@@ -110,11 +136,10 @@ export async function POST(
           ? {
               id: invoice.enrollment_id as string,
               student_id: enrollment.student_id,
-              rto_id: invoice.rto_id as string,
             }
           : null,
         students:
-          student && student.email && student.first_name && student.last_name
+          student && student.first_name && student.last_name && student.email
             ? {
                 id: student.id,
                 first_name: student.first_name,
@@ -122,17 +147,9 @@ export async function POST(
                 email: student.email,
               }
             : null,
-        rtos:
-          rto && rto.name
-            ? {
-                id: rto.id,
-                name: rto.name,
-                address_line_1: rto.address_line_1 ?? null,
-                suburb: rto.suburb ?? null,
-                state: rto.state ?? null,
-                postcode: rto.postcode ?? null,
-              }
-            : null,
+        rtos: rtoWithLogo,
+        invoice_lines: invoiceLines,
+        student_addresses: studentAddresses,
       },
     });
 

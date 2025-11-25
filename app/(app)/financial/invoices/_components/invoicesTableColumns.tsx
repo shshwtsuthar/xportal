@@ -125,6 +125,28 @@ export const getInvoicesColumns = (): ColumnDef[] => {
       group: 'Identity',
     },
     {
+      id: 'internal_payment_status',
+      label: 'Payment (Internal/Xero)',
+      width: 180,
+      sortable: true,
+      sortAccessor: (r) =>
+        (r.internal_payment_status as unknown as string) || '',
+      render: (r) => {
+        const value = String(r.internal_payment_status || 'UNPAID');
+        if (value === 'PAID_CONFIRMED') {
+          return <Badge variant="default">Paid (Xero confirmed)</Badge>;
+        }
+        if (value === 'PAID_INTERNAL') {
+          return <Badge variant="secondary">Paid (internal only)</Badge>;
+        }
+        if (value === 'PARTIALLY_PAID') {
+          return <Badge variant="secondary">Partially paid</Badge>;
+        }
+        return <Badge variant="secondary">Unpaid</Badge>;
+      },
+      group: 'Amounts',
+    },
+    {
       id: 'amount_due_cents',
       label: 'Amount Due',
       width: 140,

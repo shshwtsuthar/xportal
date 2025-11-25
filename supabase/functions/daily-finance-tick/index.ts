@@ -3,11 +3,6 @@
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../_shared/database.types.ts';
-import { renderToBuffer } from 'https://esm.sh/@react-pdf/renderer@3.4.3?target=deno&external=react';
-import { createElement } from 'https://esm.sh/react@18.2.0';
-
-// Lazy import invoice template & builder implemented in app lib; for Deno we provide a minimal inline version later
-// Placeholder interfaces to avoid type drift; data building will query DB directly here.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,23 +33,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1) Promote SCHEDULED -> SENT for next 7 days window
-    const { error: promoteErr } = await supabase.rpc(
-      'promote_scheduled_invoices'
-    );
-    if (promoteErr) {
-      console.warn('promote_scheduled_invoices failed', promoteErr.message);
-    }
-
-    // 2) Fetch invoices due today missing pdf_path
+    // 1) Fetch invoices that should be sent based on issue_date and current status.
     const todayIso = new Date().toISOString().slice(0, 10);
     const { data: invoices, error: invErr } = await supabase
       .from('invoices')
       .select(
-        'id, rto_id, enrollment_id, invoice_number, issue_date, due_date, amount_due_cents, amount_paid_cents, pdf_path'
+        'id, rto_id, enrollment_id, invoice_number, issue_date, due_date, amount_due_cents, amount_paid_cents, pdf_path, status, last_email_sent_at'
       )
-      .eq('due_date', todayIso)
-      .is('pdf_path', null);
+      .eq('status', 'SCHEDULED')
+      .lte('issue_date', todayIso);
     if (invErr) {
       return new Response(JSON.stringify({ error: invErr.message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -113,12 +100,26 @@ serve(async (req) => {
       });
     }
 
-    // 3) Generate PDF per prepared invoice and upload
+    // 2) Generate PDF per prepared invoice (if missing) and upload
     for (const p of prepared) {
-      // Minimal single-page invoice PDF (inline template)
-      const { Document, Page, Text, View, StyleSheet } = await import(
-        'https://esm.sh/@react-pdf/renderer@3.4.3?target=deno&external=react'
+      // Skip PDF generation if it already exists
+      const invRecord = invoices?.find((inv) => inv.id === (p.id as unknown));
+      if (invRecord?.pdf_path) {
+        continue;
+      }
+
+      // Minimal single-page invoice PDF (inline template).
+      // TODO: Replace with shared InvoiceTemplate + buildInvoiceData to include invoice_lines.
+      // Import react-pdf/renderer which bundles React automatically
+      const reactPdf = await import(
+        'https://esm.sh/@react-pdf/renderer@3.4.3?target=deno'
       );
+      const react = await import('https://esm.sh/react@18.2.0?target=deno');
+
+      const { Document, Page, Text, View, StyleSheet, renderToBuffer } =
+        reactPdf;
+      const { createElement } = react;
+
       const styles = StyleSheet.create({
         page: {
           paddingTop: 40,
@@ -192,19 +193,22 @@ serve(async (req) => {
         .eq('id', p.id);
     }
 
-    // 4) Email invoices due today if not recently sent
+    // 3) Email invoices that have not been emailed yet
     const resendKey = Deno.env.get('RESEND_API_KEY');
     const resendFrom = Deno.env.get('RESEND_FROM');
     if (resendKey) {
       for (const p of prepared) {
         if (!p.student_email) continue;
+
+        const invRecord = invoices?.find((inv) => inv.id === (p.id as unknown));
+        if (!invRecord) continue;
+        // Only send if we have a PDF and haven't emailed yet.
+        if (!invRecord.pdf_path || invRecord.last_email_sent_at) continue;
+
         // Fetch signed URL for attachment
         const { data: signed, error: signErr } = await supabase.storage
           .from('invoices')
-          .createSignedUrl(
-            `${p.rto_id}/${yyyy(new Date(p.due_date))}/${p.invoice_number}.pdf`,
-            60 * 30
-          );
+          .createSignedUrl(invRecord.pdf_path, 60 * 30);
         if (signErr || !signed?.signedUrl) continue;
 
         const res = await fetch('https://api.resend.com/emails', {
@@ -216,14 +220,21 @@ serve(async (req) => {
           body: JSON.stringify({
             from: resendFrom ?? 'no-reply@example.com',
             to: p.student_email,
-            subject: `Invoice ${p.invoice_number} due ${p.due_date}`,
-            html: `<p>Dear ${p.student_name},</p><p>Your invoice ${p.invoice_number} is due today.</p><p>Amount: ${formatCurrencyAud(p.amount_due_cents)}</p><p><a href="${signed.signedUrl}">Download PDF</a></p>`,
+            subject: `Invoice ${p.invoice_number} issued ${p.issue_date}`,
+            html: `<p>Dear ${p.student_name},</p><p>Your invoice ${p.invoice_number} has been issued.</p><p>Amount: ${formatCurrencyAud(
+              p.amount_due_cents
+            )}</p><p>Due date: ${p.due_date}</p><p><a href="${
+              signed.signedUrl
+            }">Download PDF</a></p>`,
           }),
         });
         if (res.ok) {
           await supabase
             .from('invoices')
-            .update({ last_email_sent_at: new Date().toISOString() })
+            .update({
+              last_email_sent_at: new Date().toISOString(),
+              status: 'SENT',
+            })
             .eq('id', p.id);
         }
       }
