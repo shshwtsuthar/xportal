@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { OfferLetterTemplate } from '@/lib/pdf/OfferLetterTemplate';
+import { DomesticOfferLetterTemplate } from '@/lib/pdf/DomesticOfferLetterTemplate';
 import { buildOfferLetterData } from '@/lib/pdf/buildOfferLetterData';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
       .from('applications')
       .select(
         `*,
-         programs:program_id(id, code, name, nominal_hours),
+         programs:program_id(id, code, name, nominal_hours, level_of_education_id),
          agents:agent_id(id, name),
          timetables:timetable_id(id, rto_id, program_id),
          rtos:rto_id(id, name, rto_code, cricos_code, address_line_1, suburb, state, postcode, phone_number, email_address, profile_image_path, bank_name, bank_account_name, bank_bsb, bank_account_number),
@@ -69,7 +70,13 @@ export async function POST(req: NextRequest) {
       schedule: schedule ?? [],
       rtoLogoUrl,
     });
-    const pdfBuffer = await renderToBuffer(<OfferLetterTemplate data={data} />);
+
+    // Select template based on international status
+    const Template = application.is_international
+      ? OfferLetterTemplate
+      : DomesticOfferLetterTemplate;
+
+    const pdfBuffer = await renderToBuffer(<Template data={data} />);
 
     const date = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');

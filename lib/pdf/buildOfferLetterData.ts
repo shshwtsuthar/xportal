@@ -5,7 +5,7 @@ import type { OfferLetterData } from './OfferLetterTemplate';
 type AppRow = Database['public']['Tables']['applications']['Row'] & {
   programs?: Pick<
     Database['public']['Tables']['programs']['Row'],
-    'id' | 'code' | 'name' | 'nominal_hours'
+    'id' | 'code' | 'name' | 'nominal_hours' | 'level_of_education_id'
   > | null;
   agents?: Pick<
     Database['public']['Tables']['agents']['Row'],
@@ -53,7 +53,8 @@ const formatCurrency = (cents?: number | null) => {
 };
 
 // 3. Static Content (Compliance Text from "Correct" PDF)
-const REFUND_POLICIES = [
+// International Student Refund Policies (ESOS Act / National Code 2018)
+const REFUND_POLICIES_INTERNATIONAL = [
   {
     circumstance: 'Ashford College cancels course before commencement',
     refundDue: 'Full refund of all fees',
@@ -97,7 +98,7 @@ const REFUND_POLICIES = [
   },
   {
     circumstance:
-      'Student’s enrolment is cancelled due to disciplinary action.',
+      "Student's enrolment is cancelled due to disciplinary action.",
     refundDue: 'No refund. Fees for full study period (term) to be paid.',
   },
   {
@@ -187,6 +188,136 @@ const ADDITIONAL_FEES = [
   { name: 'Fees for late submission of assessment', amount: '$100' },
 ];
 
+// Domestic Student Refund Policies (Standards for RTOs 2015 / Consumer Law)
+const REFUND_POLICIES_DOMESTIC = [
+  {
+    circumstance: 'Ashford College cancels course before commencement',
+    refundDue: 'Full refund of all fees',
+  },
+  {
+    circumstance: 'Ashford College cancels course following commencement',
+    refundDue:
+      'Full refund of all unspent fees calculated as follows: Weekly tuition fee multiplied by the weeks in the default period (calculated from the date of default).',
+  },
+  {
+    circumstance:
+      'Student withdraws within 10 days (cooling-off period) of signing this agreement.',
+    refundDue:
+      'Full refund of all fees paid, less any non-refundable application fee.',
+  },
+  {
+    circumstance:
+      'Student withdraws more than 10 days but up to 4 weeks prior to course commencement.',
+    refundDue:
+      'Application fee not refunded. Refund of 70% of all other fees and charges.',
+  },
+  {
+    circumstance:
+      'Student withdraws less than 4 weeks prior to course commencement.',
+    refundDue:
+      'Application fee not refunded. Refund of 50% of all other fees and charges.',
+  },
+  {
+    circumstance:
+      'Student withdraws less than 2 weeks prior to course commencement.',
+    refundDue: 'No refund. Fees for full study period (term) to be paid.',
+  },
+  {
+    circumstance:
+      'The student does not commence on the agreed start date and has not previously withdrawn.',
+    refundDue: 'No refund. Fees for full study period (term) to be paid.',
+  },
+  {
+    circumstance: 'Student withdraws after commencement.',
+    refundDue: 'No refund. Fees for full study period (term) to be paid.',
+  },
+  {
+    circumstance:
+      "Student's enrolment is cancelled due to disciplinary action.",
+    refundDue: 'No refund. Fees for full study period (term) to be paid.',
+  },
+  {
+    circumstance:
+      'The student has supplied incorrect or incomplete information causing Ashford College to withdraw the offer.',
+    refundDue: 'No refund. Fees for full study period (term) to be paid.',
+  },
+];
+
+// State Ombudsman contacts for domestic students
+const DOMESTIC_COMPLAINTS_CONTACTS: Record<
+  string,
+  { name: string; url: string }
+> = {
+  VIC: {
+    name: 'Victorian Ombudsman',
+    url: 'https://www.ombudsman.vic.gov.au/',
+  },
+  NSW: {
+    name: 'NSW Ombudsman',
+    url: 'https://www.ombo.nsw.gov.au/',
+  },
+  QLD: {
+    name: 'Queensland Ombudsman',
+    url: 'https://www.ombudsman.qld.gov.au/',
+  },
+  SA: {
+    name: 'South Australian Ombudsman',
+    url: 'https://www.ombudsman.sa.gov.au/',
+  },
+  WA: {
+    name: 'Western Australian Ombudsman',
+    url: 'https://www.ombudsman.wa.gov.au/',
+  },
+  TAS: {
+    name: 'Tasmanian Ombudsman',
+    url: 'https://www.ombudsman.tas.gov.au/',
+  },
+  ACT: {
+    name: 'ACT Ombudsman',
+    url: 'https://www.ombudsman.act.gov.au/',
+  },
+  NT: {
+    name: 'Northern Territory Ombudsman',
+    url: 'https://www.ombudsman.nt.gov.au/',
+  },
+};
+
+// VET Student Loans information
+const VET_STUDENT_LOANS_INFO = {
+  eligibility: [
+    'VET Student Loans (VSL) are available for eligible students enrolling in Diploma level and above courses.',
+    'To be eligible for a VET Student Loan, you must:',
+    '• Be an Australian citizen, permanent humanitarian visa holder, or eligible New Zealand citizen',
+    '• Be enrolled in an approved course at Diploma level or above',
+    '• Meet the Tax File Number (TFN) requirements',
+    '• Meet the academic suitability requirements',
+    '• Have a Unique Student Identifier (USI)',
+  ],
+  loanCaps: [
+    'VET Student Loans have loan caps that vary by course. The loan cap is the maximum amount the Australian Government will lend you for your course.',
+    'If your course fees exceed the loan cap, you will need to pay the difference directly to the provider.',
+    'Current loan caps are set by the Department of Education, Skills and Employment and are subject to change.',
+  ],
+  repayment: [
+    'You will start repaying your VET Student Loan once your income reaches the minimum repayment threshold (currently $51,550 per year for the 2024-25 income year).',
+    'Repayments are made through the Australian taxation system as a percentage of your income.',
+    'The loan balance is indexed annually in line with the Consumer Price Index (CPI).',
+    'For more information, visit: https://www.dese.gov.au/vet-student-loans',
+  ],
+};
+
+// Government funding program names by state
+const GOVERNMENT_FUNDING_PROGRAMS: Record<string, string> = {
+  VIC: 'Skills First',
+  NSW: 'Smart and Skilled',
+  QLD: 'Certificate 3 Guarantee',
+  SA: 'Skills for All',
+  WA: 'Jobs and Skills WA',
+  TAS: 'Skills Tasmania',
+  ACT: 'Skills Canberra',
+  NT: 'Skills for Territory',
+};
+
 // Helper to calculate expected completion date (raw ISO date string) from learning subjects
 const calculateExpectedCompletionDateRaw = (
   learningSubjects?: Array<{ planned_end_date: string }> | null
@@ -227,8 +358,18 @@ export function buildOfferLetterData(input: {
   const { application, schedule, rtoLogoUrl } = input;
   const program = application.programs ?? null;
   const rto = application.rtos;
+  const isInternational = application.is_international ?? false;
 
-  const totalCents = schedule.reduce(
+  // Filter out OSHC from payment plan for domestic students
+  const filteredSchedule = isInternational
+    ? schedule
+    : schedule.filter(
+        (r) =>
+          !r.name?.toLowerCase().includes('oshc') &&
+          !r.name?.toLowerCase().includes('overseas student health cover')
+      );
+
+  const totalCents = filteredSchedule.reduce(
     (sum, r) => sum + (r.amount_cents ?? 0),
     0
   );
@@ -255,7 +396,47 @@ export function buildOfferLetterData(input: {
     expectedCompletionDateRaw || undefined
   );
 
+  // Determine VET Student Loans eligibility (Diploma or Advanced Diploma for domestic students)
+  const vetStudentLoansEligible =
+    !isInternational &&
+    (program?.level_of_education_id === '421' || // Diploma
+      program?.level_of_education_id === '420'); // Advanced Diploma
+
+  // Determine government funding program based on state
+  const studentState = application.state?.toUpperCase();
+  const governmentFunding =
+    !isInternational &&
+    studentState &&
+    GOVERNMENT_FUNDING_PROGRAMS[studentState]
+      ? {
+          program: GOVERNMENT_FUNDING_PROGRAMS[studentState],
+          state: studentState,
+        }
+      : null;
+
+  // Get state ombudsman info for domestic students
+  const stateOmbudsman =
+    !isInternational && studentState
+      ? DOMESTIC_COMPLAINTS_CONTACTS[studentState]
+      : undefined;
+
+  // Filter additional fees (remove OSHC and "Change of CoE" for domestic)
+  const filteredAdditionalFees = isInternational
+    ? ADDITIONAL_FEES
+    : ADDITIONAL_FEES.filter(
+        (f) =>
+          !f.name.toLowerCase().includes('overseas health cover') &&
+          !f.name.toLowerCase().includes('oshc') &&
+          !f.name.toLowerCase().includes('change of coe')
+      );
+
+  // Select refund policies
+  const refundPolicies = isInternational
+    ? REFUND_POLICIES_INTERNATIONAL
+    : REFUND_POLICIES_DOMESTIC;
+
   return {
+    isInternational,
     institution: {
       name: rto?.name ?? 'Ashford College',
       addressLine: fullRtoAddress,
@@ -267,7 +448,9 @@ export function buildOfferLetterData(input: {
       logoSrc: rtoLogoUrl ?? rto?.profile_image_path ?? '',
     },
     document: {
-      titleStrip: 'Offer Letter and International Student Agreement',
+      titleStrip: isInternational
+        ? 'Offer Letter and International Student Agreement'
+        : 'Offer Letter and Student Written Agreement',
       versionLine:
         'V2.1: November 2024, Approved: PEO, Next Review: November 2025',
       docTitle: 'Letter of Offer',
@@ -297,9 +480,10 @@ export function buildOfferLetterData(input: {
       dateOfBirth: formatDate(application.date_of_birth),
       nationality: application.country_of_citizenship ?? '',
       gender: application.gender ?? '',
-      passportNo: application.passport_number ?? '',
+      passportNo: isInternational ? (application.passport_number ?? '') : '',
       phone: application.mobile_phone ?? application.work_phone ?? '',
       email: application.email ?? application.alternative_email ?? '',
+      usi: !isInternational ? (application.usi ?? undefined) : undefined,
     },
     course: {
       proposalNo: application.id,
@@ -316,12 +500,15 @@ export function buildOfferLetterData(input: {
       locationsList: CAMPUS_LOCATIONS,
     },
     conditionsOfOffer: [], // Add logic if you store conditions in DB
-    hoursPerWeekClause: '20 hours a week in the classroom',
-    entryRequirementText:
-      'For the entry requirement for each course please refer to the course information brochure or follow the information on https://ashford.edu.au/',
+    hoursPerWeekClause: isInternational
+      ? '20 hours a week in the classroom'
+      : 'Study hours are competency-based and may vary depending on individual progress and delivery mode.',
+    entryRequirementText: isInternational
+      ? 'For the entry requirement for each course please refer to the course information brochure or follow the information on https://ashford.edu.au/'
+      : 'Entry requirements include completion of a Language, Literacy, and Numeracy (LLN) assessment. For specific course entry requirements, please refer to the course information brochure or visit https://ashford.edu.au/',
     paymentPlan: {
       enrolId: application.id,
-      rows: schedule
+      rows: filteredSchedule
         .sort((a, b) => (a.sequence_order ?? 0) - (b.sequence_order ?? 0))
         .map((r) => ({
           date: formatDate(r.due_date),
@@ -339,24 +526,33 @@ export function buildOfferLetterData(input: {
       swiftCode: 'NATAAU3303M', // Hardcoded as per correct PDF
     },
     refundsBlocks: {
-      intro: [
-        'We want to make sure you understand all fees and charges associated with your course so please carefully read this section before signing the Student Agreement. Any fees and charges documented in the agreement will not change during the duration of your course.',
-        'We protect your fees at all times by:',
-        '• Maintaining a sufficient amount in our account so that so we are able to repay all tuition fees already paid.',
-        '• Through our membership of the Tuition Protection Scheme (TPS). The role of the TPS is to assist international students where we are unable to fully deliver their course of study. The TPS ensures that you are able to either complete their studies in another course or with another education provider or receive a refund of your unspent tuition fees.',
-        '• Not requiring you to pay more than 50% of course fees prior to commencement, except where a course is less than 26 weeks. However, you may choose to pay your fees in full or a greater amount than 50%. Please contact us if you would like to pay more than is documented in your student agreement.',
-      ],
+      intro: isInternational
+        ? [
+            'We want to make sure you understand all fees and charges associated with your course so please carefully read this section before signing the Student Agreement. Any fees and charges documented in the agreement will not change during the duration of your course.',
+            'We protect your fees at all times by:',
+            '• Maintaining a sufficient amount in our account so that so we are able to repay all tuition fees already paid.',
+            '• Through our membership of the Tuition Protection Scheme (TPS). The role of the TPS is to assist international students where we are unable to fully deliver their course of study. The TPS ensures that you are able to either complete their studies in another course or with another education provider or receive a refund of your unspent tuition fees.',
+            '• Not requiring you to pay more than 50% of course fees prior to commencement, except where a course is less than 26 weeks. However, you may choose to pay your fees in full or a greater amount than 50%. Please contact us if you would like to pay more than is documented in your student agreement.',
+          ]
+        : [
+            'We want to make sure you understand all fees and charges associated with your course so please carefully read this section before signing the Student Agreement. Any fees and charges documented in the agreement will not change during the duration of your course.',
+            'We protect your fees at all times by:',
+            '• Maintaining a sufficient amount in our account so that we are able to repay all tuition fees already paid.',
+            '• Complying with Australian Consumer Law protections which ensure you receive the services you have paid for.',
+            '• Not requiring you to pay more than 50% of course fees prior to commencement, except where a course is less than 26 weeks. However, you may choose to pay your fees in full or a greater amount than 50%. Please contact us if you would like to pay more than is documented in your student agreement.',
+            `• Providing a ${isInternational ? '' : '10-day cooling-off period from the date you sign this agreement, during which you may withdraw and receive a full refund (less any non-refundable application fee).'}`,
+          ],
       additionalFeesNotice:
         'Please note that the following fees can apply in addition to the fees advertised on the Website. Additional fees that may apply are given below:',
     },
-    additionalFees: ADDITIONAL_FEES,
-    refundsCircumstances: REFUND_POLICIES,
+    additionalFees: filteredAdditionalFees,
+    refundsCircumstances: refundPolicies,
     complaintsAppeals: {
       paragraphs: [
         'We sincerely hope not, but from time to time you may be unhappy with the services we provide or want to appeal a decision we have made. We take your complaints and appeals seriously and will ensure in assessing them that we look at the causes and action that we can take to ensure it does not happen again/reduce the likelihood of it happening again.',
         'Complaints can be made against us as the RTO, our trainers and assessors and other staff, another learner of Ashford College as well as any third party that provides services on our behalf such as education agents.',
         'Complaints can be in relation to any aspect of our services.',
-        'Appeals can be made in respect of any decision made by Ashford College. An appeal is a request for Ashford College’s decision to be reviewed in relation to a matter, including assessment appeals.',
+        "Appeals can be made in respect of any decision made by Ashford College. An appeal is a request for Ashford College's decision to be reviewed in relation to a matter, including assessment appeals.",
         'In managing complaints, we will ensure that the principles of natural justice and procedural fairness are adopted at every stage of the complaint process. This means that we will review each complaint or appeal in an objective and consistent manner and give everyone the opportunity to present their point of view.',
         'Our internal complaints and appeals process can be accessed at no cost.',
         'We do encourage you to firstly seek to address the issue informally by discussing it with the person involved.',
@@ -366,26 +562,48 @@ export function buildOfferLetterData(input: {
         'We will acknowledge your complaint or appeal in writing within 5 working days of receipt. We will commence review of your complaint or appeal within 5 working days. Complaints and appeals will be finalised as soon as practicable or within 30 calendar days. However, where the complaint or appeal is expected to take more than 60 calendar days to process, Ashford College will write to inform the complainant or appellant of this including the reasons for such. Following this update, regular updates will be provided of progress.',
         'For assessment appeals, we will appoint an independent assessor to conduct a review of an assessment decision that is being appealed.',
         'We will communicate the result of the complaints and appeals process to you in writing and this will include the reasons for the decision. If you do need to come in for a meeting, you can have a support person of your choice present to assist you to resolve the complaint or appeal. Generally, your enrolment will be maintained throughout any internal appeals process that concerns a decision to report you.',
-        'Additionally, if the appeal is against our decision to report you for unsatisfactory course progress or attendance, your enrolment will be maintained until the external process is completed and has supported or not our decision to report you. If the appeal is against our decision to defer, suspend or cancel your enrolment due to misbehaviour, we will only take action after the outcome of the internal appeals process.',
-        'Where the internal process has failed to resolve the complaint or appeal, you will be able to take your case to the Overseas Students Ombudsman (OSO).',
+        ...(isInternational
+          ? [
+              'Additionally, if the appeal is against our decision to report you for unsatisfactory course progress or attendance, your enrolment will be maintained until the external process is completed and has supported or not our decision to report you. If the appeal is against our decision to defer, suspend or cancel your enrolment due to misbehaviour, we will only take action after the outcome of the internal appeals process.',
+              'Where the internal process has failed to resolve the complaint or appeal, you will be able to take your case to the Overseas Students Ombudsman (OSO).',
+            ]
+          : [
+              'Additionally, if the appeal is against our decision to report you for unsatisfactory course progress or attendance, your enrolment will be maintained until the external process is completed and has supported or not our decision to report you. If the appeal is against our decision to defer, suspend or cancel your enrolment due to misbehaviour, we will only take action after the outcome of the internal appeals process.',
+              `Where the internal process has failed to resolve the complaint or appeal, you will be able to take your case to the ${stateOmbudsman?.name || 'State Ombudsman'} or Consumer Affairs.`,
+            ]),
       ],
-      bulletsInternationalStudents: [
-        'being refused admission to a course',
-        'course fees and refunds',
-        'being refused a course transfer',
-        'course progress or attendance',
-        'cancellation of enrolment',
-        'accommodation or work arranged by Australian Sovereign College',
-        'incorrect advice given by an education agent',
-        'taking too long in certain processes such as issuing results',
-        'not delivering the services indicated in the Student Agreement',
-      ],
-      ombudsmanUrl: 'http://www.ombudsman.gov.au/',
+      ...(isInternational
+        ? {
+            bulletsInternationalStudents: [
+              'being refused admission to a course',
+              'course fees and refunds',
+              'being refused a course transfer',
+              'course progress or attendance',
+              'cancellation of enrolment',
+              'accommodation or work arranged by Australian Sovereign College',
+              'incorrect advice given by an education agent',
+              'taking too long in certain processes such as issuing results',
+              'not delivering the services indicated in the Student Agreement',
+            ],
+            ombudsmanUrl: 'http://www.ombudsman.gov.au/',
+          }
+        : {
+            bulletsDomesticStudents: [
+              'course fees and refunds',
+              'course delivery and quality',
+              'assessment decisions',
+              'cancellation of enrolment',
+              'not delivering the services indicated in the Student Agreement',
+              'misleading or deceptive conduct',
+            ],
+            stateOmbudsmanUrl: stateOmbudsman?.url,
+            stateOmbudsmanName: stateOmbudsman?.name,
+          }),
       hotlinePhone: '13 38 73',
       hotlineEmail: 'ntch@education.gov.au',
       asqaUrl: 'https://www.asqa.gov.au/complaints',
       consumerLawNote:
-        'Nothing in this policy and procedure limits the rights of an individual to take action under Australia’s Consumer Protection laws and it does not circumscribe an individual’s rights to pursue other legal remedies.',
+        "Nothing in this policy and procedure limits the rights of an individual to take action under Australia's Consumer Protection laws and it does not circumscribe an individual's rights to pursue other legal remedies.",
     },
     privacy: {
       whyCollect: [
@@ -424,7 +642,12 @@ export function buildOfferLetterData(input: {
         '• correct your personal information',
         '• make a complaint about how your personal information has been handled',
         '• ask a question about this Privacy Notice',
-        'Please contact us at the details shown in our International Student Handbook and we can also send you a copy of our privacy policy.',
+        `Please contact us at the details shown in our ${isInternational ? 'International Student Handbook' : 'Student Handbook'} and we can also send you a copy of our privacy policy.`,
+        ...(!isInternational
+          ? [
+              '• Ensure your Unique Student Identifier (USI) is correctly recorded and up to date',
+            ]
+          : []),
       ],
       changeOfContactRequirement:
         'You are required to notify us of any change to your contact details including your residential address, mobile number, email address and who to contact in emergency situations. You must advise us within 7 days of the changes occurring.',
@@ -442,8 +665,16 @@ export function buildOfferLetterData(input: {
         `${(application.first_name ?? '').toUpperCase()} ${(application.last_name ?? '').toUpperCase()}`.trim(),
     },
     metaFooter: {
-      leftCode: `RTO Code: ${rto?.rto_code ?? '46296'} | CRICOS Code: ${rto?.cricos_code ?? '04304G'}`,
+      leftCode: isInternational
+        ? `RTO Code: ${rto?.rto_code ?? '46296'} | CRICOS Code: ${rto?.cricos_code ?? '04304G'}`
+        : `RTO Code: ${rto?.rto_code ?? '46296'}`,
       version: 'V2.1: November 2024, Approved: PEO, Next Review: November 2025',
     },
+    vetStudentLoansEligible,
+    ...(vetStudentLoansEligible && {
+      vetStudentLoansInfo: VET_STUDENT_LOANS_INFO,
+    }),
+    governmentFunding,
+    coolingOffPeriodDays: !isInternational ? 10 : undefined,
   };
 }

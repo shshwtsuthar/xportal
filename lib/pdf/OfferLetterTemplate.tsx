@@ -12,6 +12,7 @@ import {
 
 // --- TYPES (Matching the Data Builder) ---
 export type OfferLetterData = {
+  isInternational: boolean;
   institution: {
     name: string;
     addressLine: string;
@@ -41,6 +42,7 @@ export type OfferLetterData = {
     passportNo: string;
     phone: string;
     email: string;
+    usi?: string;
   };
   course: {
     proposalNo: string;
@@ -76,8 +78,11 @@ export type OfferLetterData = {
   refundsCircumstances: Array<{ circumstance: string; refundDue: string }>;
   complaintsAppeals: {
     paragraphs: string[];
-    bulletsInternationalStudents: string[];
-    ombudsmanUrl: string;
+    bulletsInternationalStudents?: string[];
+    bulletsDomesticStudents?: string[];
+    ombudsmanUrl?: string;
+    stateOmbudsmanUrl?: string;
+    stateOmbudsmanName?: string;
     hotlinePhone: string;
     hotlineEmail: string;
     asqaUrl: string;
@@ -102,6 +107,17 @@ export type OfferLetterData = {
     namePlaceholder: string;
   };
   metaFooter: { leftCode: string; version: string };
+  vetStudentLoansEligible?: boolean;
+  vetStudentLoansInfo?: {
+    eligibility: string[];
+    loanCaps: string[];
+    repayment: string[];
+  };
+  governmentFunding?: {
+    program: string;
+    state: string;
+  } | null;
+  coolingOffPeriodDays?: number;
 };
 
 // --- STYLES & CONFIG ---
@@ -952,7 +968,7 @@ export const OfferLetterTemplate: React.FC<{ data: OfferLetterData }> = ({
       <Paragraphs
         lines={['International students may complain to the OSO about:']}
       />
-      {data.complaintsAppeals.bulletsInternationalStudents.map((b, i) => (
+      {data.complaintsAppeals.bulletsInternationalStudents?.map((b, i) => (
         <Text key={i} style={styles.listItem}>
           • {b}
         </Text>
