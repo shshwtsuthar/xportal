@@ -83,6 +83,10 @@ const NAV: NavItem[] = [
     icon: ReceiptText,
     items: [
       { title: 'Invoices', url: '/financial/invoices' },
+      {
+        title: 'Payment Confirmations',
+        url: '/financial/payment-confirmations',
+      },
       { title: 'Payment Templates', url: '/financial/templates' },
       { title: 'New Template', url: '/financial/templates/new' },
     ],
