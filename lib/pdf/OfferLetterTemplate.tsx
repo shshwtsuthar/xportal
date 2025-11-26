@@ -1,8 +1,4 @@
-/**
- * Node-runtime React-PDF template for Offer Letter
- * Compatible with Next.js API Route (runtime: 'nodejs')
- */
-import React, { createElement } from 'react';
+import React from 'react';
 import {
   Document,
   Page,
@@ -11,8 +7,10 @@ import {
   StyleSheet,
   Image,
   Link,
+  Font,
 } from '@react-pdf/renderer';
 
+// --- TYPES (Matching the Data Builder) ---
 export type OfferLetterData = {
   institution: {
     name: string;
@@ -106,105 +104,176 @@ export type OfferLetterData = {
   metaFooter: { leftCode: string; version: string };
 };
 
+// --- STYLES & CONFIG ---
+
 const COLORS = {
-  text: '#202124',
-  lightText: '#4a4f55',
-  primary: '#7d191e',
-  border: '#D8DADD',
-  zebra: '#F7F8FA',
+  text: '#374151', // Soft black
+  primary: '#7d191e', // Ashford Red
+  border: '#E5E7EB', // Light Gray
+  zebra: '#F9FAFB', // Very Light Gray
+  white: '#FFFFFF',
 };
 
+// Optional: Register a cleaner font if available (using Helvetica default here)
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 40,
-    paddingBottom: 40,
-    paddingHorizontal: 42,
+    paddingTop: 50,
+    paddingBottom: 50,
+    paddingHorizontal: 45,
     color: COLORS.text,
-    fontSize: 10.5,
-    lineHeight: 1.35,
+    fontFamily: 'Helvetica',
+    fontSize: 10,
+    lineHeight: 1.5,
   },
+  // HEADER
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
-  logo: { width: 110, height: 52 },
-  instBlock: { flex: 1 },
-  instName: { fontSize: 14, fontWeight: 700 },
-  instLine: { fontSize: 9.5, color: COLORS.lightText },
-  strip: { marginTop: 6, fontSize: 9, color: COLORS.lightText },
-  docMetaRow: { marginTop: 6, fontSize: 8.5, color: COLORS.lightText },
-  sectionTitle: {
-    marginTop: 16,
-    fontSize: 13,
+  logo: {
+    width: 140,
+    height: 50,
+    objectFit: 'contain',
+  },
+  headerTextContainer: {
+    alignItems: 'flex-end',
+  },
+  headerTitle: {
+    fontSize: 16,
     color: COLORS.primary,
-    fontWeight: 700,
+    fontWeight: 'bold',
+    marginBottom: 4,
   },
-  paragraph: { marginTop: 10, fontSize: 10.5 },
-  small: { fontSize: 9.5, color: COLORS.lightText },
-  twoCol: { flexDirection: 'row', gap: 24 },
-  keyValRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
-  table: { marginTop: 12, borderWidth: 1, borderColor: COLORS.border },
-  thead: {
+  headerSub: {
+    fontSize: 9,
+    color: COLORS.text,
+    textAlign: 'right',
+  },
+  // DOCUMENT STRIP (Red bar at bottom or meta info)
+  docMeta: {
+    fontSize: 8,
+    color: '#9CA3AF',
+    marginTop: 4,
+    textAlign: 'right',
+  },
+  // TITLES
+  sectionTitle: {
+    fontSize: 12,
+    color: COLORS.white,
+    backgroundColor: '#2e3a59', // Dark Navy background for headers looks premium
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginTop: 15,
+    marginBottom: 8,
+    fontWeight: 'bold',
+  },
+  subHeader: {
+    fontSize: 11,
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  // TEXT
+  paragraph: {
+    marginBottom: 8,
+    textAlign: 'justify',
+  },
+  listItem: {
+    marginLeft: 15,
+    marginBottom: 4,
+  },
+  bold: {
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  // TABLES
+  table: {
+    width: '100%',
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.primary, // Red border for table container
+  },
+  tableRow: {
     flexDirection: 'row',
-    backgroundColor: COLORS.zebra,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    minHeight: 24,
+    alignItems: 'center',
   },
-  tbodyRow: {
-    flexDirection: 'row',
+  tableHeaderRow: {
+    backgroundColor: COLORS.zebra, // Light gray header
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: COLORS.primary,
   },
-  cell: { paddingVertical: 8, paddingHorizontal: 8, fontSize: 10 },
-  bold: { fontWeight: 700 },
-  col_date: { width: '16%' },
-  col_feeType: { width: '44%' },
-  col_amount: { width: '20%', textAlign: 'right' },
-  col_feeName: { width: '60%' },
-  col_feeAmt: { width: '40%', textAlign: 'right' },
+  tableCell: {
+    padding: 6,
+    fontSize: 9,
+  },
+  tableCellHeader: {
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  // Column Widths
+  col1: { width: '30%' },
+  col2: { width: '70%' },
+  colDate: { width: '15%' },
+  colFee: { width: '60%' },
+  colAmt: { width: '25%', textAlign: 'right' },
+  colRefund1: { width: '45%' },
+  colRefund2: { width: '55%' },
+
+  // FOOTER
   footer: {
     position: 'absolute',
-    left: 42,
-    right: 42,
-    bottom: 24,
-    fontSize: 9,
-    color: COLORS.lightText,
+    bottom: 30,
+    left: 45,
+    right: 45,
+    borderTopWidth: 2,
+    borderTopColor: COLORS.primary,
+    paddingTop: 5,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  pageNum: { fontSize: 9, color: COLORS.lightText },
-  inlineLink: { color: COLORS.primary, textDecoration: 'none' },
-  banner: {
-    marginTop: 12,
+  footerText: {
+    fontSize: 8,
+    color: COLORS.white,
     backgroundColor: COLORS.primary,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    padding: 4,
   },
-  bannerText: { color: 'white', fontSize: 12, fontWeight: 700 },
-  declTable: { marginTop: 10, borderWidth: 1, borderColor: COLORS.text },
+  footerMeta: {
+    fontSize: 8,
+    color: '#6B7280',
+  },
+
+  // SIGNATURE BOX
+  declBox: {
+    borderWidth: 1,
+    borderColor: '#000',
+    marginTop: 20,
+  },
   declRow: {
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.text,
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+    minHeight: 35,
   },
-  declCellLabel: {
-    width: '35%',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    fontSize: 10.5,
+  declLabel: {
+    width: '30%',
+    padding: 8,
+    backgroundColor: '#F3F4F6',
+    borderRightWidth: 1,
+    borderRightColor: '#000',
+    fontWeight: 'bold',
   },
-  declCellValue: {
-    width: '65%',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    fontSize: 10.5,
+  declValue: {
+    width: '70%',
+    padding: 8,
   },
-  rule: { marginTop: 6, borderTopWidth: 1, borderTopColor: COLORS.border },
-  listItem: { marginLeft: 10, marginTop: 6 },
 });
+
+// --- HELPER COMPONENTS ---
 
 const Paragraphs = ({ lines }: { lines: string[] }) => (
   <>
@@ -216,32 +285,23 @@ const Paragraphs = ({ lines }: { lines: string[] }) => (
   </>
 );
 
-const Header = ({
-  data,
-  pageNum,
-  total,
-}: {
-  data: OfferLetterData;
-  pageNum: number;
-  total: number;
-}) => (
+const Header = ({ data }: { data: OfferLetterData }) => (
   <View style={styles.header}>
-    {/* Use absolute URL or data URI for logoSrc */}
-    {data.institution.logoSrc ? (
-      <Image style={styles.logo} src={data.institution.logoSrc} />
-    ) : (
-      <View />
-    )}
-    <View style={styles.instBlock}>
-      <Text style={styles.instName}>{data.institution.name}</Text>
-      <Text style={styles.instLine}>{data.institution.addressLine}</Text>
-      <Text style={styles.instLine}>
+    <View>
+      {data.institution.logoSrc && (
+        <Image style={styles.logo} src={data.institution.logoSrc} />
+      )}
+    </View>
+    <View style={styles.headerTextContainer}>
+      <Text style={styles.headerTitle}>{data.institution.name}</Text>
+      <Text style={styles.headerSub}>{data.institution.addressLine}</Text>
+      <Text style={styles.headerSub}>
         E: {data.institution.email} | T: {data.institution.phone}
       </Text>
-      <Text style={styles.instLine}>W: {data.institution.website}</Text>
-      <Text style={styles.strip}>{data.document.titleStrip}</Text>
-      <Text style={styles.docMetaRow}>{data.metaFooter.leftCode}</Text>
-      <Text style={styles.docMetaRow}>{data.document.versionLine}</Text>
+      <Text style={styles.headerSub}>W: {data.institution.website}</Text>
+      <Text style={[styles.docMeta, { color: COLORS.primary }]}>
+        {data.document.docTitle}
+      </Text>
     </View>
   </View>
 );
@@ -256,563 +316,752 @@ const Footer = ({
   total: number;
 }) => (
   <View style={styles.footer} fixed>
-    <Text>{data.metaFooter.leftCode}</Text>
-    <Text style={styles.pageNum}>
-      Page {pageNum} of {total}
-    </Text>
+    <View style={{ width: '100%' }}>
+      {/* Red strip with Codes */}
+      <View
+        style={{ backgroundColor: COLORS.primary, padding: 4, marginBottom: 2 }}
+      >
+        <Text style={{ fontSize: 9, color: 'white', textAlign: 'left' }}>
+          {data.metaFooter.leftCode}
+        </Text>
+      </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <Text style={styles.footerMeta}>{data.document.versionLine}</Text>
+        <Text style={styles.footerMeta}>
+          Page {pageNum} of {total}
+        </Text>
+      </View>
+    </View>
   </View>
 );
+
+// --- MAIN DOCUMENT ---
 
 export const OfferLetterTemplate: React.FC<{ data: OfferLetterData }> = ({
   data,
 }) => (
-  <Document title="Offer Letter and International Student Agreement">
-    {/* Page 1 */}
+  <Document title="Offer Letter">
+    {/* PAGE 1: Intro */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={1} total={12} />
-      <Text style={styles.sectionTitle}>{data.document.docTitle}</Text>
-      <View style={styles.rule} />
-      <View style={{ marginTop: 8 }}>
-        <Text>
-          <Text style={styles.bold}>Offer Letter ID:</Text>{' '}
-          {data.offer.offerLetterId}
-        </Text>
-        <Text style={{ marginTop: 4 }}>
-          <Text style={styles.bold}>Date:</Text> {data.offer.date}
-        </Text>
-        <Text style={{ marginTop: 4 }}>
-          <Text style={styles.bold}>Agent:</Text> {data.offer.agency}
-        </Text>
-      </View>
-      <View style={{ marginTop: 10 }}>
-        <Text>{data.offer.addresseeLine1}</Text>
-        <Text>{data.offer.addresseeLine2}</Text>
-      </View>
+      <Header data={data} />
 
-      <View style={{ marginTop: 10 }}>
-        <Text>Dear {data.offer.greetingName},</Text>
-      </View>
-      <Paragraphs
-        lines={[
-          'We are delighted to inform you that your application to enroll with us has been accepted.',
-          'Please carefully check all the details of your enrolment and the terms and conditions. If there is any changes to be made to your details or any information that you are unsure about, please contact us.',
-          'Once you are satisfied that all of the information is correct and you understand and agree the terms and conditions, please complete the declaration at the end and return it to us.',
-          'Once we receive your declaration, we will send you a tax invoice which you should pay immediately to secure your place.',
-          'Upon completion of all of the above, your Electronic Confirmation of Enrolment will be sent to you.',
-          'We look forward to welcoming you.',
-        ]}
-      />
-      <View style={{ marginTop: 12 }}>
-        <Text>Kind regards,</Text>
-        <Text>Administration Team</Text>
-      </View>
-      <View style={{ marginTop: 10 }}>
-        <Text>E:{data.institution.email}</Text>
-        <Text>P: {data.institution.phone}</Text>
+      <View style={{ marginTop: 20 }}>
+        <Text style={styles.sectionTitle}>{data.document.docTitle}</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            marginTop: 10,
+          }}
+        >
+          <View>
+            <Text>
+              <Text style={styles.bold}>Offer Letter ID:</Text>{' '}
+              {data.offer.offerLetterId}
+            </Text>
+            <Text style={{ marginTop: 4 }}>
+              <Text style={styles.bold}>Date:</Text> {data.offer.date}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={{
+            marginTop: 20,
+            borderLeftWidth: 4,
+            borderLeftColor: COLORS.primary,
+            paddingLeft: 10,
+          }}
+        >
+          <Text style={styles.bold}>{data.offer.addresseeLine1}</Text>
+          <Text>{data.offer.addresseeLine2}</Text>
+          <Text style={{ marginTop: 5, color: '#666' }}>
+            Agency: {data.offer.agency}
+          </Text>
+        </View>
+
+        <Text style={{ marginTop: 20 }}>Dear {data.offer.greetingName},</Text>
+
+        <View style={{ marginTop: 10 }}>
+          <Text style={styles.paragraph}>
+            We are delighted to inform you that your application to enroll with
+            us has been accepted.
+          </Text>
+          <Text style={styles.paragraph}>
+            Please carefully check all the details of your enrolment and the
+            terms and conditions. If there is any changes to be made to your
+            details or any information that you are unsure about, please contact
+            us.
+          </Text>
+          <Text style={styles.paragraph}>
+            Once you are satisfied that all of the information is correct and
+            you understand and agree the terms and conditions, please complete
+            the declaration at the end and return it to us.
+          </Text>
+          <Text style={styles.paragraph}>
+            Once we receive your declaration, we will send you a tax invoice
+            which you should pay immediately to secure your place. Upon
+            completion of all of the above, your Electronic Confirmation of
+            Enrolment will be sent to you.
+          </Text>
+          <Text style={styles.paragraph}>
+            We look forward to welcoming you.
+          </Text>
+        </View>
+
+        <View style={{ marginTop: 30 }}>
+          <Text style={styles.bold}>Kind regards,</Text>
+          <Text>Administration Team</Text>
+          <Text style={{ marginTop: 5 }}>E: {data.institution.email}</Text>
+          <Text>P: {data.institution.phone}</Text>
+        </View>
       </View>
       <Footer data={data} pageNum={1} total={12} />
     </Page>
 
-    {/* Page 2 */}
+    {/* PAGE 2: Acceptance & Bank */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={2} total={12} />
+      <Header data={data} />
       <Text style={styles.sectionTitle}>Accepting this offer</Text>
-      <View style={styles.rule} />
-      <Paragraphs
-        lines={[
-          'To confirm your enrolment into this course you are required to:',
-          '1. Check all your personal details to ensure they are correct.',
-          '2. Carefully read all of the information in this Student Agreement. If there is anything that you do not understand, please contact us.',
-          '3. Sign and date this agreement and return it to us once you are satisfied that all details are correct and that you understand the terms and conditions.',
-          '4. You should also keep a copy of this agreement for your records as stated under the Student Declaration.',
-          '5. Once we receive your signed agreement and payment you will be forwarded your Confirmation of Enrolment.',
-        ]}
-      />
-      <View style={{ marginTop: 14 }}>
-        <Text>All payments are to be made into the following account:</Text>
-        <View style={{ marginTop: 8 }}>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Account name:</Text>
-            <Text>{data.bank.accountName}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Bank:</Text>
-            <Text>{data.bank.bank}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>BSB:</Text>
-            <Text>{data.bank.bsb}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Account number:</Text>
-            <Text>{data.bank.accountNumber}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>SWIFT Code:</Text>
-            <Text>{data.bank.swiftCode}</Text>
-          </View>
+
+      <View style={{ marginTop: 10 }}>
+        <Text style={styles.paragraph}>
+          To confirm your enrolment into this course you are required to:
+        </Text>
+        <View style={{ paddingLeft: 10 }}>
+          <Text style={styles.listItem}>
+            • Check all your personal details to ensure they are correct.
+          </Text>
+          <Text style={styles.listItem}>
+            • Carefully read all of the information in this Student Agreement.
+            If there is anything that you do not understand, please contact us.
+          </Text>
+          <Text style={styles.listItem}>
+            • Sign and date this agreement and return it to us once you are
+            satisfied that all details are correct and that you understand the
+            terms and conditions.
+          </Text>
+          <Text style={styles.listItem}>
+            • You should also keep a copy of this agreement for your records as
+            stated under the Student Declaration.
+          </Text>
+        </View>
+        <Text style={[styles.paragraph, { marginTop: 10 }]}>
+          Once we receive your signed agreement and payment you will be
+          forwarded your Confirmation of Enrolment.
+        </Text>
+      </View>
+
+      <Text style={styles.subHeader}>
+        All payments are to be made into the following account:
+      </Text>
+      <View
+        style={{
+          marginTop: 5,
+          padding: 15,
+          backgroundColor: '#F3F4F6',
+          borderRadius: 4,
+        }}
+      >
+        <View style={{ flexDirection: 'row', marginBottom: 5 }}>
+          <Text style={[styles.bold, { width: 120 }]}>Account Name:</Text>
+          <Text>{data.bank.accountName}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', marginBottom: 5 }}>
+          <Text style={[styles.bold, { width: 120 }]}>Bank:</Text>
+          <Text>{data.bank.bank}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', marginBottom: 5 }}>
+          <Text style={[styles.bold, { width: 120 }]}>BSB:</Text>
+          <Text>{data.bank.bsb}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', marginBottom: 5 }}>
+          <Text style={[styles.bold, { width: 120 }]}>Account Number:</Text>
+          <Text>{data.bank.accountNumber}</Text>
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          <Text style={[styles.bold, { width: 120 }]}>SWIFT Code:</Text>
+          <Text>{data.bank.swiftCode}</Text>
         </View>
       </View>
       <Footer data={data} pageNum={2} total={12} />
     </Page>
 
-    {/* Page 3 */}
+    {/* PAGE 3: Student & Course Details */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={3} total={12} />
-      <Text style={styles.small}>
+      <Header data={data} />
+      <Text
+        style={{
+          fontSize: 9,
+          color: 'red',
+          textAlign: 'center',
+          marginBottom: 5,
+        }}
+      >
         * carefully check all of the details below to make sure they are correct
       </Text>
+
       <Text style={styles.sectionTitle}>Student Details</Text>
-      <View style={styles.rule} />
-      <View style={styles.twoCol}>
-        <View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Student ID:</Text>
-            <Text>{data.student.studentId}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>First Name:</Text>
-            <Text>{data.student.firstName}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Surname:</Text>
-            <Text>{data.student.surname}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Date of Birth:</Text>
-            <Text>{data.student.dateOfBirth}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Nationality:</Text>
-            <Text>{data.student.nationality}</Text>
-          </View>
+      <View style={styles.table}>
+        <View style={styles.tableRow}>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.bold,
+              styles.col1,
+              { backgroundColor: COLORS.zebra },
+            ]}
+          >
+            Student ID
+          </Text>
+          <Text style={[styles.tableCell, styles.col2]}>
+            {data.student.studentId}
+          </Text>
         </View>
-        <View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Gender:</Text>
-            <Text>{data.student.gender}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Passport No:</Text>
-            <Text>{data.student.passportNo}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Phone:</Text>
-            <Text>{data.student.phone}</Text>
-          </View>
-          <View style={styles.keyValRow}>
-            <Text style={styles.bold}>Email:</Text>
-            <Text>{data.student.email}</Text>
-          </View>
+        <View style={styles.tableRow}>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.bold,
+              styles.col1,
+              { backgroundColor: COLORS.zebra },
+            ]}
+          >
+            First Name
+          </Text>
+          <Text style={[styles.tableCell, styles.col2]}>
+            {data.student.firstName}
+          </Text>
+        </View>
+        <View style={styles.tableRow}>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.bold,
+              styles.col1,
+              { backgroundColor: COLORS.zebra },
+            ]}
+          >
+            Surname
+          </Text>
+          <Text style={[styles.tableCell, styles.col2]}>
+            {data.student.surname}
+          </Text>
+        </View>
+        <View style={styles.tableRow}>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.bold,
+              styles.col1,
+              { backgroundColor: COLORS.zebra },
+            ]}
+          >
+            Date of Birth
+          </Text>
+          <Text style={[styles.tableCell, styles.col2]}>
+            {data.student.dateOfBirth}
+          </Text>
+        </View>
+        <View style={styles.tableRow}>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.bold,
+              styles.col1,
+              { backgroundColor: COLORS.zebra },
+            ]}
+          >
+            Nationality
+          </Text>
+          <Text style={[styles.tableCell, styles.col2]}>
+            {data.student.nationality}
+          </Text>
+        </View>
+        <View style={styles.tableRow}>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.bold,
+              styles.col1,
+              { backgroundColor: COLORS.zebra },
+            ]}
+          >
+            Gender
+          </Text>
+          <Text style={[styles.tableCell, styles.col2]}>
+            {data.student.gender}
+          </Text>
+        </View>
+        <View style={styles.tableRow}>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.bold,
+              styles.col1,
+              { backgroundColor: COLORS.zebra },
+            ]}
+          >
+            Passport No
+          </Text>
+          <Text style={[styles.tableCell, styles.col2]}>
+            {data.student.passportNo}
+          </Text>
+        </View>
+        <View style={styles.tableRow}>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.bold,
+              styles.col1,
+              { backgroundColor: COLORS.zebra },
+            ]}
+          >
+            Phone
+          </Text>
+          <Text style={[styles.tableCell, styles.col2]}>
+            {data.student.phone}
+          </Text>
+        </View>
+        <View style={[styles.tableRow, { borderBottomWidth: 0 }]}>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.bold,
+              styles.col1,
+              { backgroundColor: COLORS.zebra },
+            ]}
+          >
+            Email
+          </Text>
+          <Text style={[styles.tableCell, styles.col2]}>
+            {data.student.email}
+          </Text>
         </View>
       </View>
+
       <Text style={styles.sectionTitle}>Course Details</Text>
-      <View style={styles.rule} />
-      <View style={{ marginTop: 6 }}>
-        <View style={styles.keyValRow}>
-          <Text style={styles.bold}>Proposal #:</Text>
-          <Text>{data.course.proposalNo}</Text>
+      <View style={styles.table}>
+        {/* Headers */}
+        <View style={styles.tableHeaderRow}>
+          <Text
+            style={[styles.tableCell, styles.tableCellHeader, { width: '15%' }]}
+          >
+            Prop #
+          </Text>
+          <Text
+            style={[styles.tableCell, styles.tableCellHeader, { width: '15%' }]}
+          >
+            CRICOS
+          </Text>
+          <Text
+            style={[styles.tableCell, styles.tableCellHeader, { width: '40%' }]}
+          >
+            Course Name
+          </Text>
+          <Text
+            style={[styles.tableCell, styles.tableCellHeader, { width: '15%' }]}
+          >
+            Dates
+          </Text>
+          <Text
+            style={[styles.tableCell, styles.tableCellHeader, { width: '15%' }]}
+          >
+            Duration
+          </Text>
         </View>
-        <View style={styles.keyValRow}>
-          <Text style={styles.bold}>CRICOS Course Code:</Text>
-          <Text>{data.course.cricosCourseCode}</Text>
-        </View>
-        <View style={styles.keyValRow}>
-          <Text style={styles.bold}>Course Code:</Text>
-          <Text>{data.course.courseCode}</Text>
-        </View>
-        <View style={styles.keyValRow}>
-          <Text style={styles.bold}>Course Name:</Text>
-          <Text>{data.course.courseName}</Text>
-        </View>
-        <View style={styles.keyValRow}>
-          <Text style={styles.bold}>Start Date:</Text>
-          <Text>{data.course.startDate}</Text>
-        </View>
-        <View style={styles.keyValRow}>
-          <Text style={styles.bold}>End Date:</Text>
-          <Text>{data.course.endDate}</Text>
-        </View>
-        <View style={styles.keyValRow}>
-          <Text style={styles.bold}>Location:</Text>
-          <Text>{data.course.location}</Text>
-        </View>
-        <View style={styles.keyValRow}>
-          <Text style={styles.bold}>Hrs/Week:</Text>
-          <Text>{data.course.hoursPerWeek}</Text>
-        </View>
-        <View style={styles.keyValRow}>
-          <Text style={styles.bold}>Total Duration Weeks:</Text>
-          <Text>{data.course.totalWeeks}</Text>
+        {/* Row */}
+        <View
+          style={[
+            styles.tableRow,
+            { borderBottomWidth: 0, alignItems: 'flex-start' },
+          ]}
+        >
+          <Text style={[styles.tableCell, { width: '15%' }]}>
+            {data.course.proposalNo}
+          </Text>
+          <Text style={[styles.tableCell, { width: '15%' }]}>
+            {data.course.cricosCourseCode}
+            {'\n'}
+            {data.course.courseCode}
+          </Text>
+          <Text style={[styles.tableCell, { width: '40%' }]}>
+            {data.course.courseName}
+          </Text>
+          <Text style={[styles.tableCell, { width: '15%' }]}>
+            {data.course.startDate}
+            {'\n'}to{'\n'}
+            {data.course.endDate}
+          </Text>
+          <Text style={[styles.tableCell, { width: '15%' }]}>
+            {data.course.totalWeeks} Wks{'\n'}({data.course.hoursPerWeek}hrs/wk)
+          </Text>
         </View>
       </View>
-      <View style={{ marginTop: 8 }}>
+
+      <View style={{ marginVertical: 10 }}>
         <Text>
           <Text style={styles.bold}>Agreed Start Date:</Text>{' '}
           {data.course.agreedStartDate}
         </Text>
-        <Text style={{ marginTop: 4 }}>
+        <Text>
           <Text style={styles.bold}>Expected End Date:</Text>{' '}
           {data.course.expectedEndDate}
         </Text>
       </View>
-      <View style={{ marginTop: 12 }}>
-        <Text style={styles.bold}>Course Locations:</Text>
-        {data.course.locationsList.map((line, idx) => (
-          <Text key={idx} style={styles.listItem}>
-            - {line}
-          </Text>
-        ))}
-      </View>
-      <View style={{ marginTop: 10 }}>
-        <Text style={styles.small}>
-          NOTE: YOU MUST ADVISE THE COLLEGE OF ANY CHANGE IN ADDRESS WHILE
-          ENROLLED IN THE COURSE
+
+      <Text style={styles.subHeader}>Course Locations:</Text>
+      {data.course.locationsList.map((loc, i) => (
+        <Text key={i} style={[styles.listItem, { fontSize: 9 }]}>
+          • {loc}
         </Text>
-      </View>
+      ))}
+
+      <Text style={{ marginTop: 10, fontSize: 8, fontStyle: 'italic' }}>
+        NOTE: YOU MUST ADVISE THE COLLEGE OF ANY CHANGE IN ADDRESS WHILE
+        ENROLLED IN THE COURSE
+      </Text>
+
       <Footer data={data} pageNum={3} total={12} />
     </Page>
 
-    {/* Page 4 */}
+    {/* PAGE 4 & 5: Payment Plan */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={4} total={12} />
-      <View style={{ marginTop: 12 }}>
-        <Text style={styles.bold}>Condition(s) of the Offer:</Text>
-        {(data.conditionsOfOffer ?? []).map((c, i) => (
-          <Text key={i}>- {c}</Text>
-        ))}
-      </View>
-      <View>
-        <View style={styles.keyValRow}>
-          <Text style={styles.bold}>Hours per week:</Text>
-          <Text>{data.hoursPerWeekClause}</Text>
-        </View>
-        <View style={{ marginTop: 8 }}>
-          <Text style={styles.bold}>Entry requirement:</Text>
-          <Text style={{ marginTop: 4 }}>
-            {' '}
-            For the entry requirement for each course please refer to the course
-            information brochure or follow the information on
-            https://ashford.edu.au/
+      <Header data={data} />
+
+      <View style={{ marginBottom: 15 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            backgroundColor: '#F3F4F6',
+            padding: 10,
+          }}
+        >
+          <Text>
+            <Text style={styles.bold}>Hours per week:</Text>{' '}
+            {data.hoursPerWeekClause}
           </Text>
         </View>
-        <View style={{ marginTop: 10 }}>
-          <Text style={styles.bold}>Payment of Fees:</Text>
-          <Text style={{ marginTop: 4 }}>
-            Payment must include the following: All fees are in Australian
-            dollars (AUD)
-          </Text>
-        </View>
+        <Text style={{ marginTop: 10 }}>
+          <Text style={styles.bold}>Entry Requirement:</Text>{' '}
+          {data.entryRequirementText}
+        </Text>
       </View>
+
+      <Text style={styles.sectionTitle}>Payment of Fees</Text>
+      <Text style={{ fontSize: 9, marginBottom: 5 }}>
+        Payment must include the following: All fees are in Australian dollars
+        (AUD)
+      </Text>
+
       <View style={styles.table}>
-        <View style={styles.thead}>
-          <Text style={[styles.cell, styles.bold, styles.col_date]}>
+        <View style={styles.tableHeaderRow}>
+          <Text
+            style={[styles.tableCell, styles.tableCellHeader, styles.colDate]}
+          >
             Due Date
           </Text>
-          <Text style={[styles.cell, styles.bold, styles.col_feeType]}>
-            Fees
+          <Text
+            style={[styles.tableCell, styles.tableCellHeader, styles.colFee]}
+          >
+            Fee Description
           </Text>
-          <Text style={[styles.cell, styles.bold, styles.col_amount]}>
+          <Text
+            style={[styles.tableCell, styles.tableCellHeader, styles.colAmt]}
+          >
             Amount
           </Text>
         </View>
-        {data.paymentPlan.rows.map((r, idx) => (
+        {data.paymentPlan.rows.map((row, i) => (
           <View
-            key={idx}
+            key={i}
             style={[
-              styles.tbodyRow,
-              { backgroundColor: idx % 2 === 1 ? COLORS.zebra : 'white' },
+              styles.tableRow,
+              { backgroundColor: i % 2 === 0 ? COLORS.white : COLORS.zebra },
             ]}
           >
-            <Text style={[styles.cell, styles.col_date]}>{r.date}</Text>
-            <Text style={[styles.cell, styles.col_feeType]}>{r.feeType}</Text>
-            <Text style={[styles.cell, styles.col_amount]}>{r.amount}</Text>
+            <Text style={[styles.tableCell, styles.colDate]}>{row.date}</Text>
+            <Text style={[styles.tableCell, styles.colFee]}>{row.feeType}</Text>
+            <Text style={[styles.tableCell, styles.colAmt]}>{row.amount}</Text>
           </View>
         ))}
+        {/* Total Row */}
+        <View
+          style={[
+            styles.tableRow,
+            { borderBottomWidth: 0, backgroundColor: COLORS.primary },
+          ]}
+        >
+          <Text
+            style={[
+              styles.tableCell,
+              {
+                color: 'white',
+                flex: 1,
+                textAlign: 'right',
+                paddingRight: 10,
+                fontWeight: 'bold',
+              },
+            ]}
+          >
+            Total Course Fees: {data.paymentPlan.totalCourseFees}
+          </Text>
+        </View>
       </View>
-      <View style={{ marginTop: 10, alignItems: 'flex-end' }}>
-        <Text style={{ fontWeight: 700 }}>
-          Total Course Fees: {data.paymentPlan.totalCourseFees}
-        </Text>
-      </View>
+
       <Footer data={data} pageNum={4} total={12} />
     </Page>
 
-    {/* Pages 6–12: Policies, fees, privacy, declaration */}
+    {/* PAGE 6: Terms Intro */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={6} total={12} />
+      <Header data={data} />
       <Text style={styles.sectionTitle}>International Student Agreement</Text>
-      <View style={styles.rule} />
-      <Text style={styles.bold}>Fees and Refunds</Text>
+
+      <Text style={styles.subHeader}>Information and terms and conditions</Text>
+      <Text style={[styles.subHeader, { color: COLORS.text }]}>
+        Fees and Refunds
+      </Text>
+
       <Paragraphs lines={data.refundsBlocks.intro} />
-      <Text style={styles.paragraph}>
+      <Text style={[styles.paragraph, { marginTop: 10, fontStyle: 'italic' }]}>
         {data.refundsBlocks.additionalFeesNotice}
       </Text>
+
       <Footer data={data} pageNum={6} total={12} />
     </Page>
 
+    {/* PAGE 7: Additional Fees */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={7} total={12} />
-      <Text style={styles.sectionTitle}>Additional fees that may apply</Text>
-      <View style={styles.rule} />
+      <Header data={data} />
+      <Text style={styles.sectionTitle}>Additional Fees</Text>
       <View style={styles.table}>
-        <View style={styles.thead}>
-          <Text style={[styles.cell, styles.bold, styles.col_feeName]}>
+        <View style={styles.tableHeaderRow}>
+          <Text
+            style={[styles.tableCell, styles.tableCellHeader, { width: '70%' }]}
+          >
             Additional fees that may apply
           </Text>
-          <Text style={[styles.cell, styles.bold, styles.col_feeAmt]}>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.tableCellHeader,
+              { width: '30%', textAlign: 'right' },
+            ]}
+          >
             Amount
           </Text>
         </View>
-        {data.additionalFees.map((f, idx) => (
+        {data.additionalFees.map((f, i) => (
           <View
-            key={idx}
+            key={i}
             style={[
-              styles.tbodyRow,
-              { backgroundColor: idx % 2 === 1 ? COLORS.zebra : 'white' },
+              styles.tableRow,
+              { backgroundColor: i % 2 === 0 ? COLORS.white : COLORS.zebra },
             ]}
           >
-            <Text style={[styles.cell, styles.col_feeName]}>{f.name}</Text>
-            <Text style={[styles.cell, styles.col_feeAmt]}>{f.amount}</Text>
+            <Text style={[styles.tableCell, { width: '70%' }]}>{f.name}</Text>
+            <Text
+              style={[styles.tableCell, { width: '30%', textAlign: 'right' }]}
+            >
+              {f.amount}
+            </Text>
           </View>
         ))}
       </View>
-      <Text>
-        If these fees apply, they will be charged as above. You are required to
-        pay all fees and charges by the date indicated on the invoice. Where you
-        are unable to make a payment by the specified date, please contact us to
-        discuss alternative arrangements.
-      </Text>
-      <Text>
-        All payments are to be made by bank transfer into the account specified
-        on the invoice.
-      </Text>
-      <Text>
-        Where fees (except for addition fee) are overdue and you have not made
-        alternative arrangements, a first warning, second warning and notice of
-        intention to report regarding non-payment of fees will be sent to you as
-        follows:
-      </Text>
-      <Text>
-        1. First warning letter: failing to pay an invoice within 5 days of
-        receipt or contacting us to make alternative arrangements.
-      </Text>
-      <Text>
-        2. Second warning letter: failing to pay an invoice within 5 days of
-        receipt of the first warning letter or contacting us to make alternative
-        arrangements.
-      </Text>
-      <Text>
-        3. Notice of intention to report: failing to pay an invoice within 5
-        days of receipt of the second warning letter or contacting us to make
-        alternative arrangements.
-      </Text>
-      <Text style={styles.bold}>
-        {' '}
-        Following the cancelation of enrolment due to non-payment of fees, your
-        debt will be referred to a debt collection agency. *Please note that the
-        initial deposit is $1500{' '}
-      </Text>
+
+      <View style={{ marginTop: 10, padding: 8, backgroundColor: '#FFF1F2' }}>
+        <Text style={styles.bold}>Overdue Fees Policy:</Text>
+        <Text style={{ fontSize: 9 }}>
+          Where fees are overdue, we will issue warnings as follows:
+        </Text>
+        <Text style={{ fontSize: 9, marginLeft: 10 }}>
+          1. First warning letter (5 days overdue)
+        </Text>
+        <Text style={{ fontSize: 9, marginLeft: 10 }}>
+          2. Second warning letter (5 days after first)
+        </Text>
+        <Text style={{ fontSize: 9, marginLeft: 10 }}>
+          3. Notice of intention to report (5 days after second)
+        </Text>
+        <Text style={{ fontSize: 9, fontWeight: 'bold', marginTop: 4 }}>
+          *Following cancellation for non-payment, debt will be referred to
+          collection. Initial deposit is $1500.
+        </Text>
+      </View>
       <Footer data={data} pageNum={7} total={12} />
     </Page>
 
+    {/* PAGE 8: REFUND TABLE (COMPLIANCE FIX) */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={8} total={12} />
+      <Header data={data} />
+      <Text style={styles.sectionTitle}>Refund Policy Details</Text>
       <View style={styles.table}>
-        <View style={styles.thead}>
-          <Text style={[styles.cell, styles.bold, { width: '48%' }]}>
-            Circumstance
-          </Text>
-          <Text style={[styles.cell, styles.bold, { width: '52%' }]}>
-            Refund due
-          </Text>
-        </View>
-        {data.refundsCircumstances.map((row, idx) => (
-          <View
-            key={idx}
+        <View style={styles.tableHeaderRow}>
+          <Text
             style={[
-              styles.tbodyRow,
-              { backgroundColor: idx % 2 === 1 ? COLORS.zebra : 'white' },
+              styles.tableCell,
+              styles.tableCellHeader,
+              styles.colRefund1,
             ]}
           >
-            <Text style={[styles.cell, { width: '48%' }]}>
+            Circumstance
+          </Text>
+          <Text
+            style={[
+              styles.tableCell,
+              styles.tableCellHeader,
+              styles.colRefund2,
+            ]}
+          >
+            Refund Due
+          </Text>
+        </View>
+        {data.refundsCircumstances.map((row, i) => (
+          <View
+            key={i}
+            style={[
+              styles.tableRow,
+              { backgroundColor: i % 2 === 0 ? COLORS.white : COLORS.zebra },
+            ]}
+          >
+            <Text style={[styles.tableCell, styles.colRefund1]}>
               {row.circumstance}
             </Text>
-            <Text style={[styles.cell, { width: '52%' }]}>{row.refundDue}</Text>
+            <Text style={[styles.tableCell, styles.colRefund2]}>
+              {row.refundDue}
+            </Text>
           </View>
         ))}
       </View>
       <Footer data={data} pageNum={8} total={12} />
     </Page>
 
+    {/* PAGE 9: Complaints */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={9} total={12} />
+      <Header data={data} />
       <Text style={styles.sectionTitle}>Complaints and Appeals</Text>
-      <View style={styles.rule} />
-      <Paragraphs lines={data.complaintsAppeals.paragraphs} />
-      <Text>
-        International students may complain to the OSO about a range of
-        circumstances including:
-      </Text>
-      {data.complaintsAppeals.bulletsInternationalStudents.map((b, i) => (
-        <Text key={i}>- {b}</Text>
-      ))}
-      <View style={{ marginTop: 10 }}>
-        <Text>More information can be found at:</Text>
-        <Link
-          src={data.complaintsAppeals.ombudsmanUrl}
-          style={styles.inlineLink}
-        >
-          {data.complaintsAppeals.ombudsmanUrl}
-        </Link>
-      </View>
-      <Paragraphs
-        lines={[
-          'You can access this service at no cost in relation to matters that cannot be resolved through internal processes. Further information and contact details are included below.',
-          'We will cooperate in full with the OSO and will immediately implement their decisions or recommendations and/or take preventative or corrective action required by the decision or recommendation.',
-          'Complaints can also be made to the organisations indicated below:',
-          'We will communicate all actions to you in writing based on the OSO’s decision.',
-        ]}
-      />
+      <Paragraphs lines={data.complaintsAppeals.paragraphs.slice(0, 8)} />
       <Footer data={data} pageNum={9} total={12} />
     </Page>
 
+    {/* PAGE 10: Complaints Continued + Links */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={10} total={12} />
-      <Text style={styles.bold}>National Training Complaints Hotline</Text>
+      <Header data={data} />
+      <Text style={styles.subHeader}>External Appeals (OSO)</Text>
       <Paragraphs
-        lines={[
-          'The National Training Complaints Hotline is a national service for consumers to register complaints concerning vocational education and training.   The service refers consumers to the appropriate agency/authority/jurisdiction to assist with their complaint. Access to the Hotline is through:',
-        ]}
+        lines={['International students may complain to the OSO about:']}
       />
-      <Paragraphs
-        lines={[
-          `Phone: ${data.complaintsAppeals.hotlinePhone}, Monday–Friday, 8am to 6pm nationally`,
-          `Email: ${data.complaintsAppeals.hotlineEmail}`,
-        ]}
-      />
-      <Text style={styles.bold}>
-        Australian Skills Quality Authority (ASQA)
-      </Text>
-      <Paragraphs
-        lines={[
-          'ASQA does not act as an advocate for individual students and is not responsible for resolving disputes between students and training providers. ASQA only uses information from all complaints as intelligence to inform regulatory activities.',
-        ]}
-      />
-      <Link src={data.complaintsAppeals.asqaUrl} style={styles.inlineLink}>
-        {data.complaintsAppeals.asqaUrl}
-      </Link>
-      <Paragraphs lines={[data.complaintsAppeals.consumerLawNote]} />
-      <Text style={styles.sectionTitle}>Privacy Notice</Text>
-      <View style={styles.rule} />
-      <Text>Why we collect your personal information</Text>
-      <Paragraphs lines={data.privacy.whyCollect} />
-      <Text>How we use your personal information</Text>
-      <Paragraphs lines={data.privacy.howUse} />
+      {data.complaintsAppeals.bulletsInternationalStudents.map((b, i) => (
+        <Text key={i} style={styles.listItem}>
+          • {b}
+        </Text>
+      ))}
+
+      <View style={{ marginTop: 20 }}>
+        <Text style={styles.sectionTitle}>Useful Contacts</Text>
+        <View style={{ marginBottom: 10 }}>
+          <Text style={styles.bold}>Overseas Students Ombudsman:</Text>
+          <Link
+            src={data.complaintsAppeals.ombudsmanUrl}
+            style={{ color: COLORS.primary, fontSize: 9 }}
+          >
+            {data.complaintsAppeals.ombudsmanUrl}
+          </Link>
+        </View>
+        <View style={{ marginBottom: 10 }}>
+          <Text style={styles.bold}>National Training Complaints Hotline:</Text>
+          <Text style={{ fontSize: 9 }}>
+            Phone: {data.complaintsAppeals.hotlinePhone}
+          </Text>
+          <Text style={{ fontSize: 9 }}>
+            Email: {data.complaintsAppeals.hotlineEmail}
+          </Text>
+        </View>
+        <View>
+          <Text style={styles.bold}>ASQA:</Text>
+          <Link
+            src={data.complaintsAppeals.asqaUrl}
+            style={{ color: COLORS.primary, fontSize: 9 }}
+          >
+            {data.complaintsAppeals.asqaUrl}
+          </Link>
+        </View>
+      </View>
       <Footer data={data} pageNum={10} total={12} />
     </Page>
 
+    {/* PAGE 11: Privacy */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={11} total={12} />
-      <Text>How we disclose your personal information</Text>
+      <Header data={data} />
+      <Text style={styles.sectionTitle}>Privacy Notice</Text>
+      <Text style={styles.subHeader}>
+        Why we collect your personal information
+      </Text>
+      <Paragraphs lines={data.privacy.whyCollect} />
+
+      <Text style={styles.subHeader}>How we use your personal information</Text>
+      <Paragraphs lines={data.privacy.howUse} />
+
+      <Text style={styles.subHeader}>
+        How we disclose your personal information
+      </Text>
       <Paragraphs lines={data.privacy.howDisclose} />
-      <Text>
-        How the NCVER and other bodies handle your personal information
-      </Text>
-      <Paragraphs lines={data.privacy.ncverHandlingIntro} />
-      <View style={{ marginTop: 6 }}>
-        {data.privacy.ncverPurposes.map((p, i) => (
-          <Text key={i}>• {p}</Text>
-        ))}
-      </View>
-      <Paragraphs lines={data.privacy.ncverMore} />
-      <Text>{data.privacy.deseNote}</Text>
-      <Link src={data.privacy.deseUrl} style={styles.inlineLink}>
-        {data.privacy.deseUrl}
-      </Link>
-      <Text>Surveys</Text>
-      <Text>{data.privacy.surveys}</Text>
-      <Text>Contact information</Text>
-      {/* first line as intro */}
-      {data.privacy.contactInfo.length > 0 ? (
-        <Text style={{ marginTop: 8 }}>{data.privacy.contactInfo[0]}</Text>
-      ) : null}
-      {/* bullets */}
-      <View style={{ marginTop: 6 }}>
-        {data.privacy.contactInfo
-          .slice(1, data.privacy.contactInfo.length - 1)
-          .map((line, idx) => (
-            <Text key={idx}>• {line.replace(/^•\s*/, '')}</Text>
-          ))}
-      </View>
-      {/* closing line if present */}
-      {data.privacy.contactInfo.length > 1 ? (
-        <Text style={{ marginTop: 8 }}>
-          {data.privacy.contactInfo[data.privacy.contactInfo.length - 1]}
+
+      <View
+        style={{
+          marginTop: 20,
+          padding: 10,
+          borderWidth: 1,
+          borderColor: COLORS.primary,
+          borderStyle: 'dashed',
+        }}
+      >
+        <Text style={styles.bold}>
+          Requirement to provide change of contact details
         </Text>
-      ) : null}
-      <Text style={styles.sectionTitle}>
-        Requirement to provide change of contact details
-      </Text>
-      <View style={styles.rule} />
-      <Paragraphs lines={[data.privacy.changeOfContactRequirement]} />
+        <Text style={{ fontSize: 9, marginTop: 5 }}>
+          {data.privacy.changeOfContactRequirement}
+        </Text>
+      </View>
+
       <Footer data={data} pageNum={11} total={12} />
     </Page>
 
+    {/* PAGE 12: Declaration */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={12} total={12} />
-      {/* Banner title */}
-      <View style={styles.banner}>
-        <Text style={styles.bannerText}>Student Declaration</Text>
+      <Header data={data} />
+
+      <View
+        style={{ backgroundColor: COLORS.primary, padding: 8, marginTop: 20 }}
+      >
+        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}>
+          Student Declaration
+        </Text>
       </View>
-      {/* Exact paragraphs as per specification */}
-      <Paragraphs
-        lines={[
-          'This document sets outs the agreement between you and Ashford College . This Written Agreement, and the right to make complaints and seek appeals of decisions and action under various processes, does not affect the rights of the student to take action under the Australian Consumer Law if the Australian Consumer Law applies.',
-          'The terms and conditions listed in this document are subject to change at any time by the management’s discretion and without prior notice. For the most up-to-date version, please refer to our website, ausc.edu.au',
-          'By signing the declaration below, you are agreeing to this Student Agreement and all of the associated terms and conditions included with this Student Agreement.',
-          'You must keep a copy of this Student Agreement and payment evidence for all tuition and non-tuition fees. We will also keep a record of his Student Agreement and payment receipts for all tuition and non-tuition fee for at least 2 years after you have completed or withdrawn from your course.',
-          'I confirm that the details in this Student Agreement are correct and that I accept all terms and conditions documented in this agreement.',
-        ]}
-      />
-      {/* Two-column declaration table */}
-      <View style={styles.declTable}>
-        <View style={{ flexDirection: 'row' }}>
-          <Text
-            style={[
-              styles.declCellLabel,
-              { borderRightWidth: 1, borderRightColor: COLORS.text },
-            ]}
-          >
-            Student name
-          </Text>
-          <Text style={styles.declCellValue}>
+
+      <View style={{ marginTop: 15 }}>
+        <Paragraphs lines={data.studentDeclaration.paragraphs} />
+      </View>
+
+      {/* Signature Block */}
+      <View style={styles.declBox}>
+        <View style={styles.declRow}>
+          <Text style={styles.declLabel}>Student Name</Text>
+          <Text style={styles.declValue}>
             {data.studentDeclaration.namePlaceholder}
           </Text>
         </View>
         <View style={styles.declRow}>
-          <Text
-            style={[
-              styles.declCellLabel,
-              { borderRightWidth: 1, borderRightColor: COLORS.text },
-            ]}
-          >
-            Signature
-          </Text>
-          <Text style={styles.declCellValue}> </Text>
+          <Text style={styles.declLabel}>Signature</Text>
+          <Text style={styles.declValue}> </Text>
         </View>
-        <View style={styles.declRow}>
-          <Text
-            style={[
-              styles.declCellLabel,
-              { borderRightWidth: 1, borderRightColor: COLORS.text },
-            ]}
-          >
-            Date
-          </Text>
-          <Text style={styles.declCellValue}> </Text>
+        <View style={[styles.declRow, { borderBottomWidth: 0 }]}>
+          <Text style={styles.declLabel}>Date</Text>
+          <Text style={styles.declValue}> </Text>
         </View>
       </View>
+
       <Footer data={data} pageNum={12} total={12} />
     </Page>
   </Document>

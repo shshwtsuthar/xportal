@@ -61,7 +61,7 @@ serve(async (req) => {
          programs:program_id(id, code, name, nominal_hours),
          agents:agent_id(id, name),
          timetables:timetable_id(id, rto_id, program_id),
-         rtos:rto_id(id, name, rto_code, address_line_1, suburb, state, postcode, phone_number, email_address)`
+         rtos:rto_id(id, name, rto_code, address_line_1, suburb, state, postcode, phone_number, email_address, profile_image_path)`
       )
       .eq('id', applicationId)
       .single();
@@ -101,10 +101,22 @@ serve(async (req) => {
       );
     }
 
+    let rtoLogoUrl: string | null = null;
+    const logoPath = application.rtos?.profile_image_path;
+    if (logoPath) {
+      const { data: signedLogo, error: logoErr } = await service.storage
+        .from('rto-assets')
+        .createSignedUrl(logoPath, 3600);
+      if (!logoErr && signedLogo?.signedUrl) {
+        rtoLogoUrl = signedLogo.signedUrl;
+      }
+    }
+
     // Build template data
     const data: OfferLetterData = buildOfferLetterData({
       application,
       schedule: schedule ?? [],
+      rtoLogoUrl,
     });
 
     // Render PDF buffer without JSX

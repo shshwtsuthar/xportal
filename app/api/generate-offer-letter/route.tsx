@@ -18,6 +18,10 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createServerSupabase();
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     const { data: application, error: appErr } = await supabase
       .from('applications')
@@ -26,7 +30,8 @@ export async function POST(req: NextRequest) {
          programs:program_id(id, code, name, nominal_hours),
          agents:agent_id(id, name),
          timetables:timetable_id(id, rto_id, program_id),
-         rtos:rto_id(id, name, rto_code, address_line_1, suburb, state, postcode, phone_number, email_address)`
+         rtos:rto_id(id, name, rto_code, cricos_code, address_line_1, suburb, state, postcode, phone_number, email_address, profile_image_path, bank_name, bank_account_name, bank_bsb, bank_account_number),
+         application_learning_subjects(planned_end_date)`
       )
       .eq('id', applicationId)
       .single();
@@ -48,16 +53,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let rtoLogoUrl: string | null = null;
+    const logoPath = application.rtos?.profile_image_path;
+    if (logoPath) {
+      const { data: signedLogo, error: logoErr } = await admin.storage
+        .from('rto-assets')
+        .createSignedUrl(logoPath, 3600);
+      if (!logoErr && signedLogo?.signedUrl) {
+        rtoLogoUrl = signedLogo.signedUrl;
+      }
+    }
+
     const data = buildOfferLetterData({
       application,
       schedule: schedule ?? [],
+      rtoLogoUrl,
     });
     const pdfBuffer = await renderToBuffer(<OfferLetterTemplate data={data} />);
-
-    const admin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
 
     const date = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');

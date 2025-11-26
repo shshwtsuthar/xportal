@@ -21,6 +21,7 @@ type AppRow = Database['public']['Tables']['applications']['Row'] & {
     | 'postcode'
     | 'phone_number'
     | 'email_address'
+    | 'profile_image_path'
   > | null;
 };
 
@@ -74,8 +75,9 @@ const formatCurrency = (cents?: number | null) => {
 export function buildOfferLetterData(input: {
   application: AppRow;
   schedule: ScheduleRow[];
+  rtoLogoUrl?: string | null;
 }): OfferLetterData {
-  const { application, schedule } = input;
+  const { application, schedule, rtoLogoUrl } = input;
   const institution = BRAND.institution;
   const program = application.programs ?? null;
 
@@ -101,6 +103,7 @@ export function buildOfferLetterData(input: {
       email: application.rtos?.email_address ?? institution.email,
       phone: application.rtos?.phone_number ?? institution.phone,
       rtoCode: application.rtos?.rto_code ?? institution.rtoCode,
+      logoSrc: rtoLogoUrl ?? institution.logoSrc,
     },
     document: BRAND.document,
     offer: {

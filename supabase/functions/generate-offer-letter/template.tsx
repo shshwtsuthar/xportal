@@ -121,13 +121,21 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  logo: { width: 110, height: 52 },
-  instBlock: { flex: 1 },
+  headerLeft: {
+    width: '30%',
+  },
+  headerRight: {
+    width: '65%',
+    textAlign: 'right',
+  },
+  logo: { width: 150, height: 60, objectFit: 'contain' },
+  instBlock: { width: '100%' },
   instName: { fontSize: 14 },
   instLine: { fontSize: 9.5, color: COLORS.lightText },
   strip: { marginTop: 6, fontSize: 9, color: COLORS.lightText },
@@ -190,17 +198,23 @@ const Header = ({
   total: number;
 }) => (
   <View style={styles.header}>
-    <Image style={styles.logo} src={data.institution.logoSrc} />
-    <View style={styles.instBlock}>
-      <Text style={styles.instName}>{data.institution.name}</Text>
-      <Text style={styles.instLine}>{data.institution.addressLine}</Text>
-      <Text style={styles.instLine}>
-        E: {data.institution.email} | T: {data.institution.phone}
-      </Text>
-      <Text style={styles.instLine}>W: {data.institution.website}</Text>
-      <Text style={styles.strip}>{data.document.titleStrip}</Text>
-      <Text style={styles.docMetaRow}>{data.metaFooter.leftCode}</Text>
-      <Text style={styles.docMetaRow}>{data.document.versionLine}</Text>
+    <View style={styles.headerLeft}>
+      {data.institution.logoSrc && (
+        <Image style={styles.logo} src={data.institution.logoSrc} />
+      )}
+    </View>
+    <View style={styles.headerRight}>
+      <View style={styles.instBlock}>
+        <Text style={styles.instName}>{data.institution.name}</Text>
+        <Text style={styles.instLine}>{data.institution.addressLine}</Text>
+        <Text style={styles.instLine}>
+          E: {data.institution.email} | T: {data.institution.phone}
+        </Text>
+        <Text style={styles.instLine}>W: {data.institution.website}</Text>
+        <Text style={styles.strip}>{data.document.titleStrip}</Text>
+        <Text style={styles.docMetaRow}>{data.metaFooter.leftCode}</Text>
+        <Text style={styles.docMetaRow}>{data.document.versionLine}</Text>
+      </View>
     </View>
   </View>
 );
