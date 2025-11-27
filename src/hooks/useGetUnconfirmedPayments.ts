@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import type { Tables } from '@/database.types';
 
-type PaymentRow = Tables<'payments'> & {
+export type PaymentRow = Tables<'payments'> & {
   invoices?: {
     id: string;
     invoice_number: string | null;

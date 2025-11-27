@@ -19,6 +19,10 @@ export const getCommissionsTableKey = () => TABLE_KEY_COMMISSIONS;
 const TABLE_KEY_STUDENTS = 'students.datatable';
 export const getStudentsTableKey = () => TABLE_KEY_STUDENTS;
 
+const TABLE_KEY_PAYMENT_CONFIRMATIONS = 'payment-confirmations.datatable';
+export const getPaymentConfirmationsTableKey = () =>
+  TABLE_KEY_PAYMENT_CONFIRMATIONS;
+
 export const useGetTablePreferences = (tableKey: string) => {
   return useQuery({
     queryKey: ['table-prefs', tableKey],
