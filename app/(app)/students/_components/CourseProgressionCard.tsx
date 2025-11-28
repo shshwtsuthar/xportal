@@ -19,10 +19,12 @@ import { format } from 'date-fns';
 
 type CourseProgressionCardProps = {
   studentId: string;
+  mode?: 'staff' | 'student';
 };
 
 export function CourseProgressionCard({
   studentId,
+  mode = 'staff',
 }: CourseProgressionCardProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -195,7 +197,10 @@ export function CourseProgressionCard({
                         enrollmentId &&
                         subject.program_plan_subjects?.id && (
                           <TableRow>
-                            <TableCell colSpan={7} className="border-t p-0">
+                            <TableCell
+                              colSpan={mode === 'student' ? 6 : 7}
+                              className="border-t p-0"
+                            >
                               <div className="px-2 py-2">
                                 <SubjectClassesTable
                                   enrollmentId={enrollmentId}
@@ -205,6 +210,7 @@ export function CourseProgressionCard({
                                   subjectName={
                                     subject.subjects?.name ?? 'Unknown Subject'
                                   }
+                                  mode={mode}
                                 />
                               </div>
                             </TableCell>

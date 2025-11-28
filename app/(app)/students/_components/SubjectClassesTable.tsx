@@ -21,11 +21,13 @@ type SubjectClassesTableProps = {
   enrollmentId: string;
   programPlanSubjectId: string;
   subjectName: string;
+  mode?: 'staff' | 'student';
 };
 
 export function SubjectClassesTable({
   enrollmentId,
   programPlanSubjectId,
+  mode = 'staff',
 }: SubjectClassesTableProps) {
   const {
     data: classes,
@@ -85,7 +87,9 @@ export function SubjectClassesTable({
             <TableHead className="text-sm font-medium">Location</TableHead>
             <TableHead className="text-sm font-medium">Classroom</TableHead>
             <TableHead className="text-sm font-medium">Status</TableHead>
-            <TableHead className="text-sm font-medium">Attendance</TableHead>
+            {mode === 'staff' && (
+              <TableHead className="text-sm font-medium">Attendance</TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody className="divide-y">
@@ -137,33 +141,38 @@ export function SubjectClassesTable({
                     {status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      aria-label="Mark present"
-                      checked={
-                        classItem.enrollment_class_attendances?.present ?? false
-                      }
-                      onCheckedChange={(val) =>
-                        handleToggleAttendance(
-                          classItem.id,
-                          val === true ? true : false
-                        )
-                      }
-                      disabled={isPending}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2"
-                      aria-label="Reset attendance to unmarked"
-                      onClick={() => handleToggleAttendance(classItem.id, null)}
-                      disabled={isPending}
-                    >
-                      Reset
-                    </Button>
-                  </div>
-                </TableCell>
+                {mode === 'staff' && (
+                  <TableCell className="text-sm">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        aria-label="Mark present"
+                        checked={
+                          classItem.enrollment_class_attendances?.present ??
+                          false
+                        }
+                        onCheckedChange={(val) =>
+                          handleToggleAttendance(
+                            classItem.id,
+                            val === true ? true : false
+                          )
+                        }
+                        disabled={isPending}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2"
+                        aria-label="Reset attendance to unmarked"
+                        onClick={() =>
+                          handleToggleAttendance(classItem.id, null)
+                        }
+                        disabled={isPending}
+                      >
+                        Reset
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             );
           })}

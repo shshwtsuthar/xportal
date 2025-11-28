@@ -20,6 +20,15 @@ import { FinancePane } from '../[id]/_components/FinancePane';
 import { StudentDocumentsPane } from './StudentDocumentsPane';
 import { AssignmentsPane } from './AssignmentsPane';
 import { StudentAttendanceTable } from './StudentAttendanceTable';
+import { useStudentDashboardMetrics } from '@/src/hooks/useStudentDashboardMetrics';
+import { useGetStudentEnrollmentSubjects } from '@/src/hooks/useGetStudentEnrollmentSubjects';
+import { Pie, PieChart } from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 
 type StudentDashboardMode = 'staff' | 'student';
 
@@ -95,9 +104,61 @@ export function StudentDashboardPageClient({
   const { data: disabilities = [] } = useGetStudentDisabilities(
     studentUuid ?? ''
   );
+  const metrics = useStudentDashboardMetrics(studentUuid);
   const { data: priorEducation = [] } = useGetStudentPriorEducation(
     studentUuid ?? ''
   );
+  const { data: enrollmentSubjects = [] } =
+    useGetStudentEnrollmentSubjects(studentUuid);
+
+  // Calculate pie chart data for evaluation statuses
+  const evaluationStatusData = useMemo(() => {
+    const competent = enrollmentSubjects.filter(
+      (s) => s.outcome_code === 'C'
+    ).length;
+    const notYetCompetent = enrollmentSubjects.filter(
+      (s) => s.outcome_code === 'NYC'
+    ).length;
+    const notAssessed = enrollmentSubjects.filter(
+      (s) => s.outcome_code === null || s.outcome_code === undefined
+    ).length;
+
+    return [
+      {
+        status: 'Competent',
+        count: competent,
+        fill: 'var(--chart-1)',
+      },
+      {
+        status: 'Not Yet Competent',
+        count: notYetCompetent,
+        fill: 'var(--chart-2)',
+      },
+      {
+        status: 'Not Yet Assessed',
+        count: notAssessed,
+        fill: 'var(--chart-3)',
+      },
+    ];
+  }, [enrollmentSubjects]);
+
+  const evaluationChartConfig = {
+    count: {
+      label: 'Units',
+    },
+    Competent: {
+      label: 'Competent',
+      color: 'var(--chart-1)',
+    },
+    'Not Yet Competent': {
+      label: 'Not Yet Competent',
+      color: 'var(--chart-2)',
+    },
+    'Not Yet Assessed': {
+      label: 'Not Yet Assessed',
+      color: 'var(--chart-3)',
+    },
+  } satisfies ChartConfig;
 
   const postalSameAsStreet = useMemo(() => {
     if (!addresses || addresses.length < 2) return false;
@@ -130,14 +191,20 @@ export function StudentDashboardPageClient({
     );
   }, [avetmiss, addresses, age, cricos]);
 
-  const tabs = [
-    'Details',
-    'Course Progression',
-    'Documents',
-    'Assignments',
-    'Finance',
-    'Attendance',
+  const staffTabs = [
+    { key: 'details', label: 'Details' as const },
+    { key: 'course', label: 'Course Progression' as const },
+    { key: 'documents', label: 'Documents' as const },
+    { key: 'assignments', label: 'Assignments' as const },
+    { key: 'finance', label: 'Finance' as const },
+    { key: 'attendance', label: 'Attendance' as const },
   ];
+
+  const studentTabs = staffTabs.filter(
+    (tab) => tab.key !== 'details' && tab.key !== 'documents'
+  );
+
+  const tabs = mode === 'student' ? studentTabs : staffTabs;
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">Loading…</p>;
@@ -224,8 +291,10 @@ export function StudentDashboardPageClient({
   };
 
   const renderTabContent = () => {
-    switch (activeTab) {
-      case 0:
+    const currentTabKey = tabs[activeTab]?.key;
+
+    switch (currentTabKey) {
+      case 'details':
         return (
           <div className="space-y-4">
             <Card>
@@ -1479,15 +1548,17 @@ export function StudentDashboardPageClient({
             </Card>
           </div>
         );
-      case 1:
-        return <CourseProgressionCard studentId={studentUuid ?? ''} />;
-      case 2:
+      case 'course':
+        return (
+          <CourseProgressionCard studentId={studentUuid ?? ''} mode={mode} />
+        );
+      case 'documents':
         return <StudentDocumentsPane studentId={studentUuid ?? ''} />;
-      case 3:
+      case 'assignments':
         return <AssignmentsPane studentId={studentUuid ?? ''} mode={mode} />;
-      case 4:
+      case 'finance':
         return <FinancePane studentId={studentUuid ?? ''} />;
-      case 5:
+      case 'attendance':
         return (
           <StudentAttendanceTable studentId={studentUuid ?? ''} mode={mode} />
         );
@@ -1543,6 +1614,126 @@ export function StudentDashboardPageClient({
         )}
       </div>
 
+      {mode === 'student' && (
+        <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Course Progress */}
+          <Card>
+            <CardHeader className="space-y-1 pb-2">
+              <CardTitle className="text-muted-foreground text-sm font-medium">
+                Course Progress
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-semibold">
+                {metrics.courseProgress.percentage}%
+              </div>
+              <p className="text-muted-foreground mt-1 text-xs">
+                {metrics.courseProgress.completedSubjects} of{' '}
+                {metrics.courseProgress.totalSubjects} units past end date
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Attendance */}
+          <Card>
+            <CardHeader className="space-y-1 pb-2">
+              <CardTitle className="text-muted-foreground text-sm font-medium">
+                Attendance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-semibold">
+                {metrics.attendance.percentage}%
+              </div>
+              <p className="text-muted-foreground mt-1 text-xs">
+                {metrics.attendance.attendedClasses} of{' '}
+                {metrics.attendance.totalPastClasses} past classes attended
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Competency */}
+          <Card>
+            <CardHeader className="space-y-1 pb-2">
+              <CardTitle className="text-muted-foreground text-sm font-medium">
+                Total Competency
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-semibold">
+                {metrics.competency.competentUnits}/
+                {metrics.competency.totalUnits}
+              </div>
+              <p className="text-muted-foreground mt-1 text-xs">
+                {metrics.competency.percentage}% of units competent
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Remaining Units */}
+          <Card>
+            <CardHeader className="space-y-1 pb-2">
+              <CardTitle className="text-muted-foreground text-sm font-medium">
+                Remaining Units
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-semibold">
+                {metrics.competency.remainingUnits}
+              </div>
+              <p className="text-muted-foreground mt-1 text-xs">
+                Units still to achieve competency
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {mode === 'student' && (
+        <div className="mb-6 grid gap-4 md:grid-cols-4">
+          {/* Pie Chart Card - 1 column */}
+          <Card>
+            <CardHeader className="items-center pb-0">
+              <CardTitle className="text-sm font-medium">
+                Unit Evaluation Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 pb-0">
+              <ChartContainer
+                config={evaluationChartConfig}
+                className="mx-auto aspect-square max-h-[200px]"
+              >
+                <PieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Pie
+                    data={evaluationStatusData}
+                    dataKey="count"
+                    nameKey="status"
+                  />
+                </PieChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          {/* Placeholder Card - 3 columns */}
+          <Card className="md:col-span-3">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">
+                Additional Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm">
+                Additional content can be added here.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -1550,13 +1741,13 @@ export function StudentDashboardPageClient({
               <div className="flex flex-wrap items-center gap-2">
                 {tabs.map((tab, i) => (
                   <Button
-                    key={tab}
+                    key={tab.key}
                     size="sm"
                     variant={i === activeTab ? 'default' : 'outline'}
                     onClick={() => setActiveTab(i)}
-                    aria-label={`Go to ${tab}`}
+                    aria-label={`Go to ${tab.label}`}
                   >
-                    {tab}
+                    {tab.label}
                   </Button>
                 ))}
               </div>
