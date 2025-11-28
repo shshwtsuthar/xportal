@@ -99,6 +99,7 @@ const NAV: NavItem[] = [
       { title: 'Mail', url: '/communications/mail' },
       { title: 'WhatsApp', url: '/communications/whatsapp' },
       { title: 'SMS', url: '/communications/sms' },
+      { title: 'Announcements', url: '/communications/announcements' },
     ],
   },
   {

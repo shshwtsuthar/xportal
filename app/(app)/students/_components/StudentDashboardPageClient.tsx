@@ -20,6 +20,7 @@ import { FinancePane } from '../[id]/_components/FinancePane';
 import { StudentDocumentsPane } from './StudentDocumentsPane';
 import { AssignmentsPane } from './AssignmentsPane';
 import { StudentAttendanceTable } from './StudentAttendanceTable';
+import { StudentAnnouncementsCard } from './StudentAnnouncementsCard';
 import { useStudentDashboardMetrics } from '@/src/hooks/useStudentDashboardMetrics';
 import { useGetStudentEnrollmentSubjects } from '@/src/hooks/useGetStudentEnrollmentSubjects';
 import { Pie, PieChart } from 'recharts';
@@ -1718,19 +1719,8 @@ export function StudentDashboardPageClient({
             </CardContent>
           </Card>
 
-          {/* Placeholder Card - 3 columns */}
-          <Card className="md:col-span-3">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">
-                Additional Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                Additional content can be added here.
-              </p>
-            </CardContent>
-          </Card>
+          {/* Announcements Card - 3 columns */}
+          <StudentAnnouncementsCard studentId={studentUuid ?? null} />
         </div>
       )}
 
