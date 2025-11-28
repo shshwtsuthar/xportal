@@ -686,8 +686,7 @@ serve(async (req: Request) => {
           amount_cents: amountCents,
           sequence_order: idx,
           is_commissionable: Boolean(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (installment as any).is_commissionable
+            (installment as { is_commissionable?: boolean }).is_commissionable
           ),
           description: null,
           xero_account_code: null,
@@ -800,6 +799,39 @@ serve(async (req: Request) => {
   });
 
   if (invoicesToSend.length > 0) {
+    // Pre-import react-pdf modules outside the loop to ensure proper initialization
+    // Use deps instead of external for dynamic imports (external doesn't work with dynamic imports in Deno)
+    const reactPdf = await import(
+      // deno-lint-ignore no-import-prefix
+      'https://esm.sh/@react-pdf/renderer@3.4.3?target=deno&deps=@react-pdf/yoga@3.0.1'
+    );
+    const react = await import(
+      // deno-lint-ignore no-import-prefix
+      'https://esm.sh/react@18.2.0?target=deno'
+    );
+
+    const { Document, Page, Text, View, StyleSheet } = reactPdf;
+    const { createElement } = react;
+
+    // Narrow the react-pdf import to expose renderToBuffer with a concrete signature
+    type RenderToBufferFn = (element: unknown) => Promise<Uint8Array>;
+    const { renderToBuffer } = reactPdf as unknown as {
+      renderToBuffer: RenderToBufferFn;
+    };
+
+    // Create styles once outside the loop (they're reusable)
+    const styles = StyleSheet.create({
+      page: {
+        paddingTop: 40,
+        paddingBottom: 40,
+        paddingHorizontal: 42,
+        fontSize: 11,
+      },
+      h1: { fontSize: 18, marginBottom: 8 },
+      row: { marginTop: 6 },
+      right: { textAlign: 'right' },
+    });
+
     // Fetch student and RTO info for email
     const { data: studentInfo } = await supabase
       .from('students')
@@ -826,29 +858,6 @@ serve(async (req: Request) => {
         (r) => r.invoice_number === invToSend.invoice_number
       );
       if (!invoiceRow) continue;
-
-      // Generate PDF using dynamic imports
-      // Import react-pdf/renderer which bundles React automatically
-      const reactPdf = await import(
-        'https://esm.sh/@react-pdf/renderer@3.4.3?target=deno&deps=@react-pdf/yoga@3.0.1'
-      );
-      const react = await import('https://esm.sh/react@18.2.0?target=deno');
-
-      const { Document, Page, Text, View, StyleSheet, renderToBuffer } =
-        reactPdf;
-      const { createElement } = react;
-
-      const styles = StyleSheet.create({
-        page: {
-          paddingTop: 40,
-          paddingBottom: 40,
-          paddingHorizontal: 42,
-          fontSize: 11,
-        },
-        h1: { fontSize: 18, marginBottom: 8 },
-        row: { marginTop: 6 },
-        right: { textAlign: 'right' },
-      });
 
       const invoiceData = {
         id: invToSend.id,
@@ -1356,6 +1365,160 @@ serve(async (req: Request) => {
       fileCopyWarnings.push(
         `Failed to link offer letters: ${offerErr.message}`
       );
+    }
+  }
+
+  // 3i) Create Supabase auth user and send acceptance email with password reset link
+  {
+    const studentEmail = student.email;
+    if (!studentEmail) {
+      console.warn(
+        `Student ${student.id} has no email, skipping user creation and email`
+      );
+    } else {
+      try {
+        // Use explicit site URL for the frontend, not SUPABASE_URL (54321)
+        const siteUrl =
+          Deno.env.get('SITE_URL') ||
+          Deno.env.get('NEXT_PUBLIC_SITE_URL') ||
+          'http://127.0.0.1:3000';
+
+        const { data: linkData, error: linkErr } =
+          await service.auth.admin.generateLink({
+            type: 'invite',
+            email: studentEmail,
+            options: {
+              data: {
+                first_name: student.first_name,
+                last_name: student.last_name,
+                rto_id: app.rto_id,
+                role: 'STUDENT',
+                student_id: student.id,
+              },
+              // Route via callback so server can exchange code, then continue to update-password
+              redirectTo: `${siteUrl}/auth/callback?next=/auth/update-password`,
+            },
+          });
+
+        if (linkErr || !linkData?.properties?.action_link) {
+          console.error('Failed to generate invite link:', linkErr);
+          fileCopyWarnings.push(
+            `Failed to generate invite link: ${linkErr?.message || 'Unknown error'}`
+          );
+        } else {
+          // Get the user ID from the generated link
+          const authUserId = linkData.user?.id;
+
+          if (authUserId) {
+            // Update user metadata and app_metadata
+            await service.auth.admin.updateUserById(authUserId, {
+              user_metadata: {
+                first_name: student.first_name,
+                last_name: student.last_name,
+                preferred_name: student.preferred_name,
+              },
+              app_metadata: {
+                rto_id: app.rto_id,
+                role: 'STUDENT',
+                student_id: student.id,
+              },
+            });
+
+            // Update student record with user_id
+            const { error: updateErr } = await service
+              .from('students')
+              .update({ user_id: authUserId })
+              .eq('id', student.id);
+
+            if (updateErr) {
+              console.error('Failed to link user_id to student:', updateErr);
+              fileCopyWarnings.push(
+                `Failed to link user account: ${updateErr.message}`
+              );
+            }
+          }
+
+          // Fetch RTO name for email
+          const { data: rtoInfo } = await supabase
+            .from('rtos')
+            .select('name')
+            .eq('id', app.rto_id)
+            .single();
+
+          const rtoName = rtoInfo?.name || 'your training organisation';
+          const studentName =
+            student.preferred_name || student.first_name || 'Student';
+
+          // Send acceptance email via Resend
+          // Match the pattern used in daily-finance-tick: only require RESEND_API_KEY
+          const resendKey = Deno.env.get('RESEND_API_KEY');
+          const resendFrom = Deno.env.get('RESEND_FROM');
+
+          // Debug logging to help diagnose Resend configuration issues
+          if (!resendKey) {
+            console.warn(
+              'RESEND_API_KEY not found in environment variables. Available env vars:',
+              Object.keys(Deno.env.toObject()).filter((k) =>
+                k.toUpperCase().includes('RESEND')
+              )
+            );
+          }
+
+          if (resendKey) {
+            const emailRes = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${resendKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: resendFrom ?? 'no-reply@example.com',
+                to: studentEmail,
+                subject: `Welcome to ${rtoName} - Your Application Has Been Approved`,
+                html: `
+                  <p>Dear ${studentName},</p>
+                  <p>Congratulations! Your application has been approved and you have been accepted to ${rtoName}.</p>
+                  <p>A new user account has been created for you. Please click the button below to set your password and access your student portal.</p>
+                  <p><a href="${linkData.properties.action_link}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;text-decoration:none;border-radius:6px">Set Password & Access Portal</a></p>
+                  <p>If the button doesn't work, copy and paste this link into your browser:</p>
+                  <p><a href="${linkData.properties.action_link}">${linkData.properties.action_link}</a></p>
+                  <p>Your Student ID: <strong>${student.student_id_display}</strong></p>
+                  <p>Once you've set your password, you'll be able to:</p>
+                  <ul>
+                    <li>View your course progression</li>
+                    <li>Access your assignments</li>
+                    <li>View your finance and attendance records</li>
+                  </ul>
+                  <p>If you have any questions, please contact ${rtoName}.</p>
+                  <p>— ${rtoName} Team</p>
+                `,
+              }),
+            });
+
+            if (!emailRes.ok) {
+              const errorText = await emailRes.text();
+              console.warn(
+                `Email send failed for student ${student.id}:`,
+                errorText
+              );
+              fileCopyWarnings.push(
+                `Failed to send acceptance email: ${errorText}`
+              );
+            }
+          } else {
+            console.warn('Resend not configured - skipping acceptance email');
+            fileCopyWarnings.push(
+              'Acceptance email not sent (Resend not configured)'
+            );
+          }
+        }
+      } catch (userErr) {
+        // Log but don't fail approval - user creation is important but shouldn't block approval
+        console.error('Error creating user or sending email:', userErr);
+        fileCopyWarnings.push(
+          `User creation/email error: ${userErr instanceof Error ? userErr.message : String(userErr)}`
+        );
+      }
     }
   }
 

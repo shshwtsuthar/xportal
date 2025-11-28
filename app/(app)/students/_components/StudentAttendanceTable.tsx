@@ -17,8 +17,11 @@ import { calculateDateRangeStatus } from '@/lib/utils/status';
 import { useGetStudentAllClasses } from '@/src/hooks/useGetStudentAllClasses';
 import { useUpsertEnrollmentClassAttendance } from '@/src/hooks/useUpsertEnrollmentClassAttendance';
 
+type StudentAttendanceMode = 'staff' | 'student';
+
 type StudentAttendanceTableProps = {
   studentId: string;
+  mode?: StudentAttendanceMode;
 };
 
 /**
@@ -28,6 +31,7 @@ type StudentAttendanceTableProps = {
  */
 export const StudentAttendanceTable = ({
   studentId,
+  mode = 'staff',
 }: StudentAttendanceTableProps) => {
   const {
     data: classes,
@@ -41,6 +45,10 @@ export const StudentAttendanceTable = ({
     enrollmentClassId: string,
     present: boolean | null
   ) => {
+    if (mode === 'student') {
+      return;
+    }
+
     try {
       await upsertAttendance({ enrollmentClassId, present });
       toast.success('Attendance updated');
@@ -141,31 +149,48 @@ export const StudentAttendanceTable = ({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      aria-label="Mark present"
-                      checked={
-                        classItem.enrollment_class_attendances?.present ?? false
+                  {mode === 'student' ? (
+                    (() => {
+                      const present =
+                        classItem.enrollment_class_attendances?.present;
+                      if (present === true) {
+                        return 'Present';
                       }
-                      onCheckedChange={(checked) =>
-                        handleToggleAttendance(
-                          classItem.id,
-                          checked === true ? true : false
-                        )
+                      if (present === false) {
+                        return 'Absent';
                       }
-                      disabled={isPending}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2"
-                      aria-label="Reset attendance to unmarked"
-                      onClick={() => handleToggleAttendance(classItem.id, null)}
-                      disabled={isPending}
-                    >
-                      Reset
-                    </Button>
-                  </div>
+                      return 'Unmarked';
+                    })()
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        aria-label="Mark present"
+                        checked={
+                          classItem.enrollment_class_attendances?.present ??
+                          false
+                        }
+                        onCheckedChange={(checked) =>
+                          handleToggleAttendance(
+                            classItem.id,
+                            checked === true ? true : false
+                          )
+                        }
+                        disabled={isPending}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2"
+                        aria-label="Reset attendance to unmarked"
+                        onClick={() =>
+                          handleToggleAttendance(classItem.id, null)
+                        }
+                        disabled={isPending}
+                      >
+                        Reset
+                      </Button>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             );

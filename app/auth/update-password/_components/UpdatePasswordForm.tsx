@@ -30,7 +30,6 @@ export function UpdatePasswordForm() {
       }
     }
     maybeSetSessionFromHash();
-     
   }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -56,7 +55,20 @@ export function UpdatePasswordForm() {
       }
 
       toast.success('Password updated successfully');
-      router.push('/login');
+
+      // Check if user is a student and redirect accordingly
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const userRole = (
+        user?.app_metadata as Record<string, unknown> | undefined
+      )?.role;
+
+      if (userRole === 'STUDENT') {
+        router.push('/student');
+      } else {
+        router.push('/login');
+      }
     } catch (error: unknown) {
       toast.error((error as Error).message || 'Failed to update password');
       setIsLoading(false);

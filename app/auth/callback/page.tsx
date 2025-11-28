@@ -41,6 +41,7 @@ export default function AuthCallbackPage() {
             refresh_token,
           });
           if (error) {
+            console.error('Session set error:', error);
             router.replace('/auth/auth-error');
             return;
           }
@@ -52,7 +53,8 @@ export default function AuthCallbackPage() {
         }
       }
 
-      // No recognizable tokens found
+      // No recognizable tokens found - redirect to auth error
+      console.warn('No auth tokens found in callback URL');
       router.replace('/auth/auth-error');
     }
     run();

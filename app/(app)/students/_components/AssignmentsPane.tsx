@@ -47,7 +47,9 @@ import {
   useUpdateSubmissionGrade,
 } from '@/src/hooks/useStudentSubmissions';
 
-type Props = { studentId: string };
+type AssignmentsPaneMode = 'staff' | 'student';
+
+type Props = { studentId: string; mode?: AssignmentsPaneMode };
 
 type StudentSubmission = Tables<'student_assignment_submissions'>;
 
@@ -95,7 +97,7 @@ const parseSubmissionNotes = (
   return { kind: 'student', description: trimmed };
 };
 
-export function AssignmentsPane({ studentId }: Props) {
+export function AssignmentsPane({ studentId, mode = 'staff' }: Props) {
   const { data: enrollmentSubjects = [] } =
     useGetStudentEnrollmentSubjects(studentId);
 
@@ -217,6 +219,10 @@ export function AssignmentsPane({ studentId }: Props) {
     submission: StudentSubmission,
     grade: 'S' | 'NYS'
   ) => {
+    if (mode === 'student') {
+      return;
+    }
+
     if (!selectedSubjectId) {
       toast.error('Select a subject before updating grades');
       return;
@@ -392,7 +398,7 @@ export function AssignmentsPane({ studentId }: Props) {
                 {assignments.length} assignments
               </div>
             </div>
-            {selectedSubjectId && (
+            {mode === 'staff' && selectedSubjectId && (
               <Dialog>
                 <DialogTrigger asChild>
                   <Button size="sm" aria-label="Add assignment">
@@ -492,7 +498,7 @@ export function AssignmentsPane({ studentId }: Props) {
                         <Download className="mr-2 h-4 w-4" /> Download
                       </Button>
                     </div>
-                    {a.id === selectedAssignmentId && (
+                    {a.id === selectedAssignmentId && mode === 'staff' && (
                       <div
                         className="space-y-2"
                         onClick={(event) => event.stopPropagation()}
@@ -716,26 +722,29 @@ export function AssignmentsPane({ studentId }: Props) {
                       Upload annotated files and notes for the student
                     </p>
                   </div>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        aria-label="Upload feedback"
-                      >
-                        <UploadCloud className="mr-2 h-4 w-4" /> Upload feedback
-                      </Button>
-                    </DialogTrigger>
-                    <UploadSubmissionDialog
-                      assignmentId={selectedAssignmentId}
-                      assignmentTitle={assignmentTitle}
-                      dialogTitle="Upload feedback"
-                      submitLabel="Upload feedback"
-                      descriptionLabel="Feedback notes"
-                      descriptionPlaceholder="Share context for the student (optional)"
-                      onUpload={handleTrainerUpload}
-                    />
-                  </Dialog>
+                  {mode === 'staff' && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          aria-label="Upload feedback"
+                        >
+                          <UploadCloud className="mr-2 h-4 w-4" /> Upload
+                          feedback
+                        </Button>
+                      </DialogTrigger>
+                      <UploadSubmissionDialog
+                        assignmentId={selectedAssignmentId}
+                        assignmentTitle={assignmentTitle}
+                        dialogTitle="Upload feedback"
+                        submitLabel="Upload feedback"
+                        descriptionLabel="Feedback notes"
+                        descriptionPlaceholder="Share context for the student (optional)"
+                        onUpload={handleTrainerUpload}
+                      />
+                    </Dialog>
+                  )}
                 </div>
                 <div className="w-full overflow-hidden rounded-md border">
                   <Table>
