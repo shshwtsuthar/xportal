@@ -13,7 +13,16 @@ export default function AuthCallbackPage() {
       const supabase = createClient();
 
       const nextParam = searchParams.get('next') || undefined;
-      const defaultNext = '/dashboard';
+
+      // Helper to get default redirect based on user role
+      const getDefaultRedirect = async () => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        const role = (user?.app_metadata as Record<string, unknown> | undefined)
+          ?.role as string | undefined;
+        return role === 'STUDENT' ? '/student' : '/dashboard';
+      };
 
       // 1) PKCE code flow via query param
       const code = searchParams.get('code');
@@ -23,6 +32,7 @@ export default function AuthCallbackPage() {
           router.replace('/auth/auth-error');
           return;
         }
+        const defaultNext = await getDefaultRedirect();
         router.replace(nextParam || defaultNext);
         return;
       }
@@ -45,10 +55,14 @@ export default function AuthCallbackPage() {
             router.replace('/auth/auth-error');
             return;
           }
-          const next =
-            nextParam ||
-            (type === 'invite' ? '/auth/update-password' : defaultNext);
-          router.replace(next);
+          if (nextParam) {
+            router.replace(nextParam);
+          } else if (type === 'invite') {
+            router.replace('/auth/update-password');
+          } else {
+            const defaultNext = await getDefaultRedirect();
+            router.replace(defaultNext);
+          }
           return;
         }
       }

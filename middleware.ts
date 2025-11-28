@@ -67,9 +67,48 @@ export async function middleware(request: NextRequest) {
         new URL('/auth/auth-error?error=missing_rto', request.url)
       );
     }
+
+    // Get user role from app_metadata for role-based access control
+    const role = (
+      userRes.user?.app_metadata as Record<string, unknown> | undefined
+    )?.role as string | undefined;
+
+    // Define route access rules
+    const isStudentRoute = path.startsWith('/student');
+    const isStaffRoute =
+      path.startsWith('/dashboard') ||
+      path.startsWith('/students') ||
+      path.startsWith('/applications') ||
+      path.startsWith('/financial') ||
+      path.startsWith('/agents') ||
+      path.startsWith('/programs') ||
+      path.startsWith('/subjects') ||
+      path.startsWith('/program-plans') ||
+      path.startsWith('/timetables') ||
+      path.startsWith('/locations') ||
+      path.startsWith('/attendance') ||
+      path.startsWith('/communications') ||
+      path.startsWith('/rto') ||
+      path.startsWith('/settings') ||
+      path.startsWith('/reports') ||
+      path === '/';
+
+    // Role-based access control
+    if (role === 'STUDENT') {
+      // Students can only access /student routes
+      if (isStaffRoute) {
+        return NextResponse.redirect(new URL('/student', request.url));
+      }
+    } else if (role && role !== 'STUDENT') {
+      // Staff members (all non-STUDENT roles) cannot access student portal
+      if (isStudentRoute) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    }
+    // If role is undefined/null, allow access (for backward compatibility during migration)
   }
 
-  // If on a public path (login/auth pages) and logged in, redirect to dashboard
+  // If on a public path (login/auth pages) and logged in, redirect based on role
   // Allow staying on update-password so new invite/recovery users can set a password
   if (
     isPublicPath &&
@@ -77,12 +116,25 @@ export async function middleware(request: NextRequest) {
     path !== '/auth/callback' &&
     path !== '/auth/update-password'
   ) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    // Get user role to determine redirect destination
+    const { data: userRes } = await supabase.auth.getUser();
+    const role = (
+      userRes.user?.app_metadata as Record<string, unknown> | undefined
+    )?.role as string | undefined;
+
+    const redirectPath = role === 'STUDENT' ? '/student' : '/dashboard';
+    return NextResponse.redirect(new URL(redirectPath, request.url));
   }
 
-  // If accessing root and logged in, redirect to dashboard
+  // If accessing root and logged in, redirect based on role
   if (path === '/' && session) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const { data: userRes } = await supabase.auth.getUser();
+    const role = (
+      userRes.user?.app_metadata as Record<string, unknown> | undefined
+    )?.role as string | undefined;
+
+    const redirectPath = role === 'STUDENT' ? '/student' : '/dashboard';
+    return NextResponse.redirect(new URL(redirectPath, request.url));
   }
 
   // If on a private path and not logged in, redirect to login
@@ -98,9 +150,11 @@ export async function middleware(request: NextRequest) {
     const { data: userRes } = await supabase.auth.getUser();
     const role = (
       userRes.user?.app_metadata as Record<string, unknown> | undefined
-    )?.role;
+    )?.role as string | undefined;
     if (role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      // Redirect to appropriate dashboard based on role
+      const redirectPath = role === 'STUDENT' ? '/student' : '/dashboard';
+      return NextResponse.redirect(new URL(redirectPath, request.url));
     }
   }
 
