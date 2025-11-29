@@ -17,3 +17,4 @@ COMMENT ON COLUMN public.rtos.bank_account_number IS 'Bank account number';
 COMMIT;
 
 
+

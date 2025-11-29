@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
-import { Tables } from '@/database.types';
 
 /**
  * Fetch bank information for the current RTO.

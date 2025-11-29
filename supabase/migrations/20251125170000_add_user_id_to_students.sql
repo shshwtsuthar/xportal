@@ -11,3 +11,4 @@ CREATE INDEX IF NOT EXISTS idx_students_user_id ON public.students(user_id);
 
 COMMIT;
 
+

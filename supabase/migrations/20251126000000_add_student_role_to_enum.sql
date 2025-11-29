@@ -10,3 +10,4 @@ COMMENT ON TYPE public.user_role IS 'User roles in the system. STUDENT is for st
 
 COMMIT;
 
+
