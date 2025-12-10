@@ -74,7 +74,7 @@ export async function middleware(request: NextRequest) {
     )?.role as string | undefined;
 
     // Define route access rules
-    const isStudentRoute = path.startsWith('/student');
+    const isStudentRoute = path === '/student' || path.startsWith('/student/');
     const isStaffRoute =
       path.startsWith('/dashboard') ||
       path.startsWith('/students') ||

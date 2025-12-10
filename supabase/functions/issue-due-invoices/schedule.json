@@ -1,0 +1,12 @@
+{
+  "name": "issue-due-invoices-daily",
+  "description": "Daily issue/send invoices whose issue_date is due",
+  "cron": "0 20 * * *",
+  "request": {
+    "method": "POST",
+    "headers": {
+      "Authorization": "Bearer ${SUPABASE_SERVICE_ROLE_KEY}"
+    },
+    "body": "{}"
+  }
+}

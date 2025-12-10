@@ -12,19 +12,6 @@ const corsHeaders = {
 
 type Db = Database;
 
-function formatCurrencyAud(cents: number): string {
-  const dollars = (cents ?? 0) / 100;
-  return dollars.toLocaleString('en-AU', {
-    style: 'currency',
-    currency: 'AUD',
-  });
-}
-
-function yyyy(date: Date | string) {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return String(d.getFullYear());
-}
-
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -790,205 +777,6 @@ serve(async (req: Request) => {
     );
   }
 
-  // 3a) Auto-send invoices with issue_date <= today
-  const invoicesToSend = insertedInvoices.filter((inv) => {
-    const invoiceRow = invoiceRows.find(
-      (r) => r.invoice_number === inv.invoice_number
-    );
-    return invoiceRow && invoiceRow.issue_date <= todayIso;
-  });
-
-  if (invoicesToSend.length > 0) {
-    // Pre-import react-pdf modules outside the loop to ensure proper initialization
-    // Use deps instead of external for dynamic imports (external doesn't work with dynamic imports in Deno)
-    const reactPdf = await import(
-      // deno-lint-ignore no-import-prefix
-      'https://esm.sh/@react-pdf/renderer@3.4.3?target=deno&deps=@react-pdf/yoga@3.0.1'
-    );
-    const react = await import(
-      // deno-lint-ignore no-import-prefix
-      'https://esm.sh/react@18.2.0?target=deno'
-    );
-
-    const { Document, Page, Text, View, StyleSheet } = reactPdf;
-    const { createElement } = react;
-
-    // Narrow the react-pdf import to expose renderToBuffer with a concrete signature
-    type RenderToBufferFn = (element: unknown) => Promise<Uint8Array>;
-    const { renderToBuffer } = reactPdf as unknown as {
-      renderToBuffer: RenderToBufferFn;
-    };
-
-    // Create styles once outside the loop (they're reusable)
-    const styles = StyleSheet.create({
-      page: {
-        paddingTop: 40,
-        paddingBottom: 40,
-        paddingHorizontal: 42,
-        fontSize: 11,
-      },
-      h1: { fontSize: 18, marginBottom: 8 },
-      row: { marginTop: 6 },
-      right: { textAlign: 'right' },
-    });
-
-    // Fetch student and RTO info for email
-    const { data: studentInfo } = await supabase
-      .from('students')
-      .select('id, first_name, last_name, email')
-      .eq('id', student.id)
-      .single();
-
-    const { data: rtoInfo } = await supabase
-      .from('rtos')
-      .select('id, name')
-      .eq('id', app.rto_id)
-      .single();
-
-    const studentName = studentInfo
-      ? [studentInfo.first_name, studentInfo.last_name]
-          .filter(Boolean)
-          .join(' ')
-      : 'Student';
-    const studentEmail = studentInfo?.email ?? null;
-
-    // Generate PDFs and send emails for invoices due today
-    for (const invToSend of invoicesToSend) {
-      const invoiceRow = invoiceRows.find(
-        (r) => r.invoice_number === invToSend.invoice_number
-      );
-      if (!invoiceRow) continue;
-
-      const invoiceData = {
-        id: invToSend.id,
-        rto_id: app.rto_id,
-        invoice_number: String(invToSend.invoice_number),
-        due_date: invoiceRow.due_date,
-        issue_date: invoiceRow.issue_date,
-        amount_due_cents: invoiceRow.amount_due_cents,
-        student_name: studentName,
-        student_email: studentEmail,
-        rto_name: rtoInfo?.name ?? null,
-      };
-
-      const InvoiceDoc = ({ data }: { data: typeof invoiceData }) => {
-        return createElement(
-          Document,
-          { title: `Invoice ${data.invoice_number}` },
-          createElement(
-            Page,
-            { size: 'A4', style: styles.page },
-            createElement(
-              View,
-              {},
-              createElement(Text, { style: styles.h1 }, 'Tax Invoice'),
-              createElement(Text, {}, data.invoice_number)
-            ),
-            createElement(
-              View,
-              { style: styles.row },
-              createElement(Text, {}, `Issued: ${data.issue_date}`),
-              createElement(Text, {}, `Due: ${data.due_date}`)
-            ),
-            createElement(
-              View,
-              { style: styles.row },
-              createElement(Text, {}, `Bill To: ${data.student_name}`)
-            ),
-            createElement(
-              View,
-              { style: { marginTop: 16 } },
-              createElement(
-                Text,
-                {},
-                `Amount Due: ${formatCurrencyAud(data.amount_due_cents)}`
-              )
-            )
-          )
-        );
-      };
-
-      const element = createElement(InvoiceDoc, { data: invoiceData });
-      const pdfBuffer = await renderToBuffer(element);
-      const bytes = new Uint8Array(pdfBuffer);
-
-      const year = yyyy(invoiceRow.due_date);
-      const filePath = `${app.rto_id}/${year}/${invToSend.invoice_number}.pdf`;
-
-      const { error: uploadErr } = await service.storage
-        .from('invoices')
-        .upload(filePath, bytes, {
-          contentType: 'application/pdf',
-          upsert: true,
-        });
-
-      if (uploadErr) {
-        console.warn(
-          `PDF upload failed for invoice ${invToSend.invoice_number}:`,
-          uploadErr.message
-        );
-        continue; // Skip email if PDF failed
-      }
-
-      // Update invoice with PDF path
-      await supabase
-        .from('invoices')
-        .update({ pdf_path: filePath })
-        .eq('id', invToSend.id);
-
-      // Send email if Resend is configured
-      const resendKey = Deno.env.get('RESEND_API_KEY');
-      const resendFrom = Deno.env.get('RESEND_FROM');
-      if (resendKey && studentEmail) {
-        // Fetch signed URL for attachment
-        const { data: signed, error: signErr } = await service.storage
-          .from('invoices')
-          .createSignedUrl(filePath, 60 * 30);
-
-        if (!signErr && signed?.signedUrl) {
-          const emailRes = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${resendKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              from: resendFrom ?? 'no-reply@example.com',
-              to: studentEmail,
-              subject: `Invoice ${invToSend.invoice_number} - ${invoiceRow.due_date}`,
-              html: `<p>Dear ${studentName},</p><p>Your invoice ${invToSend.invoice_number} has been issued.</p><p>Amount: ${formatCurrencyAud(invoiceRow.amount_due_cents)}</p><p>Due Date: ${invoiceRow.due_date}</p><p><a href="${signed.signedUrl}">Download PDF</a></p>`,
-            }),
-          });
-
-          if (emailRes.ok) {
-            // Mark invoice as SENT and update last_email_sent_at
-            await supabase
-              .from('invoices')
-              .update({
-                status: 'SENT',
-                last_email_sent_at: new Date().toISOString(),
-              })
-              .eq('id', invToSend.id);
-          } else {
-            console.warn(
-              `Email send failed for invoice ${invToSend.invoice_number}`
-            );
-            // PDF was generated but email failed - invoice stays SCHEDULED
-          }
-        }
-      } else if (!resendKey) {
-        // No Resend configured - mark as SENT anyway since PDF was generated
-        await supabase
-          .from('invoices')
-          .update({
-            status: 'SENT',
-            last_email_sent_at: new Date().toISOString(),
-          })
-          .eq('id', invToSend.id);
-      }
-    }
-  }
-
   // --- Extended copy: student domain normalization ---
   // 3b) Addresses (street + postal)
   {
@@ -1523,10 +1311,12 @@ serve(async (req: Request) => {
   }
 
   // 4) Update application status to APPROVED
+  // Only update if status is still ACCEPTED (prevents race conditions)
   const { error: updErr } = await supabase
     .from('applications')
     .update({ status: 'APPROVED' })
-    .eq('id', app.id);
+    .eq('id', app.id)
+    .eq('status', 'ACCEPTED'); // Ensure atomicity - only update if still ACCEPTED
   if (updErr) {
     return new Response(
       JSON.stringify({ error: 'Failed to update application status' }),
@@ -1560,7 +1350,7 @@ serve(async (req: Request) => {
 
   return new Response(
     JSON.stringify({
-      message: 'Application approved, invoices generated',
+      message: 'Application approved, invoices scheduled for issue',
       studentId: student.id,
       enrollmentId: enrollment.id,
       warnings: fileCopyWarnings.length > 0 ? fileCopyWarnings : undefined,
