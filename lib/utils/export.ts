@@ -79,10 +79,23 @@ const getValueByColumnId = (row: RowType, id: string): string | number => {
 
 /**
  * Prepare export rows and headers using the table column definitions.
- * Includes ALL columns regardless of user visibility.
+ * Allows narrowing to a provided list of visible column ids to mirror the table.
  */
-export const buildExportTable = (rows: RowType[]) => {
-  const columns = getApplicationsColumns();
+export const buildExportTable = (rows: RowType[], columnIds?: string[]) => {
+  const allColumns = getApplicationsColumns();
+  const columnMap = new Map(allColumns.map((c) => [c.id, c]));
+
+  // Use provided columns when available; otherwise fall back to full list.
+  const resolvedColumns =
+    columnIds && columnIds.length > 0
+      ? (columnIds
+          .map((id) => columnMap.get(id))
+          .filter(Boolean) as typeof allColumns)
+      : allColumns;
+
+  // If no columns resolved (e.g., stale prefs), fall back to full list.
+  const columns = resolvedColumns.length > 0 ? resolvedColumns : allColumns;
+
   const headers = columns.map((c) => c.label);
   const ids = columns.map((c) => c.id);
   const data = rows.map((row) => ids.map((id) => getValueByColumnId(row, id)));
@@ -119,10 +132,11 @@ export const generateFileName = (
  */
 export const exportToCSV = async (
   rows: RowType[],
-  filters?: ApplicationFilters
+  filters?: ApplicationFilters,
+  columnIds?: string[]
 ) => {
   const Papa = (await import('papaparse')).default;
-  const { headers, data } = buildExportTable(rows);
+  const { headers, data } = buildExportTable(rows, columnIds);
   const csv = Papa.unparse({ fields: headers, data });
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -140,10 +154,11 @@ export const exportToCSV = async (
  */
 export const exportToXLSX = async (
   rows: RowType[],
-  filters?: ApplicationFilters
+  filters?: ApplicationFilters,
+  columnIds?: string[]
 ) => {
   const XLSX = await import('xlsx');
-  const { headers, data } = buildExportTable(rows);
+  const { headers, data } = buildExportTable(rows, columnIds);
   const aoa = [headers, ...data];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();

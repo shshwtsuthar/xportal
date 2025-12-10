@@ -33,14 +33,8 @@ export const useGetApplications = (
         .select('*, agents(name), programs(name)')
         .order('updated_at', { ascending: false });
 
-      const includeArchived = options?.includeArchived ?? false;
+      const includeArchived = options?.includeArchived ?? true;
       const statusesFilter = filters?.statuses ?? [];
-      const shouldGuardArchived =
-        !includeArchived && statusesFilter.length === 0;
-
-      if (shouldGuardArchived) {
-        query = query.neq('status', 'ARCHIVED');
-      }
 
       if (!filters) {
         const { data, error } = await query;

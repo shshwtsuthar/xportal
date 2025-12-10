@@ -15,6 +15,11 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Download } from 'lucide-react';
 import type { Tables } from '@/database.types';
 import type { ApplicationFilters } from '@/src/hooks/useApplicationsFilters';
+import {
+  getApplicationsTableKey,
+  useGetTablePreferences,
+} from '@/src/hooks/useTablePreferences';
+import { DEFAULT_VISIBLE_COLUMNS } from './applicationsTableColumns';
 import { exportToCSV, exportToXLSX } from '@/lib/utils/export';
 
 type RowType = Tables<'applications'> & {
@@ -31,18 +36,26 @@ type Props = {
 
 export function ExportDialog({ open, onOpenChange, getRows, filters }: Props) {
   const [format, setFormat] = React.useState<'csv' | 'xlsx'>('csv');
+  const tableKey = getApplicationsTableKey();
+  const { data: prefs } = useGetTablePreferences(tableKey);
   const rows = React.useMemo(() => getRows(), [getRows, open]);
   const count = rows.length;
   const hasRows = count > 0;
+  const visibleColumns = React.useMemo(() => {
+    if (prefs?.visible_columns?.length) {
+      return prefs.visible_columns;
+    }
+    return DEFAULT_VISIBLE_COLUMNS;
+  }, [prefs]);
 
   const handleExport = async () => {
     if (!hasRows) return;
     if (format === 'csv') {
-      await exportToCSV(rows, filters);
+      await exportToCSV(rows, filters, visibleColumns);
       onOpenChange(false);
       return;
     }
-    await exportToXLSX(rows, filters);
+    await exportToXLSX(rows, filters, visibleColumns);
     onOpenChange(false);
   };
 
