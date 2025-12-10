@@ -263,22 +263,21 @@ serve(async (req: Request) => {
       );
     }
 
-    // 11. Check if the installment is commissionable
-    // We need to match the invoice to the application_payment_schedule entry
-    // and then check the template_installment.is_commissionable flag
-    const { data: paymentSchedule, error: scheduleErr } = await supabase
-      .from('application_payment_schedule')
-      .select('template_installment_id, due_date, amount_cents')
-      .eq('application_id', application.id)
-      .eq('due_date', invoice.due_date)
-      .limit(1)
-      .maybeSingle();
+    // 11. Determine commissionable basis: prefer invoice_lines, fallback to schedule flag
+    const { data: invoiceLines, error: linesErr } = await supabase
+      .from('invoice_lines')
+      .select('amount_cents, is_commissionable')
+      .eq('invoice_id', invoice.id);
 
-    if (scheduleErr || !paymentSchedule) {
+    let commissionableAmountCents: number | null = null;
+    let totalLineAmountCents: number | null = null;
+
+    if (linesErr) {
       return new Response(
         JSON.stringify({
           created: false,
-          reason: 'Payment schedule entry not found for this invoice',
+          reason: 'Failed to read invoice lines',
+          details: linesErr.message,
         } as CommissionCalculationResponse),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -287,42 +286,118 @@ serve(async (req: Request) => {
       );
     }
 
-    // 12. Check if the template installment is commissionable
-    const { data: templateInstallment, error: installmentErr } = await supabase
-      .from('payment_plan_template_installments')
-      .select('id, is_commissionable')
-      .eq('id', paymentSchedule.template_installment_id)
-      .single();
-
-    if (installmentErr || !templateInstallment) {
-      return new Response(
-        JSON.stringify({
-          created: false,
-          reason: 'Template installment not found',
-        } as CommissionCalculationResponse),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
+    if (invoiceLines && invoiceLines.length > 0) {
+      const commissionableLines = invoiceLines.filter((l) =>
+        Boolean(l.is_commissionable)
       );
+      commissionableAmountCents = commissionableLines.reduce(
+        (sum, line) => sum + Math.max(0, line.amount_cents ?? 0),
+        0
+      );
+      totalLineAmountCents = invoiceLines.reduce(
+        (sum, line) => sum + Math.max(0, line.amount_cents ?? 0),
+        0
+      );
+
+      if (!commissionableLines.length || commissionableAmountCents <= 0) {
+        return new Response(
+          JSON.stringify({
+            created: false,
+            reason: 'No commissionable invoice lines for this invoice',
+          } as CommissionCalculationResponse),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      }
+
+      if (!totalLineAmountCents || totalLineAmountCents <= 0) {
+        return new Response(
+          JSON.stringify({
+            created: false,
+            reason: 'Invoice lines total is zero; cannot prorate commission',
+          } as CommissionCalculationResponse),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      }
+    } else {
+      // Fallback to installment flag if lines are not present
+      const { data: paymentSchedule, error: scheduleErr } = await supabase
+        .from('application_payment_schedule')
+        .select('template_installment_id, due_date, amount_cents')
+        .eq('application_id', application.id)
+        .eq('due_date', invoice.due_date)
+        .limit(1)
+        .maybeSingle();
+
+      if (scheduleErr || !paymentSchedule) {
+        return new Response(
+          JSON.stringify({
+            created: false,
+            reason: 'Payment schedule entry not found for this invoice',
+          } as CommissionCalculationResponse),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      }
+
+      const { data: templateInstallment, error: installmentErr } =
+        await supabase
+          .from('payment_plan_template_installments')
+          .select('id, is_commissionable')
+          .eq('id', paymentSchedule.template_installment_id)
+          .single();
+
+      if (installmentErr || !templateInstallment) {
+        return new Response(
+          JSON.stringify({
+            created: false,
+            reason: 'Template installment not found',
+          } as CommissionCalculationResponse),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      }
+
+      if (!templateInstallment.is_commissionable) {
+        return new Response(
+          JSON.stringify({
+            created: false,
+            reason: 'Installment is not commissionable',
+          } as CommissionCalculationResponse),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      }
+
+      commissionableAmountCents = payment.amount_cents;
     }
 
-    if (!templateInstallment.is_commissionable) {
-      return new Response(
-        JSON.stringify({
-          created: false,
-          reason: 'Installment is not commissionable',
-        } as CommissionCalculationResponse),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-    }
-
-    // 13. Calculate commission amounts
+    // 12. Calculate commission amounts using commissionable portion (cap by payment)
     const commissionRate = Number(agent.commission_rate_percent) / 100;
-    const baseAmountCents = Math.round(payment.amount_cents * commissionRate);
+
+    let basis: number;
+    if (invoiceLines && invoiceLines.length > 0 && totalLineAmountCents) {
+      // Prorate payment to commissionable portion of the invoice.
+      const commissionableShare =
+        (commissionableAmountCents ?? 0) / totalLineAmountCents;
+      basis = Math.round(payment.amount_cents * commissionableShare);
+    } else {
+      // Fallback: whole payment amount (installment-based)
+      basis = Math.min(payment.amount_cents, commissionableAmountCents ?? 0);
+    }
+
+    const baseAmountCents = Math.round(basis * commissionRate);
 
     // Skip if base commission is zero
     if (baseAmountCents <= 0) {

@@ -27,6 +27,19 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Deprecated: invoice issuance moved to issue-due-invoices.
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      message:
+        'daily-finance-tick has been superseded by issue-due-invoices. Schedule that function instead.',
+    }),
+    {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 410,
+    }
+  );
+
   try {
     const supabase = createClient<Database>(
       Deno.env.get('SUPABASE_URL') ?? '',
