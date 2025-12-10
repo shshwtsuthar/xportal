@@ -3198,6 +3198,7 @@ export type Database = {
           last_name: string
           middle_name: string | null
           mobile_phone: string | null
+          orientation_completed: boolean
           preferred_name: string | null
           rto_id: string
           salutation: string | null
@@ -3218,6 +3219,7 @@ export type Database = {
           last_name: string
           middle_name?: string | null
           mobile_phone?: string | null
+          orientation_completed?: boolean
           preferred_name?: string | null
           rto_id: string
           salutation?: string | null
@@ -3238,6 +3240,7 @@ export type Database = {
           last_name?: string
           middle_name?: string | null
           mobile_phone?: string | null
+          orientation_completed?: boolean
           preferred_name?: string | null
           rto_id?: string
           salutation?: string | null

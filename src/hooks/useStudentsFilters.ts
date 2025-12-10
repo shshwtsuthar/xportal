@@ -8,6 +8,7 @@ export interface StudentFilters {
   search?: string;
   statuses?: StudentStatus[];
   createdAt?: { from?: string; to?: string };
+  orientationCompleted?: boolean;
 }
 
 /**
@@ -41,6 +42,13 @@ export const useStudentsFilters = () => {
       if (createdTo) result.createdAt.to = createdTo;
     }
 
+    const orientationCompleted = params.get('orientationCompleted');
+    if (orientationCompleted === 'true') {
+      result.orientationCompleted = true;
+    } else if (orientationCompleted === 'false') {
+      result.orientationCompleted = false;
+    }
+
     return result;
   }, [searchParams]);
 
@@ -50,7 +58,13 @@ export const useStudentsFilters = () => {
       const params = new URLSearchParams(searchParams);
 
       // Clear existing filter params
-      const filterKeys = ['search', 'statuses', 'createdFrom', 'createdTo'];
+      const filterKeys = [
+        'search',
+        'statuses',
+        'createdFrom',
+        'createdTo',
+        'orientationCompleted',
+      ];
       filterKeys.forEach((key) => params.delete(key));
 
       // Set new filter params
@@ -62,6 +76,11 @@ export const useStudentsFilters = () => {
         params.set('createdFrom', newFilters.createdAt.from);
       if (newFilters.createdAt?.to)
         params.set('createdTo', newFilters.createdAt.to);
+      if (newFilters.orientationCompleted !== undefined)
+        params.set(
+          'orientationCompleted',
+          String(newFilters.orientationCompleted)
+        );
 
       router.replace(`?${params.toString()}`, { scroll: false });
     },
@@ -71,7 +90,13 @@ export const useStudentsFilters = () => {
   // Reset all filters
   const resetFilters = useCallback(() => {
     const params = new URLSearchParams(searchParams);
-    const filterKeys = ['search', 'statuses', 'createdFrom', 'createdTo'];
+    const filterKeys = [
+      'search',
+      'statuses',
+      'createdFrom',
+      'createdTo',
+      'orientationCompleted',
+    ];
     filterKeys.forEach((key) => params.delete(key));
     router.replace(`?${params.toString()}`, { scroll: false });
   }, [searchParams, router]);
@@ -87,6 +112,7 @@ export const useStudentsFilters = () => {
     if (filters.search) count++;
     if (filters.statuses?.length) count++;
     if (filters.createdAt?.from || filters.createdAt?.to) count++;
+    if (filters.orientationCompleted !== undefined) count++;
     return count;
   }, [filters]);
 

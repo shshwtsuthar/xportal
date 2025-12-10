@@ -44,6 +44,10 @@ export const useGetStudents = (filters?: StudentFilters) => {
         query = query.lte('created_at', filters.createdAt.to);
       }
 
+      if (filters.orientationCompleted !== undefined) {
+        query = query.eq('orientation_completed', filters.orientationCompleted);
+      }
+
       const { data, error } = await query;
       if (error) {
         throw new Error(error.message);

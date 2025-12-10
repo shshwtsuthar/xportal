@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Sheet,
   SheetContent,
@@ -275,6 +276,67 @@ export function StudentsFilter({
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-medium">
+                  Orientation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={
+                    localFilters.orientationCompleted === undefined
+                      ? 'any'
+                      : localFilters.orientationCompleted
+                        ? 'completed'
+                        : 'not-completed'
+                  }
+                  onValueChange={(val) => {
+                    if (val === 'any') {
+                      updateFilter('orientationCompleted', undefined);
+                      return;
+                    }
+                    updateFilter('orientationCompleted', val === 'completed');
+                  }}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2 rounded-md border p-3">
+                    <RadioGroupItem value="any" id="orientation-any" />
+                    <Label
+                      htmlFor="orientation-any"
+                      className="cursor-pointer text-sm"
+                    >
+                      Any
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 rounded-md border p-3">
+                    <RadioGroupItem
+                      value="completed"
+                      id="orientation-completed"
+                    />
+                    <Label
+                      htmlFor="orientation-completed"
+                      className="cursor-pointer text-sm"
+                    >
+                      Completed
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 rounded-md border p-3">
+                    <RadioGroupItem
+                      value="not-completed"
+                      id="orientation-not-completed"
+                    />
+                    <Label
+                      htmlFor="orientation-not-completed"
+                      className="cursor-pointer text-sm"
+                    >
+                      Not completed
+                    </Label>
+                  </div>
+                </RadioGroup>
               </CardContent>
             </Card>
 

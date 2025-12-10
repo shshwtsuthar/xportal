@@ -30,6 +30,9 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useUpdateStudentOrientation } from '@/src/hooks/useUpdateStudentOrientation';
+import { toast } from 'sonner';
 
 type StudentDashboardMode = 'staff' | 'student';
 
@@ -111,6 +114,7 @@ export function StudentDashboardPageClient({
   );
   const { data: enrollmentSubjects = [] } =
     useGetStudentEnrollmentSubjects(studentUuid);
+  const updateOrientation = useUpdateStudentOrientation();
 
   // Calculate pie chart data for evaluation statuses
   const evaluationStatusData = useMemo(() => {
@@ -160,6 +164,30 @@ export function StudentDashboardPageClient({
       color: 'var(--chart-3)',
     },
   } satisfies ChartConfig;
+
+  const handleOrientationChange = (checked: boolean) => {
+    if (!studentUuid) {
+      toast.error('Student ID missing for update');
+      return;
+    }
+
+    const nextValue = Boolean(checked);
+    updateOrientation.mutate(
+      { studentId: studentUuid, orientationCompleted: nextValue },
+      {
+        onSuccess: () => {
+          toast.success(
+            nextValue
+              ? 'Orientation marked as completed'
+              : 'Orientation marked as not completed'
+          );
+        },
+        onError: (error) => {
+          toast.error(error.message || 'Failed to update orientation status');
+        },
+      }
+    );
+  };
 
   const postalSameAsStreet = useMemo(() => {
     if (!addresses || addresses.length < 2) return false;
@@ -446,6 +474,26 @@ export function StudentDashboardPageClient({
                           {student.status}
                         </Badge>
                       </div>
+                    </div>
+                  </Card>
+                  <Card className="px-3 py-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-sm">
+                          Orientation Completed
+                        </div>
+                        <div className="text-base font-medium">
+                          {student.orientation_completed ? 'Yes' : 'No'}
+                        </div>
+                      </div>
+                      <Checkbox
+                        checked={student.orientation_completed}
+                        onCheckedChange={(checked) =>
+                          handleOrientationChange(checked === true)
+                        }
+                        aria-label="Toggle orientation completion"
+                        disabled={!studentUuid || updateOrientation.isPending}
+                      />
                     </div>
                   </Card>
                   <Card className="px-3 py-2">
