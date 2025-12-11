@@ -1,7 +1,7 @@
 {
-  "name": "issue-due-invoices-daily",
-  "description": "Daily issue/send invoices whose issue_date is due",
-  "cron": "0 20 * * *",
+  "name": "issue-due-invoices-hourly",
+  "description": "Hourly issue/send invoices whose issue_date is due",
+  "cron": "0 * * * *",
   "request": {
     "method": "POST",
     "headers": {

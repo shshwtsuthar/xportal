@@ -401,7 +401,7 @@ serve(async (req: Request) => {
 
   const { data: snapshot, error: snapErr } = await supabase
     .from('application_payment_schedule')
-    .select('name, amount_cents, due_date, template_installment_id')
+    .select('id, name, amount_cents, due_date, template_installment_id')
     .eq('application_id', app.id)
     .order('sequence_order', { ascending: true })
     .order('due_date', { ascending: true })
@@ -435,12 +435,29 @@ serve(async (req: Request) => {
   }[] = [];
 
   if (!snapErr && snapshot && snapshot.length > 0) {
-    // Fetch template lines for all installments in the snapshot
-    const installmentIds = snapshot
-      .map((row) => row.template_installment_id)
-      .filter((id): id is string => id !== null && id !== undefined);
+    const { data: snapshotLines, error: snapLinesErr } = await supabase
+      .from('application_payment_schedule_lines')
+      .select(
+        'application_payment_schedule_id, name, description, amount_cents, sequence_order, is_commissionable, xero_account_code, xero_tax_type, xero_item_code'
+      )
+      .eq('application_id', app.id)
+      .order('application_payment_schedule_id', { ascending: true })
+      .order('sequence_order', { ascending: true });
 
-    const templateLinesMap = new Map<
+    if (snapLinesErr) {
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to read payment schedule lines snapshot',
+          details: snapLinesErr.message,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    const snapshotLinesMap = new Map<
       string,
       Array<{
         name: string;
@@ -454,52 +471,29 @@ serve(async (req: Request) => {
       }>
     >();
 
-    if (installmentIds.length > 0) {
-      const { data: installmentLines, error: linesErr } = await supabase
-        .from('payment_plan_template_installment_lines')
-        .select('*')
-        .in('installment_id', installmentIds)
-        .order('installment_id', { ascending: true })
-        .order('sequence_order', { ascending: true });
-
-      if (linesErr) {
-        return new Response(
-          JSON.stringify({
-            error: 'Failed to read template installment lines',
-            details: linesErr.message,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
+    (snapshotLines ?? []).forEach((line) => {
+      const schedId = line.application_payment_schedule_id as string;
+      if (!snapshotLinesMap.has(schedId)) {
+        snapshotLinesMap.set(schedId, []);
       }
-
-      // Group lines by installment_id
-      (installmentLines ?? []).forEach((line) => {
-        const instId = line.installment_id;
-        if (!templateLinesMap.has(instId)) {
-          templateLinesMap.set(instId, []);
-        }
-        templateLinesMap.get(instId)!.push({
-          name: line.name,
-          description: line.description,
-          amount_cents: line.amount_cents,
-          sequence_order: line.sequence_order,
-          is_commissionable: line.is_commissionable,
-          xero_account_code: line.xero_account_code,
-          xero_tax_type: line.xero_tax_type,
-          xero_item_code: line.xero_item_code,
-        });
+      snapshotLinesMap.get(schedId)!.push({
+        name: line.name,
+        description: line.description,
+        amount_cents: line.amount_cents,
+        sequence_order: line.sequence_order,
+        is_commissionable: line.is_commissionable,
+        xero_account_code: line.xero_account_code,
+        xero_tax_type: line.xero_tax_type,
+        xero_item_code: line.xero_item_code,
       });
-    }
+    });
 
     const rows: Db['public']['Tables']['invoices']['Insert'][] = [];
 
     for (let idx = 0; idx < snapshot.length; idx++) {
       const row = snapshot[idx];
       const amountCents = row.amount_cents as number;
-      const templateInstallmentId = row.template_installment_id as string;
+      const schedId = row.id as string;
       const issueDate =
         idx === 0 ? todayIso : ((row.due_date as string) ?? todayIso);
 
@@ -526,11 +520,11 @@ serve(async (req: Request) => {
         );
       }
 
-      // Get template lines for this installment, or create a fallback line if none exist
-      const templateLines = templateLinesMap.get(templateInstallmentId) ?? [];
+      // Get snapshot lines for this installment, or create a fallback line if none exist
+      const linesForInstallment = snapshotLinesMap.get(schedId) ?? [];
 
-      if (templateLines.length > 0) {
-        templateLines.forEach((line) => {
+      if (linesForInstallment.length > 0) {
+        linesForInstallment.forEach((line) => {
           invoiceLineTemplates.push({
             invoice_number: invoiceNumber,
             name: line.name,

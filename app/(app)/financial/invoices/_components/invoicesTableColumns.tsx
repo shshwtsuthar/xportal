@@ -45,15 +45,15 @@ const statusBadge = (status: string, dueDate?: string) => {
   if (status === 'SCHEDULED')
     return <Badge variant="secondary">Scheduled</Badge>;
   if (status === 'OVERDUE') return <Badge variant="destructive">Overdue</Badge>;
-  if (status === 'SENT') return <Badge variant="default">Sent</Badge>;
   if (status === 'DRAFT') return <Badge variant="secondary">Draft</Badge>;
-  // Fallback: infer overdue by date if provided
+  // Fallback: infer overdue by date if provided (e.g., SENT past due)
   if (status === 'SENT' && dueDate) {
     const due = new Date(dueDate);
     if (due.getTime() < Date.now()) {
       return <Badge variant="destructive">Overdue</Badge>;
     }
   }
+  if (status === 'SENT') return <Badge variant="default">Sent</Badge>;
   return <Badge variant="secondary">{status}</Badge>;
 };
 

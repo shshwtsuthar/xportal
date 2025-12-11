@@ -14,6 +14,7 @@ import {
   Building2,
   MessageCircle,
   Settings,
+  ScrollText,
 } from 'lucide-react';
 
 import {
@@ -101,6 +102,12 @@ const NAV: NavItem[] = [
       { title: 'SMS', url: '/communications/sms' },
       { title: 'Announcements', url: '/communications/announcements' },
     ],
+  },
+  {
+    title: 'Logs',
+    url: '/logs',
+    icon: ScrollText,
+    items: [{ title: 'Finance Logs', url: '/logs/finance' }],
   },
   {
     title: 'RTO',

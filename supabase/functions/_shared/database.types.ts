@@ -12,7 +12,29 @@ export type Database = {
       [_ in never]: never
     }
     Views: {
-      [_ in never]: never
+      finance_logs_view: {
+        Row: {
+          amount_due_cents: number | null
+          attempts: number | null
+          commission_invoice_id: string | null
+          commission_payment_id: string | null
+          event_type: string
+          invoice_id: string | null
+          invoice_number: string | null
+          log_id: string
+          message: string | null
+          occurred_at: string | null
+          payment_id: string | null
+          program_id: string | null
+          program_name: string | null
+          rto_id: string | null
+          status: string
+          student_email: string | null
+          student_id: string | null
+          student_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       graphql: {
@@ -536,6 +558,76 @@ export type Database = {
             columns: ["template_installment_id"]
             isOneToOne: false
             referencedRelation: "payment_plan_template_installments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_payment_schedule_lines: {
+        Row: {
+          amount_cents: number
+          application_id: string
+          application_payment_schedule_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_commissionable: boolean
+          name: string
+          sequence_order: number
+          template_installment_line_id: string | null
+          xero_account_code: string | null
+          xero_item_code: string | null
+          xero_tax_type: string | null
+        }
+        Insert: {
+          amount_cents: number
+          application_id: string
+          application_payment_schedule_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_commissionable?: boolean
+          name: string
+          sequence_order?: number
+          template_installment_line_id?: string | null
+          xero_account_code?: string | null
+          xero_item_code?: string | null
+          xero_tax_type?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          application_id?: string
+          application_payment_schedule_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_commissionable?: boolean
+          name?: string
+          sequence_order?: number
+          template_installment_line_id?: string | null
+          xero_account_code?: string | null
+          xero_item_code?: string | null
+          xero_tax_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_payment_schedule__application_payment_schedule_fkey"
+            columns: ["application_payment_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "application_payment_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_payment_schedule__template_installment_line_id_fkey"
+            columns: ["template_installment_line_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plan_template_installment_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_payment_schedule_lines_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
             referencedColumns: ["id"]
           },
         ]
@@ -3816,7 +3908,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      finance_logs_view: {
+        Row: {
+          amount_due_cents: number | null
+          attempts: number | null
+          commission_invoice_id: string | null
+          commission_payment_id: string | null
+          event_type: string
+          invoice_id: string | null
+          invoice_number: string | null
+          log_id: string
+          message: string | null
+          occurred_at: string | null
+          payment_id: string | null
+          program_id: string | null
+          program_name: string | null
+          rto_id: string | null
+          status: string
+          student_email: string | null
+          student_id: string | null
+          student_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       compute_student_check_char: {
