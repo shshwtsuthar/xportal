@@ -5,7 +5,7 @@
   "request": {
     "method": "POST",
     "headers": {
-      "Authorization": "Bearer ${SUPABASE_SERVICE_ROLE_KEY}"
+      "Authorization": "Bearer ${SERVICE_ROLE_KEY}"
     },
     "body": "{}"
   }

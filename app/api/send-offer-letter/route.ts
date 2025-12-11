@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createServerSupabase();
     const admin = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SERVICE_ROLE_KEY!
     );
 
     // Fetch application with related data

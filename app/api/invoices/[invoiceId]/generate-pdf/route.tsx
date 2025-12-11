@@ -58,7 +58,7 @@ export async function POST(
     if (invoice.pdf_path) {
       const admin = createAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
+        process.env.SERVICE_ROLE_KEY!
       );
       const { data: signed, error: signErr } = await admin.storage
         .from('invoices')
@@ -111,7 +111,7 @@ export async function POST(
     if (rto?.profile_image_path) {
       const admin = createAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
+        process.env.SERVICE_ROLE_KEY!
       );
       const { data: signedLogo, error: logoErr } = await admin.storage
         .from('rto-assets')
@@ -157,7 +157,7 @@ export async function POST(
 
     const admin = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SERVICE_ROLE_KEY!
     );
 
     // Upload to storage (same path format as daily-finance-tick)

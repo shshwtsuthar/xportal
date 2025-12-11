@@ -110,11 +110,11 @@ export class XeroClient {
   constructor(rtoId: string) {
     this.rtoId = rtoId;
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseServiceRoleKey = Deno.env.get('SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       throw new Error(
-        'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment'
+        'SUPABASE_URL and SERVICE_ROLE_KEY must be set in environment'
       );
     }
 

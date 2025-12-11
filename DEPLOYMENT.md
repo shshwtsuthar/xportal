@@ -117,7 +117,7 @@
 3) Edge Function deployment
 - Deploy the new Edge Function:
   - `supabase functions deploy calculate-agent-commission`
-- The function uses service role client and requires `SUPABASE_SERVICE_ROLE_KEY` environment variable (set automatically in Supabase)
+- The function uses service role client and requires `SERVICE_ROLE_KEY` environment variable (set automatically in Supabase)
 
 4) Client deployment
 - No environment variables required

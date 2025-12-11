@@ -47,7 +47,7 @@ serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY');
   if (!supabaseUrl || !serviceRoleKey) {
     return new Response(
       JSON.stringify({ error: 'SUPABASE_URL or SERVICE_ROLE_KEY missing' }),
@@ -244,9 +244,8 @@ serve(async (req) => {
       const rtoName = rto?.name ?? null;
 
       // Load react-pdf (deno-friendly via esm.sh)
-      const reactPdf = await import(
-        'https://esm.sh/@react-pdf/renderer@3.4.3?target=deno'
-      );
+      const reactPdf =
+        await import('https://esm.sh/@react-pdf/renderer@3.4.3?target=deno');
       const react = await import('https://esm.sh/react@18.2.0?target=deno');
 
       const { Document, Page, Text, View, StyleSheet, renderToBuffer } =

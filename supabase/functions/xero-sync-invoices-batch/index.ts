@@ -37,7 +37,7 @@ serve(async (req: Request) => {
     // Use service role client to bypass RLS
     const supabase = createClient<Db>(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SERVICE_ROLE_KEY') ?? ''
     );
 
     // 1. Query invoices that need syncing

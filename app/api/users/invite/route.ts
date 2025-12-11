@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
     // Use service role for admin operations
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
+    const serviceRoleKey = process.env.SERVICE_ROLE_KEY as string;
     if (!url || !serviceRoleKey) {
       return NextResponse.json(
         { error: 'Server misconfiguration' },

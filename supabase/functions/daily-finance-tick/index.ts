@@ -43,7 +43,7 @@ serve(async (req) => {
   try {
     const supabase = createClient<Database>(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SERVICE_ROLE_KEY') ?? ''
     );
 
     // 1) Fetch invoices that should be sent based on issue_date and current status.
@@ -130,9 +130,8 @@ serve(async (req) => {
       // Minimal single-page invoice PDF (inline template).
       // TODO: Replace with shared InvoiceTemplate + buildInvoiceData to include invoice_lines.
       // Import react-pdf/renderer which bundles React automatically
-      const reactPdf = await import(
-        'https://esm.sh/@react-pdf/renderer@3.4.3?target=deno'
-      );
+      const reactPdf =
+        await import('https://esm.sh/@react-pdf/renderer@3.4.3?target=deno');
       const react = await import('https://esm.sh/react@18.2.0?target=deno');
 
       const { Document, Page, Text, View, StyleSheet, renderToBuffer } =

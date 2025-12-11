@@ -59,7 +59,7 @@ serve(async (req: Request) => {
     // Use service role client to bypass RLS for all operations
     const service = createClient<Db>(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SERVICE_ROLE_KEY') ?? ''
     );
 
     const { applicationId } = await req.json();
