@@ -222,6 +222,19 @@ serve(async (req: Request) => {
       .single();
 
     // 6. Fetch payment plan template for accounting mappings
+    if (!enrollment.payment_plan_template_id) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Enrollment missing payment plan template',
+        } as SyncInvoiceResponse),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
     const { data: template } = await supabase
       .from('payment_plan_templates')
       .select('xero_account_code, xero_tax_type, xero_item_code')

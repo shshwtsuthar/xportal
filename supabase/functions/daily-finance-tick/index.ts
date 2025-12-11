@@ -56,10 +56,13 @@ serve(async (req) => {
       .eq('status', 'SCHEDULED')
       .lte('issue_date', todayIso);
     if (invErr) {
-      return new Response(JSON.stringify({ error: invErr.message }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
+      return new Response(
+        JSON.stringify({ error: invErr?.message ?? 'Unknown error' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
     }
 
     // Gather context for each invoice (student + rto minimal)
@@ -83,13 +86,15 @@ serve(async (req) => {
         .eq('id', inv.enrollment_id)
         .single();
       if (enrolErr || !enrol) continue;
+      const enrolData = enrol as NonNullable<typeof enrol>;
 
       const { data: student, error: stuErr } = await supabase
         .from('students')
         .select('id, first_name, last_name, email')
-        .eq('id', enrol.student_id)
+        .eq('id', enrolData.student_id)
         .single();
       if (stuErr || !student) continue;
+      const studentData = student as NonNullable<typeof student>;
 
       const { data: rto, error: rtoErr } = await supabase
         .from('rtos')
@@ -105,10 +110,10 @@ serve(async (req) => {
         due_date: inv.due_date as unknown as string,
         issue_date: inv.issue_date as unknown as string,
         amount_due_cents: inv.amount_due_cents ?? 0,
-        student_name: [student.first_name, student.last_name]
+        student_name: [studentData.first_name, studentData.last_name]
           .filter(Boolean)
           .join(' '),
-        student_email: student.email,
+        student_email: studentData.email,
         rto_name: rto?.name ?? null,
       });
     }
@@ -116,10 +121,11 @@ serve(async (req) => {
     // 2) Generate PDF per prepared invoice (if missing) and upload
     for (const p of prepared) {
       // Skip PDF generation if it already exists
-      const invRecord = invoices?.find((inv) => inv.id === (p.id as unknown));
-      if (invRecord?.pdf_path) {
-        continue;
-      }
+      const invRecord =
+        invoices?.find((inv) => inv.id === (p.id as unknown)) ?? null;
+      if (!invRecord) continue;
+      const invoice = invRecord as NonNullable<typeof invRecord>;
+      if (invoice.pdf_path) continue;
 
       // Minimal single-page invoice PDF (inline template).
       // TODO: Replace with shared InvoiceTemplate + buildInvoiceData to include invoice_lines.
@@ -130,8 +136,9 @@ serve(async (req) => {
       const react = await import('https://esm.sh/react@18.2.0?target=deno');
 
       const { Document, Page, Text, View, StyleSheet, renderToBuffer } =
-        reactPdf;
-      const { createElement } = react;
+        reactPdf as typeof import('https://esm.sh/@react-pdf/renderer@3.4.3?target=deno');
+      const { createElement } =
+        react as typeof import('https://esm.sh/react@18.2.0?target=deno');
 
       const styles = StyleSheet.create({
         page: {
@@ -183,7 +190,9 @@ serve(async (req) => {
       };
 
       const element = createElement(InvoiceDoc, { data: p });
-      const pdfBuffer = await renderToBuffer(element);
+      const pdfBuffer = await renderToBuffer(
+        element as Parameters<typeof renderToBuffer>[0]
+      );
       const bytes = new Uint8Array(pdfBuffer);
 
       const year = yyyy(new Date(p.due_date as unknown as string));
@@ -196,7 +205,7 @@ serve(async (req) => {
           upsert: true,
         });
       if (uploadErr) {
-        console.warn('upload failed', uploadErr.message);
+        console.warn('upload failed', uploadErr?.message);
         continue;
       }
 
@@ -213,16 +222,28 @@ serve(async (req) => {
       for (const p of prepared) {
         if (!p.student_email) continue;
 
-        const invRecord = invoices?.find((inv) => inv.id === (p.id as unknown));
-        if (!invRecord) continue;
-        // Only send if we have a PDF and haven't emailed yet.
-        if (!invRecord.pdf_path || invRecord.last_email_sent_at) continue;
+        const invRecord =
+          invoices?.find((inv) => inv.id === (p.id as unknown)) ?? null;
+        if (!invRecord) {
+          continue;
+        }
+        const inv = invRecord as NonNullable<typeof invRecord>;
+        if (!inv.pdf_path || inv.last_email_sent_at) {
+          continue;
+        }
 
         // Fetch signed URL for attachment
         const { data: signed, error: signErr } = await supabase.storage
           .from('invoices')
-          .createSignedUrl(invRecord.pdf_path, 60 * 30);
-        if (signErr || !signed?.signedUrl) continue;
+          .createSignedUrl(inv.pdf_path as string, 60 * 30);
+        const signedData = signed ?? null;
+        if (signErr) {
+          continue;
+        }
+        if (!signedData?.signedUrl) {
+          continue;
+        }
+        const signedUrl = signedData!.signedUrl as string;
 
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -237,7 +258,7 @@ serve(async (req) => {
             html: `<p>Dear ${p.student_name},</p><p>Your invoice ${p.invoice_number} has been issued.</p><p>Amount: ${formatCurrencyAud(
               p.amount_due_cents
             )}</p><p>Due date: ${p.due_date}</p><p><a href="${
-              signed.signedUrl
+              signedUrl
             }">Download PDF</a></p>`,
           }),
         });
@@ -260,8 +281,14 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
+  } catch (error: unknown) {
+    let msg = 'Unknown error';
+    const errorAny = error as { message?: unknown };
+    if (errorAny && typeof errorAny.message === 'string') {
+      msg = String(errorAny.message);
+    } else {
+      msg = String(error);
+    }
     return new Response(JSON.stringify({ error: msg }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

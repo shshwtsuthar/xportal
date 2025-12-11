@@ -1,3 +1,6 @@
+/** @jsxImportSource react */
+import React from 'react';
+
 /** @jsxRuntime classic */
 /** @jsx createElement */
 import {
@@ -179,27 +182,21 @@ const styles = StyleSheet.create({
 });
 
 const Paragraphs = ({ lines }: { lines: string[] }) => (
-  <>
+  <React.Fragment>
     {lines.map((t, i) => (
       <Text key={i} style={styles.paragraph}>
         {t}
       </Text>
     ))}
-  </>
+  </React.Fragment>
 );
 
-const Header = ({
-  data,
-  pageNum,
-  total,
-}: {
-  data: OfferLetterData;
-  pageNum: number;
-  total: number;
-}) => (
+const Header = ({ data }: { data: OfferLetterData }) => (
   <View style={styles.header}>
     <View style={styles.headerLeft}>
       {data.institution.logoSrc && (
+        // react-pdf Image does not support alt; suppress lint
+        // eslint-disable-next-line jsx-a11y/alt-text
         <Image style={styles.logo} src={data.institution.logoSrc} />
       )}
     </View>
@@ -240,7 +237,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
   <Document title="Offer Letter and International Student Agreement">
     {/* Page 1 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={1} total={12} />
+      <Header data={data} />
       <Text style={styles.sectionTitle}>{data.document.docTitle}</Text>
       <View style={{ marginTop: 8 }}>
         <Text>
@@ -286,7 +283,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 2 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={2} total={12} />
+      <Header data={data} />
       <Text style={styles.sectionTitle}>Accepting this offer</Text>
       <Paragraphs
         lines={[
@@ -328,7 +325,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 3 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={3} total={12} />
+      <Header data={data} />
       <Text style={styles.small}>
         * carefully check all of the details below to make sure they are correct
       </Text>
@@ -447,7 +444,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 4 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={4} total={12} />
+      <Header data={data} />
       <View>
         <View style={styles.keyValRow}>
           <Text>Hours per week</Text>
@@ -477,7 +474,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 5 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={5} total={12} />
+      <Header data={data} />
       <View style={styles.table}>
         <View style={styles.thead}>
           <Text style={[styles.cell, { fontWeight: 700 }, styles.col_date]}>
@@ -514,7 +511,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 6 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={6} total={12} />
+      <Header data={data} />
       <Text style={styles.sectionTitle}>International Student Agreement</Text>
       <Text style={{ marginTop: 8 }}>Information and terms and conditions</Text>
       <Text style={styles.sectionTitle}>Fees and Refunds</Text>
@@ -527,7 +524,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 7 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={7} total={12} />
+      <Header data={data} />
       <Text style={styles.sectionTitle}>Additional fees that may apply</Text>
       <View style={styles.table}>
         <View style={styles.thead}>
@@ -556,7 +553,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 8 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={8} total={12} />
+      <Header data={data} />
       <View style={styles.table}>
         <View style={styles.thead}>
           <Text style={[styles.cell, { fontWeight: 700 }, { width: '48%' }]}>
@@ -586,7 +583,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 9 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={9} total={12} />
+      <Header data={data} />
       <Text style={styles.sectionTitle}>Complaints and Appeals</Text>
       <Paragraphs lines={data.complaintsAppeals.paragraphs} />
       <Text>
@@ -610,7 +607,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 10 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={10} total={12} />
+      <Header data={data} />
       <Text>National Training Complaints Hotline</Text>
       <Paragraphs
         lines={[
@@ -638,7 +635,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 11 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={11} total={12} />
+      <Header data={data} />
       <Text>How we disclose your personal information</Text>
       <Paragraphs lines={data.privacy.howDisclose} />
       <Text>
@@ -662,7 +659,7 @@ export const OfferLetterTemplate = ({ data }: { data: OfferLetterData }) => (
 
     {/* Page 12 */}
     <Page size="A4" style={styles.page}>
-      <Header data={data} pageNum={12} total={12} />
+      <Header data={data} />
       <Text style={styles.sectionTitle}>Student Declaration</Text>
       <Paragraphs lines={data.studentDeclaration.paragraphs} />
       <Paragraphs lines={[data.studentDeclaration.websiteMention]} />

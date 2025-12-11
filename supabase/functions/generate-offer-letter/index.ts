@@ -15,7 +15,10 @@ const corsHeaders = {
 };
 
 async function toSha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    bytes as unknown as BufferSource
+  );
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
@@ -121,7 +124,9 @@ serve(async (req) => {
 
     // Render PDF buffer without JSX
     const element = createElement(OfferLetterTemplate, { data });
-    const pdfBuffer = await renderToBuffer(element);
+    const pdfBuffer = await renderToBuffer(
+      element as Parameters<typeof renderToBuffer>[0]
+    );
     const bytes = new Uint8Array(pdfBuffer);
     const sha256 = await toSha256Hex(bytes);
     const size = bytes.byteLength;

@@ -139,6 +139,7 @@ serve(async (req) => {
   const invoices = [...(genInvoices ?? []), ...(resendInvoices ?? [])];
 
   const results: Array<{ id: string; status: string; message?: string }> = [];
+  type PdfStatus = Database['public']['Enums']['invoice_pdf_generation_status'];
 
   const claimInvoice = async (
     inv: InvoiceRow,
@@ -154,7 +155,7 @@ serve(async (req) => {
       mode === 'generate'
         ? {
             pdf_generation_attempts: (inv.pdf_generation_attempts ?? 0) + 1,
-            pdf_generation_status: 'pending',
+            pdf_generation_status: 'pending' as PdfStatus,
             last_pdf_error: null,
           }
         : {
@@ -169,10 +170,7 @@ serve(async (req) => {
       .eq('status', 'SCHEDULED')
       .lte('issue_date', todayIso)
       .lt('pdf_generation_attempts', attemptCap)
-      .select(
-        'id, rto_id, enrollment_id, invoice_number, issue_date, due_date, amount_due_cents, pdf_path, last_email_sent_at, pdf_generation_status, pdf_generation_attempts, pdf_generated_at, last_pdf_error'
-      )
-      .single();
+      .select('*');
 
     const claimFilters =
       mode === 'generate'
@@ -184,7 +182,7 @@ serve(async (req) => {
             .eq('pdf_generation_status', 'succeeded')
             .is('last_email_sent_at', null);
 
-    const { data, error } = await claimFilters;
+    const { data, error } = await claimFilters.single();
     if (error || !data) {
       return null;
     }
@@ -245,13 +243,16 @@ serve(async (req) => {
       const studentEmail = student.email ?? null;
       const rtoName = rto?.name ?? null;
 
-      // Load react-pdf
-      const reactPdf = await import('npm:@react-pdf/renderer@3.4.3');
-      const react = await import('npm:react@18.2.0');
+      // Load react-pdf (deno-friendly via esm.sh)
+      const reactPdf = await import(
+        'https://esm.sh/@react-pdf/renderer@3.4.3?target=deno'
+      );
+      const react = await import('https://esm.sh/react@18.2.0?target=deno');
 
       const { Document, Page, Text, View, StyleSheet, renderToBuffer } =
-        reactPdf;
-      const { createElement } = react;
+        reactPdf as typeof import('https://esm.sh/@react-pdf/renderer@3.4.3?target=deno');
+      const { createElement } =
+        react as typeof import('https://esm.sh/react@18.2.0?target=deno');
 
       const styles = StyleSheet.create({
         page: {
@@ -370,7 +371,9 @@ serve(async (req) => {
             lines: lineItems,
           },
         });
-        const pdfBuffer = await renderToBuffer(element);
+        const pdfBuffer = await renderToBuffer(
+          element as Parameters<typeof renderToBuffer>[0]
+        );
         const bytes = new Uint8Array(pdfBuffer);
         pdfBytes = bytes;
 
@@ -456,10 +459,11 @@ serve(async (req) => {
         }
       }
 
-      const pdfStatus =
+      const pdfStatus: PdfStatus =
         mode === 'generate'
-          ? 'succeeded'
-          : (claimed.pdf_generation_status as string) || 'succeeded';
+          ? ('succeeded' as PdfStatus)
+          : ((claimed.pdf_generation_status as PdfStatus) ??
+            ('succeeded' as PdfStatus));
 
       await supabase
         .from('invoices')
@@ -499,10 +503,8 @@ serve(async (req) => {
   const batchLimit = 500;
   while (true) {
     const { data: updatedCount, error: overdueErr } = await supabase.rpc(
-      'mark_overdue_invoices_batch',
-      {
-        p_limit: batchLimit,
-      }
+      'mark_overdue_invoices_batch' as unknown as keyof Database['public']['Functions'],
+      { p_limit: batchLimit } as never
     );
 
     if (overdueErr) {
@@ -510,7 +512,10 @@ serve(async (req) => {
       break;
     }
 
-    const count = updatedCount ?? 0;
+    const count =
+      typeof updatedCount === 'number'
+        ? updatedCount
+        : Number(updatedCount ?? 0);
     overdueMarked += count;
     if (count === 0) break;
   }
