@@ -438,8 +438,14 @@ export function ProgramPlanWizard({
               </Button>
             </div>
             <div className="flex gap-2">
-              <Button type="button" onClick={handleSave}>
-                Save Plan
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={upsertPlan.isPending || upsertPlanSubject.isPending}
+              >
+                {upsertPlan.isPending || upsertPlanSubject.isPending
+                  ? 'Saving…'
+                  : 'Save Plan'}
               </Button>
             </div>
           </CardFooter>
