@@ -237,6 +237,10 @@ export function ClassesManager({
                         <div className="text-muted-foreground px-2 py-1.5 text-xs">
                           Loading...
                         </div>
+                      ) : trainers.length === 0 ? (
+                        <div className="text-muted-foreground px-2 py-1.5 text-xs">
+                          No trainers available
+                        </div>
                       ) : (
                         trainers.map((t) => (
                           <SelectItem key={t.id} value={t.id as string}>
@@ -264,6 +268,10 @@ export function ClassesManager({
                         <div className="text-muted-foreground px-2 py-1.5 text-xs">
                           Loading...
                         </div>
+                      ) : locations.length === 0 ? (
+                        <div className="text-muted-foreground px-2 py-1.5 text-xs">
+                          No locations available
+                        </div>
                       ) : (
                         locations.map((l) => (
                           <SelectItem key={l.id} value={l.id as string}>
@@ -288,6 +296,10 @@ export function ClassesManager({
                       {classroomsLoading ? (
                         <div className="text-muted-foreground px-2 py-1.5 text-xs">
                           Loading...
+                        </div>
+                      ) : availableClassrooms.length === 0 ? (
+                        <div className="text-muted-foreground px-2 py-1.5 text-xs">
+                          No classrooms available
                         </div>
                       ) : (
                         availableClassrooms.map((c) => (
