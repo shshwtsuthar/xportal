@@ -19,8 +19,8 @@ import {
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useGetProgramLevels } from '@/src/hooks/useGetProgramLevels';
-import { useGetProgramFields } from '@/src/hooks/useGetProgramFields';
 import { useGetProgramRecognitions } from '@/src/hooks/useGetProgramRecognitions';
+import { FieldOfEducationSelect } from './FieldOfEducationSelect';
 
 type Props = {
   form: UseFormReturn<ProgramFormValues>;
@@ -28,7 +28,6 @@ type Props = {
 
 export function ProgramForm({ form }: Props) {
   const { data: levels } = useGetProgramLevels();
-  const { data: fields } = useGetProgramFields();
   const { data: recognitions } = useGetProgramRecognitions();
 
   return (
@@ -92,7 +91,7 @@ export function ProgramForm({ form }: Props) {
             <FormLabel>AQF Level *</FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
@@ -116,18 +115,11 @@ export function ProgramForm({ form }: Props) {
           <FormItem>
             <FormLabel>Field of Education *</FormLabel>
             <FormControl>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(fields ?? []).map((f) => (
-                    <SelectItem key={f.id} value={String(f.id)}>
-                      {f.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FieldOfEducationSelect
+                value={field.value}
+                onValueChange={field.onChange}
+                placeholder="Select field of education..."
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -142,7 +134,7 @@ export function ProgramForm({ form }: Props) {
             <FormLabel>Recognition Status *</FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>

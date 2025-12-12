@@ -9,7 +9,7 @@ export const useGetProgramFields = () => {
       const { data, error } = await supabase
         .from('program_fields')
         .select('id,label')
-        .order('id');
+        .order('id', { ascending: true });
       if (error) throw new Error(error.message);
       return data ?? [];
     },

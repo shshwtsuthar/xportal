@@ -23,11 +23,12 @@ const typeLabel: Record<string, string> = {
 };
 
 export const renderType = (type: FinanceLogEntry['event_type']) =>
-  typeLabel[type] ?? type;
+  type ? (typeLabel[type] ?? type) : 'Unknown';
 
-export const renderStatusBadge = (status: string) => (
-  <Badge variant={statusVariant(status)}>{status.toUpperCase()}</Badge>
-);
+export const renderStatusBadge = (status: string | null) => {
+  if (!status) return <Badge variant="outline">—</Badge>;
+  return <Badge variant={statusVariant(status)}>{status.toUpperCase()}</Badge>;
+};
 
 export const formatAmount = (cents: number | null) => {
   if (cents === null || cents === undefined) return '—';

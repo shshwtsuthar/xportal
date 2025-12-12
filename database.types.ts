@@ -12,29 +12,7 @@ export type Database = {
       [_ in never]: never
     }
     Views: {
-      finance_logs_view: {
-        Row: {
-          amount_due_cents: number | null
-          attempts: number | null
-          commission_invoice_id: string | null
-          commission_payment_id: string | null
-          event_type: string
-          invoice_id: string | null
-          invoice_number: string | null
-          log_id: string
-          message: string | null
-          occurred_at: string | null
-          payment_id: string | null
-          program_id: string | null
-          program_name: string | null
-          rto_id: string | null
-          status: string
-          student_email: string | null
-          student_id: string | null
-          student_name: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       graphql: {
@@ -1858,14 +1836,14 @@ export type Database = {
           amount_paid_cents: number | null
           due_date: string
           enrollment_id: string
+          first_overdue_at: string | null
           id: string
           internal_payment_status: Database["public"]["Enums"]["internal_payment_status"]
           invoice_number: string
           issue_date: string
           last_email_sent_at: string | null
-          last_pdf_error: string | null
-          first_overdue_at: string | null
           last_overdue_at: string | null
+          last_pdf_error: string | null
           notes: string | null
           pdf_generated_at: string | null
           pdf_generation_attempts: number
@@ -1883,14 +1861,14 @@ export type Database = {
           amount_paid_cents?: number | null
           due_date: string
           enrollment_id: string
+          first_overdue_at?: string | null
           id?: string
           internal_payment_status?: Database["public"]["Enums"]["internal_payment_status"]
           invoice_number: string
           issue_date: string
           last_email_sent_at?: string | null
-          last_pdf_error?: string | null
-          first_overdue_at?: string | null
           last_overdue_at?: string | null
+          last_pdf_error?: string | null
           notes?: string | null
           pdf_generated_at?: string | null
           pdf_generation_attempts?: number
@@ -1908,14 +1886,14 @@ export type Database = {
           amount_paid_cents?: number | null
           due_date?: string
           enrollment_id?: string
+          first_overdue_at?: string | null
           id?: string
           internal_payment_status?: Database["public"]["Enums"]["internal_payment_status"]
           invoice_number?: string
           issue_date?: string
           last_email_sent_at?: string | null
-          last_pdf_error?: string | null
-          first_overdue_at?: string | null
           last_overdue_at?: string | null
+          last_pdf_error?: string | null
           notes?: string | null
           pdf_generated_at?: string | null
           pdf_generation_attempts?: number
@@ -3920,17 +3898,17 @@ export type Database = {
           attempts: number | null
           commission_invoice_id: string | null
           commission_payment_id: string | null
-          event_type: string
+          event_type: string | null
           invoice_id: string | null
           invoice_number: string | null
-          log_id: string
+          log_id: string | null
           message: string | null
           occurred_at: string | null
           payment_id: string | null
           program_id: string | null
           program_name: string | null
           rto_id: string | null
-          status: string
+          status: string | null
           student_email: string | null
           student_id: string | null
           student_name: string | null
@@ -3996,12 +3974,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
-      next_student_seq: {
-        Args: { p_rto: string; p_year: number }
-        Returns: number
-      }
       mark_overdue_invoices_batch: {
         Args: { p_limit?: number }
+        Returns: number
+      }
+      next_student_seq: {
+        Args: { p_rto: string; p_year: number }
         Returns: number
       }
       promote_scheduled_invoices: {
