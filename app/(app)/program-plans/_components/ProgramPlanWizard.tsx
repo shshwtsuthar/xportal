@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import {
@@ -79,6 +79,11 @@ export function ProgramPlanWizard({
       program_id: (plan?.program_id as string) ?? '',
       program_plan_id: plan?.id as string | undefined,
     },
+  });
+
+  const programId = useWatch({
+    control: form.control,
+    name: 'program_id',
   });
 
   // Load existing plan subjects if editing
@@ -165,12 +170,12 @@ export function ProgramPlanWizard({
           <div className="grid gap-2">
             <Label>Program *</Label>
             <Select
-              value={form.watch('program_id')}
+              value={programId}
               onValueChange={(v) => {
                 form.setValue('program_id', v);
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a program" />
               </SelectTrigger>
               <SelectContent>
@@ -364,26 +369,7 @@ export function ProgramPlanWizard({
           </div>
         </div>
       );
-
-    return (
-      <div className="grid gap-4">
-        <h3 className="text-lg font-medium">Review</h3>
-        <p className="text-muted-foreground text-sm">
-          Confirm details before saving.
-        </p>
-        <div className="grid gap-1">
-          <span className="text-sm">
-            <span className="text-muted-foreground">Name:</span>{' '}
-            {form.watch('name') || '-'}
-          </span>
-          <span className="text-sm">
-            <span className="text-muted-foreground">Program:</span>{' '}
-            {form.watch('program_id') || '-'}
-          </span>
-        </div>
-      </div>
-    );
-  }, [activeStep, form, programs, subjects, rows]);
+  }, [activeStep, form, programs, subjects, rows, programId]);
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -404,7 +390,7 @@ export function ProgramPlanWizard({
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
             <div className="flex items-center gap-2">
-              {['Details', 'Builder', 'Review'].map((label, i) => (
+              {['Details', 'Builder'].map((label, i) => (
                 <Button
                   key={label}
                   size="sm"
@@ -431,7 +417,7 @@ export function ProgramPlanWizard({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setActiveStep(Math.min(2, activeStep + 1))}
+                onClick={() => setActiveStep(Math.min(1, activeStep + 1))}
                 aria-label="Next step"
               >
                 Next
