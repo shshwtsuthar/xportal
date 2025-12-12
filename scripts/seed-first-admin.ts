@@ -1,14 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config({ path: '.env.local' });
+// Load environment variables from custom file if specified
+const envFile = process.env.ENV_FILE || '.env.local';
+dotenv.config({ path: envFile });
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_FIRST_NAME = process.env.ADMIN_FIRST_NAME || 'Admin';
+const ADMIN_LAST_NAME = process.env.ADMIN_LAST_NAME || 'User';
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  console.error('Missing required environment variables');
+  console.error(
+    'Missing required environment variables: SUPABASE_URL or SERVICE_ROLE_KEY'
+  );
+  process.exit(1);
+}
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error(
+    'Missing required environment variables: ADMIN_EMAIL or ADMIN_PASSWORD'
+  );
   process.exit(1);
 }
 
@@ -69,6 +83,9 @@ async function ensureProfileExists(
 
 async function seedFirstAdmin() {
   try {
+    console.log(`Using environment file: ${envFile}`);
+    console.log(`Seeding admin: ${ADMIN_EMAIL}`);
+
     // Ensure initial RTO exists (idempotent)
     const { error: seedErr } = await supabase.rpc('seed_initial_data');
     if (seedErr) throw seedErr;
@@ -92,8 +109,7 @@ async function seedFirstAdmin() {
 
       const adminUserData = adminUser.users.find(
         (user) =>
-          user.email === 'shshwtsuthar@gmail.com' &&
-          user.app_metadata?.role === 'ADMIN'
+          user.email === ADMIN_EMAIL && user.app_metadata?.role === 'ADMIN'
       );
 
       if (adminUserData) {
@@ -104,8 +120,8 @@ async function seedFirstAdmin() {
           adminUserData.id,
           rtoId,
           'ADMIN',
-          adminUserData.user_metadata?.first_name || 'Shashwat',
-          adminUserData.user_metadata?.last_name || 'Suthar'
+          adminUserData.user_metadata?.first_name || ADMIN_FIRST_NAME,
+          adminUserData.user_metadata?.last_name || ADMIN_LAST_NAME
         );
         console.log('Seed process complete.');
         process.exit(0);
@@ -115,12 +131,12 @@ async function seedFirstAdmin() {
         // Continue with creating admin user only
         const { data: user, error: createUserError } =
           await supabase.auth.admin.createUser({
-            email: process.env.XPORTAL_EMAIL,
-            password: process.env.XPORTAL_PASSWORD,
+            email: ADMIN_EMAIL,
+            password: ADMIN_PASSWORD,
             email_confirm: true,
             user_metadata: {
-              first_name: 'Shashwat',
-              last_name: 'Suthar',
+              first_name: ADMIN_FIRST_NAME,
+              last_name: ADMIN_LAST_NAME,
             },
             app_metadata: {
               rto_id: rtoId,
@@ -138,8 +154,8 @@ async function seedFirstAdmin() {
           user.user.id,
           rtoId,
           'ADMIN',
-          'Shashwat',
-          'Suthar'
+          ADMIN_FIRST_NAME,
+          ADMIN_LAST_NAME
         );
 
         console.log('Seed process complete.');
@@ -161,12 +177,12 @@ async function seedFirstAdmin() {
     // Create the admin user
     const { data: user, error: createUserError } =
       await supabase.auth.admin.createUser({
-        email: 'shshwtsuthar@gmail.com',
-        password: '$ha$hw1T$uthar',
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
         email_confirm: true,
         user_metadata: {
-          first_name: 'Shashwat',
-          last_name: 'Suthar',
+          first_name: ADMIN_FIRST_NAME,
+          last_name: ADMIN_LAST_NAME,
         },
         app_metadata: {
           rto_id: rto.id,
@@ -184,8 +200,8 @@ async function seedFirstAdmin() {
       user.user.id,
       rto.id,
       'ADMIN',
-      'Shashwat',
-      'Suthar'
+      ADMIN_FIRST_NAME,
+      ADMIN_LAST_NAME
     );
 
     console.log('You can now log in with these credentials.');
