@@ -168,10 +168,10 @@ export function ClassesManager({
         <CardContent className="pt-0">
           {isAddingClass && (
             <div className="mb-4 rounded-lg border p-4">
-              <h4 className="mb-3 text-sm font-medium">Add New Class</h4>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <Label className="text-xs">Date *</Label>
+              <h4 className="mb-4 text-sm font-medium">Add New Class</h4>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-2 md:col-span-2 lg:col-span-1">
+                  <Label className="text-xs font-medium">Date *</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -203,31 +203,33 @@ export function ClassesManager({
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div>
-                  <Label className="text-xs">Start Time *</Label>
+                <div className="grid gap-2">
+                  <Label className="text-xs font-medium">Start Time *</Label>
                   <Input
                     type="time"
+                    className="h-8"
                     value={newClass.start_time || ''}
                     onChange={(e) =>
                       updateNewClass('start_time', e.target.value)
                     }
                   />
                 </div>
-                <div>
-                  <Label className="text-xs">End Time *</Label>
+                <div className="grid gap-2">
+                  <Label className="text-xs font-medium">End Time *</Label>
                   <Input
                     type="time"
+                    className="h-8"
                     value={newClass.end_time || ''}
                     onChange={(e) => updateNewClass('end_time', e.target.value)}
                   />
                 </div>
-                <div>
-                  <Label className="text-xs">Trainer</Label>
+                <div className="grid gap-2">
+                  <Label className="text-xs font-medium">Trainer</Label>
                   <Select
                     value={newClass.trainer_id || ''}
                     onValueChange={(v) => updateNewClass('trainer_id', v)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger size="sm" className="w-full">
                       <SelectValue placeholder="Select trainer" />
                     </SelectTrigger>
                     <SelectContent>
@@ -245,8 +247,8 @@ export function ClassesManager({
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label className="text-xs">Location</Label>
+                <div className="grid gap-2">
+                  <Label className="text-xs font-medium">Location</Label>
                   <Select
                     value={newClass.location_id || ''}
                     onValueChange={(v) => {
@@ -254,7 +256,7 @@ export function ClassesManager({
                       updateNewClass('classroom_id', ''); // Clear classroom when location changes
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger size="sm" className="w-full">
                       <SelectValue placeholder="Select location" />
                     </SelectTrigger>
                     <SelectContent>
@@ -272,14 +274,14 @@ export function ClassesManager({
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label className="text-xs">Classroom</Label>
+                <div className="grid gap-2">
+                  <Label className="text-xs font-medium">Classroom</Label>
                   <Select
                     value={newClass.classroom_id || ''}
                     onValueChange={(v) => updateNewClass('classroom_id', v)}
                     disabled={!newClass.location_id}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger size="sm" className="w-full">
                       <SelectValue placeholder="Select classroom" />
                     </SelectTrigger>
                     <SelectContent>
@@ -297,13 +299,13 @@ export function ClassesManager({
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label className="text-xs">Type</Label>
+                <div className="grid gap-2 md:col-span-2 lg:col-span-1">
+                  <Label className="text-xs font-medium">Type</Label>
                   <Select
                     value={newClass.class_type || ''}
                     onValueChange={(v) => updateNewClass('class_type', v)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger size="sm" className="w-full">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -317,7 +319,7 @@ export function ClassesManager({
                   </Select>
                 </div>
               </div>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-4 flex gap-2">
                 <Button size="sm" onClick={handleAddClass}>
                   Add Class
                 </Button>
