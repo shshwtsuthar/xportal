@@ -60,7 +60,6 @@ export function ClassesManager({
   subjectStartDate,
   subjectEndDate,
 }: ClassesManagerProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isAddingClass, setIsAddingClass] = useState(false);
   const [newClass, setNewClass] = useState<ClassRow>({});
 
@@ -151,270 +150,253 @@ export function ClassesManager({
   );
 
   return (
-    <div className="mt-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full justify-start"
-      >
-        {isExpanded ? '−' : '+'} Classes ({classes.length})
-      </Button>
-
-      {isExpanded && (
-        <Card className="mt-2">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">Class Sessions</CardTitle>
-              <Button
-                size="sm"
-                onClick={() => setIsAddingClass(true)}
-                disabled={isAddingClass}
-              >
-                <Plus className="mr-1 h-3 w-3" />
-                Add Class
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {isAddingClass && (
-              <div className="mb-4 rounded-lg border p-4">
-                <h4 className="mb-3 text-sm font-medium">Add New Class</h4>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div>
-                    <Label className="text-xs">Date *</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={cn(
-                            'w-full justify-start text-left font-normal',
-                            !newClass.class_date && 'text-muted-foreground'
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-3 w-3" />
-                          {newClass.class_date
-                            ? format(newClass.class_date, 'MMM dd')
-                            : 'Pick date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={newClass.class_date}
-                          onSelect={(d) =>
-                            updateNewClass('class_date', d ?? undefined)
-                          }
-                          disabled={(date) =>
-                            date < subjectStartDate || date > subjectEndDate
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Start Time *</Label>
-                    <Input
-                      type="time"
-                      value={newClass.start_time || ''}
-                      onChange={(e) =>
-                        updateNewClass('start_time', e.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">End Time *</Label>
-                    <Input
-                      type="time"
-                      value={newClass.end_time || ''}
-                      onChange={(e) =>
-                        updateNewClass('end_time', e.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Trainer</Label>
-                    <Select
-                      value={newClass.trainer_id || ''}
-                      onValueChange={(v) => updateNewClass('trainer_id', v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select trainer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {trainersLoading ? (
-                          <div className="text-muted-foreground px-2 py-1.5 text-xs">
-                            Loading...
-                          </div>
-                        ) : (
-                          trainers.map((t) => (
-                            <SelectItem key={t.id} value={t.id as string}>
-                              {t.first_name} {t.last_name}
-                            </SelectItem>
-                          ))
+    <div>
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">Class Sessions</CardTitle>
+            <Button
+              size="sm"
+              onClick={() => setIsAddingClass(true)}
+              disabled={isAddingClass}
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              Add Class
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {isAddingClass && (
+            <div className="mb-4 rounded-lg border p-4">
+              <h4 className="mb-3 text-sm font-medium">Add New Class</h4>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <Label className="text-xs">Date *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          'w-full justify-start text-left font-normal',
+                          !newClass.class_date && 'text-muted-foreground'
                         )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Location</Label>
-                    <Select
-                      value={newClass.location_id || ''}
-                      onValueChange={(v) => {
-                        updateNewClass('location_id', v);
-                        updateNewClass('classroom_id', ''); // Clear classroom when location changes
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {locationsLoading ? (
-                          <div className="text-muted-foreground px-2 py-1.5 text-xs">
-                            Loading...
-                          </div>
-                        ) : (
-                          locations.map((l) => (
-                            <SelectItem key={l.id} value={l.id as string}>
-                              {l.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Classroom</Label>
-                    <Select
-                      value={newClass.classroom_id || ''}
-                      onValueChange={(v) => updateNewClass('classroom_id', v)}
-                      disabled={!newClass.location_id}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select classroom" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classroomsLoading ? (
-                          <div className="text-muted-foreground px-2 py-1.5 text-xs">
-                            Loading...
-                          </div>
-                        ) : (
-                          availableClassrooms.map((c) => (
-                            <SelectItem key={c.id} value={c.id as string}>
-                              {c.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Type</Label>
-                    <Select
-                      value={newClass.class_type || ''}
-                      onValueChange={(v) => updateNewClass('class_type', v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="THEORY">Theory</SelectItem>
-                        <SelectItem value="WORKSHOP">Workshop</SelectItem>
-                        <SelectItem value="LAB">Lab</SelectItem>
-                        <SelectItem value="ONLINE">Online</SelectItem>
-                        <SelectItem value="HYBRID">Hybrid</SelectItem>
-                        <SelectItem value="ASSESSMENT">Assessment</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      >
+                        <CalendarIcon className="mr-2 h-3 w-3" />
+                        {newClass.class_date
+                          ? format(newClass.class_date, 'MMM dd')
+                          : 'Pick date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={newClass.class_date}
+                        onSelect={(d) =>
+                          updateNewClass('class_date', d ?? undefined)
+                        }
+                        disabled={(date) =>
+                          date < subjectStartDate || date > subjectEndDate
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                <div className="mt-3 flex gap-2">
-                  <Button size="sm" onClick={handleAddClass}>
-                    Add Class
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setIsAddingClass(false);
-                      setNewClass({});
+                <div>
+                  <Label className="text-xs">Start Time *</Label>
+                  <Input
+                    type="time"
+                    value={newClass.start_time || ''}
+                    onChange={(e) =>
+                      updateNewClass('start_time', e.target.value)
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">End Time *</Label>
+                  <Input
+                    type="time"
+                    value={newClass.end_time || ''}
+                    onChange={(e) => updateNewClass('end_time', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Trainer</Label>
+                  <Select
+                    value={newClass.trainer_id || ''}
+                    onValueChange={(v) => updateNewClass('trainer_id', v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select trainer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {trainersLoading ? (
+                        <div className="text-muted-foreground px-2 py-1.5 text-xs">
+                          Loading...
+                        </div>
+                      ) : (
+                        trainers.map((t) => (
+                          <SelectItem key={t.id} value={t.id as string}>
+                            {t.first_name} {t.last_name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Location</Label>
+                  <Select
+                    value={newClass.location_id || ''}
+                    onValueChange={(v) => {
+                      updateNewClass('location_id', v);
+                      updateNewClass('classroom_id', ''); // Clear classroom when location changes
                     }}
                   >
-                    Cancel
-                  </Button>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locationsLoading ? (
+                        <div className="text-muted-foreground px-2 py-1.5 text-xs">
+                          Loading...
+                        </div>
+                      ) : (
+                        locations.map((l) => (
+                          <SelectItem key={l.id} value={l.id as string}>
+                            {l.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Classroom</Label>
+                  <Select
+                    value={newClass.classroom_id || ''}
+                    onValueChange={(v) => updateNewClass('classroom_id', v)}
+                    disabled={!newClass.location_id}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select classroom" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classroomsLoading ? (
+                        <div className="text-muted-foreground px-2 py-1.5 text-xs">
+                          Loading...
+                        </div>
+                      ) : (
+                        availableClassrooms.map((c) => (
+                          <SelectItem key={c.id} value={c.id as string}>
+                            {c.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Type</Label>
+                  <Select
+                    value={newClass.class_type || ''}
+                    onValueChange={(v) => updateNewClass('class_type', v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="THEORY">Theory</SelectItem>
+                      <SelectItem value="WORKSHOP">Workshop</SelectItem>
+                      <SelectItem value="LAB">Lab</SelectItem>
+                      <SelectItem value="ONLINE">Online</SelectItem>
+                      <SelectItem value="HYBRID">Hybrid</SelectItem>
+                      <SelectItem value="ASSESSMENT">Assessment</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            )}
-
-            {classesLoading ? (
-              <p className="text-muted-foreground text-sm">
-                Loading classes...
-              </p>
-            ) : (
-              <div className="w-full overflow-hidden rounded-md border">
-                <Table>
-                  <TableHeader className="border-b">
-                    <TableRow className="divide-x">
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Trainer</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Classroom</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="divide-y">
-                    {classes.map((cls) => (
-                      <TableRow key={cls.id} className="divide-x">
-                        <TableCell>
-                          {cls.class_date
-                            ? format(new Date(cls.class_date), 'MMM dd')
-                            : '—'}
-                        </TableCell>
-                        <TableCell>
-                          {cls.start_time && cls.end_time
-                            ? `${cls.start_time} - ${cls.end_time}`
-                            : '—'}
-                        </TableCell>
-                        <TableCell>
-                          {cls.trainer_id ? 'Trainer' : '—'}
-                        </TableCell>
-                        <TableCell>
-                          {cls.location_id ? 'Location' : '—'}
-                        </TableCell>
-                        <TableCell>
-                          {cls.classroom_id ? 'Classroom' : '—'}
-                        </TableCell>
-                        <TableCell>{cls.class_type || '—'}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleDeleteClass(cls.id as string)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {classes.length === 0 && (
-                      <TableRow className="divide-x">
-                        <TableCell colSpan={7}>
-                          <p className="text-muted-foreground text-sm">
-                            No classes added yet
-                          </p>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" onClick={handleAddClass}>
+                  Add Class
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddingClass(false);
+                    setNewClass({});
+                  }}
+                >
+                  Cancel
+                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            </div>
+          )}
+
+          {classesLoading ? (
+            <p className="text-muted-foreground text-sm">Loading classes...</p>
+          ) : (
+            <div className="w-full overflow-hidden rounded-md border">
+              <Table>
+                <TableHeader className="border-b">
+                  <TableRow className="divide-x">
+                    <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Trainer</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Classroom</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y">
+                  {classes.map((cls) => (
+                    <TableRow key={cls.id} className="divide-x">
+                      <TableCell>
+                        {cls.class_date
+                          ? format(new Date(cls.class_date), 'MMM dd')
+                          : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {cls.start_time && cls.end_time
+                          ? `${cls.start_time} - ${cls.end_time}`
+                          : '—'}
+                      </TableCell>
+                      <TableCell>{cls.trainer_id ? 'Trainer' : '—'}</TableCell>
+                      <TableCell>
+                        {cls.location_id ? 'Location' : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {cls.classroom_id ? 'Classroom' : '—'}
+                      </TableCell>
+                      <TableCell>{cls.class_type || '—'}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleDeleteClass(cls.id as string)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {classes.length === 0 && (
+                    <TableRow className="divide-x">
+                      <TableCell colSpan={7}>
+                        <p className="text-muted-foreground text-sm">
+                          No classes added yet
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

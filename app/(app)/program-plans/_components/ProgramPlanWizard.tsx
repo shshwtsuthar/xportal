@@ -35,7 +35,13 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Plus, Trash } from 'lucide-react';
+import {
+  CalendarIcon,
+  Plus,
+  Trash,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
@@ -92,6 +98,7 @@ export function ProgramPlanWizard({
   );
 
   const [rows, setRows] = useState<PlanRow[]>([]);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   // Load existing subjects into rows when editing
   useEffect(() => {
@@ -118,6 +125,18 @@ export function ProgramPlanWizard({
     value: string | Date | number | boolean | undefined
   ) => {
     setRows((r) => r.map((x, i) => (i === idx ? { ...x, [field]: value } : x)));
+  };
+
+  const toggleRowExpansion = (idx: number) => {
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(idx)) {
+        newSet.delete(idx);
+      } else {
+        newSet.add(idx);
+      }
+      return newSet;
+    });
   };
 
   const handleSave = async () => {
@@ -209,6 +228,7 @@ export function ProgramPlanWizard({
             <Table>
               <TableHeader>
                 <TableRow className="divide-x">
+                  <TableHead className="w-10" />
                   <TableHead>Subject</TableHead>
                   <TableHead>Start</TableHead>
                   <TableHead>End</TableHead>
@@ -220,7 +240,7 @@ export function ProgramPlanWizard({
               <TableBody className="divide-y">
                 {rows.length === 0 ? (
                   <TableRow className="divide-x">
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={7}>
                       <p className="text-muted-foreground text-sm">
                         No subjects added
                       </p>
@@ -229,7 +249,45 @@ export function ProgramPlanWizard({
                 ) : (
                   rows.map((row, idx) => (
                     <React.Fragment key={idx}>
-                      <TableRow className="divide-x">
+                      <TableRow
+                        className={cn(
+                          'hover:bg-muted/50 cursor-pointer divide-x transition-colors',
+                          expandedRows.has(idx) && 'bg-muted/30'
+                        )}
+                        onClick={(e) => {
+                          // Don't toggle if clicking on interactive elements
+                          const target = e.target as HTMLElement;
+                          const isInteractive =
+                            target.closest('button') ||
+                            target.closest('select') ||
+                            target.closest('input') ||
+                            target.closest('[role="combobox"]') ||
+                            target.closest('[role="option"]') ||
+                            target.closest('.popover-trigger');
+
+                          if (!isInteractive) {
+                            toggleRowExpansion(idx);
+                          }
+                        }}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleRowExpansion(idx);
+                          }
+                        }}
+                        aria-expanded={expandedRows.has(idx)}
+                        aria-label={`${expandedRows.has(idx) ? 'Collapse' : 'Expand'} classes for subject row ${idx + 1}`}
+                      >
+                        <TableCell>
+                          <div className="flex items-center">
+                            {expandedRows.has(idx) ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Select
                             value={row.subject_id}
@@ -237,7 +295,7 @@ export function ProgramPlanWizard({
                               updateRow(idx, 'subject_id', v)
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger onClick={(e) => e.stopPropagation()}>
                               <SelectValue placeholder="Select subject" />
                             </SelectTrigger>
                             <SelectContent>
@@ -255,9 +313,10 @@ export function ProgramPlanWizard({
                               <Button
                                 variant="outline"
                                 className={cn(
-                                  'w-full justify-start text-left font-normal',
+                                  'popover-trigger w-full justify-start text-left font-normal',
                                   !row.start_date && 'text-muted-foreground'
                                 )}
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {row.start_date
@@ -286,9 +345,10 @@ export function ProgramPlanWizard({
                               <Button
                                 variant="outline"
                                 className={cn(
-                                  'w-full justify-start text-left font-normal',
+                                  'popover-trigger w-full justify-start text-left font-normal',
                                   !row.end_date && 'text-muted-foreground'
                                 )}
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {row.end_date
@@ -318,6 +378,7 @@ export function ProgramPlanWizard({
                               onCheckedChange={(v) =>
                                 updateRow(idx, 'is_prerequisite', Boolean(v))
                               }
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </div>
                         </TableCell>
@@ -334,6 +395,7 @@ export function ProgramPlanWizard({
                                   : undefined
                               )
                             }
+                            onClick={(e) => e.stopPropagation()}
                           />
                         </TableCell>
                         <TableCell>
@@ -342,24 +404,36 @@ export function ProgramPlanWizard({
                             size="icon"
                             variant="ghost"
                             aria-label="Remove"
-                            onClick={() => removeRow(idx)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeRow(idx);
+                            }}
                           >
                             <Trash className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
-                      {row.id && row.start_date && row.end_date && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="p-0">
-                            <div className="px-4 py-2">
-                              <ClassesManager
-                                programPlanSubjectId={row.id}
-                                subjectStartDate={row.start_date}
-                                subjectEndDate={row.end_date}
-                              />
+                      {expandedRows.has(idx) && (
+                        <tr>
+                          <td colSpan={7} className="p-0">
+                            <div className="bg-muted/30 border-t px-4 py-2">
+                              {row.id && row.start_date && row.end_date ? (
+                                <ClassesManager
+                                  programPlanSubjectId={row.id}
+                                  subjectStartDate={row.start_date}
+                                  subjectEndDate={row.end_date}
+                                />
+                              ) : (
+                                <div className="text-muted-foreground py-8 text-center">
+                                  <p className="text-sm">
+                                    Please fill in subject, start date, and end
+                                    date, then save the plan to manage classes.
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       )}
                     </React.Fragment>
                   ))
@@ -369,7 +443,18 @@ export function ProgramPlanWizard({
           </div>
         </div>
       );
-  }, [activeStep, form, programs, subjects, rows, programId]);
+  }, [
+    activeStep,
+    form,
+    programs,
+    subjects,
+    rows,
+    programId,
+    expandedRows,
+    toggleRowExpansion,
+    updateRow,
+    removeRow,
+  ]);
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
