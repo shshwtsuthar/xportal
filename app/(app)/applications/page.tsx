@@ -14,16 +14,7 @@ import { ApplicationStats } from './_components/ApplicationStats';
 import { ApplicationsFilter } from './_components/ApplicationsFilter';
 import { ApplicationsColumnsMenu } from './_components/ApplicationsColumnsMenu';
 import { ExportDialog } from './_components/ExportDialog';
-import { Archive, Download, Mail, Filter } from 'lucide-react';
-import { QueryBuilder } from '@/src/components/filters/QueryBuilder';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+import { Archive, Download, Mail } from 'lucide-react';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
 import { useApplicationsFilters } from '@/src/hooks/useApplicationsFilters';
 import Link from 'next/link';
@@ -37,7 +28,6 @@ export default function ApplicationsPage() {
   const tableRef = useRef<ApplicationsDataTableRef>(null);
   const plusIconRef = useRef<PlusIconHandle>(null);
   const [exportOpen, setExportOpen] = useState(false);
-  const [queryBuilderOpen, setQueryBuilderOpen] = useState(false);
   const { openWithRecipients } = useComposeEmail();
   const getRowsForExport = useCallback(() => {
     return tableRef.current?.getRows() ?? [];
@@ -219,38 +209,6 @@ export default function ApplicationsPage() {
                 onReset={resetFilters}
                 activeFilterCount={activeFilterCount}
               />
-              <Sheet open={queryBuilderOpen} onOpenChange={setQueryBuilderOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-label="Open advanced filter builder"
-                  >
-                    <Filter className="mr-2 h-4 w-4" /> Advanced Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-                  <SheetHeader>
-                    <SheetTitle>Advanced Filter Builder</SheetTitle>
-                    <SheetDescription>
-                      Build complex filters with nested AND/OR conditions. This
-                      is the new Master Filter System.
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="mt-6">
-                    <QueryBuilder
-                      rootTable="applications"
-                      maxDepth={3}
-                      title="Filter Applications"
-                      onFiltersChange={(ast) => {
-                        // Optional: You can handle filter changes here
-                        // For now, the filters are synced via URL automatically
-                        console.log('Filter AST changed:', ast);
-                      }}
-                    />
-                  </div>
-                </SheetContent>
-              </Sheet>
               <ApplicationsColumnsMenu />
               <Button
                 variant="outline"
