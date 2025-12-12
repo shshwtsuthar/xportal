@@ -233,7 +233,7 @@ export function ProgramPlanWizard({
                   <TableHead>Start</TableHead>
                   <TableHead>End</TableHead>
                   <TableHead>Prerequisite</TableHead>
-                  <TableHead>Sequence</TableHead>
+                  <TableHead className="w-20">Sequence</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -295,7 +295,10 @@ export function ProgramPlanWizard({
                               updateRow(idx, 'subject_id', v)
                             }
                           >
-                            <SelectTrigger onClick={(e) => e.stopPropagation()}>
+                            <SelectTrigger
+                              className="w-full"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <SelectValue placeholder="Select subject" />
                             </SelectTrigger>
                             <SelectContent>
@@ -396,6 +399,7 @@ export function ProgramPlanWizard({
                               )
                             }
                             onClick={(e) => e.stopPropagation()}
+                            className="w-full"
                           />
                         </TableCell>
                         <TableCell>
