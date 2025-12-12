@@ -64,7 +64,7 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       id: 'status',
       label: 'Status',
       width: 140,
-      minWidth: 180, // Minimum width to fit longest status "OFFER GENERATED"
+      minWidth: 120, // Minimum width to fit longest status "OFFER GENERATED"
       sortable: true,
       sortAccessor: (r) => r.status as unknown as string,
       render: (r) => (
@@ -131,7 +131,7 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       id: 'id',
       label: 'ID',
       width: 260,
-      minWidth: 300, // Minimum width to fit UUIDs and application IDs with badge padding
+      minWidth: 200, // Minimum width to fit UUIDs and application IDs with badge padding
       sortable: true,
       sortAccessor: (r) => r.application_id_display || r.id,
       render: (r) => (
@@ -233,7 +233,7 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       id: 'email',
       label: 'Email',
       width: 220,
-      minWidth: 280, // Minimum width to fit typical email addresses with badge padding
+      minWidth: 200, // Minimum width to fit typical email addresses with badge padding
       sortable: true,
       sortAccessor: (r) => r.email || '',
       render: (r) =>
@@ -249,7 +249,7 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       id: 'alternative_email',
       label: 'Alt. Email',
       width: 220,
-      minWidth: 280, // Minimum width to fit typical email addresses with badge padding
+      minWidth: 200, // Minimum width to fit typical email addresses with badge padding
       sortable: true,
       sortAccessor: (r) => r.alternative_email || '',
       render: (r) =>

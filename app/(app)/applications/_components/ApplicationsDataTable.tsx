@@ -535,14 +535,14 @@ export const ApplicationsDataTable = forwardRef<
       visibleColumns.length > 0 ? visibleColumns : DEFAULT_VISIBLE_COLUMNS;
 
     return (
-      <div className="w-full overflow-hidden rounded-md border">
+      <div className="w-full overflow-x-auto rounded-md border">
         <div className="border-b p-3">
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Skeleton className="h-9 w-full pl-9" />
           </div>
         </div>
-        <Table className="table-fixed">
+        <Table>
           <TableHeader>
             <TableRow className="divide-x">
               <TableHead className="w-10 px-2 text-center" />
@@ -817,7 +817,7 @@ export const ApplicationsDataTable = forwardRef<
 
   return (
     <>
-      <div className="w-full overflow-hidden rounded-md border">
+      <div className="w-full overflow-x-auto rounded-md border">
         {isManualOrderActive && (
           <div className="bg-muted/40 flex items-center justify-between border-b px-3 py-2 text-xs">
             <span className="text-muted-foreground">
@@ -846,7 +846,7 @@ export const ApplicationsDataTable = forwardRef<
             />
           </div>
         </div>
-        <Table className="table-fixed">
+        <Table>
           <TableHeader>
             <TableRow className="divide-x">
               <TableHead

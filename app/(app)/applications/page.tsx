@@ -86,7 +86,7 @@ export default function ApplicationsPage() {
     : filters;
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <div className="mx-auto w-full max-w-full p-4 md:p-6 lg:p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
