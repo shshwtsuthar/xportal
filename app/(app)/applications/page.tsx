@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import type { Database } from '@/database.types';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -135,7 +136,7 @@ export default function ApplicationsPage() {
             All Applications
           </CardTitle>
           <div className="mt-4 flex items-center justify-between gap-2">
-            <div className="flex flex-wrap gap-2">
+            <ButtonGroup className="flex-wrap">
               <Button
                 variant={quickStatus === undefined ? 'default' : 'outline'}
                 size="sm"
@@ -202,7 +203,7 @@ export default function ApplicationsPage() {
               >
                 <Archive className="h-4 w-4" />
               </Button>
-            </div>
+            </ButtonGroup>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
