@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +55,16 @@ export function UpdatePasswordForm() {
       }
 
       toast.success('Password updated successfully');
+
+      // Sync profile role with app_metadata role (in case profile was created with wrong role)
+      try {
+        await fetch('/api/profile/sync-role', {
+          method: 'POST',
+        });
+      } catch (syncError) {
+        // Non-fatal: log but don't block redirect
+        console.error('Failed to sync profile role:', syncError);
+      }
 
       // Check if user is a student and redirect accordingly
       const {
