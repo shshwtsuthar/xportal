@@ -1099,13 +1099,27 @@ serve(async (req: Request) => {
   }
 
   // 3g) Learning plan classes → enrollment_classes
+  // Filter classes to only include those matching the student's preferred location
   {
+    if (!app.preferred_location_id) {
+      return new Response(
+        JSON.stringify({
+          error: 'Application must have a preferred_location_id set',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
     const { data: classes, error: clsErr } = await supabase
       .from('application_learning_classes')
       .select(
         'program_plan_class_id, class_date, start_time, end_time, trainer_id, location_id, classroom_id, class_type'
       )
-      .eq('application_id', app.id);
+      .eq('application_id', app.id)
+      .eq('location_id', app.preferred_location_id);
     if (!clsErr && classes && classes.length > 0) {
       const rows = classes.map((c) => ({
         enrollment_id: enrollment.id,

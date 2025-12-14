@@ -2,13 +2,19 @@ import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Tables } from '@/database.types';
 
+type ProgramPlanClassWithLocation = Tables<'program_plan_classes'> & {
+  delivery_locations: Pick<Tables<'delivery_locations'>, 'name'> | null;
+  classrooms: Pick<Tables<'classrooms'>, 'name'> | null;
+};
+
 /**
  * Fetch classes for a given program plan subject id.
+ * Includes location and classroom details for display.
  */
 export const useGetProgramPlanClasses = (programPlanSubjectId?: string) => {
   return useQuery({
     queryKey: ['programPlanClasses', programPlanSubjectId ?? 'none'],
-    queryFn: async (): Promise<Tables<'program_plan_classes'>[]> => {
+    queryFn: async (): Promise<ProgramPlanClassWithLocation[]> => {
       console.log(
         'useGetProgramPlanClasses: Fetching classes for programPlanSubjectId:',
         programPlanSubjectId
@@ -17,7 +23,17 @@ export const useGetProgramPlanClasses = (programPlanSubjectId?: string) => {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('program_plan_classes')
-        .select('*')
+        .select(
+          `
+          *,
+          delivery_locations(
+            name
+          ),
+          classrooms(
+            name
+          )
+        `
+        )
         .eq('program_plan_subject_id', programPlanSubjectId)
         .order('class_date', { ascending: true });
       if (error) {
@@ -28,7 +44,7 @@ export const useGetProgramPlanClasses = (programPlanSubjectId?: string) => {
         'useGetProgramPlanClasses: Retrieved classes:',
         data?.length || 0
       );
-      return data ?? [];
+      return (data ?? []) as ProgramPlanClassWithLocation[];
     },
     enabled: !!programPlanSubjectId,
   });

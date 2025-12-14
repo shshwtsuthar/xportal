@@ -715,6 +715,7 @@ export type Database = {
           postal_suburb: string | null
           postal_unit_details: string | null
           postcode: string | null
+          preferred_location_id: string
           preferred_name: string | null
           previous_provider_name: string | null
           prior_education_flag: string | null
@@ -819,6 +820,7 @@ export type Database = {
           postal_suburb?: string | null
           postal_unit_details?: string | null
           postcode?: string | null
+          preferred_location_id: string
           preferred_name?: string | null
           previous_provider_name?: string | null
           prior_education_flag?: string | null
@@ -923,6 +925,7 @@ export type Database = {
           postal_suburb?: string | null
           postal_unit_details?: string | null
           postcode?: string | null
+          preferred_location_id?: string
           preferred_name?: string | null
           previous_provider_name?: string | null
           prior_education_flag?: string | null
@@ -982,6 +985,13 @@ export type Database = {
             columns: ["payment_plan_template_id"]
             isOneToOne: false
             referencedRelation: "payment_plan_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_preferred_location_id_fkey"
+            columns: ["preferred_location_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_locations"
             referencedColumns: ["id"]
           },
           {
@@ -2305,7 +2315,7 @@ export type Database = {
           created_at: string
           end_time: string | null
           id: string
-          location_id: string | null
+          location_id: string
           notes: string | null
           program_plan_subject_id: string
           start_time: string | null
@@ -2318,7 +2328,7 @@ export type Database = {
           created_at?: string
           end_time?: string | null
           id?: string
-          location_id?: string | null
+          location_id: string
           notes?: string | null
           program_plan_subject_id: string
           start_time?: string | null
@@ -2331,7 +2341,7 @@ export type Database = {
           created_at?: string
           end_time?: string | null
           id?: string
-          location_id?: string | null
+          location_id?: string
           notes?: string | null
           program_plan_subject_id?: string
           start_time?: string | null

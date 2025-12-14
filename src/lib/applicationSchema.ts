@@ -119,6 +119,8 @@ export const applicationSchema = z
     program_id: z.string().min(1, 'Program selection is required'),
     // Timetable Selection
     timetable_id: z.string().min(1, 'Timetable selection is required'),
+    // Preferred Location Selection
+    preferred_location_id: z.string().min(1, 'Preferred location is required'),
     // Commencement Date
     proposed_commencement_date: z
       .string()

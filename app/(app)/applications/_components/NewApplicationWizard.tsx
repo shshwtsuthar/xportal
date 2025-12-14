@@ -166,6 +166,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       date_of_birth: '',
       program_id: '',
       timetable_id: '',
+      preferred_location_id: '',
       proposed_commencement_date: '',
       payment_plan_template_id: '',
       payment_anchor_date: '',
@@ -258,6 +259,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
         date_of_birth: currentApplication.date_of_birth ?? '',
         program_id: currentApplication.program_id ?? '',
         timetable_id: currentApplication.timetable_id ?? '',
+        preferred_location_id: currentApplication.preferred_location_id ?? '',
         proposed_commencement_date:
           currentApplication.proposed_commencement_date ?? '',
         payment_plan_template_id:
@@ -422,8 +424,20 @@ export function NewApplicationWizard({ applicationId }: Props) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { disabilities, prior_education, ...valuesWithoutArrays } = values;
 
+      // For updates, exclude preferred_location_id if it's null/empty to avoid overwriting existing value
+      // For creates, useCreateApplication will set a default location
+      const { preferred_location_id, ...valuesWithoutLocation } =
+        valuesWithoutArrays;
+      const cleanedPreferredLocationId =
+        preferred_location_id && preferred_location_id.trim() !== ''
+          ? preferred_location_id
+          : undefined;
+
       const cleanedValues = {
-        ...valuesWithoutArrays,
+        ...valuesWithoutLocation,
+        ...(cleanedPreferredLocationId !== undefined && {
+          preferred_location_id: cleanedPreferredLocationId,
+        }),
         date_of_birth: values.date_of_birth
           ? typeof values.date_of_birth === 'string'
             ? values.date_of_birth

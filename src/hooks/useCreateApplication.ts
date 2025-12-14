@@ -65,9 +65,38 @@ export const useCreateApplication = () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { application_id_display: _, ...initialDataWithoutDisplayId } =
         initialData || {};
+
+      // If preferred_location_id is not provided or is null/empty, get the first available location for this RTO
+      let preferredLocationId =
+        initialDataWithoutDisplayId.preferred_location_id;
+      if (!preferredLocationId) {
+        const { data: locations, error: locError } = await supabase
+          .from('delivery_locations')
+          .select('id')
+          .eq('rto_id', rtoId)
+          .order('name', { ascending: true })
+          .limit(1);
+
+        if (locError) {
+          console.error('Error fetching default location:', locError);
+          throw new Error(
+            'Failed to get default location. Please ensure at least one location exists for your RTO.'
+          );
+        }
+
+        if (!locations || locations.length === 0) {
+          throw new Error(
+            'No locations available. Please create at least one location before creating applications.'
+          );
+        }
+
+        preferredLocationId = locations[0].id;
+      }
+
       const applicationData: ApplicationInsert = {
         status: 'DRAFT' as const,
         rto_id: rtoId,
+        preferred_location_id: preferredLocationId,
         ...initialDataWithoutDisplayId, // Include any initial form data (excluding application_id_display)
       };
 

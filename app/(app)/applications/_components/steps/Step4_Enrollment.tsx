@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import { useGetTimetables } from '@/src/hooks/useGetTimetables';
+import { useGetLocations } from '@/src/hooks/useGetLocations';
 import { EnrollmentPreview } from '../EnrollmentPreview';
 import { OngoingSubjectPreview } from '../OngoingSubjectPreview';
 import {
@@ -47,6 +48,7 @@ type FlexibleFormValues =
       email?: string; // Optional in draftApplicationSchema
       program_id?: string;
       timetable_id?: string;
+      preferred_location_id?: string;
       proposed_commencement_date?: string;
       [key: string]: unknown; // Allow other fields for flexibility
     };
@@ -57,10 +59,14 @@ type Props = {
 
 export function EnrollmentStep({ form }: Props) {
   const { data: programs, isLoading } = useGetPrograms();
+  const { data: locations = [], isLoading: locationsLoading } =
+    useGetLocations();
 
   // Use local state for immediate reactivity
   const [localProgramId, setLocalProgramId] = useState<string>('');
   const [localSelectedTimetableId, setLocalSelectedTimetableId] =
+    useState<string>('');
+  const [localSelectedLocationId, setLocalSelectedLocationId] =
     useState<string>('');
   const [localSelectedDate, setLocalSelectedDate] = useState<Date | undefined>(
     undefined
@@ -151,7 +157,26 @@ export function EnrollmentStep({ form }: Props) {
         console.error('Invalid date string:', formDateString);
       }
     }
-  }, [form, localProgramId, localSelectedTimetableId, selectedDateString]);
+
+    const formLocationId = form.getValues('preferred_location_id');
+    if (
+      formLocationId &&
+      typeof formLocationId === 'string' &&
+      formLocationId !== localSelectedLocationId
+    ) {
+      console.log(
+        'Syncing local location state with form value:',
+        formLocationId
+      );
+      setLocalSelectedLocationId(formLocationId);
+    }
+  }, [
+    form,
+    localProgramId,
+    localSelectedTimetableId,
+    localSelectedLocationId,
+    selectedDateString,
+  ]);
 
   // Note: Preview logic is now handled by EnrollmentPreview component
 
@@ -275,6 +300,52 @@ export function EnrollmentStep({ form }: Props) {
                               value={timetable.id as string}
                             >
                               {timetable.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="preferred_location_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Location *</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value || localSelectedLocationId}
+                      onValueChange={(value) => {
+                        console.log('Location selected:', value);
+                        field.onChange(value);
+                        form.setValue('preferred_location_id', value);
+                        setLocalSelectedLocationId(value); // Update local state immediately
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {locationsLoading ? (
+                          <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                            Loading locations...
+                          </div>
+                        ) : locations.length === 0 ? (
+                          <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                            No locations available
+                          </div>
+                        ) : (
+                          locations.map((location) => (
+                            <SelectItem
+                              key={location.id}
+                              value={location.id as string}
+                            >
+                              {location.name}
                             </SelectItem>
                           ))
                         )}

@@ -101,12 +101,30 @@ export async function POST(request: Request) {
     const toDateString = (v: unknown) =>
       !v ? null : typeof v === 'string' ? v : (v as Date).toISOString();
 
+    // Get default location for this RTO (required field)
+    const { data: locations, error: locError } = await supabase
+      .from('delivery_locations')
+      .select('id')
+      .eq('rto_id', agent.rto_id)
+      .order('name', { ascending: true })
+      .limit(1);
+
+    if (locError || !locations || locations.length === 0) {
+      return NextResponse.json(
+        { error: 'No locations available for this RTO' },
+        { status: 400 }
+      );
+    }
+
+    const defaultLocationId = locations[0].id;
+
     // Prepare insert payload
     // Exclude application_id_display - trigger will generate it automatically
     const insertData: ApplicationInsert = {
       rto_id: agent.rto_id,
       status: 'DRAFT' as const,
       agent_id: agent.id,
+      preferred_location_id: defaultLocationId,
       salutation: input.salutation ?? null,
       first_name: input.first_name ?? null,
       middle_name: input.middle_name ?? null,
