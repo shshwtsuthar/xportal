@@ -85,6 +85,13 @@ export async function POST(request: Request) {
           app_metadata: { rto_id: rtoId, role },
           user_metadata: { first_name, last_name },
         });
+
+        // Fix profile role if it was created with wrong role due to race condition
+        // The trigger creates the profile before app_metadata is set, defaulting to ADMISSIONS_OFFICER
+        await supabaseAdmin
+          .from('profiles')
+          .update({ role })
+          .eq('id', invitedUserId);
       }
     } catch {
       // Non-fatal: email still goes out; missing app_metadata will be handled later
