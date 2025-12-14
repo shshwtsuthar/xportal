@@ -384,7 +384,12 @@ export function ClassesManager({
                           ? `${cls.start_time} - ${cls.end_time}`
                           : '—'}
                       </TableCell>
-                      <TableCell>{cls.trainer_id ? 'Trainer' : '—'}</TableCell>
+                      <TableCell>
+                        {cls.profiles
+                          ? `${cls.profiles.first_name || ''} ${cls.profiles.last_name || ''}`.trim() ||
+                            '—'
+                          : '—'}
+                      </TableCell>
                       <TableCell>
                         {cls.delivery_locations?.name ?? '—'}
                       </TableCell>
