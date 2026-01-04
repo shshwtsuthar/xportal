@@ -88,6 +88,12 @@ export function ClassesManager({
         return;
       }
 
+      // Validate location is required
+      if (!newClass.location_id) {
+        toast.error('Please select a location');
+        return;
+      }
+
       // Validate class date is within subject date range
       if (
         newClass.class_date < subjectStartDate ||
@@ -115,7 +121,7 @@ export function ClassesManager({
         start_time: newClass.start_time,
         end_time: newClass.end_time,
         trainer_id: newClass.trainer_id || null,
-        location_id: newClass.location_id || null,
+        location_id: newClass.location_id, // Required - no null fallback
         classroom_id: newClass.classroom_id || null,
         class_type:
           (newClass.class_type as
@@ -252,7 +258,7 @@ export function ClassesManager({
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label className="text-xs font-medium">Location</Label>
+                  <Label className="text-xs font-medium">Location *</Label>
                   <Select
                     value={newClass.location_id || ''}
                     onValueChange={(v) => {
@@ -261,7 +267,7 @@ export function ClassesManager({
                     }}
                   >
                     <SelectTrigger size="sm" className="w-full">
-                      <SelectValue placeholder="Select location" />
+                      <SelectValue placeholder="Select location (required)" />
                     </SelectTrigger>
                     <SelectContent>
                       {locationsLoading ? (
@@ -378,13 +384,16 @@ export function ClassesManager({
                           ? `${cls.start_time} - ${cls.end_time}`
                           : '—'}
                       </TableCell>
-                      <TableCell>{cls.trainer_id ? 'Trainer' : '—'}</TableCell>
                       <TableCell>
-                        {cls.location_id ? 'Location' : '—'}
+                        {cls.profiles
+                          ? `${cls.profiles.first_name || ''} ${cls.profiles.last_name || ''}`.trim() ||
+                            '—'
+                          : '—'}
                       </TableCell>
                       <TableCell>
-                        {cls.classroom_id ? 'Classroom' : '—'}
+                        {cls.delivery_locations?.name ?? '—'}
                       </TableCell>
+                      <TableCell>{cls.classrooms?.name ?? '—'}</TableCell>
                       <TableCell>{cls.class_type || '—'}</TableCell>
                       <TableCell className="text-right">
                         <Button

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
-import { Tables } from '@/database.types';
+import { Tables, TablesInsert } from '@/database.types';
 
 type UpsertPayload = Partial<Tables<'program_plan_classes'>> & { id?: string };
 
@@ -25,16 +25,27 @@ export const useUpsertProgramPlanClass = () => {
         return data!;
       }
       // Ensure required fields are present for insert
-      const insertData = {
-        program_plan_subject_id: payload.program_plan_subject_id!,
-        class_date: payload.class_date!,
-        start_time: payload.start_time,
-        end_time: payload.end_time,
-        trainer_id: payload.trainer_id,
-        location_id: payload.location_id,
-        classroom_id: payload.classroom_id,
-        class_type: payload.class_type,
-        notes: payload.notes,
+      // location_id is now mandatory (NOT NULL)
+      if (!payload.location_id) {
+        throw new Error('location_id is required when creating a class');
+      }
+
+      if (!payload.program_plan_subject_id || !payload.class_date) {
+        throw new Error(
+          'program_plan_subject_id and class_date are required when creating a class'
+        );
+      }
+
+      const insertData: TablesInsert<'program_plan_classes'> = {
+        program_plan_subject_id: payload.program_plan_subject_id,
+        class_date: payload.class_date,
+        start_time: payload.start_time ?? null,
+        end_time: payload.end_time ?? null,
+        trainer_id: payload.trainer_id ?? null,
+        location_id: payload.location_id, // Required - validated above
+        classroom_id: payload.classroom_id ?? null,
+        class_type: payload.class_type ?? null,
+        notes: payload.notes ?? null,
       };
 
       const { data, error } = await supabase

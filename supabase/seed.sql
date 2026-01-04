@@ -17,6 +17,11 @@ DECLARE
   v_subject_id UUID;
   v_program_plan_subject_id UUID;
   v_payment_plan_template_id UUID;
+  v_location_ids UUID[];
+  v_random_location_id UUID;
+  v_class_count INT;
+  v_class_date DATE;
+  v_days_between INT;
 BEGIN
   -- Get first RTO
   SELECT id INTO v_rto_id FROM public.rtos LIMIT 1;
@@ -146,30 +151,29 @@ BEGIN
 
   RAISE NOTICE 'Subjects created/updated: % subjects', (SELECT COUNT(*) FROM temp_subjects);
 
-  -- Step 5: Create Timetable
-  INSERT INTO public.timetables (
-    id,
-    rto_id,
-    program_id,
-    name,
-    is_archived
-  ) VALUES (
-    extensions.uuid_generate_v4(),
-    v_rto_id,
-    v_program_id,
-    'Certificate III in Carpentry 2025-2026',
-    false
-  )
-  ON CONFLICT ON CONSTRAINT timetables_pkey DO NOTHING
-  RETURNING id INTO v_timetable_id;
+  -- Step 5: Create Timetable (check for existing first to avoid duplicates)
+  SELECT id INTO v_timetable_id 
+  FROM public.timetables 
+  WHERE program_id = v_program_id 
+  AND name = 'Certificate III in Carpentry 2025-2026'
+  LIMIT 1;
 
-  -- If conflict, get existing timetable
+  -- Only create if it doesn't exist
   IF v_timetable_id IS NULL THEN
-    SELECT id INTO v_timetable_id 
-    FROM public.timetables 
-    WHERE program_id = v_program_id 
-    AND name = 'Certificate III in Carpentry 2025-2026'
-    LIMIT 1;
+    INSERT INTO public.timetables (
+      id,
+      rto_id,
+      program_id,
+      name,
+      is_archived
+    ) VALUES (
+      extensions.uuid_generate_v4(),
+      v_rto_id,
+      v_program_id,
+      'Certificate III in Carpentry 2025-2026',
+      false
+    )
+    RETURNING id INTO v_timetable_id;
   END IF;
 
   RAISE NOTICE 'Timetable created/updated: %', v_timetable_id;
@@ -249,24 +253,67 @@ BEGIN
 
   RAISE NOTICE 'Program Plan 2025 subjects added';
 
-  -- Step 8: Add classes for Program Plan 2025
-  INSERT INTO public.program_plan_classes (
-    program_plan_subject_id,
-    class_date,
-    start_time,
-    end_time,
-    class_type,
-    notes
-  )
-  SELECT 
-    pps.id,
-    pps.start_date,
-    '09:00:00'::time,
-    '17:00:00'::time,
-    'THEORY'::class_type,
-    'Standard theory class'
-  FROM public.program_plan_subjects pps
-  WHERE pps.program_plan_id = v_program_plan_2025_id;
+  -- Step 8: Get or create locations for the RTO
+  SELECT ARRAY_AGG(id) INTO v_location_ids
+  FROM public.delivery_locations
+  WHERE rto_id = v_rto_id;
+  
+  -- If no locations exist, create two default locations
+  IF v_location_ids IS NULL OR array_length(v_location_ids, 1) IS NULL THEN
+    INSERT INTO public.delivery_locations (
+      id, rto_id, location_id_internal, name, suburb, state, postcode
+    ) VALUES
+      (extensions.uuid_generate_v4(), v_rto_id, 'MEL-CBD', 'Melbourne CBD Campus', 'Melbourne', 'VIC', '3000'),
+      (extensions.uuid_generate_v4(), v_rto_id, 'SUB-CTR', 'Suburban Training Centre', 'Clayton', 'VIC', '3168')
+    ON CONFLICT DO NOTHING;
+    
+    SELECT ARRAY_AGG(id) INTO v_location_ids
+    FROM public.delivery_locations
+    WHERE rto_id = v_rto_id;
+  END IF;
+
+  -- Step 8: Add 2-3 random classes per subject for Program Plan 2025
+  FOR v_program_plan_subject_id, v_class_date, v_days_between IN
+    SELECT 
+      pps.id,
+      pps.start_date,
+      (pps.end_date - pps.start_date)::INT
+    FROM public.program_plan_subjects pps
+    WHERE pps.program_plan_id = v_program_plan_2025_id
+  LOOP
+    -- Generate 2-3 classes per subject (random count between 2 and 3)
+    v_class_count := 2 + floor(random() * 2)::INT; -- 2 or 3
+    
+    FOR i IN 1..v_class_count LOOP
+      -- Random date within subject date range (calculate fresh for each class)
+      IF v_days_between > 0 THEN
+        v_class_date := (SELECT start_date FROM public.program_plan_subjects WHERE id = v_program_plan_subject_id) 
+                        + (floor(random() * (v_days_between + 1))::INT || ' days')::INTERVAL;
+      END IF;
+      
+      -- Random location from available locations
+      v_random_location_id := v_location_ids[1 + floor(random() * array_length(v_location_ids, 1))::INT];
+      
+      INSERT INTO public.program_plan_classes (
+        program_plan_subject_id,
+        class_date,
+        start_time,
+        end_time,
+        class_type,
+        location_id,
+        notes
+      ) VALUES (
+        v_program_plan_subject_id,
+        v_class_date::DATE,
+        '09:00:00'::time,
+        '17:00:00'::time,
+        'THEORY'::class_type,
+        v_random_location_id,
+        'Standard theory class'
+      )
+      ON CONFLICT DO NOTHING;
+    END LOOP;
+  END LOOP;
 
   RAISE NOTICE 'Program Plan 2025 classes added';
 
@@ -345,24 +392,48 @@ BEGIN
 
   RAISE NOTICE 'Program Plan 2026 subjects added';
 
-  -- Step 11: Add classes for Program Plan 2026
-  INSERT INTO public.program_plan_classes (
-    program_plan_subject_id,
-    class_date,
-    start_time,
-    end_time,
-    class_type,
-    notes
-  )
-  SELECT 
-    pps.id,
-    pps.start_date,
-    '09:00:00'::time,
-    '17:00:00'::time,
-    'THEORY'::class_type,
-    'Standard theory class'
-  FROM public.program_plan_subjects pps
-  WHERE pps.program_plan_id = v_program_plan_2026_id;
+  -- Step 11: Add 2-3 random classes per subject for Program Plan 2026
+  FOR v_program_plan_subject_id, v_class_date, v_days_between IN
+    SELECT 
+      pps.id,
+      pps.start_date,
+      (pps.end_date - pps.start_date)::INT
+    FROM public.program_plan_subjects pps
+    WHERE pps.program_plan_id = v_program_plan_2026_id
+  LOOP
+    -- Generate 2-3 classes per subject (random count between 2 and 3)
+    v_class_count := 2 + floor(random() * 2)::INT; -- 2 or 3
+    
+    FOR i IN 1..v_class_count LOOP
+      -- Random date within subject date range (calculate fresh for each class)
+      IF v_days_between > 0 THEN
+        v_class_date := (SELECT start_date FROM public.program_plan_subjects WHERE id = v_program_plan_subject_id) 
+                        + (floor(random() * (v_days_between + 1))::INT || ' days')::INTERVAL;
+      END IF;
+      
+      -- Random location from available locations
+      v_random_location_id := v_location_ids[1 + floor(random() * array_length(v_location_ids, 1))::INT];
+      
+      INSERT INTO public.program_plan_classes (
+        program_plan_subject_id,
+        class_date,
+        start_time,
+        end_time,
+        class_type,
+        location_id,
+        notes
+      ) VALUES (
+        v_program_plan_subject_id,
+        v_class_date::DATE,
+        '09:00:00'::time,
+        '17:00:00'::time,
+        'THEORY'::class_type,
+        v_random_location_id,
+        'Standard theory class'
+      )
+      ON CONFLICT DO NOTHING;
+    END LOOP;
+  END LOOP;
 
   RAISE NOTICE 'Program Plan 2026 classes added';
 
@@ -856,21 +927,27 @@ BEGIN
   WHERE pps.program_plan_id IN (v_pp_it_2025_id, v_pp_bus_2025_id, v_pp_hosp_2025_id)
   ON CONFLICT DO NOTHING;
 
-  -- Timetables for each program and link plans
-  INSERT INTO public.timetables (id, rto_id, program_id, name, is_archived)
-  VALUES (extensions.uuid_generate_v4(), v_rto_id, v_prog_it_id, 'IT 2025-2026', false)
-  ON CONFLICT ON CONSTRAINT timetables_pkey DO NOTHING RETURNING id INTO v_tt_it_id;
-  IF v_tt_it_id IS NULL THEN SELECT id INTO v_tt_it_id FROM public.timetables WHERE program_id = v_prog_it_id AND name = 'IT 2025-2026' LIMIT 1; END IF;
+  -- Timetables for each program and link plans (check for existing first to avoid duplicates)
+  SELECT id INTO v_tt_it_id FROM public.timetables WHERE program_id = v_prog_it_id AND name = 'IT 2025-2026' LIMIT 1;
+  IF v_tt_it_id IS NULL THEN
+    INSERT INTO public.timetables (id, rto_id, program_id, name, is_archived)
+    VALUES (extensions.uuid_generate_v4(), v_rto_id, v_prog_it_id, 'IT 2025-2026', false)
+    RETURNING id INTO v_tt_it_id;
+  END IF;
 
-  INSERT INTO public.timetables (id, rto_id, program_id, name, is_archived)
-  VALUES (extensions.uuid_generate_v4(), v_rto_id, v_prog_bus_id, 'Business 2025-2026', false)
-  ON CONFLICT ON CONSTRAINT timetables_pkey DO NOTHING RETURNING id INTO v_tt_bus_id;
-  IF v_tt_bus_id IS NULL THEN SELECT id INTO v_tt_bus_id FROM public.timetables WHERE program_id = v_prog_bus_id AND name = 'Business 2025-2026' LIMIT 1; END IF;
+  SELECT id INTO v_tt_bus_id FROM public.timetables WHERE program_id = v_prog_bus_id AND name = 'Business 2025-2026' LIMIT 1;
+  IF v_tt_bus_id IS NULL THEN
+    INSERT INTO public.timetables (id, rto_id, program_id, name, is_archived)
+    VALUES (extensions.uuid_generate_v4(), v_rto_id, v_prog_bus_id, 'Business 2025-2026', false)
+    RETURNING id INTO v_tt_bus_id;
+  END IF;
 
-  INSERT INTO public.timetables (id, rto_id, program_id, name, is_archived)
-  VALUES (extensions.uuid_generate_v4(), v_rto_id, v_prog_hosp_id, 'Hospitality 2025-2026', false)
-  ON CONFLICT ON CONSTRAINT timetables_pkey DO NOTHING RETURNING id INTO v_tt_hosp_id;
-  IF v_tt_hosp_id IS NULL THEN SELECT id INTO v_tt_hosp_id FROM public.timetables WHERE program_id = v_prog_hosp_id AND name = 'Hospitality 2025-2026' LIMIT 1; END IF;
+  SELECT id INTO v_tt_hosp_id FROM public.timetables WHERE program_id = v_prog_hosp_id AND name = 'Hospitality 2025-2026' LIMIT 1;
+  IF v_tt_hosp_id IS NULL THEN
+    INSERT INTO public.timetables (id, rto_id, program_id, name, is_archived)
+    VALUES (extensions.uuid_generate_v4(), v_rto_id, v_prog_hosp_id, 'Hospitality 2025-2026', false)
+    RETURNING id INTO v_tt_hosp_id;
+  END IF;
 
   INSERT INTO public.timetable_program_plans (timetable_id, program_plan_id)
   VALUES (v_tt_it_id, v_pp_it_2025_id), (v_tt_bus_id, v_pp_bus_2025_id), (v_tt_hosp_id, v_pp_hosp_2025_id)
@@ -1003,14 +1080,17 @@ BEGIN
   -- Insert ALL applications as DRAFT initially
   INSERT INTO public.applications (
     id, rto_id, status, assigned_to, first_name, last_name, date_of_birth, email, is_international,
-    program_id, timetable_id, proposed_commencement_date, agent_id, country_of_citizenship, passport_number,
+    program_id, timetable_id, preferred_location_id, proposed_commencement_date, agent_id, country_of_citizenship, passport_number,
     visa_type, visa_number, language_code, english_proficiency_code, gender, highest_school_level_id,
     indigenous_status_id, labour_force_status_id, at_school_flag, disability_flag, prior_education_flag, phone_number, mobile_phone, street_country,
     suburb, state, postcode, payment_plan_template_id, created_at, offer_generated_at
   )
   SELECT
     extensions.uuid_generate_v4(), v_rto_id, 'DRAFT'::public.application_status, v_admin_id, first_name, last_name, dob, email, is_intl,
-    program_id, timetable_id, proposed, agent_id,
+    program_id, timetable_id, 
+    -- Assign random location from available locations for this RTO
+    (SELECT id FROM public.delivery_locations WHERE rto_id = v_rto_id ORDER BY random() LIMIT 1),
+    proposed, agent_id,
     CASE WHEN is_intl THEN 'IND' ELSE 'AUS' END,
     CASE WHEN is_intl THEN 'P' || floor(random()*100000000)::text ELSE NULL END,
     CASE WHEN is_intl THEN 'Student (subclass 500)' ELSE NULL END,
