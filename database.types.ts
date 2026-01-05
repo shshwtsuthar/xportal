@@ -1793,6 +1793,51 @@ export type Database = {
         }
         Relationships: []
       }
+      groups: {
+        Row: {
+          created_at: string
+          current_enrollment_count: number
+          id: string
+          max_capacity: number
+          name: string
+          program_id: string
+          rto_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_enrollment_count?: number
+          id?: string
+          max_capacity: number
+          name: string
+          program_id: string
+          rto_id: string
+        }
+        Update: {
+          created_at?: string
+          current_enrollment_count?: number
+          id?: string
+          max_capacity?: number
+          name?: string
+          program_id?: string
+          rto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_rto_id_fkey"
+            columns: ["rto_id"]
+            isOneToOne: false
+            referencedRelation: "rtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_lines: {
         Row: {
           amount_cents: number
@@ -2428,24 +2473,34 @@ export type Database = {
       }
       program_plans: {
         Row: {
+          group_id: string | null
           id: string
           name: string
           program_id: string
           rto_id: string
         }
         Insert: {
+          group_id?: string | null
           id?: string
           name: string
           program_id: string
           rto_id: string
         }
         Update: {
+          group_id?: string | null
           id?: string
           name?: string
           program_id?: string
           rto_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "program_plans_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "program_plans_program_id_fkey"
             columns: ["program_id"]
@@ -3927,10 +3982,7 @@ export type Database = {
       }
     }
     Functions: {
-      compute_student_check_char: {
-        Args: { p_stem: string }
-        Returns: string
-      }
+      compute_student_check_char: { Args: { p_stem: string }; Returns: string }
       freeze_application_learning_plan: {
         Args: { app_id: string }
         Returns: {
@@ -3956,20 +4008,11 @@ export type Database = {
         Args: { p_created: string; p_uuid: string }
         Returns: string
       }
-      generate_student_display_id: {
-        Args:
-          | { p_created: string; p_rto: string }
-          | { p_created: string; p_uuid: string }
-        Returns: string
-      }
-      get_my_effective_rto_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_my_rto_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_student_display_id:
+        | { Args: { p_created: string; p_uuid: string }; Returns: string }
+        | { Args: { p_created: string; p_rto: string }; Returns: string }
+      get_my_effective_rto_id: { Args: never; Returns: string }
+      get_my_rto_id: { Args: never; Returns: string }
       handle_new_user: {
         Args: {
           first_name?: string
@@ -3980,10 +4023,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin: { Args: never; Returns: boolean }
       mark_overdue_invoices_batch: {
         Args: { p_limit?: number }
         Returns: number
@@ -3992,10 +4032,7 @@ export type Database = {
         Args: { p_rto: string; p_year: number }
         Returns: number
       }
-      promote_scheduled_invoices: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      promote_scheduled_invoices: { Args: never; Returns: undefined }
       record_payment: {
         Args: {
           p_amount_cents: number
@@ -4009,10 +4046,7 @@ export type Database = {
         Args: { p_app: Database["public"]["Tables"]["applications"]["Row"] }
         Returns: string
       }
-      seed_initial_data: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      seed_initial_data: { Args: never; Returns: undefined }
       upsert_application_learning_plan_draft: {
         Args: { app_id: string }
         Returns: {
