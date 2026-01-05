@@ -68,6 +68,7 @@ const NAV: NavItem[] = [
     items: [
       { title: 'Timetables', url: '/timetables' },
       { title: 'Program Plans', url: '/program-plans' },
+      { title: 'Groups', url: '/groups' },
       { title: 'Programs', url: '/programs' },
       { title: 'Subjects', url: '/subjects' },
     ],

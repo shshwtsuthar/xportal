@@ -4,6 +4,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Table,
   TableBody,
   TableCell,
@@ -41,6 +47,7 @@ type ClassesManagerProps = {
   programPlanSubjectId: string;
   subjectStartDate: Date;
   subjectEndDate: Date;
+  groupCapacity?: number;
 };
 
 type ClassRow = {
@@ -59,6 +66,7 @@ export function ClassesManager({
   programPlanSubjectId,
   subjectStartDate,
   subjectEndDate,
+  groupCapacity,
 }: ClassesManagerProps) {
   const [isAddingClass, setIsAddingClass] = useState(false);
   const [newClass, setNewClass] = useState<ClassRow>({});
@@ -154,6 +162,11 @@ export function ClassesManager({
   const availableClassrooms = classrooms.filter(
     (c) => c.location_id === newClass.location_id
   );
+
+  // Check if a classroom is insufficient for the group capacity
+  const isClassroomInsufficient = (classroomCapacity: number) => {
+    return groupCapacity !== undefined && classroomCapacity < groupCapacity;
+  };
 
   return (
     <div>
@@ -308,14 +321,50 @@ export function ClassesManager({
                           No classrooms available
                         </div>
                       ) : (
-                        availableClassrooms.map((c) => (
-                          <SelectItem key={c.id} value={c.id as string}>
-                            {c.name}
-                          </SelectItem>
-                        ))
+                        <TooltipProvider>
+                          {availableClassrooms.map((c) => {
+                            const insufficient = isClassroomInsufficient(
+                              c.capacity as number
+                            );
+                            return (
+                              <Tooltip key={c.id}>
+                                <TooltipTrigger asChild>
+                                  <div>
+                                    <SelectItem
+                                      value={c.id as string}
+                                      disabled={insufficient}
+                                      className={
+                                        insufficient
+                                          ? 'text-muted-foreground opacity-50'
+                                          : ''
+                                      }
+                                    >
+                                      {c.name} (Capacity: {c.capacity})
+                                    </SelectItem>
+                                  </div>
+                                </TooltipTrigger>
+                                {insufficient && (
+                                  <TooltipContent side="right">
+                                    <p>
+                                      Classroom capacity ({c.capacity}) is
+                                      insufficient for group capacity (
+                                      {groupCapacity})
+                                    </p>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            );
+                          })}
+                        </TooltipProvider>
                       )}
                     </SelectContent>
                   </Select>
+                  {groupCapacity && (
+                    <p className="text-muted-foreground text-xs">
+                      Classrooms with capacity less than {groupCapacity} are
+                      disabled
+                    </p>
+                  )}
                 </div>
                 <div className="grid gap-2 md:col-span-2 lg:col-span-1">
                   <Label className="text-xs font-medium">Type</Label>

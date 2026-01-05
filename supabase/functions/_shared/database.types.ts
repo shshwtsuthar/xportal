@@ -12,29 +12,7 @@ export type Database = {
       [_ in never]: never
     }
     Views: {
-      finance_logs_view: {
-        Row: {
-          amount_due_cents: number | null
-          attempts: number | null
-          commission_invoice_id: string | null
-          commission_payment_id: string | null
-          event_type: string
-          invoice_id: string | null
-          invoice_number: string | null
-          log_id: string
-          message: string | null
-          occurred_at: string | null
-          payment_id: string | null
-          program_id: string | null
-          program_name: string | null
-          rto_id: string | null
-          status: string
-          student_email: string | null
-          student_id: string | null
-          student_name: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       graphql: {
@@ -737,6 +715,7 @@ export type Database = {
           postal_suburb: string | null
           postal_unit_details: string | null
           postcode: string | null
+          preferred_location_id: string
           preferred_name: string | null
           previous_provider_name: string | null
           prior_education_flag: string | null
@@ -841,6 +820,7 @@ export type Database = {
           postal_suburb?: string | null
           postal_unit_details?: string | null
           postcode?: string | null
+          preferred_location_id: string
           preferred_name?: string | null
           previous_provider_name?: string | null
           prior_education_flag?: string | null
@@ -945,6 +925,7 @@ export type Database = {
           postal_suburb?: string | null
           postal_unit_details?: string | null
           postcode?: string | null
+          preferred_location_id?: string
           preferred_name?: string | null
           previous_provider_name?: string | null
           prior_education_flag?: string | null
@@ -1004,6 +985,13 @@ export type Database = {
             columns: ["payment_plan_template_id"]
             isOneToOne: false
             referencedRelation: "payment_plan_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_preferred_location_id_fkey"
+            columns: ["preferred_location_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_locations"
             referencedColumns: ["id"]
           },
           {
@@ -1805,6 +1793,51 @@ export type Database = {
         }
         Relationships: []
       }
+      groups: {
+        Row: {
+          created_at: string
+          current_enrollment_count: number
+          id: string
+          max_capacity: number
+          name: string
+          program_id: string
+          rto_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_enrollment_count?: number
+          id?: string
+          max_capacity: number
+          name: string
+          program_id: string
+          rto_id: string
+        }
+        Update: {
+          created_at?: string
+          current_enrollment_count?: number
+          id?: string
+          max_capacity?: number
+          name?: string
+          program_id?: string
+          rto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_rto_id_fkey"
+            columns: ["rto_id"]
+            isOneToOne: false
+            referencedRelation: "rtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_lines: {
         Row: {
           amount_cents: number
@@ -1858,11 +1891,13 @@ export type Database = {
           amount_paid_cents: number | null
           due_date: string
           enrollment_id: string
+          first_overdue_at: string | null
           id: string
           internal_payment_status: Database["public"]["Enums"]["internal_payment_status"]
           invoice_number: string
           issue_date: string
           last_email_sent_at: string | null
+          last_overdue_at: string | null
           last_pdf_error: string | null
           notes: string | null
           pdf_generated_at: string | null
@@ -1881,11 +1916,13 @@ export type Database = {
           amount_paid_cents?: number | null
           due_date: string
           enrollment_id: string
+          first_overdue_at?: string | null
           id?: string
           internal_payment_status?: Database["public"]["Enums"]["internal_payment_status"]
           invoice_number: string
           issue_date: string
           last_email_sent_at?: string | null
+          last_overdue_at?: string | null
           last_pdf_error?: string | null
           notes?: string | null
           pdf_generated_at?: string | null
@@ -1904,11 +1941,13 @@ export type Database = {
           amount_paid_cents?: number | null
           due_date?: string
           enrollment_id?: string
+          first_overdue_at?: string | null
           id?: string
           internal_payment_status?: Database["public"]["Enums"]["internal_payment_status"]
           invoice_number?: string
           issue_date?: string
           last_email_sent_at?: string | null
+          last_overdue_at?: string | null
           last_pdf_error?: string | null
           notes?: string | null
           pdf_generated_at?: string | null
@@ -2321,7 +2360,7 @@ export type Database = {
           created_at: string
           end_time: string | null
           id: string
-          location_id: string | null
+          location_id: string
           notes: string | null
           program_plan_subject_id: string
           start_time: string | null
@@ -2334,7 +2373,7 @@ export type Database = {
           created_at?: string
           end_time?: string | null
           id?: string
-          location_id?: string | null
+          location_id: string
           notes?: string | null
           program_plan_subject_id: string
           start_time?: string | null
@@ -2347,7 +2386,7 @@ export type Database = {
           created_at?: string
           end_time?: string | null
           id?: string
-          location_id?: string | null
+          location_id?: string
           notes?: string | null
           program_plan_subject_id?: string
           start_time?: string | null
@@ -2434,24 +2473,34 @@ export type Database = {
       }
       program_plans: {
         Row: {
+          group_id: string | null
           id: string
           name: string
           program_id: string
           rto_id: string
         }
         Insert: {
+          group_id?: string | null
           id?: string
           name: string
           program_id: string
           rto_id: string
         }
         Update: {
+          group_id?: string | null
           id?: string
           name?: string
           program_id?: string
           rto_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "program_plans_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "program_plans_program_id_fkey"
             columns: ["program_id"]
@@ -3914,17 +3963,17 @@ export type Database = {
           attempts: number | null
           commission_invoice_id: string | null
           commission_payment_id: string | null
-          event_type: string
+          event_type: string | null
           invoice_id: string | null
           invoice_number: string | null
-          log_id: string
+          log_id: string | null
           message: string | null
           occurred_at: string | null
           payment_id: string | null
           program_id: string | null
           program_name: string | null
           rto_id: string | null
-          status: string
+          status: string | null
           student_email: string | null
           student_id: string | null
           student_name: string | null
@@ -3933,10 +3982,7 @@ export type Database = {
       }
     }
     Functions: {
-      compute_student_check_char: {
-        Args: { p_stem: string }
-        Returns: string
-      }
+      compute_student_check_char: { Args: { p_stem: string }; Returns: string }
       freeze_application_learning_plan: {
         Args: { app_id: string }
         Returns: {
@@ -3962,20 +4008,11 @@ export type Database = {
         Args: { p_created: string; p_uuid: string }
         Returns: string
       }
-      generate_student_display_id: {
-        Args:
-          | { p_created: string; p_rto: string }
-          | { p_created: string; p_uuid: string }
-        Returns: string
-      }
-      get_my_effective_rto_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_my_rto_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_student_display_id:
+        | { Args: { p_created: string; p_uuid: string }; Returns: string }
+        | { Args: { p_created: string; p_rto: string }; Returns: string }
+      get_my_effective_rto_id: { Args: never; Returns: string }
+      get_my_rto_id: { Args: never; Returns: string }
       handle_new_user: {
         Args: {
           first_name?: string
@@ -3986,18 +4023,16 @@ export type Database = {
         }
         Returns: undefined
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
+      is_admin: { Args: never; Returns: boolean }
+      mark_overdue_invoices_batch: {
+        Args: { p_limit?: number }
+        Returns: number
       }
       next_student_seq: {
         Args: { p_rto: string; p_year: number }
         Returns: number
       }
-      promote_scheduled_invoices: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      promote_scheduled_invoices: { Args: never; Returns: undefined }
       record_payment: {
         Args: {
           p_amount_cents: number
@@ -4011,10 +4046,7 @@ export type Database = {
         Args: { p_app: Database["public"]["Tables"]["applications"]["Row"] }
         Returns: string
       }
-      seed_initial_data: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      seed_initial_data: { Args: never; Returns: undefined }
       upsert_application_learning_plan_draft: {
         Args: { app_id: string }
         Returns: {

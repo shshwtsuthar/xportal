@@ -35,7 +35,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { CalendarIcon, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
@@ -294,14 +301,68 @@ export function EnrollmentStep({ form }: Props) {
                             {programId})
                           </div>
                         ) : (
-                          timetables.map((timetable) => (
-                            <SelectItem
-                              key={timetable.id}
-                              value={timetable.id as string}
-                            >
-                              {timetable.name}
-                            </SelectItem>
-                          ))
+                          timetables.map((timetable) => {
+                            const group = timetable.group;
+                            const isFull =
+                              group &&
+                              group.current_enrollment_count >=
+                                group.max_capacity;
+                            const isNearFull =
+                              group &&
+                              group.current_enrollment_count >=
+                                group.max_capacity * 0.9;
+
+                            return (
+                              <TooltipProvider key={timetable.id}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <SelectItem
+                                      value={timetable.id as string}
+                                      disabled={!!isFull}
+                                      className={cn(
+                                        isFull &&
+                                          'cursor-not-allowed opacity-50'
+                                      )}
+                                    >
+                                      <div className="flex w-full items-center justify-between gap-4">
+                                        <span className="flex-1">
+                                          {timetable.name}
+                                        </span>
+                                        {group && (
+                                          <Badge
+                                            variant={
+                                              isFull
+                                                ? 'destructive'
+                                                : isNearFull
+                                                  ? 'outline'
+                                                  : 'secondary'
+                                            }
+                                            className="ml-2 shrink-0"
+                                          >
+                                            {group.current_enrollment_count}/
+                                            {group.max_capacity}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </SelectItem>
+                                  </TooltipTrigger>
+                                  {isFull && (
+                                    <TooltipContent>
+                                      <div className="flex items-center gap-2">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span>
+                                          This timetable&apos;s group is at full
+                                          capacity (
+                                          {group?.current_enrollment_count}/
+                                          {group?.max_capacity})
+                                        </span>
+                                      </div>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
+                            );
+                          })
                         )}
                       </SelectContent>
                     </Select>
