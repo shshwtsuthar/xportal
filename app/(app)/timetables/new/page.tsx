@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,26 +13,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCreateTimetable } from '@/src/hooks/useCreateTimetable';
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import { useGetProgramPlans } from '@/src/hooks/useGetProgramPlans';
 import { useAddProgramPlansToTimetable } from '@/src/hooks/useAddProgramPlansToTimetable';
+import { useGetGroupsByProgram } from '@/src/hooks/useGetGroupsByProgram';
 import Link from 'next/link';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function NewTimetablePage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [programId, setProgramId] = useState('');
+  const [groupId, setGroupId] = useState('');
   const [selectedProgramPlanIds, setSelectedProgramPlanIds] = useState<
     string[]
   >([]);
 
   const createTimetable = useCreateTimetable();
   const { data: programs = [], isLoading: programsLoading } = useGetPrograms();
-  const { data: programPlans = [] } = useGetProgramPlans(programId);
+  const { data: groups = [], isLoading: groupsLoading } =
+    useGetGroupsByProgram(programId);
+  const { data: programPlans = [] } = useGetProgramPlans(programId, groupId);
   const addPlansToTimetable = useAddProgramPlansToTimetable();
+
+  // Reset group and program plans when program changes
+  useEffect(() => {
+    setGroupId('');
+    setSelectedProgramPlanIds([]);
+  }, [programId]);
+
+  // Reset program plans when group changes
+  useEffect(() => {
+    setSelectedProgramPlanIds([]);
+  }, [groupId]);
+
+  // Find selected group for capacity display
+  const selectedGroup = groups.find((g) => g.id === groupId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +67,16 @@ export default function NewTimetablePage() {
       return;
     }
 
+    if (!groupId) {
+      toast.error('Please select a group');
+      return;
+    }
+
+    if (selectedProgramPlanIds.length === 0) {
+      toast.error('Please select at least one program plan');
+      return;
+    }
+
     try {
       const newTimetable = await createTimetable.mutateAsync({
         name: name.trim(),
@@ -54,12 +84,10 @@ export default function NewTimetablePage() {
       });
 
       // Link selected program plans to timetable
-      if (selectedProgramPlanIds.length > 0) {
-        await addPlansToTimetable.mutateAsync({
-          timetable_id: newTimetable.id as string,
-          program_plan_ids: selectedProgramPlanIds,
-        });
-      }
+      await addPlansToTimetable.mutateAsync({
+        timetable_id: newTimetable.id as string,
+        program_plan_ids: selectedProgramPlanIds,
+      });
 
       toast.success('Timetable created successfully');
       router.push(`/timetables/${newTimetable.id}`);
@@ -127,57 +155,123 @@ export default function NewTimetablePage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Program Plans (optional)</Label>
-              <p className="text-muted-foreground text-xs">
-                Select program plans to include in this timetable
-              </p>
-              {programId ? (
-                <div className="space-y-2 rounded-md border p-4">
-                  {programPlans.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">
-                      No program plans available for this program.
-                    </p>
+              <Label htmlFor="group">Group *</Label>
+              <Select
+                value={groupId}
+                onValueChange={setGroupId}
+                disabled={!programId}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      programId ? 'Select a group' : 'Select a program first'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {groupsLoading ? (
+                    <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                      Loading groups...
+                    </div>
+                  ) : groups.length === 0 ? (
+                    <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                      No groups available for this program
+                    </div>
                   ) : (
-                    programPlans.map((plan) => (
-                      <div
-                        key={plan.id}
-                        className="flex items-center space-x-2"
-                      >
-                        <input
-                          type="checkbox"
-                          id={plan.id}
-                          checked={selectedProgramPlanIds.includes(
-                            plan.id as string
-                          )}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedProgramPlanIds([
-                                ...selectedProgramPlanIds,
-                                plan.id as string,
-                              ]);
-                            } else {
-                              setSelectedProgramPlanIds(
-                                selectedProgramPlanIds.filter(
-                                  (id) => id !== plan.id
-                                )
-                              );
+                    groups.map((group) => (
+                      <SelectItem key={group.id} value={group.id as string}>
+                        <div className="flex items-center justify-between gap-4">
+                          <span>{group.name}</span>
+                          <Badge
+                            variant={
+                              group.current_enrollment_count >=
+                              group.max_capacity
+                                ? 'destructive'
+                                : 'secondary'
                             }
-                          }}
-                          className="h-4 w-4 rounded border-gray-300"
-                        />
-                        <Label
-                          htmlFor={plan.id}
-                          className="text-sm font-normal"
-                        >
-                          {plan.name}
-                        </Label>
-                      </div>
+                          >
+                            {group.current_enrollment_count}/
+                            {group.max_capacity}
+                          </Badge>
+                        </div>
+                      </SelectItem>
                     ))
                   )}
+                </SelectContent>
+              </Select>
+              {selectedGroup && (
+                <p className="text-muted-foreground text-xs">
+                  Current enrollment: {selectedGroup.current_enrollment_count} /{' '}
+                  {selectedGroup.max_capacity} students
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Program Plans *</Label>
+              <p className="text-muted-foreground text-xs">
+                Select program plans to include in this timetable (must belong
+                to the selected group)
+              </p>
+              {groupId ? (
+                <div className="space-y-2">
+                  {programPlans.length === 0 ? (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        No program plans available for this group. Please create
+                        program plans for this group first.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <div className="space-y-2 rounded-md border p-4">
+                      {programPlans.map((plan) => (
+                        <div
+                          key={plan.id}
+                          className="flex items-center space-x-2"
+                        >
+                          <input
+                            type="checkbox"
+                            id={plan.id}
+                            checked={selectedProgramPlanIds.includes(
+                              plan.id as string
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedProgramPlanIds([
+                                  ...selectedProgramPlanIds,
+                                  plan.id as string,
+                                ]);
+                              } else {
+                                setSelectedProgramPlanIds(
+                                  selectedProgramPlanIds.filter(
+                                    (id) => id !== plan.id
+                                  )
+                                );
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-gray-300"
+                          />
+                          <Label
+                            htmlFor={plan.id}
+                            className="text-sm font-normal"
+                          >
+                            {plan.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+              ) : programId ? (
+                <p className="text-muted-foreground text-sm">
+                  Select a group to see available program plans
+                </p>
               ) : (
                 <p className="text-muted-foreground text-sm">
-                  Select a program first to see available program plans
+                  Select a program and group first to see available program
+                  plans
                 </p>
               )}
             </div>

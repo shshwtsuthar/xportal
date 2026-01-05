@@ -23,6 +23,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   edit: 'Edit',
   programs: 'Programs',
   'program-plans': 'Program Plans',
+  groups: 'Groups',
   financial: 'Financial',
   invoices: 'Invoices',
   templates: 'Templates',

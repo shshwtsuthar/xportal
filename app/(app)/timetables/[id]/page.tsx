@@ -34,7 +34,10 @@ import { useGetProgramPlans } from '@/src/hooks/useGetProgramPlans';
 import { useDeleteProgramPlan } from '@/src/hooks/useDeleteProgramPlan';
 import { useAddProgramPlansToTimetable } from '@/src/hooks/useAddProgramPlansToTimetable';
 import { useRemoveProgramPlanFromTimetable } from '@/src/hooks/useRemoveProgramPlanFromTimetable';
+import { useGetTimetableGroup } from '@/src/hooks/useGetTimetableGroup';
 import { CloneProgramPlanDialog } from '../_components/CloneProgramPlanDialog';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { useMemo, use } from 'react';
 import { Tables } from '@/database.types';
@@ -63,8 +66,10 @@ export default function TimetableDetailPage({
 
   const { data: timetable, isLoading: timetableLoading } = useGetTimetable(id);
   const { data: programs = [], isLoading: programsLoading } = useGetPrograms();
+  const { data: timetableGroup } = useGetTimetableGroup(id);
   const { data: allProgramPlans = [] } = useGetProgramPlans(
-    timetable?.program_id as string
+    timetable?.program_id as string,
+    timetableGroup?.groupId
   );
   const deleteProgramPlan = useDeleteProgramPlan();
   const addPlans = useAddProgramPlansToTimetable();
@@ -120,15 +125,47 @@ export default function TimetableDetailPage({
             Back to Timetables
           </Link>
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">
             {timetable.name}
           </h1>
-          <p className="text-muted-foreground text-sm">
-            Program: {programMap.get(timetable.program_id as string) ?? '—'}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <p className="text-muted-foreground text-sm">
+              Program: {programMap.get(timetable.program_id as string) ?? '—'}
+            </p>
+            {timetableGroup && (
+              <>
+                <span className="text-muted-foreground">•</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground text-sm">
+                    Group: {timetableGroup.groupName}
+                  </span>
+                  <Badge
+                    variant={
+                      timetableGroup.currentEnrollment >=
+                      timetableGroup.maxCapacity
+                        ? 'destructive'
+                        : 'secondary'
+                    }
+                  >
+                    {timetableGroup.currentEnrollment}/
+                    {timetableGroup.maxCapacity}
+                  </Badge>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
+
+      {!timetableGroup && programPlans.length > 0 && (
+        <Alert className="mb-6">
+          <AlertDescription>
+            This timetable does not have a group assigned. All program plans in
+            a timetable must belong to the same group.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
@@ -283,33 +320,45 @@ export default function TimetableDetailPage({
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-muted-foreground text-sm">
-              Select program plans to add to this timetable:
+              Select program plans to add to this timetable
+              {timetableGroup &&
+                ` (must belong to ${timetableGroup.groupName})`}
+              :
             </p>
-            <div className="max-h-60 space-y-2 overflow-y-auto">
-              {availablePlans.map((plan) => (
-                <div key={plan.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={plan.id}
-                    checked={selectedNewPlanIds.includes(plan.id as string)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedNewPlanIds([
-                          ...selectedNewPlanIds,
-                          plan.id as string,
-                        ]);
-                      } else {
-                        setSelectedNewPlanIds(
-                          selectedNewPlanIds.filter((id) => id !== plan.id)
-                        );
-                      }
-                    }}
-                  />
-                  <label htmlFor={plan.id} className="text-sm font-normal">
-                    {plan.name}
-                  </label>
-                </div>
-              ))}
-            </div>
+            {availablePlans.length === 0 ? (
+              <Alert>
+                <AlertDescription>
+                  No additional program plans available for this group. All
+                  program plans from this group are already in the timetable.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="max-h-60 space-y-2 overflow-y-auto">
+                {availablePlans.map((plan) => (
+                  <div key={plan.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={plan.id}
+                      checked={selectedNewPlanIds.includes(plan.id as string)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedNewPlanIds([
+                            ...selectedNewPlanIds,
+                            plan.id as string,
+                          ]);
+                        } else {
+                          setSelectedNewPlanIds(
+                            selectedNewPlanIds.filter((id) => id !== plan.id)
+                          );
+                        }
+                      }}
+                    />
+                    <label htmlFor={plan.id} className="text-sm font-normal">
+                      {plan.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button

@@ -2,33 +2,25 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Tables } from '@/database.types';
 
-type UpsertPayload = Partial<Tables<'program_plans'>> & { id?: string };
+type CreateGroupPayload = {
+  program_id: string;
+  name: string;
+  max_capacity: number;
+};
 
 /**
- * Upsert Program Plan (insert if no id, else update).
- * Automatically includes rto_id from user session for new plans.
+ * Create a new group.
+ * Automatically includes rto_id from user session.
  */
-export const useUpsertProgramPlan = () => {
+export const useCreateGroup = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (
-      payload: UpsertPayload
-    ): Promise<Tables<'program_plans'>> => {
+      payload: CreateGroupPayload
+    ): Promise<Tables<'groups'>> => {
       const supabase = createClient();
 
-      if (payload.id) {
-        // Update existing plan
-        const { data, error } = await supabase
-          .from('program_plans')
-          .update(payload)
-          .eq('id', payload.id)
-          .select('*')
-          .single();
-        if (error) throw new Error(error.message);
-        return data!;
-      }
-
-      // Create new plan - get user's RTO context
+      // Get user's RTO context
       const { data: sessionData, error: sessionError } =
         await supabase.auth.getUser();
       if (sessionError) throw new Error('Failed to get user session');
@@ -42,25 +34,25 @@ export const useUpsertProgramPlan = () => {
         );
       }
 
-      const planData = {
-        name: payload.name!,
-        program_id: payload.program_id!,
-        group_id: payload.group_id ?? null,
+      const groupData = {
+        name: payload.name,
+        program_id: payload.program_id,
+        max_capacity: payload.max_capacity,
         rto_id: rtoId,
       };
 
       const { data, error } = await supabase
-        .from('program_plans')
-        .insert(planData)
+        .from('groups')
+        .insert(groupData)
         .select('*')
         .single();
       if (error) throw new Error(error.message);
       return data!;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['programPlans'] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({
-        queryKey: ['programPlans', data.program_id as string],
+        queryKey: ['groups', 'byProgram', data.program_id as string],
       });
     },
   });

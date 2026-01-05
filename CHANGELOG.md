@@ -1,4 +1,18 @@
 ## [Unreleased]
+- feat(timetables): Integrate group capacity tracking into timetable creation and enrollment
+  - Added database validation trigger (`validate_timetable_group_consistency`) to ensure all program plans in a timetable belong to the same group
+  - Created migration script (`migrate_existing_timetables_to_groups.sql`) to auto-assign groups to existing timetables with comprehensive logging
+  - Added backend hooks: `useGetGroupsByProgram` (fetch groups by program), `useGetTimetableGroup` (derive timetable's group from program plans)
+  - Updated `useGetProgramPlans` to support filtering by both program_id and group_id
+  - Updated `useGetTimetables` to include group capacity information (current enrollment/max capacity) via JOIN with groups table
+  - Enhanced `useAddProgramPlansToTimetable` with client-side validation to prevent adding plans from different groups or plans without groups
+  - Timetable creation flow now requires group selection: Program → Group → Program Plans (all filtered by selected group)
+  - Timetable creation UI displays group capacity badges and real-time enrollment counts
+  - Timetable detail page shows read-only group badge with capacity in header, filters available plans by timetable's group
+  - Application enrollment step displays group capacity for each timetable with visual indicators (badges, disabled states)
+  - Hard-block enrollment when group is at full capacity - disabled timetables show tooltip explaining capacity limits
+  - All UI components use ShadCN design system for consistency (Badge, Alert, Tooltip components)
+  - Group selection is now locked after timetable creation to maintain data integrity
 - feat(students): Add Attendance tab to student profile page
   - Added `StudentAttendanceTable` and Attendance tab on `students/{id}` with a full classes data table mirroring Course Progression styling.
   - Introduced `useGetStudentAllClasses` hook to fetch enrollment classes with delivery location, classroom, and attendance data, wired to the existing attendance mutation.
