@@ -14,7 +14,6 @@ import {
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import { useGetSubjects } from '@/src/hooks/useGetSubjects';
 import { useGetProgramPlanSubjects } from '@/src/hooks/useGetProgramPlanSubjects';
-import { useGetGroupsByProgram } from '@/src/hooks/useGetGroupsByProgram';
 import { ClassesManager } from './ClassesManager';
 import { Tables } from '@/database.types';
 import { useUpsertProgramPlan } from '@/src/hooks/useUpsertProgramPlan';
@@ -79,13 +78,11 @@ export function ProgramPlanWizard({
   const form = useForm<{
     name: string;
     program_id: string;
-    group_id: string;
     program_plan_id?: string;
   }>({
     defaultValues: {
       name: plan?.name ?? '',
       program_id: (plan?.program_id as string) ?? '',
-      group_id: (plan?.group_id as string) ?? '',
       program_plan_id: plan?.id as string | undefined,
     },
   });
@@ -94,21 +91,6 @@ export function ProgramPlanWizard({
     control: form.control,
     name: 'program_id',
   });
-
-  const groupId = useWatch({
-    control: form.control,
-    name: 'group_id',
-  });
-
-  // Fetch groups for the selected program
-  const { data: groups = [] } = useGetGroupsByProgram(programId);
-
-  // Get the selected group's capacity for classroom filtering
-  const selectedGroupCapacity = useMemo(() => {
-    if (!groupId) return undefined;
-    const selectedGroup = groups.find((g) => g.id === groupId);
-    return selectedGroup?.max_capacity as number | undefined;
-  }, [groupId, groups]);
 
   // Load existing plan subjects if editing
   const { data: existingSubjects = [] } = useGetProgramPlanSubjects(
@@ -170,7 +152,6 @@ export function ProgramPlanWizard({
         name: values.name,
         program_id:
           values.program_id as unknown as Tables<'program_plans'>['program_id'],
-        group_id: values.group_id || null,
       });
 
       // Save each row
@@ -212,7 +193,6 @@ export function ProgramPlanWizard({
                 value={programId}
                 onValueChange={(v) => {
                   form.setValue('program_id', v);
-                  form.setValue('group_id', ''); // Reset group when program changes
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -228,37 +208,6 @@ export function ProgramPlanWizard({
               </Select>
             </div>
           </div>
-
-          {programId && (
-            <div className="grid gap-2">
-              <Label>Group (Optional)</Label>
-              <Select
-                value={groupId || 'none'}
-                onValueChange={(v) => {
-                  form.setValue('group_id', v === 'none' ? '' : v);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="No group selected" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Group</SelectItem>
-                  {groups.map((g) => (
-                    <SelectItem key={g.id} value={g.id as string}>
-                      {g.name} (Max: {g.max_capacity}, Current:{' '}
-                      {g.current_enrollment_count})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {groupId && (
-                <p className="text-muted-foreground text-xs">
-                  Selected group capacity will filter available classrooms in
-                  the Classes tab.
-                </p>
-              )}
-            </div>
-          )}
         </div>
       );
 
@@ -479,7 +428,7 @@ export function ProgramPlanWizard({
                                   programPlanSubjectId={row.id}
                                   subjectStartDate={row.start_date}
                                   subjectEndDate={row.end_date}
-                                  groupCapacity={selectedGroupCapacity}
+                                  programId={programId}
                                 />
                               ) : (
                                 <div className="text-muted-foreground py-8 text-center">

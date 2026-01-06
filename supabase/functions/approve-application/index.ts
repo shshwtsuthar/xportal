@@ -33,7 +33,7 @@ serve(async (req: Request) => {
     Deno.env.get('SERVICE_ROLE_KEY') ?? ''
   );
 
-  const { applicationId } = await req.json();
+  const { applicationId, newGroupId } = await req.json();
   if (!applicationId) {
     return new Response(
       JSON.stringify({ error: 'applicationId is required' }),
@@ -104,6 +104,30 @@ serve(async (req: Request) => {
         status: 400,
       }
     );
+  }
+
+  // If newGroupId is provided, update the application's group_id
+  // This handles the race condition where the original group became full
+  if (newGroupId) {
+    const { error: updateErr } = await supabase
+      .from('applications')
+      .update({ group_id: newGroupId })
+      .eq('id', applicationId);
+
+    if (updateErr) {
+      return new Response(
+        JSON.stringify({
+          error: `Failed to update group: ${updateErr.message}`,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    // Update the app object with the new group_id for subsequent operations
+    app.group_id = newGroupId;
   }
 
   const { data: template, error: tplErr } = await supabase

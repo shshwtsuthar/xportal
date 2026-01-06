@@ -678,6 +678,7 @@ export type Database = {
           g_phone_number: string | null
           g_relationship: string | null
           gender: string | null
+          group_id: string | null
           has_english_test: boolean | null
           has_previous_study_australia: boolean | null
           has_release_letter: boolean | null
@@ -783,6 +784,7 @@ export type Database = {
           g_phone_number?: string | null
           g_relationship?: string | null
           gender?: string | null
+          group_id?: string | null
           has_english_test?: boolean | null
           has_previous_study_australia?: boolean | null
           has_release_letter?: boolean | null
@@ -888,6 +890,7 @@ export type Database = {
           g_phone_number?: string | null
           g_relationship?: string | null
           gender?: string | null
+          group_id?: string | null
           has_english_test?: boolean | null
           has_previous_study_australia?: boolean | null
           has_release_letter?: boolean | null
@@ -978,6 +981,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
@@ -1798,6 +1808,7 @@ export type Database = {
           created_at: string
           current_enrollment_count: number
           id: string
+          location_id: string
           max_capacity: number
           name: string
           program_id: string
@@ -1807,6 +1818,7 @@ export type Database = {
           created_at?: string
           current_enrollment_count?: number
           id?: string
+          location_id: string
           max_capacity: number
           name: string
           program_id: string
@@ -1816,12 +1828,20 @@ export type Database = {
           created_at?: string
           current_enrollment_count?: number
           id?: string
+          location_id?: string
           max_capacity?: number
           name?: string
           program_id?: string
           rto_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "groups_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "groups_program_id_fkey"
             columns: ["program_id"]
@@ -2359,6 +2379,7 @@ export type Database = {
           classroom_id: string | null
           created_at: string
           end_time: string | null
+          group_id: string | null
           id: string
           location_id: string
           notes: string | null
@@ -2372,6 +2393,7 @@ export type Database = {
           classroom_id?: string | null
           created_at?: string
           end_time?: string | null
+          group_id?: string | null
           id?: string
           location_id: string
           notes?: string | null
@@ -2385,6 +2407,7 @@ export type Database = {
           classroom_id?: string | null
           created_at?: string
           end_time?: string | null
+          group_id?: string | null
           id?: string
           location_id?: string
           notes?: string | null
@@ -2398,6 +2421,13 @@ export type Database = {
             columns: ["classroom_id"]
             isOneToOne: false
             referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_plan_classes_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
@@ -2473,34 +2503,24 @@ export type Database = {
       }
       program_plans: {
         Row: {
-          group_id: string | null
           id: string
           name: string
           program_id: string
           rto_id: string
         }
         Insert: {
-          group_id?: string | null
           id?: string
           name: string
           program_id: string
           rto_id: string
         }
         Update: {
-          group_id?: string | null
           id?: string
           name?: string
           program_id?: string
           rto_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "program_plans_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "program_plans_program_id_fkey"
             columns: ["program_id"]
@@ -4058,6 +4078,17 @@ export type Database = {
         Args: { app_id: string }
         Returns: {
           inserted_rows: number
+        }[]
+      }
+      upsert_enrollment_plan: {
+        Args: {
+          app_id: string
+          proposed_commencement_date: string
+          timetable_id: string
+        }
+        Returns: {
+          classes_count: number
+          subjects_count: number
         }[]
       }
     }

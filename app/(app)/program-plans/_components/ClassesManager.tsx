@@ -42,11 +42,13 @@ import { useDeleteProgramPlanClass } from '@/src/hooks/useDeleteProgramPlanClass
 import { useGetTrainers } from '@/src/hooks/useGetTrainers';
 import { useGetLocations } from '@/src/hooks/useGetLocations';
 import { useGetClassrooms } from '@/src/hooks/useGetClassrooms';
+import { useGetGroupsByLocation } from '@/src/hooks/useGetGroupsByLocation';
 
 type ClassesManagerProps = {
   programPlanSubjectId: string;
   subjectStartDate: Date;
   subjectEndDate: Date;
+  programId: string;
   groupCapacity?: number;
 };
 
@@ -58,6 +60,7 @@ type ClassRow = {
   trainer_id?: string;
   location_id?: string;
   classroom_id?: string;
+  group_id?: string;
   class_type?: string;
   notes?: string;
 };
@@ -66,6 +69,7 @@ export function ClassesManager({
   programPlanSubjectId,
   subjectStartDate,
   subjectEndDate,
+  programId,
   groupCapacity,
 }: ClassesManagerProps) {
   const [isAddingClass, setIsAddingClass] = useState(false);
@@ -78,6 +82,10 @@ export function ClassesManager({
     useGetLocations();
   const { data: classrooms = [], isLoading: classroomsLoading } =
     useGetClassrooms();
+
+  // Fetch groups based on selected location and program
+  const { data: groups = [], isLoading: groupsLoading } =
+    useGetGroupsByLocation(programId, newClass.location_id);
 
   const upsertClass = useUpsertProgramPlanClass();
   const deleteClass = useDeleteProgramPlanClass();
@@ -99,6 +107,12 @@ export function ClassesManager({
       // Validate location is required
       if (!newClass.location_id) {
         toast.error('Please select a location');
+        return;
+      }
+
+      // Validate group is required
+      if (!newClass.group_id) {
+        toast.error('Please select a group');
         return;
       }
 
@@ -131,6 +145,7 @@ export function ClassesManager({
         trainer_id: newClass.trainer_id || null,
         location_id: newClass.location_id, // Required - no null fallback
         classroom_id: newClass.classroom_id || null,
+        group_id: newClass.group_id, // Required - no null fallback
         class_type:
           (newClass.class_type as
             | 'THEORY'
@@ -302,6 +317,45 @@ export function ClassesManager({
                   </Select>
                 </div>
                 <div className="grid gap-2">
+                  <Label className="text-xs font-medium">Group *</Label>
+                  <Select
+                    value={newClass.group_id || ''}
+                    onValueChange={(v) => updateNewClass('group_id', v)}
+                    disabled={!newClass.location_id}
+                  >
+                    <SelectTrigger size="sm" className="w-full">
+                      <SelectValue
+                        placeholder={
+                          newClass.location_id
+                            ? 'Select group (required)'
+                            : 'Select location first'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groupsLoading ? (
+                        <div className="text-muted-foreground px-2 py-1.5 text-xs">
+                          Loading...
+                        </div>
+                      ) : groups.length === 0 ? (
+                        <div className="text-muted-foreground px-2 py-1.5 text-xs">
+                          No groups available for this location
+                        </div>
+                      ) : (
+                        groups.map((g) => (
+                          <SelectItem key={g.id} value={g.id as string}>
+                            {g.name} ({g.current_enrollment_count}/
+                            {g.max_capacity})
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-muted-foreground text-xs">
+                    Group determines which students see this class
+                  </p>
+                </div>
+                <div className="grid gap-2">
                   <Label className="text-xs font-medium">Classroom</Label>
                   <Select
                     value={newClass.classroom_id || ''}
@@ -416,6 +470,7 @@ export function ClassesManager({
                     <TableHead>Trainer</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Classroom</TableHead>
+                    <TableHead>Group</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -443,6 +498,7 @@ export function ClassesManager({
                         {cls.delivery_locations?.name ?? '—'}
                       </TableCell>
                       <TableCell>{cls.classrooms?.name ?? '—'}</TableCell>
+                      <TableCell>{cls.groups?.name ?? '—'}</TableCell>
                       <TableCell>{cls.class_type || '—'}</TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -456,7 +512,7 @@ export function ClassesManager({
                   ))}
                   {classes.length === 0 && (
                     <TableRow className="divide-x">
-                      <TableCell colSpan={7}>
+                      <TableCell colSpan={8}>
                         <p className="text-muted-foreground text-sm">
                           No classes added yet
                         </p>

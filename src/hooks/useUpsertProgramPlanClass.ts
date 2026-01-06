@@ -25,9 +25,13 @@ export const useUpsertProgramPlanClass = () => {
         return data!;
       }
       // Ensure required fields are present for insert
-      // location_id is now mandatory (NOT NULL)
+      // location_id and group_id are now mandatory (NOT NULL)
       if (!payload.location_id) {
         throw new Error('location_id is required when creating a class');
+      }
+
+      if (!payload.group_id) {
+        throw new Error('group_id is required when creating a class');
       }
 
       if (!payload.program_plan_subject_id || !payload.class_date) {
@@ -44,6 +48,7 @@ export const useUpsertProgramPlanClass = () => {
         trainer_id: payload.trainer_id ?? null,
         location_id: payload.location_id, // Required - validated above
         classroom_id: payload.classroom_id ?? null,
+        group_id: payload.group_id, // Required - validated above
         class_type: payload.class_type ?? null,
         notes: payload.notes ?? null,
       };

@@ -5,6 +5,7 @@ import { Tables } from '@/database.types';
 type UpdateGroupPayload = {
   id: string;
   name?: string;
+  location_id?: string;
   max_capacity?: number;
 };
 

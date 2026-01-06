@@ -45,7 +45,6 @@ export const useUpsertProgramPlan = () => {
       const planData = {
         name: payload.name!,
         program_id: payload.program_id!,
-        group_id: payload.group_id ?? null,
         rto_id: rtoId,
       };
 

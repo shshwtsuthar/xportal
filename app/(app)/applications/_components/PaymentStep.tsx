@@ -87,22 +87,66 @@ export const PaymentStep = ({ application, form }: Props) => {
       : undefined
   );
 
+  // Sync selectedTemplateId from application when application changes (e.g., on page reload)
+  useEffect(() => {
+    if (
+      application.payment_plan_template_id &&
+      application.payment_plan_template_id !== selectedTemplateId
+    ) {
+      setSelectedTemplateId(application.payment_plan_template_id);
+    }
+  }, [application.payment_plan_template_id, selectedTemplateId]);
+
+  // Watch form value to sync selectedTemplateId when form is reset/loaded
+  // This ensures local state matches form state after form.reset() is called
+  const formTemplateId = form.watch('payment_plan_template_id');
+  useEffect(() => {
+    if (
+      formTemplateId &&
+      formTemplateId.trim() !== '' &&
+      formTemplateId !== selectedTemplateId
+    ) {
+      // Form has a value that doesn't match local state - sync local state to form
+      setSelectedTemplateId(formTemplateId);
+    }
+  }, [formTemplateId, selectedTemplateId]);
+
   // Update selected template when templates load and we don't have a selection
   useEffect(() => {
     if (templates.length > 0 && !selectedTemplateId) {
       const defaultTemplate = templates.find((t) => t.is_default);
       if (defaultTemplate) {
-        setSelectedTemplateId(defaultTemplate.id as string);
+        const templateId = defaultTemplate.id as string;
+        setSelectedTemplateId(templateId);
+        // Immediately set form value when auto-selecting default template
+        // This ensures the form state is synchronized and triggers watch subscription
+        form.setValue('payment_plan_template_id', templateId, {
+          shouldValidate: false,
+          shouldDirty: true,
+          shouldTouch: false,
+        });
       }
     }
-  }, [templates, selectedTemplateId]);
+  }, [templates, selectedTemplateId, form]);
 
-  // Update form values when payment plan data changes
+  // Update form values when payment plan data changes (for manual selections and auto-selections)
+  // This ensures form state always matches selectedTemplateId
   useEffect(() => {
     if (selectedTemplateId) {
-      form.setValue('payment_plan_template_id', selectedTemplateId, {
-        shouldValidate: false,
-      });
+      const currentFormValue = form.getValues('payment_plan_template_id');
+      // Update if the form value doesn't match the selected template
+      // Also update if form value is empty string or null/undefined (which would fail validation)
+      // This ensures form state is always synchronized with selectedTemplateId
+      if (
+        !currentFormValue ||
+        currentFormValue.trim() === '' ||
+        currentFormValue !== selectedTemplateId
+      ) {
+        form.setValue('payment_plan_template_id', selectedTemplateId, {
+          shouldValidate: false,
+          shouldDirty: true,
+        });
+      }
     }
   }, [selectedTemplateId, form]);
 
@@ -110,7 +154,7 @@ export const PaymentStep = ({ application, form }: Props) => {
   // Memoize to ensure stable Date reference - only change when date value actually changes
   const anchorDate = useMemo(() => {
     return localAnchorDate;
-  }, [localAnchorDate ? localAnchorDate.getTime() : null]);
+  }, [localAnchorDate]);
 
   // Initialize local state from form on mount or when application changes
   useEffect(() => {
@@ -143,16 +187,19 @@ export const PaymentStep = ({ application, form }: Props) => {
   const [isDateOpen, setIsDateOpen] = useState(false);
 
   // Memoize the date selection handler to prevent Calendar re-renders
-  const handleDateSelect = useCallback((d: Date | undefined) => {
-    if (!d) return;
-    const iso = formatDateToLocal(d);
-    form.setValue('payment_anchor_date', iso, {
-      shouldValidate: false,
-      shouldDirty: true,
-    });
-    setLocalAnchorDate(d); // Update local state immediately
-    setIsDateOpen(false);
-  }, []);
+  const handleDateSelect = useCallback(
+    (d: Date | undefined) => {
+      if (!d) return;
+      const iso = formatDateToLocal(d);
+      form.setValue('payment_anchor_date', iso, {
+        shouldValidate: false,
+        shouldDirty: true,
+      });
+      setLocalAnchorDate(d); // Update local state immediately
+      setIsDateOpen(false);
+    },
+    [form]
+  );
 
   return (
     <div className="grid gap-6">
@@ -195,49 +242,56 @@ export const PaymentStep = ({ application, form }: Props) => {
           <FormField
             control={form.control}
             name="payment_plan_template_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Template *</FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value || selectedTemplateId}
-                    onValueChange={(value) => {
-                      setSelectedTemplateId(value);
-                      field.onChange(value);
-                    }}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      aria-label="Select payment template"
+            render={({ field }) => {
+              // Use selectedTemplateId as fallback only if field.value is truly empty
+              // This ensures the UI shows the selected template even if form value hasn't synced yet
+              // The useEffect hooks will ensure form value is eventually synchronized
+              const displayValue = field.value || selectedTemplateId || '';
+
+              return (
+                <FormItem>
+                  <FormLabel>Template *</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={displayValue}
+                      onValueChange={(value) => {
+                        setSelectedTemplateId(value);
+                        field.onChange(value);
+                      }}
                     >
-                      <SelectValue placeholder="Select a template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templatesLoading ? (
-                        <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                          Loading templates...
-                        </div>
-                      ) : templatesError ? (
-                        <div className="px-2 py-1.5 text-sm text-red-500">
-                          Error loading templates
-                        </div>
-                      ) : templates.length === 0 ? (
-                        <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                          No templates available for this program
-                        </div>
-                      ) : (
-                        templates.map((t) => (
-                          <SelectItem key={t.id} value={t.id as string}>
-                            {t.name} {t.is_default ? '(Default)' : ''}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+                      <SelectTrigger
+                        className="w-full"
+                        aria-label="Select payment template"
+                      >
+                        <SelectValue placeholder="Select a template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templatesLoading ? (
+                          <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                            Loading templates...
+                          </div>
+                        ) : templatesError ? (
+                          <div className="px-2 py-1.5 text-sm text-red-500">
+                            Error loading templates
+                          </div>
+                        ) : templates.length === 0 ? (
+                          <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                            No templates available for this program
+                          </div>
+                        ) : (
+                          templates.map((t) => (
+                            <SelectItem key={t.id} value={t.id as string}>
+                              {t.name} {t.is_default ? '(Default)' : ''}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
           />
 
           <Card>

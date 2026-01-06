@@ -6,6 +6,7 @@ type ProgramPlanClassWithLocation = Tables<'program_plan_classes'> & {
   delivery_locations: Pick<Tables<'delivery_locations'>, 'name'> | null;
   classrooms: Pick<Tables<'classrooms'>, 'name'> | null;
   profiles: Pick<Tables<'profiles'>, 'first_name' | 'last_name'> | null;
+  groups: Pick<Tables<'groups'>, 'name'> | null;
 };
 
 /**
@@ -36,6 +37,9 @@ export const useGetProgramPlanClasses = (programPlanSubjectId?: string) => {
           profiles(
             first_name,
             last_name
+          ),
+          groups(
+            name
           )
         `
         )

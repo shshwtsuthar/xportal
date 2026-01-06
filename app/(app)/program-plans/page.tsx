@@ -11,10 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useRouter } from 'next/navigation';
-import {
-  useGetProgramPlans,
-  ProgramPlanWithGroup,
-} from '@/src/hooks/useGetProgramPlans';
+import { useGetProgramPlans } from '@/src/hooks/useGetProgramPlans';
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import { useDeleteProgramPlan } from '@/src/hooks/useDeleteProgramPlan';
 import {
@@ -70,14 +67,13 @@ export default function ProgramPlansPage() {
                 <TableRow className="divide-x">
                   <TableHead>Name</TableHead>
                   <TableHead>Program</TableHead>
-                  <TableHead>Group</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y">
                 {isLoading ? (
                   <TableRow className="divide-x">
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={3}>
                       <p className="text-muted-foreground text-sm">
                         Loading plans…
                       </p>
@@ -85,7 +81,7 @@ export default function ProgramPlansPage() {
                   </TableRow>
                 ) : plans.length === 0 ? (
                   <TableRow className="divide-x">
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={3}>
                       <p className="text-muted-foreground text-sm">
                         No plans found
                       </p>
@@ -97,20 +93,6 @@ export default function ProgramPlansPage() {
                       <TableCell>{pl.name}</TableCell>
                       <TableCell>
                         {programMap.get(pl.program_id as string) ?? '—'}
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const group = Array.isArray(pl.groups)
-                            ? pl.groups[0]
-                            : pl.groups;
-                          return group?.name ? (
-                            group.name
-                          ) : (
-                            <span className="text-muted-foreground">
-                              No Group
-                            </span>
-                          );
-                        })()}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>

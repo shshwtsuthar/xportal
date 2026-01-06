@@ -17,8 +17,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
-import { useGetTimetables } from '@/src/hooks/useGetTimetables';
+import { useGetTimetablesByGroupAndLocation } from '@/src/hooks/useGetTimetablesByGroupAndLocation';
 import { useGetLocations } from '@/src/hooks/useGetLocations';
+import { useGetGroupsByLocation } from '@/src/hooks/useGetGroupsByLocation';
 import { EnrollmentPreview } from '../EnrollmentPreview';
 import { OngoingSubjectPreview } from '../OngoingSubjectPreview';
 import {
@@ -71,17 +72,32 @@ export function EnrollmentStep({ form }: Props) {
 
   // Use local state for immediate reactivity
   const [localProgramId, setLocalProgramId] = useState<string>('');
-  const [localSelectedTimetableId, setLocalSelectedTimetableId] =
-    useState<string>('');
   const [localSelectedLocationId, setLocalSelectedLocationId] =
+    useState<string>('');
+  const [localSelectedGroupId, setLocalSelectedGroupId] = useState<string>('');
+  const [localSelectedTimetableId, setLocalSelectedTimetableId] =
     useState<string>('');
   const [localSelectedDate, setLocalSelectedDate] = useState<Date | undefined>(
     undefined
   );
 
   const programId = form.watch('program_id') || localProgramId;
+  const selectedLocationId =
+    (form.watch('preferred_location_id') as string) || localSelectedLocationId;
+  const selectedGroupId =
+    (form.watch('group_id') as string) || localSelectedGroupId;
+
+  // Get groups for the selected location
+  const { data: groups = [], isLoading: groupsLoading } =
+    useGetGroupsByLocation(programId, selectedLocationId);
+
+  // Get timetables filtered by group and location
   const { data: timetables = [], isLoading: timetablesLoading } =
-    useGetTimetables(programId);
+    useGetTimetablesByGroupAndLocation(
+      programId,
+      selectedGroupId,
+      selectedLocationId
+    );
 
   const selectedTimetableId =
     form.watch('timetable_id') || localSelectedTimetableId;
@@ -228,8 +244,12 @@ export function EnrollmentStep({ form }: Props) {
                         form.setValue('program_id', value);
                         setLocalProgramId(value); // Update local state immediately
                         // Explicitly clear dependent selections on program change
+                        form.setValue('preferred_location_id', '');
+                        form.setValue('group_id', '');
                         form.setValue('timetable_id', '');
                         form.setValue('proposed_commencement_date', '');
+                        setLocalSelectedLocationId('');
+                        setLocalSelectedGroupId('');
                         setLocalSelectedTimetableId('');
                         setLocalSelectedDate(undefined);
                       }}
@@ -263,62 +283,124 @@ export function EnrollmentStep({ form }: Props) {
 
             <FormField
               control={form.control}
-              name="timetable_id"
+              name="preferred_location_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Timetable *</FormLabel>
+                  <FormLabel>Preferred Location *</FormLabel>
                   <FormControl>
                     <Select
-                      value={field.value || localSelectedTimetableId}
+                      value={field.value || localSelectedLocationId}
                       onValueChange={(value) => {
-                        console.log('Timetable selected:', value);
+                        console.log('Location selected:', value);
                         field.onChange(value);
-                        form.setValue('timetable_id', value);
-                        setLocalSelectedTimetableId(value); // Update local state immediately
+                        form.setValue('preferred_location_id', value);
+                        setLocalSelectedLocationId(value);
+                        // Clear dependent selections on location change
+                        form.setValue('group_id', '');
+                        form.setValue('timetable_id', '');
+                        form.setValue('proposed_commencement_date', '');
+                        setLocalSelectedGroupId('');
+                        setLocalSelectedTimetableId('');
+                        setLocalSelectedDate(undefined);
                       }}
+                      disabled={!programId}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue
                           placeholder={
                             programId
-                              ? 'Select a timetable'
+                              ? 'Select a location'
                               : 'Select a program first'
                           }
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        {!programId ? (
+                        {locationsLoading ? (
                           <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                            Select a program first
+                            Loading locations...
                           </div>
-                        ) : timetablesLoading ? (
+                        ) : locations.length === 0 ? (
                           <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                            Loading timetables...
-                          </div>
-                        ) : timetables.length === 0 ? (
-                          <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                            No timetables for selected program (programId:{' '}
-                            {programId})
+                            No locations available
                           </div>
                         ) : (
-                          timetables.map((timetable) => {
-                            const group = timetable.group;
+                          locations.map((location) => (
+                            <SelectItem
+                              key={location.id}
+                              value={location.id as string}
+                            >
+                              {location.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="group_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Group *</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={(field.value as string) || localSelectedGroupId}
+                      onValueChange={(value: string) => {
+                        console.log('Group selected:', value);
+                        field.onChange(value);
+                        form.setValue('group_id', value);
+                        setLocalSelectedGroupId(value);
+                        // Clear dependent selections on group change
+                        form.setValue('timetable_id', '');
+                        form.setValue('proposed_commencement_date', '');
+                        setLocalSelectedTimetableId('');
+                        setLocalSelectedDate(undefined);
+                      }}
+                      disabled={!selectedLocationId}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue
+                          placeholder={
+                            selectedLocationId
+                              ? 'Select a group'
+                              : 'Select a location first'
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {!selectedLocationId ? (
+                          <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                            Select a location first
+                          </div>
+                        ) : groupsLoading ? (
+                          <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                            Loading groups...
+                          </div>
+                        ) : groups.length === 0 ? (
+                          <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                            No groups available at this location
+                          </div>
+                        ) : (
+                          groups.map((group) => {
                             const isFull =
-                              group &&
                               group.current_enrollment_count >=
-                                group.max_capacity;
+                              group.max_capacity;
                             const isNearFull =
-                              group &&
                               group.current_enrollment_count >=
-                                group.max_capacity * 0.9;
+                              group.max_capacity * 0.9;
 
                             return (
-                              <TooltipProvider key={timetable.id}>
+                              <TooltipProvider key={group.id}>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <SelectItem
-                                      value={timetable.id as string}
-                                      disabled={!!isFull}
+                                      value={group.id as string}
+                                      disabled={isFull}
                                       className={cn(
                                         isFull &&
                                           'cursor-not-allowed opacity-50'
@@ -326,23 +408,21 @@ export function EnrollmentStep({ form }: Props) {
                                     >
                                       <div className="flex w-full items-center justify-between gap-4">
                                         <span className="flex-1">
-                                          {timetable.name}
+                                          {group.name}
                                         </span>
-                                        {group && (
-                                          <Badge
-                                            variant={
-                                              isFull
-                                                ? 'destructive'
-                                                : isNearFull
-                                                  ? 'outline'
-                                                  : 'secondary'
-                                            }
-                                            className="ml-2 shrink-0"
-                                          >
-                                            {group.current_enrollment_count}/
-                                            {group.max_capacity}
-                                          </Badge>
-                                        )}
+                                        <Badge
+                                          variant={
+                                            isFull
+                                              ? 'destructive'
+                                              : isNearFull
+                                                ? 'outline'
+                                                : 'secondary'
+                                          }
+                                          className="ml-2 shrink-0"
+                                        >
+                                          {group.current_enrollment_count}/
+                                          {group.max_capacity}
+                                        </Badge>
                                       </div>
                                     </SelectItem>
                                   </TooltipTrigger>
@@ -351,10 +431,9 @@ export function EnrollmentStep({ form }: Props) {
                                       <div className="flex items-center gap-2">
                                         <AlertCircle className="h-4 w-4" />
                                         <span>
-                                          This timetable&apos;s group is at full
-                                          capacity (
-                                          {group?.current_enrollment_count}/
-                                          {group?.max_capacity})
+                                          This group is at full capacity (
+                                          {group.current_enrollment_count}/
+                                          {group.max_capacity})
                                         </span>
                                       </div>
                                     </TooltipContent>
@@ -374,39 +453,50 @@ export function EnrollmentStep({ form }: Props) {
 
             <FormField
               control={form.control}
-              name="preferred_location_id"
+              name="timetable_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Preferred Location *</FormLabel>
+                  <FormLabel>Timetable *</FormLabel>
                   <FormControl>
                     <Select
-                      value={field.value || localSelectedLocationId}
+                      value={field.value || localSelectedTimetableId}
                       onValueChange={(value) => {
-                        console.log('Location selected:', value);
+                        console.log('Timetable selected:', value);
                         field.onChange(value);
-                        form.setValue('preferred_location_id', value);
-                        setLocalSelectedLocationId(value); // Update local state immediately
+                        form.setValue('timetable_id', value);
+                        setLocalSelectedTimetableId(value);
                       }}
+                      disabled={!selectedGroupId}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a location" />
+                        <SelectValue
+                          placeholder={
+                            selectedGroupId
+                              ? 'Select a timetable'
+                              : 'Select a group first'
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        {locationsLoading ? (
+                        {!selectedGroupId ? (
                           <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                            Loading locations...
+                            Select a group first
                           </div>
-                        ) : locations.length === 0 ? (
+                        ) : timetablesLoading ? (
                           <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                            No locations available
+                            Loading timetables...
+                          </div>
+                        ) : timetables.length === 0 ? (
+                          <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                            No timetables available for this group and location
                           </div>
                         ) : (
-                          locations.map((location) => (
+                          timetables.map((timetable) => (
                             <SelectItem
-                              key={location.id}
-                              value={location.id as string}
+                              key={timetable.id}
+                              value={timetable.id as string}
                             >
-                              {location.name}
+                              {timetable.name}
                             </SelectItem>
                           ))
                         )}

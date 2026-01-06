@@ -7,7 +7,9 @@ type AddPlansPayload = {
 };
 
 /**
- * Add multiple program plans to a timetable with group validation
+ * Add multiple program plans to a timetable.
+ * Note: Program plans are now generalized and can span multiple groups.
+ * Group assignment happens at the class level.
  */
 export const useAddProgramPlansToTimetable = () => {
   const queryClient = useQueryClient();
@@ -15,51 +17,19 @@ export const useAddProgramPlansToTimetable = () => {
     mutationFn: async (payload: AddPlansPayload): Promise<void> => {
       const supabase = createClient();
 
-      // Validate that all program plans have groups and belong to the same group
+      // Validate that program plans exist
       const { data: programPlans, error: fetchError } = await supabase
         .from('program_plans')
-        .select('id, group_id, name')
+        .select('id, name')
         .in('id', payload.program_plan_ids);
 
       if (fetchError) throw new Error(fetchError.message);
 
-      // Check for program plans without groups
-      const plansWithoutGroups = programPlans?.filter((p) => !p.group_id) ?? [];
-      if (plansWithoutGroups.length > 0) {
-        throw new Error(
-          `Cannot add program plans without groups: ${plansWithoutGroups.map((p) => p.name).join(', ')}`
-        );
+      if (!programPlans || programPlans.length === 0) {
+        throw new Error('No valid program plans found');
       }
 
-      // Check for multiple different groups
-      const uniqueGroups = new Set(programPlans?.map((p) => p.group_id));
-      if (uniqueGroups.size > 1) {
-        throw new Error(
-          'Cannot add program plans from different groups to the same timetable'
-        );
-      }
-
-      // If timetable already has program plans, validate group consistency
-      const { data: existingPlans } = await supabase
-        .from('timetable_program_plans')
-        .select('program_plans!inner(group_id)')
-        .eq('timetable_id', payload.timetable_id)
-        .limit(1)
-        .single();
-
-      if (existingPlans) {
-        const existingGroup = (
-          existingPlans.program_plans as unknown as { group_id: string }
-        ).group_id;
-        const newGroup = Array.from(uniqueGroups)[0];
-        if (existingGroup !== newGroup) {
-          throw new Error(
-            'Cannot add program plans from a different group. This timetable already contains plans from another group.'
-          );
-        }
-      }
-
-      // All validations passed, proceed with insert
+      // Proceed with insert
       const { error } = await supabase.from('timetable_program_plans').insert(
         payload.program_plan_ids.map((planId) => ({
           timetable_id: payload.timetable_id,

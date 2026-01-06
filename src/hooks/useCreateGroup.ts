@@ -4,6 +4,7 @@ import { Tables } from '@/database.types';
 
 type CreateGroupPayload = {
   program_id: string;
+  location_id: string;
   name: string;
   max_capacity: number;
 };
@@ -37,6 +38,7 @@ export const useCreateGroup = () => {
       const groupData = {
         name: payload.name,
         program_id: payload.program_id,
+        location_id: payload.location_id,
         max_capacity: payload.max_capacity,
         rto_id: rtoId,
       };

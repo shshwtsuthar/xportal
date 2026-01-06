@@ -23,8 +23,6 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -34,17 +32,6 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Pagination,
@@ -63,7 +50,6 @@ import {
 } from '@/components/ui/select';
 import {
   MoreHorizontal,
-  Trash2,
   GripVertical,
   Search,
   Archive,
@@ -80,6 +66,8 @@ import { useRecreateDraftApplication } from '@/src/hooks/useRecreateDraftApplica
 import { SendOfferComposeDialog } from '@/components/emails/SendOfferComposeDialog';
 import { useApproveApplication } from '@/src/hooks/useApproveApplication';
 import { useGenerateOfferLetter } from '@/src/hooks/useGenerateOfferLetter';
+import { useCheckGroupCapacity } from '@/src/hooks/useCheckGroupCapacity';
+import { GroupCapacityDialog } from './GroupCapacityDialog';
 import { ArchiveIcon, type ArchiveIconHandle } from '@/components/ui/archive';
 import {
   RefreshCCWIcon,
@@ -239,6 +227,7 @@ export const ApplicationsDataTable = forwardRef<
   const generateOfferMutation = useGenerateOfferLetter();
   const deleteMutation = useDeleteApplication();
   const updateMutation = useUpdateApplication();
+  const checkCapacityMutation = useCheckGroupCapacity();
   const [sendOfferDialog, setSendOfferDialog] = useState<{
     open: boolean;
     applicationId: string | null;
@@ -247,6 +236,24 @@ export const ApplicationsDataTable = forwardRef<
     null
   );
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [capacityDialogOpen, setCapacityDialogOpen] = useState(false);
+  const [capacityCheckResult, setCapacityCheckResult] = useState<{
+    hasCapacity: boolean;
+    groupId: string;
+    groupName?: string;
+    currentCount?: number;
+    maxCapacity?: number;
+    alternatives?: Array<{
+      id: string;
+      name: string;
+      current_enrollment_count: number;
+      max_capacity: number;
+      availableSpots: number;
+    }>;
+  } | null>(null);
+  const [capacityCheckApplicationId, setCapacityCheckApplicationId] = useState<
+    string | null
+  >(null);
   const washingMachineRefs = useRef<Map<string, WashingMachineIconHandle>>(
     new Map()
   );
@@ -480,13 +487,6 @@ export const ApplicationsDataTable = forwardRef<
     setDragOverId(null);
   };
 
-  const handleDelete = (id: string) => {
-    deleteMutation.mutate(id, {
-      onSuccess: () => toast.success('Application deleted successfully'),
-      onError: (error) => toast.error(`Failed to delete: ${error.message}`),
-    });
-  };
-
   const handleAccept = (id: string) => {
     updateMutation.mutate(
       { id, status: 'ACCEPTED' },
@@ -675,19 +675,35 @@ export const ApplicationsDataTable = forwardRef<
         <div className="flex w-full min-w-0 items-center gap-2">
           <ApproveButton
             onApprove={async () => {
-              if (approveMutation.isPending) {
+              if (
+                approveMutation.isPending ||
+                checkCapacityMutation.isPending
+              ) {
                 return;
               }
               setApprovingId(app.id);
+              setCapacityCheckApplicationId(app.id);
               try {
-                await approveMutation.mutateAsync({ applicationId: app.id });
-                toast.success('Application approved');
+                // Step 1: Check group capacity
+                const result = await checkCapacityMutation.mutateAsync({
+                  applicationId: app.id,
+                });
+
+                if (result.hasCapacity) {
+                  // Group has capacity, proceed directly
+                  await approveMutation.mutateAsync({ applicationId: app.id });
+                  toast.success('Application approved');
+                  setApprovingId(null);
+                } else {
+                  // Group is full, show dialog with alternatives
+                  setCapacityCheckResult(result);
+                  setCapacityDialogOpen(true);
+                  // Note: approvingId will be cleared when dialog closes or confirms
+                }
               } catch (e) {
-                toast.error(
-                  `Approve failed: ${String((e as Error).message || e)}`
-                );
-              } finally {
+                toast.error(`Failed: ${String((e as Error).message || e)}`);
                 setApprovingId(null);
+                setCapacityCheckApplicationId(null);
               }
             }}
             isPending={isRowApproving}
@@ -1107,6 +1123,43 @@ export const ApplicationsDataTable = forwardRef<
               applicationId: open ? sendOfferDialog.applicationId : null,
             })
           }
+        />
+      )}
+
+      {capacityCheckResult && capacityCheckApplicationId && (
+        <GroupCapacityDialog
+          open={capacityDialogOpen}
+          onOpenChange={(open) => {
+            setCapacityDialogOpen(open);
+            if (!open) {
+              // User cancelled, clear approving state
+              setApprovingId(null);
+              setCapacityCheckApplicationId(null);
+              setCapacityCheckResult(null);
+            }
+          }}
+          currentGroupName={capacityCheckResult.groupName || ''}
+          currentCount={capacityCheckResult.currentCount || 0}
+          maxCapacity={capacityCheckResult.maxCapacity || 0}
+          alternatives={capacityCheckResult.alternatives || []}
+          onConfirm={async (newGroupId: string) => {
+            try {
+              await approveMutation.mutateAsync({
+                applicationId: capacityCheckApplicationId,
+                newGroupId,
+              });
+              toast.success('Application approved with new group');
+              setCapacityDialogOpen(false);
+              setApprovingId(null);
+              setCapacityCheckApplicationId(null);
+              setCapacityCheckResult(null);
+            } catch (e) {
+              toast.error(
+                `Approve failed: ${String((e as Error).message || e)}`
+              );
+            }
+          }}
+          isConfirming={approveMutation.isPending}
         />
       )}
     </>

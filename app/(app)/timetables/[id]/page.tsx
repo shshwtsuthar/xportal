@@ -68,8 +68,7 @@ export default function TimetableDetailPage({
   const { data: programs = [], isLoading: programsLoading } = useGetPrograms();
   const { data: timetableGroup } = useGetTimetableGroup(id);
   const { data: allProgramPlans = [] } = useGetProgramPlans(
-    timetable?.program_id as string,
-    timetableGroup?.groupId
+    timetable?.program_id as string
   );
   const deleteProgramPlan = useDeleteProgramPlan();
   const addPlans = useAddProgramPlansToTimetable();

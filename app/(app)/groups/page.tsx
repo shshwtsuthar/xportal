@@ -37,6 +37,7 @@ import { Label } from '@/components/ui/label';
 import { MoreHorizontal, Plus } from 'lucide-react';
 import { useGetGroups } from '@/src/hooks/useGetGroups';
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
+import { useGetLocations } from '@/src/hooks/useGetLocations';
 import { useCreateGroup } from '@/src/hooks/useCreateGroup';
 import { useUpdateGroup } from '@/src/hooks/useUpdateGroup';
 import { useDeleteGroup } from '@/src/hooks/useDeleteGroup';
@@ -55,6 +56,8 @@ import {
 export default function GroupsPage() {
   const { data: groups = [], isLoading: groupsLoading } = useGetGroups();
   const { data: programs = [], isLoading: programsLoading } = useGetPrograms();
+  const { data: locations = [], isLoading: locationsLoading } =
+    useGetLocations();
   const { data: maxClassroomCapacity = 0 } = useGetMaxClassroomCapacity();
   const createGroup = useCreateGroup();
   const updateGroup = useUpdateGroup();
@@ -66,6 +69,7 @@ export default function GroupsPage() {
   );
   const [formData, setFormData] = useState({
     program_id: '',
+    location_id: '',
     name: '',
     max_capacity: '',
   });
@@ -76,11 +80,22 @@ export default function GroupsPage() {
     return map;
   }, [programs]);
 
-  const isLoading = groupsLoading || programsLoading;
+  const locationMap = useMemo(() => {
+    const map = new Map<string, string>();
+    locations.forEach((l) => map.set(l.id as string, l.name as string));
+    return map;
+  }, [locations]);
+
+  const isLoading = groupsLoading || programsLoading || locationsLoading;
 
   const handleOpenCreateDialog = () => {
     setEditingGroup(null);
-    setFormData({ program_id: '', name: '', max_capacity: '' });
+    setFormData({
+      program_id: '',
+      location_id: '',
+      name: '',
+      max_capacity: '',
+    });
     setIsCreateDialogOpen(true);
   };
 
@@ -88,6 +103,7 @@ export default function GroupsPage() {
     setEditingGroup(group);
     setFormData({
       program_id: group.program_id as string,
+      location_id: (group.location_id as string) || '',
       name: group.name as string,
       max_capacity: String(group.max_capacity),
     });
@@ -97,7 +113,12 @@ export default function GroupsPage() {
   const handleCloseDialog = () => {
     setIsCreateDialogOpen(false);
     setEditingGroup(null);
-    setFormData({ program_id: '', name: '', max_capacity: '' });
+    setFormData({
+      program_id: '',
+      location_id: '',
+      name: '',
+      max_capacity: '',
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,17 +137,24 @@ export default function GroupsPage() {
       return;
     }
 
+    if (!formData.location_id) {
+      toast.error('Please select a location');
+      return;
+    }
+
     try {
       if (editingGroup) {
         await updateGroup.mutateAsync({
           id: editingGroup.id as string,
           name: formData.name,
+          location_id: formData.location_id,
           max_capacity: capacity,
         });
         toast.success('Group updated successfully');
       } else {
         await createGroup.mutateAsync({
           program_id: formData.program_id,
+          location_id: formData.location_id,
           name: formData.name,
           max_capacity: capacity,
         });
@@ -212,6 +240,36 @@ export default function GroupsPage() {
                 </div>
 
                 <div className="grid gap-2">
+                  <Label htmlFor="location">
+                    Location <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={formData.location_id}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, location_id: value })
+                    }
+                    disabled={!!editingGroup}
+                  >
+                    <SelectTrigger id="location">
+                      <SelectValue placeholder="Select a location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((location) => (
+                        <SelectItem
+                          key={location.id}
+                          value={location.id as string}
+                        >
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-muted-foreground text-xs">
+                    Each group operates at exactly one location
+                  </p>
+                </div>
+
+                <div className="grid gap-2">
                   <Label htmlFor="name">
                     Group Name <span className="text-destructive">*</span>
                   </Label>
@@ -278,6 +336,7 @@ export default function GroupsPage() {
                   type="submit"
                   disabled={
                     !formData.program_id ||
+                    !formData.location_id ||
                     !formData.name ||
                     !formData.max_capacity ||
                     capacityExceedsMax ||
@@ -315,6 +374,7 @@ export default function GroupsPage() {
                   <TableRow>
                     <TableHead>Group Name</TableHead>
                     <TableHead>Program</TableHead>
+                    <TableHead>Location</TableHead>
                     <TableHead className="text-right">Max Capacity</TableHead>
                     <TableHead className="text-right">
                       Current Enrolled
@@ -336,6 +396,10 @@ export default function GroupsPage() {
                         </TableCell>
                         <TableCell>
                           {programMap.get(group.program_id as string) || 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {locationMap.get(group.location_id as string) ||
+                            'N/A'}
                         </TableCell>
                         <TableCell className="text-right">
                           {group.max_capacity}
