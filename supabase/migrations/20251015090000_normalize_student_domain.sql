@@ -8,7 +8,7 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- student_addresses
 CREATE TABLE IF NOT EXISTS public.student_addresses (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   student_id uuid NOT NULL REFERENCES public.students(id),
   rto_id uuid NOT NULL REFERENCES public.rtos(id),
   type public.student_address_type NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.student_addresses (
 
 -- student_contacts_emergency
 CREATE TABLE IF NOT EXISTS public.student_contacts_emergency (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   student_id uuid NOT NULL REFERENCES public.students(id),
   rto_id uuid NOT NULL REFERENCES public.rtos(id),
   name text NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS public.student_contacts_emergency (
 
 -- student_contacts_guardians
 CREATE TABLE IF NOT EXISTS public.student_contacts_guardians (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   student_id uuid NOT NULL REFERENCES public.students(id),
   rto_id uuid NOT NULL REFERENCES public.rtos(id),
   name text NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS public.student_contacts_guardians (
 
 -- student_avetmiss
 CREATE TABLE IF NOT EXISTS public.student_avetmiss (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   student_id uuid NOT NULL REFERENCES public.students(id),
   rto_id uuid NOT NULL REFERENCES public.rtos(id),
   -- NAT00080 / NAT00085 core attributes captured at application time
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS public.student_avetmiss (
 
 -- student_cricos
 CREATE TABLE IF NOT EXISTS public.student_cricos (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   student_id uuid NOT NULL REFERENCES public.students(id),
   rto_id uuid NOT NULL REFERENCES public.rtos(id),
   is_international boolean NOT NULL DEFAULT false,
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS public.student_cricos (
 
 -- student_documents (metadata of copied files)
 CREATE TABLE IF NOT EXISTS public.student_documents (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   student_id uuid NOT NULL REFERENCES public.students(id),
   rto_id uuid NOT NULL REFERENCES public.rtos(id),
   file_path text NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS public.student_documents (
 
 -- enrollment_classes (snapshot of planned classes)
 CREATE TABLE IF NOT EXISTS public.enrollment_classes (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   enrollment_id uuid NOT NULL REFERENCES public.enrollments(id),
   program_plan_class_id uuid NOT NULL REFERENCES public.program_plan_classes(id),
   class_date date NOT NULL,
