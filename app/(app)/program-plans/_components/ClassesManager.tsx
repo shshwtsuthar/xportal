@@ -32,7 +32,15 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CalendarIcon, Plus, Trash } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  CalendarIcon,
+  Plus,
+  Trash,
+  RefreshCw,
+  FileText,
+  Calendar as CalendarRepeat,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -43,6 +51,17 @@ import { useGetTrainers } from '@/src/hooks/useGetTrainers';
 import { useGetLocations } from '@/src/hooks/useGetLocations';
 import { useGetClassrooms } from '@/src/hooks/useGetClassrooms';
 import { useGetGroupsByLocation } from '@/src/hooks/useGetGroupsByLocation';
+import {
+  useGetClassTemplates,
+  type ClassTemplate,
+} from '@/src/hooks/useGetClassTemplates';
+import {
+  useExpandTemplate,
+  type ExpandTemplateResult,
+} from '@/src/hooks/useExpandTemplate';
+import { useDeleteClassTemplate } from '@/src/hooks/useDeleteClassTemplate';
+import { RecurringClassDialog } from './RecurringClassDialog';
+import { ConflictResolutionModal } from './ConflictResolutionModal';
 
 type ClassesManagerProps = {
   programPlanSubjectId: string;
@@ -74,9 +93,19 @@ export function ClassesManager({
 }: ClassesManagerProps) {
   const [isAddingClass, setIsAddingClass] = useState(false);
   const [newClass, setNewClass] = useState<ClassRow>({});
+  const [viewMode, setViewMode] = useState<'templates' | 'classes'>('classes');
+  const [showRecurringDialog, setShowRecurringDialog] = useState(false);
+  const [conflictModalOpen, setConflictModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<ClassTemplate | null>(null);
+  const [detectedConflicts, setDetectedConflicts] = useState<
+    ExpandTemplateResult['conflicts']
+  >([]);
 
   const { data: classes = [], isLoading: classesLoading } =
     useGetProgramPlanClasses(programPlanSubjectId);
+  const { data: templates = [], isLoading: templatesLoading } =
+    useGetClassTemplates(programPlanSubjectId);
   const { data: trainers = [], isLoading: trainersLoading } = useGetTrainers();
   const { data: locations = [], isLoading: locationsLoading } =
     useGetLocations();
@@ -89,6 +118,8 @@ export function ClassesManager({
 
   const upsertClass = useUpsertProgramPlanClass();
   const deleteClass = useDeleteProgramPlanClass();
+  const expandTemplate = useExpandTemplate();
+  const deleteTemplate = useDeleteClassTemplate();
 
   const updateNewClass = (
     field: keyof ClassRow,
@@ -183,20 +214,157 @@ export function ClassesManager({
     return groupCapacity !== undefined && classroomCapacity < groupCapacity;
   };
 
+  const handleReExpandTemplate = async (template: ClassTemplate) => {
+    setSelectedTemplate(template);
+
+    // Call expand to check for conflicts
+    try {
+      const result = await expandTemplate.mutateAsync({
+        templateId: template.id,
+        preserveEdited: true,
+        programPlanSubjectId,
+      });
+
+      if (result.success) {
+        if (result.conflicts && result.conflicts.length > 0) {
+          // Show conflict modal
+          setDetectedConflicts(result.conflicts);
+          setConflictModalOpen(true);
+        } else {
+          // Success without conflicts
+          toast.success(
+            `Successfully re-expanded template: ${result.classes_created} class${result.classes_created !== 1 ? 'es' : ''} created`
+          );
+        }
+      } else {
+        toast.error(result.error || 'Failed to re-expand template');
+      }
+    } catch (error) {
+      toast.error('Failed to re-expand template');
+      console.error(error);
+    }
+  };
+
+  const handleConflictResolution = async (
+    action: 'preserve' | 'overwrite' | 'cancel'
+  ) => {
+    if (action === 'cancel' || !selectedTemplate) {
+      setConflictModalOpen(false);
+      setSelectedTemplate(null);
+      setDetectedConflicts([]);
+      return;
+    }
+
+    try {
+      const result = await expandTemplate.mutateAsync({
+        templateId: selectedTemplate.id,
+        preserveEdited: action === 'preserve',
+        programPlanSubjectId,
+      });
+
+      if (result.success) {
+        toast.success(
+          `Template re-expanded: ${result.classes_created} created, ${result.classes_preserved || 0} preserved`
+        );
+        setConflictModalOpen(false);
+        setSelectedTemplate(null);
+        setDetectedConflicts([]);
+      } else {
+        toast.error(result.error || 'Failed to re-expand template');
+      }
+    } catch (error) {
+      toast.error('Failed to re-expand template');
+      console.error(error);
+    }
+  };
+
+  const handleDeleteTemplate = async (
+    templateId: string,
+    templateName: string | null
+  ) => {
+    if (
+      !confirm(
+        `Delete template "${templateName || 'Untitled'}"?\n\nGenerated classes will remain as standalone classes.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await deleteTemplate.mutateAsync({
+        templateId,
+        programPlanSubjectId,
+      });
+      toast.success('Template deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete template');
+      console.error(error);
+    }
+  };
+
+  const getRecurrenceLabel = (template: ClassTemplate): string => {
+    switch (template.recurrence_type) {
+      case 'once':
+        return 'Once';
+      case 'daily':
+        return `Every ${template.recurrence_pattern?.interval || 1} day(s)`;
+      case 'weekly':
+        const days = template.recurrence_pattern?.days_of_week || [];
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return `Weekly: ${days.map((d: number) => dayNames[d]).join(', ')}`;
+      case 'monthly':
+        return `Monthly: Day ${template.recurrence_pattern?.day_of_month || 1}`;
+      case 'custom':
+        return 'Custom dates';
+      default:
+        return template.recurrence_type;
+    }
+  };
+
   return (
     <div>
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Class Sessions</CardTitle>
-            <Button
-              size="sm"
-              onClick={() => setIsAddingClass(true)}
-              disabled={isAddingClass}
-            >
-              <Plus className="mr-1 h-3 w-3" />
-              Add Class
-            </Button>
+            <div className="flex items-center gap-4">
+              <CardTitle className="text-sm">Class Sessions</CardTitle>
+              <div className="flex items-center gap-1 rounded-md border p-1">
+                <Button
+                  variant={viewMode === 'classes' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('classes')}
+                  className="h-7 text-xs"
+                >
+                  All Classes
+                </Button>
+                <Button
+                  variant={viewMode === 'templates' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('templates')}
+                  className="h-7 text-xs"
+                >
+                  Templates
+                </Button>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowRecurringDialog(true)}
+              >
+                <CalendarRepeat className="mr-1 h-3 w-3" />
+                Add Recurring
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setIsAddingClass(true)}
+                disabled={isAddingClass}
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                Add Class
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
@@ -458,7 +626,128 @@ export function ClassesManager({
             </div>
           )}
 
-          {classesLoading ? (
+          {viewMode === 'templates' ? (
+            // Templates view
+            templatesLoading ? (
+              <p className="text-muted-foreground text-sm">
+                Loading templates...
+              </p>
+            ) : templates.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-muted-foreground mb-2 text-sm">
+                  No recurring class templates yet
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowRecurringDialog(true)}
+                >
+                  <CalendarRepeat className="mr-2 h-4 w-4" />
+                  Create First Template
+                </Button>
+              </div>
+            ) : (
+              <div className="w-full overflow-hidden rounded-md border">
+                <Table>
+                  <TableHeader className="border-b">
+                    <TableRow className="divide-x">
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Pattern</TableHead>
+                      <TableHead>Date Range</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Group</TableHead>
+                      <TableHead>Classes</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y">
+                    {templates.map((template) => (
+                      <TableRow key={template.id} className="divide-x">
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <FileText className="text-muted-foreground h-4 w-4" />
+                            <span className="font-medium">
+                              {template.template_name || 'Untitled Template'}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {template.recurrence_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {getRecurrenceLabel(template)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {format(new Date(template.start_date), 'MMM dd')} -{' '}
+                          {format(new Date(template.end_date), 'MMM dd')}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {template.start_time} - {template.end_time}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {template.groups?.name || '—'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <Badge variant="secondary">
+                              {template.generated_class_count} classes
+                            </Badge>
+                            {template.last_expanded_at && (
+                              <p className="text-muted-foreground text-xs">
+                                Last:{' '}
+                                {format(
+                                  new Date(template.last_expanded_at),
+                                  'MMM dd, HH:mm'
+                                )}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleReExpandTemplate(template)
+                                    }
+                                  >
+                                    <RefreshCw className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Re-expand template
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleDeleteTemplate(
+                                  template.id,
+                                  template.template_name
+                                )
+                              }
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )
+          ) : // Classes view
+          classesLoading ? (
             <p className="text-muted-foreground text-sm">Loading classes...</p>
           ) : (
             <div className="w-full overflow-hidden rounded-md border">
@@ -472,44 +761,102 @@ export function ClassesManager({
                     <TableHead>Classroom</TableHead>
                     <TableHead>Group</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Source</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y">
-                  {classes.map((cls) => (
-                    <TableRow key={cls.id} className="divide-x">
-                      <TableCell>
-                        {cls.class_date
-                          ? format(new Date(cls.class_date), 'MMM dd')
-                          : '—'}
-                      </TableCell>
-                      <TableCell>
-                        {cls.start_time && cls.end_time
-                          ? `${cls.start_time} - ${cls.end_time}`
-                          : '—'}
-                      </TableCell>
-                      <TableCell>
-                        {cls.profiles
-                          ? `${cls.profiles.first_name || ''} ${cls.profiles.last_name || ''}`.trim() ||
-                            '—'
-                          : '—'}
-                      </TableCell>
-                      <TableCell>
-                        {cls.delivery_locations?.name ?? '—'}
-                      </TableCell>
-                      <TableCell>{cls.classrooms?.name ?? '—'}</TableCell>
-                      <TableCell>{cls.groups?.name ?? '—'}</TableCell>
-                      <TableCell>{cls.class_type || '—'}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleDeleteClass(cls.id as string)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {classes.map((cls) => {
+                    const fromTemplate = !!cls.template_id;
+                    return (
+                      <TableRow key={cls.id} className="divide-x">
+                        <TableCell>
+                          {cls.class_date
+                            ? format(new Date(cls.class_date), 'MMM dd')
+                            : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {cls.start_time && cls.end_time
+                            ? `${cls.start_time} - ${cls.end_time}`
+                            : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {cls.profiles
+                            ? `${cls.profiles.first_name || ''} ${cls.profiles.last_name || ''}`.trim() ||
+                              '—'
+                            : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {cls.delivery_locations?.name ?? '—'}
+                        </TableCell>
+                        <TableCell>{cls.classrooms?.name ?? '—'}</TableCell>
+                        <TableCell>{cls.groups?.name ?? '—'}</TableCell>
+                        <TableCell>{cls.class_type || '—'}</TableCell>
+                        <TableCell>
+                          {fromTemplate ? (
+                            <div className="flex flex-col gap-1">
+                              <Badge
+                                variant="outline"
+                                className="w-fit text-xs"
+                              >
+                                📋 Template
+                              </Badge>
+                              {cls.is_manually_edited && (
+                                <Badge
+                                  variant="secondary"
+                                  className="w-fit text-xs"
+                                >
+                                  ✏️ Edited
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">
+                              Manual
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {fromTemplate ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleDeleteClass(cls.id as string)
+                                    }
+                                    disabled
+                                    className="opacity-50"
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>
+                                    Template-generated classes cannot be deleted
+                                    individually.
+                                  </p>
+                                  <p className="text-xs">
+                                    Re-expand or delete the template instead.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              onClick={() =>
+                                handleDeleteClass(cls.id as string)
+                              }
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {classes.length === 0 && (
                     <TableRow className="divide-x">
                       <TableCell colSpan={8}>
@@ -525,6 +872,26 @@ export function ClassesManager({
           )}
         </CardContent>
       </Card>
+
+      {/* Recurring Class Dialog */}
+      <RecurringClassDialog
+        open={showRecurringDialog}
+        onOpenChange={setShowRecurringDialog}
+        programPlanSubjectId={programPlanSubjectId}
+        subjectStartDate={subjectStartDate}
+        subjectEndDate={subjectEndDate}
+        programId={programId}
+        groupCapacity={groupCapacity}
+      />
+
+      {/* Conflict Resolution Modal */}
+      <ConflictResolutionModal
+        open={conflictModalOpen}
+        onOpenChange={setConflictModalOpen}
+        conflicts={detectedConflicts || []}
+        onResolve={handleConflictResolution}
+        isLoading={expandTemplate.isPending}
+      />
     </div>
   );
 }
