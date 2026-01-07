@@ -16,6 +16,7 @@ import { useGetSubjects } from '@/src/hooks/useGetSubjects';
 import { useGetProgramPlanSubjects } from '@/src/hooks/useGetProgramPlanSubjects';
 import { ClassesManager } from './ClassesManager';
 import { ProgramPlanRecurringDialog } from './ProgramPlanRecurringDialog';
+import { DateDisplacementDialog } from './DateDisplacementDialog';
 import { Tables } from '@/database.types';
 import { useUpsertProgramPlan } from '@/src/hooks/useUpsertProgramPlan';
 import { useUpsertProgramPlanSubject } from '@/src/hooks/useUpsertProgramPlanSubject';
@@ -44,7 +45,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import {
   Table,
   TableBody,
@@ -102,6 +103,8 @@ export function ProgramPlanWizard({
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [showProgramPlanRecurringDialog, setShowProgramPlanRecurringDialog] =
     useState(false);
+  const [showDateDisplacementDialog, setShowDateDisplacementDialog] =
+    useState(false);
 
   // Load existing subjects into rows when editing
   useEffect(() => {
@@ -128,6 +131,21 @@ export function ProgramPlanWizard({
     value: string | Date | number | boolean | undefined
   ) => {
     setRows((r) => r.map((x, i) => (i === idx ? { ...x, [field]: value } : x)));
+  };
+
+  const handleDateDisplacement = (days: number) => {
+    setRows((currentRows) =>
+      currentRows.map((row) => ({
+        ...row,
+        start_date: row.start_date
+          ? addDays(row.start_date, days)
+          : row.start_date,
+        end_date: row.end_date ? addDays(row.end_date, days) : row.end_date,
+      }))
+    );
+    toast.success(
+      `Displaced all dates by ${days} day${Math.abs(days) !== 1 ? 's' : ''}`
+    );
   };
 
   const toggleRowExpansion = (idx: number) => {
@@ -233,6 +251,15 @@ export function ProgramPlanWizard({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 Create Classes for All Subjects
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDateDisplacementDialog(true)}
+                disabled={rows.length === 0}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Displace Dates
               </Button>
               <Button type="button" variant="outline" onClick={addRow}>
                 <Plus className="mr-2 h-4 w-4" /> Add Subject
@@ -476,6 +503,7 @@ export function ProgramPlanWizard({
     updateRow,
     removeRow,
     plan?.id,
+    showProgramPlanRecurringDialog,
   ]);
 
   return (
@@ -551,6 +579,14 @@ export function ProgramPlanWizard({
         onOpenChange={setShowProgramPlanRecurringDialog}
         programPlanId={plan?.id || ''}
         programId={programId}
+      />
+
+      {/* Date Displacement Dialog */}
+      <DateDisplacementDialog
+        open={showDateDisplacementDialog}
+        onOpenChange={setShowDateDisplacementDialog}
+        onDisplace={handleDateDisplacement}
+        totalSubjects={rows.length}
       />
     </div>
   );
