@@ -41,7 +41,7 @@ type NavItem = {
   title: string;
   url: string;
   icon?: React.ElementType;
-  items?: Array<{ title: string; url: string }>;
+  items?: NavItem[];
 };
 
 const NAV: NavItem[] = [
@@ -68,7 +68,6 @@ const NAV: NavItem[] = [
     items: [
       { title: 'Timetables', url: '/timetables' },
       { title: 'Program Plans', url: '/program-plans' },
-      { title: 'Groups', url: '/groups' },
       { title: 'Programs', url: '/programs' },
       { title: 'Subjects', url: '/subjects' },
     ],
@@ -117,7 +116,14 @@ const NAV: NavItem[] = [
     items: [
       { title: 'RTO Information', url: '/rto' },
       { title: 'Financial Information', url: '/rto/financial-information' },
-      { title: 'Locations', url: '/locations' },
+      {
+        title: 'Locations',
+        url: '/locations',
+        items: [
+          { title: 'Locations', url: '/locations' },
+          { title: 'Groups', url: '/groups' },
+        ],
+      },
       { title: 'Trainers', url: '/trainers' },
     ],
   },
@@ -208,6 +214,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                               {sub.title}
                             </Link>
                           </SidebarMenuSubButton>
+                          {sub.items?.length ? (
+                            <SidebarMenuSub>
+                              {sub.items.map((nestedSub) => (
+                                <SidebarMenuSubItem key={nestedSub.title}>
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={isActive(nestedSub.url)}
+                                  >
+                                    <Link
+                                      href={nestedSub.url}
+                                      aria-label={nestedSub.title}
+                                    >
+                                      {nestedSub.title}
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          ) : null}
                         </SidebarMenuSubItem>
                       ))}
                     </SidebarMenuSub>
