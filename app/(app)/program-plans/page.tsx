@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useGetProgramPlans } from '@/src/hooks/useGetProgramPlans';
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import { useDeleteProgramPlan } from '@/src/hooks/useDeleteProgramPlan';
+import { useCloneProgramPlanStandalone } from '@/src/hooks/useCloneProgramPlanStandalone';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,7 @@ export default function ProgramPlansPage() {
   const { data: plans = [], isLoading: plansLoading } = useGetProgramPlans();
   const { data: programs = [], isLoading: programsLoading } = useGetPrograms();
   const del = useDeleteProgramPlan();
+  const clone = useCloneProgramPlanStandalone();
 
   const programMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -112,6 +114,24 @@ export default function ProgramPlansPage() {
                               }
                             >
                               Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                try {
+                                  await clone.mutateAsync({
+                                    sourceProgramPlanId: pl.id as string,
+                                  });
+                                  toast.success(
+                                    'Program plan cloned successfully'
+                                  );
+                                } catch (e) {
+                                  toast.error(
+                                    String((e as Error).message || e)
+                                  );
+                                }
+                              }}
+                            >
+                              Clone
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive"
