@@ -45,7 +45,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, addDays } from 'date-fns';
+import { format, addDays, addYears } from 'date-fns';
 import {
   Table,
   TableBody,
@@ -133,19 +133,43 @@ export function ProgramPlanWizard({
     setRows((r) => r.map((x, i) => (i === idx ? { ...x, [field]: value } : x)));
   };
 
-  const handleDateDisplacement = (days: number) => {
+  const handleDateDisplacement = (days: number, years: number) => {
+    if (days === 0 && years === 0) {
+      toast.error('Please enter a non-zero displacement value');
+      return;
+    }
+
     setRows((currentRows) =>
-      currentRows.map((row) => ({
-        ...row,
-        start_date: row.start_date
-          ? addDays(row.start_date, days)
-          : row.start_date,
-        end_date: row.end_date ? addDays(row.end_date, days) : row.end_date,
-      }))
+      currentRows.map((row) => {
+        let newStartDate = row.start_date;
+        let newEndDate = row.end_date;
+
+        if (row.start_date) {
+          newStartDate = addYears(addDays(row.start_date, days), years);
+        }
+        if (row.end_date) {
+          newEndDate = addYears(addDays(row.end_date, days), years);
+        }
+
+        return {
+          ...row,
+          start_date: newStartDate,
+          end_date: newEndDate,
+        };
+      })
     );
-    toast.success(
-      `Displaced all dates by ${days} day${Math.abs(days) !== 1 ? 's' : ''}`
-    );
+
+    const displacementParts = [];
+    if (days !== 0) {
+      displacementParts.push(`${days} day${Math.abs(days) !== 1 ? 's' : ''}`);
+    }
+    if (years !== 0) {
+      displacementParts.push(
+        `${years} year${Math.abs(years) !== 1 ? 's' : ''}`
+      );
+    }
+
+    toast.success(`Displaced all dates by ${displacementParts.join(' and ')}`);
   };
 
   const toggleRowExpansion = (idx: number) => {

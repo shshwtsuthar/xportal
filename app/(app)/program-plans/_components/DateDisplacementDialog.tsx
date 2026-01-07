@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 type DateDisplacementDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onDisplace: (days: number) => void;
+  onDisplace: (days: number, years: number) => void;
   totalSubjects: number;
 };
 
@@ -29,20 +29,23 @@ export function DateDisplacementDialog({
   totalSubjects,
 }: DateDisplacementDialogProps) {
   const [days, setDays] = useState<number>(0);
+  const [years, setYears] = useState<number>(0);
 
   const handleApply = () => {
-    if (days === 0) {
-      toast.error('Please enter a non-zero number of days');
+    if (days === 0 && years === 0) {
+      toast.error('Please enter a non-zero displacement value');
       return;
     }
 
-    onDisplace(days);
+    onDisplace(days, years);
     setDays(0);
+    setYears(0);
     onOpenChange(false);
   };
 
   const handleCancel = () => {
     setDays(0);
+    setYears(0);
     onOpenChange(false);
   };
 
@@ -55,27 +58,40 @@ export function DateDisplacementDialog({
             Displace Dates
           </DialogTitle>
           <DialogDescription>
-            Enter the number of days to displace all start and end dates by. Use
-            negative numbers to move dates backward.
+            Enter the number of days and/or years to displace all start and end
+            dates by. Use negative numbers to move dates backward.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="days">Days to displace</Label>
-            <Input
-              id="days"
-              type="number"
-              value={days}
-              onChange={(e) => setDays(parseInt(e.target.value) || 0)}
-              placeholder="e.g. 1, -3, 7"
-              className="w-full"
-            />
-            <p className="text-muted-foreground text-sm">
-              This will affect {totalSubjects} subject
-              {totalSubjects !== 1 ? 's' : ''} in the plan.
-            </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="days">Days to displace</Label>
+              <Input
+                id="days"
+                type="number"
+                value={days}
+                onChange={(e) => setDays(parseInt(e.target.value) || 0)}
+                placeholder="e.g. 1, -3, 7"
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="years">Years to displace</Label>
+              <Input
+                id="years"
+                type="number"
+                value={years}
+                onChange={(e) => setYears(parseInt(e.target.value) || 0)}
+                placeholder="e.g. 1, -1, 2"
+                className="w-full"
+              />
+            </div>
           </div>
+          <p className="text-muted-foreground text-sm">
+            This will affect {totalSubjects} subject
+            {totalSubjects !== 1 ? 's' : ''} in the plan.
+          </p>
         </div>
 
         <DialogFooter>
