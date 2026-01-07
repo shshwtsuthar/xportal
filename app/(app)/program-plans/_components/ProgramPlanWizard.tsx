@@ -15,6 +15,7 @@ import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import { useGetSubjects } from '@/src/hooks/useGetSubjects';
 import { useGetProgramPlanSubjects } from '@/src/hooks/useGetProgramPlanSubjects';
 import { ClassesManager } from './ClassesManager';
+import { ProgramPlanRecurringDialog } from './ProgramPlanRecurringDialog';
 import { Tables } from '@/database.types';
 import { useUpsertProgramPlan } from '@/src/hooks/useUpsertProgramPlan';
 import { useUpsertProgramPlanSubject } from '@/src/hooks/useUpsertProgramPlanSubject';
@@ -99,6 +100,8 @@ export function ProgramPlanWizard({
 
   const [rows, setRows] = useState<PlanRow[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [showProgramPlanRecurringDialog, setShowProgramPlanRecurringDialog] =
+    useState(false);
 
   // Load existing subjects into rows when editing
   useEffect(() => {
@@ -221,9 +224,20 @@ export function ProgramPlanWizard({
                 Add subjects with their scheduled dates and properties
               </p>
             </div>
-            <Button type="button" variant="outline" onClick={addRow}>
-              <Plus className="mr-2 h-4 w-4" /> Add Subject
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowProgramPlanRecurringDialog(true)}
+                disabled={!plan?.id || rows.length === 0}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Create Classes for All Subjects
+              </Button>
+              <Button type="button" variant="outline" onClick={addRow}>
+                <Plus className="mr-2 h-4 w-4" /> Add Subject
+              </Button>
+            </div>
           </div>
 
           <div className="w-full overflow-hidden rounded-md border">
@@ -461,6 +475,7 @@ export function ProgramPlanWizard({
     toggleRowExpansion,
     updateRow,
     removeRow,
+    plan?.id,
   ]);
 
   return (
@@ -529,6 +544,14 @@ export function ProgramPlanWizard({
           </CardFooter>
         </Form>
       </Card>
+
+      {/* Program Plan Recurring Classes Dialog */}
+      <ProgramPlanRecurringDialog
+        open={showProgramPlanRecurringDialog}
+        onOpenChange={setShowProgramPlanRecurringDialog}
+        programPlanId={plan?.id || ''}
+        programId={programId}
+      />
     </div>
   );
 }

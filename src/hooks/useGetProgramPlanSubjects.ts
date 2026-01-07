@@ -5,10 +5,14 @@ import { Tables } from '@/database.types';
 /**
  * Fetch subjects for a given program plan id.
  */
+type ProgramPlanSubjectWithSubject = Tables<'program_plan_subjects'> & {
+  subjects: Tables<'subjects'> | null;
+};
+
 export const useGetProgramPlanSubjects = (programPlanId?: string) => {
   return useQuery({
     queryKey: ['programPlanSubjects', programPlanId ?? 'none'],
-    queryFn: async (): Promise<Tables<'program_plan_subjects'>[]> => {
+    queryFn: async (): Promise<ProgramPlanSubjectWithSubject[]> => {
       console.log(
         'useGetProgramPlanSubjects: Fetching subjects for programPlanId:',
         programPlanId
@@ -17,7 +21,12 @@ export const useGetProgramPlanSubjects = (programPlanId?: string) => {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('program_plan_subjects')
-        .select('*')
+        .select(
+          `
+          *,
+          subjects(*)
+        `
+        )
         .eq('program_plan_id', programPlanId)
         .order('start_date', { ascending: true });
       if (error) {
