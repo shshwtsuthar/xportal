@@ -2372,159 +2372,6 @@ export type Database = {
         }
         Relationships: []
       }
-      program_plan_blackout_dates: {
-        Row: {
-          created_at: string
-          date: string
-          id: string
-          program_plan_id: string
-          reason: string | null
-        }
-        Insert: {
-          created_at?: string
-          date: string
-          id?: string
-          program_plan_id: string
-          reason?: string | null
-        }
-        Update: {
-          created_at?: string
-          date?: string
-          id?: string
-          program_plan_id?: string
-          reason?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "program_plan_blackout_dates_program_plan_id_fkey"
-            columns: ["program_plan_id"]
-            isOneToOne: false
-            referencedRelation: "program_plans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      program_plan_class_templates: {
-        Row: {
-          class_type: Database["public"]["Enums"]["class_type"] | null
-          classroom_id: string | null
-          conflicts_detected: Json | null
-          created_at: string
-          end_date: string
-          end_time: string
-          expanded_at: string | null
-          generated_class_count: number
-          group_id: string
-          id: string
-          is_expanded: boolean
-          last_expanded_at: string | null
-          location_id: string
-          notes: string | null
-          program_plan_subject_id: string
-          recurrence_pattern: Json
-          recurrence_type: Database["public"]["Enums"]["recurrence_type"]
-          rto_id: string
-          start_date: string
-          start_time: string
-          template_name: string | null
-          trainer_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          class_type?: Database["public"]["Enums"]["class_type"] | null
-          classroom_id?: string | null
-          conflicts_detected?: Json | null
-          created_at?: string
-          end_date: string
-          end_time: string
-          expanded_at?: string | null
-          generated_class_count?: number
-          group_id: string
-          id?: string
-          is_expanded?: boolean
-          last_expanded_at?: string | null
-          location_id: string
-          notes?: string | null
-          program_plan_subject_id: string
-          recurrence_pattern?: Json
-          recurrence_type?: Database["public"]["Enums"]["recurrence_type"]
-          rto_id: string
-          start_date: string
-          start_time: string
-          template_name?: string | null
-          trainer_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          class_type?: Database["public"]["Enums"]["class_type"] | null
-          classroom_id?: string | null
-          conflicts_detected?: Json | null
-          created_at?: string
-          end_date?: string
-          end_time?: string
-          expanded_at?: string | null
-          generated_class_count?: number
-          group_id?: string
-          id?: string
-          is_expanded?: boolean
-          last_expanded_at?: string | null
-          location_id?: string
-          notes?: string | null
-          program_plan_subject_id?: string
-          recurrence_pattern?: Json
-          recurrence_type?: Database["public"]["Enums"]["recurrence_type"]
-          rto_id?: string
-          start_date?: string
-          start_time?: string
-          template_name?: string | null
-          trainer_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "program_plan_class_templates_classroom_id_fkey"
-            columns: ["classroom_id"]
-            isOneToOne: false
-            referencedRelation: "classrooms"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "program_plan_class_templates_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "program_plan_class_templates_location_id_fkey"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "delivery_locations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "program_plan_class_templates_program_plan_subject_id_fkey"
-            columns: ["program_plan_subject_id"]
-            isOneToOne: false
-            referencedRelation: "program_plan_subjects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "program_plan_class_templates_rto_id_fkey"
-            columns: ["rto_id"]
-            isOneToOne: false
-            referencedRelation: "rtos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "program_plan_class_templates_trainer_id_fkey"
-            columns: ["trainer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       program_plan_classes: {
         Row: {
           class_date: string
@@ -2534,12 +2381,10 @@ export type Database = {
           end_time: string | null
           group_id: string | null
           id: string
-          is_manually_edited: boolean
           location_id: string
           notes: string | null
           program_plan_subject_id: string
           start_time: string | null
-          template_id: string | null
           trainer_id: string | null
         }
         Insert: {
@@ -2550,12 +2395,10 @@ export type Database = {
           end_time?: string | null
           group_id?: string | null
           id?: string
-          is_manually_edited?: boolean
           location_id: string
           notes?: string | null
           program_plan_subject_id: string
           start_time?: string | null
-          template_id?: string | null
           trainer_id?: string | null
         }
         Update: {
@@ -2566,12 +2409,10 @@ export type Database = {
           end_time?: string | null
           group_id?: string | null
           id?: string
-          is_manually_edited?: boolean
           location_id?: string
           notes?: string | null
           program_plan_subject_id?: string
           start_time?: string | null
-          template_id?: string | null
           trainer_id?: string | null
         }
         Relationships: [
@@ -2601,13 +2442,6 @@ export type Database = {
             columns: ["program_plan_subject_id"]
             isOneToOne: false
             referencedRelation: "program_plan_subjects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "program_plan_classes_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "program_plan_class_templates"
             referencedColumns: ["id"]
           },
           {
@@ -4201,16 +4035,44 @@ export type Database = {
     }
     Functions: {
       compute_student_check_char: { Args: { p_stem: string }; Returns: string }
-      detect_template_conflicts: {
-        Args: { p_template_id: string }
-        Returns: {
-          class_date: string
-          class_id: string
-          conflict_reason: string
-          edited_fields: string[]
-          end_time: string
-          start_time: string
-        }[]
+      create_recurring_classes: {
+        Args: {
+          p_class_type?: Database["public"]["Enums"]["class_type"]
+          p_classroom_id?: string
+          p_end_date: string
+          p_end_time: string
+          p_filter_by_subject_range?: boolean
+          p_group_id?: string
+          p_location_id?: string
+          p_notes?: string
+          p_program_plan_subject_id: string
+          p_recurrence_pattern: Json
+          p_recurrence_type: Database["public"]["Enums"]["recurrence_type"]
+          p_start_date: string
+          p_start_time: string
+          p_trainer_id?: string
+        }
+        Returns: Json
+      }
+      create_recurring_classes_batch: {
+        Args: {
+          p_class_type?: Database["public"]["Enums"]["class_type"]
+          p_classroom_id?: string
+          p_end_date: string
+          p_end_time: string
+          p_filter_by_subject_range?: boolean
+          p_group_id?: string
+          p_location_id?: string
+          p_notes?: string
+          p_program_plan_id: string
+          p_recurrence_pattern: Json
+          p_recurrence_type: Database["public"]["Enums"]["recurrence_type"]
+          p_start_date: string
+          p_start_time: string
+          p_subject_ids: string[]
+          p_trainer_id?: string
+        }
+        Returns: Json
       }
       expand_class_template: {
         Args: { p_preserve_edited?: boolean; p_template_id: string }
@@ -4241,34 +4103,37 @@ export type Database = {
         Args: { p_created: string; p_uuid: string }
         Returns: string
       }
-      generate_recurrence_dates: {
-        Args: {
-          p_blackout_dates: string[]
-          p_end_date: string
-          p_recurrence_pattern: Json
-          p_recurrence_type: Database["public"]["Enums"]["recurrence_type"]
-          p_start_date: string
-        }
-        Returns: {
-          generated_date: string
-        }[]
-      }
+      generate_recurrence_dates:
+        | {
+            Args: {
+              p_blackout_dates: string[]
+              p_end_date: string
+              p_recurrence_pattern: Json
+              p_recurrence_type: Database["public"]["Enums"]["recurrence_type"]
+              p_start_date: string
+            }
+            Returns: {
+              generated_date: string
+            }[]
+          }
+        | {
+            Args: {
+              p_blackout_dates?: string[]
+              p_end_date: string
+              p_filter_by_subject_range?: boolean
+              p_recurrence_pattern: Json
+              p_recurrence_type: Database["public"]["Enums"]["recurrence_type"]
+              p_start_date: string
+              p_subject_end_date?: string
+              p_subject_start_date?: string
+            }
+            Returns: {
+              generated_date: string
+            }[]
+          }
       generate_student_display_id:
         | { Args: { p_created: string; p_uuid: string }; Returns: string }
         | { Args: { p_created: string; p_rto: string }; Returns: string }
-      get_blackout_dates: {
-        Args: {
-          p_end_date: string
-          p_program_plan_id: string
-          p_rto_id: string
-          p_start_date: string
-        }
-        Returns: {
-          blackout_date: string
-          reason: string
-          scope: string
-        }[]
-      }
       get_my_effective_rto_id: { Args: never; Returns: string }
       get_my_rto_id: { Args: never; Returns: string }
       handle_new_user: {
@@ -4289,14 +4154,6 @@ export type Database = {
       next_student_seq: {
         Args: { p_rto: string; p_year: number }
         Returns: number
-      }
-      preview_template_expansion: {
-        Args: { p_template_id: string }
-        Returns: {
-          blackout_reason: string
-          generated_date: string
-          is_blackout_date: boolean
-        }[]
       }
       promote_scheduled_invoices: { Args: never; Returns: undefined }
       record_payment: {
@@ -4335,13 +4192,6 @@ export type Database = {
         Returns: {
           classes_count: number
           subjects_count: number
-        }[]
-      }
-      validate_template_dates: {
-        Args: { p_template_id: string }
-        Returns: {
-          error_message: string
-          is_valid: boolean
         }[]
       }
     }

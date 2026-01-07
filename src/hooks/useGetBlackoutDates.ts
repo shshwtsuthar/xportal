@@ -13,29 +13,33 @@ type BlackoutDate = {
  */
 export const useGetBlackoutDates = (
   rtoId: string | undefined,
-  programPlanId: string | undefined,
   startDate: string | undefined,
   endDate: string | undefined
 ) => {
   const supabase = createClient();
 
   return useQuery({
-    queryKey: ['blackout-dates', rtoId, programPlanId, startDate, endDate],
+    queryKey: ['blackout-dates', rtoId, startDate, endDate],
     queryFn: async () => {
-      if (!rtoId || !programPlanId || !startDate || !endDate) {
+      if (!rtoId || !startDate || !endDate) {
         return [];
       }
 
-      const { data, error } = await supabase.rpc('get_blackout_dates', {
-        p_rto_id: rtoId,
-        p_program_plan_id: programPlanId,
-        p_start_date: startDate,
-        p_end_date: endDate,
-      });
+      const { data, error } = await supabase
+        .from('rto_blackout_dates')
+        .select('date, reason')
+        .eq('rto_id', rtoId)
+        .gte('date', startDate)
+        .lte('date', endDate);
 
       if (error) throw error;
-      return (data || []) as BlackoutDate[];
+
+      return (data || []).map((item) => ({
+        blackout_date: item.date,
+        reason: item.reason,
+        scope: 'rto' as const,
+      })) as BlackoutDate[];
     },
-    enabled: !!rtoId && !!programPlanId && !!startDate && !!endDate,
+    enabled: !!rtoId && !!startDate && !!endDate,
   });
 };

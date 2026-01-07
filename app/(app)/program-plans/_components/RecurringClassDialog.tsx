@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
-import { CalendarIcon, Eye } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -34,12 +34,8 @@ import { useGetTrainers } from '@/src/hooks/useGetTrainers';
 import { useGetLocations } from '@/src/hooks/useGetLocations';
 import { useGetClassrooms } from '@/src/hooks/useGetClassrooms';
 import { useGetGroupsByLocation } from '@/src/hooks/useGetGroupsByLocation';
-import { useUpsertClassTemplate } from '@/src/hooks/useUpsertClassTemplate';
-import { useExpandTemplate } from '@/src/hooks/useExpandTemplate';
-import { usePreviewTemplateExpansion } from '@/src/hooks/usePreviewTemplateExpansion';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { createClient } from '@/lib/supabase/client';
+import { useCreateRecurringClasses } from '@/src/hooks/useCreateRecurringClasses';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type RecurringClassDialogProps = {
   open: boolean;
@@ -56,6 +52,7 @@ type RecurrenceType = 'once' | 'daily' | 'weekly' | 'monthly' | 'custom';
 type FormDataValue =
   | string
   | number
+  | boolean
   | Date
   | Date[]
   | number[]
@@ -70,7 +67,6 @@ type RecurrencePattern =
   | { dates: string[] }; // for 'custom'
 
 type FormData = {
-  template_name?: string;
   recurrence_type: RecurrenceType;
   start_date?: Date;
   end_date?: Date;
@@ -88,6 +84,7 @@ type FormData = {
     | 'HYBRID'
     | 'ASSESSMENT';
   notes?: string;
+  filter_by_subject_range: boolean;
   // Recurrence pattern fields
   daily_interval?: number;
   weekly_days?: number[]; // 0=Sunday, 6=Saturday
@@ -110,11 +107,8 @@ export function RecurringClassDialog({
     weekly_days: [],
     monthly_day: 1,
     custom_dates: [],
+    filter_by_subject_range: true,
   });
-  const [showPreview, setShowPreview] = useState(false);
-  const [createdTemplateId, setCreatedTemplateId] = useState<string | null>(
-    null
-  );
 
   const { data: trainers = [] } = useGetTrainers();
   const { data: locations = [] } = useGetLocations();
@@ -124,15 +118,22 @@ export function RecurringClassDialog({
     formData.location_id
   );
 
-  const supabase = createClient();
-  const upsertTemplate = useUpsertClassTemplate();
-  const expandTemplate = useExpandTemplate();
-  const { data: previewDates = [], isLoading: previewLoading } =
-    usePreviewTemplateExpansion(createdTemplateId || undefined);
+  const createRecurringClasses = useCreateRecurringClasses();
 
   const availableClassrooms = classrooms.filter(
     (c) => c.location_id === formData.location_id
   );
+
+  // Pre-fill dates when dialog opens
+  useEffect(() => {
+    if (open) {
+      setFormData((prev) => ({
+        ...prev,
+        start_date: subjectStartDate,
+        end_date: subjectEndDate,
+      }));
+    }
+  }, [open, subjectStartDate, subjectEndDate]);
 
   const updateFormData = (field: keyof FormData, value: FormDataValue) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -186,20 +187,6 @@ export function RecurringClassDialog({
     if (!formData.location_id) return 'Please select a location';
     if (!formData.group_id) return 'Please select a group';
 
-    // Validate within subject range
-    if (
-      formData.start_date < subjectStartDate ||
-      formData.start_date > subjectEndDate
-    ) {
-      return `Start date must be between ${format(subjectStartDate, 'MMM dd')} and ${format(subjectEndDate, 'MMM dd')}`;
-    }
-    if (
-      formData.end_date < subjectStartDate ||
-      formData.end_date > subjectEndDate
-    ) {
-      return `End date must be between ${format(subjectStartDate, 'MMM dd')} and ${format(subjectEndDate, 'MMM dd')}`;
-    }
-
     // Validate recurrence pattern
     if (
       formData.recurrence_type === 'weekly' &&
@@ -217,7 +204,7 @@ export function RecurringClassDialog({
     return null;
   };
 
-  const handlePreview = async () => {
+  const handleCreate = async () => {
     const error = validateForm();
     if (error) {
       toast.error(error);
@@ -225,69 +212,28 @@ export function RecurringClassDialog({
     }
 
     try {
-      // Get current user and their RTO ID
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user?.id) {
-        toast.error('User not authenticated');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('rto_id')
-        .eq('id', userData.user.id)
-        .single();
-
-      if (!profile?.rto_id) {
-        toast.error('Unable to determine your RTO. Please contact support.');
-        return;
-      }
-
-      // Create template without expanding
-      const template = await upsertTemplate.mutateAsync({
-        rto_id: profile.rto_id,
-        program_plan_subject_id: programPlanSubjectId,
-        template_name: formData.template_name || null,
-        recurrence_type: formData.recurrence_type,
-        start_date: format(formData.start_date!, 'yyyy-MM-dd'),
-        end_date: format(formData.end_date!, 'yyyy-MM-dd'),
-        recurrence_pattern: buildRecurrencePattern(),
-        start_time: formData.start_time!,
-        end_time: formData.end_time!,
-        trainer_id: formData.trainer_id || null,
-        location_id: formData.location_id!,
-        classroom_id: formData.classroom_id || null,
-        group_id: formData.group_id!,
-        class_type: formData.class_type || null,
-        notes: formData.notes || null,
-      });
-
-      setCreatedTemplateId(template.id);
-      setShowPreview(true);
-    } catch (error) {
-      toast.error('Failed to generate preview');
-      console.error(error);
-    }
-  };
-
-  const handleCreate = async () => {
-    if (!createdTemplateId) {
-      toast.error('Please preview the classes first');
-      return;
-    }
-
-    try {
-      const result = await expandTemplate.mutateAsync({
-        templateId: createdTemplateId,
-        preserveEdited: true,
+      const result = await createRecurringClasses.mutateAsync({
         programPlanSubjectId,
+        recurrenceType: formData.recurrence_type,
+        recurrencePattern: buildRecurrencePattern(),
+        startDate: format(formData.start_date!, 'yyyy-MM-dd'),
+        endDate: format(formData.end_date!, 'yyyy-MM-dd'),
+        startTime: formData.start_time!,
+        endTime: formData.end_time!,
+        trainerId: formData.trainer_id || null,
+        locationId: formData.location_id!,
+        classroomId: formData.classroom_id || null,
+        groupId: formData.group_id!,
+        classType: formData.class_type || null,
+        notes: formData.notes || null,
+        filterBySubjectRange: formData.filter_by_subject_range,
       });
 
       if (result.success) {
         toast.success(
           `Successfully created ${result.classes_created} class${result.classes_created !== 1 ? 'es' : ''}` +
-            (result.blackout_dates_skipped
-              ? ` (${result.blackout_dates_skipped} dates skipped due to blackouts)`
+            (formData.filter_by_subject_range
+              ? ' (filtered to subject date range)'
               : '')
         );
         onOpenChange(false);
@@ -298,11 +244,8 @@ export function RecurringClassDialog({
           weekly_days: [],
           monthly_day: 1,
           custom_dates: [],
+          filter_by_subject_range: true,
         });
-        setCreatedTemplateId(null);
-        setShowPreview(false);
-      } else {
-        toast.error(result.error || 'Failed to create classes');
       }
     } catch (error) {
       toast.error('Failed to create classes');
@@ -319,416 +262,359 @@ export function RecurringClassDialog({
           <DialogTitle>Create Recurring Classes</DialogTitle>
           <DialogDescription>
             Set up a pattern for recurring class sessions. Classes will be
-            automatically generated based on your pattern.
+            automatically created based on your pattern.
           </DialogDescription>
         </DialogHeader>
 
-        {!showPreview ? (
-          <div className="space-y-6 py-4">
-            {/* Template Name */}
+        <div className="space-y-6 py-4">
+          {/* Recurrence Type */}
+          <div className="space-y-2">
+            <Label>Recurrence Type</Label>
+            <div className="grid grid-cols-5 gap-2">
+              {(
+                [
+                  'once',
+                  'daily',
+                  'weekly',
+                  'monthly',
+                  'custom',
+                ] as RecurrenceType[]
+              ).map((type) => (
+                <Button
+                  key={type}
+                  type="button"
+                  variant={
+                    formData.recurrence_type === type ? 'default' : 'outline'
+                  }
+                  size="sm"
+                  onClick={() => updateFormData('recurrence_type', type)}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Conditional Pattern Fields */}
+          {formData.recurrence_type === 'daily' && (
             <div className="space-y-2">
-              <Label htmlFor="template_name">Template Name (Optional)</Label>
+              <Label htmlFor="daily_interval">Repeat every ___ days</Label>
               <Input
-                id="template_name"
-                placeholder="e.g., Weekly Sunday Workshop"
-                value={formData.template_name || ''}
+                id="daily_interval"
+                type="number"
+                min="1"
+                value={formData.daily_interval || 1}
                 onChange={(e) =>
-                  updateFormData('template_name', e.target.value)
+                  updateFormData(
+                    'daily_interval',
+                    parseInt(e.target.value) || 1
+                  )
                 }
               />
             </div>
+          )}
 
-            {/* Recurrence Type */}
+          {formData.recurrence_type === 'weekly' && (
             <div className="space-y-2">
-              <Label>Recurrence Type</Label>
-              <div className="grid grid-cols-5 gap-2">
-                {(
-                  [
-                    'once',
-                    'daily',
-                    'weekly',
-                    'monthly',
-                    'custom',
-                  ] as RecurrenceType[]
-                ).map((type) => (
+              <Label>Days of Week</Label>
+              <div className="flex gap-2">
+                {dayNames.map((day, index) => (
                   <Button
-                    key={type}
+                    key={index}
                     type="button"
                     variant={
-                      formData.recurrence_type === type ? 'default' : 'outline'
+                      formData.weekly_days?.includes(index)
+                        ? 'default'
+                        : 'outline'
                     }
                     size="sm"
-                    onClick={() => updateFormData('recurrence_type', type)}
+                    className="flex-1"
+                    onClick={() => toggleWeeklyDay(index)}
                   >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                    {day}
                   </Button>
                 ))}
               </div>
             </div>
+          )}
 
-            {/* Conditional Pattern Fields */}
-            {formData.recurrence_type === 'daily' && (
-              <div className="space-y-2">
-                <Label htmlFor="daily_interval">Repeat every ___ days</Label>
-                <Input
-                  id="daily_interval"
-                  type="number"
-                  min="1"
-                  value={formData.daily_interval || 1}
-                  onChange={(e) =>
-                    updateFormData(
-                      'daily_interval',
-                      parseInt(e.target.value) || 1
-                    )
-                  }
-                />
-              </div>
-            )}
-
-            {formData.recurrence_type === 'weekly' && (
-              <div className="space-y-2">
-                <Label>Days of Week</Label>
-                <div className="flex gap-2">
-                  {dayNames.map((day, index) => (
-                    <Button
-                      key={index}
-                      type="button"
-                      variant={
-                        formData.weekly_days?.includes(index)
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => toggleWeeklyDay(index)}
-                    >
-                      {day}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {formData.recurrence_type === 'monthly' && (
-              <div className="space-y-2">
-                <Label htmlFor="monthly_day">Day of Month</Label>
-                <Select
-                  value={formData.monthly_day?.toString() || '1'}
-                  onValueChange={(v) =>
-                    updateFormData('monthly_day', parseInt(v))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                      <SelectItem key={day} value={day.toString()}>
-                        {day}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {formData.recurrence_type === 'custom' && (
-              <div className="space-y-2">
-                <Label>Custom Dates</Label>
-                <Calendar
-                  mode="multiple"
-                  selected={formData.custom_dates}
-                  onSelect={(dates) =>
-                    updateFormData('custom_dates', dates || [])
-                  }
-                  disabled={(date) =>
-                    date < subjectStartDate || date > subjectEndDate
-                  }
-                />
-              </div>
-            )}
-
-            {/* Date Range */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !formData.start_date && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.start_date
-                        ? format(formData.start_date, 'PPP')
-                        : 'Pick a date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={formData.start_date}
-                      onSelect={(date) => updateFormData('start_date', date)}
-                      disabled={(date) =>
-                        date < subjectStartDate || date > subjectEndDate
-                      }
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label>End Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !formData.end_date && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.end_date
-                        ? format(formData.end_date, 'PPP')
-                        : 'Pick a date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={formData.end_date}
-                      onSelect={(date) => updateFormData('end_date', date)}
-                      disabled={(date) =>
-                        date < subjectStartDate || date > subjectEndDate
-                      }
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
-            {/* Time */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start_time">Start Time</Label>
-                <Input
-                  id="start_time"
-                  type="time"
-                  value={formData.start_time || ''}
-                  onChange={(e) => updateFormData('start_time', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="end_time">End Time</Label>
-                <Input
-                  id="end_time"
-                  type="time"
-                  value={formData.end_time || ''}
-                  onChange={(e) => updateFormData('end_time', e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Location */}
+          {formData.recurrence_type === 'monthly' && (
             <div className="space-y-2">
-              <Label>Location *</Label>
+              <Label htmlFor="monthly_day">Day of Month</Label>
               <Select
-                value={formData.location_id || ''}
-                onValueChange={(v) => {
-                  updateFormData('location_id', v);
-                  updateFormData('classroom_id', '');
-                  updateFormData('group_id', '');
-                }}
+                value={formData.monthly_day?.toString() || '1'}
+                onValueChange={(v) =>
+                  updateFormData('monthly_day', parseInt(v))
+                }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select location" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {locations.map((l) => (
-                    <SelectItem key={l.id} value={l.id as string}>
-                      {l.name}
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                    <SelectItem key={day} value={day.toString()}>
+                      {day}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+          )}
 
-            {/* Group */}
+          {formData.recurrence_type === 'custom' && (
             <div className="space-y-2">
-              <Label>Group *</Label>
-              <Select
-                value={formData.group_id || ''}
-                onValueChange={(v) => updateFormData('group_id', v)}
-                disabled={!formData.location_id}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      formData.location_id
-                        ? 'Select group'
-                        : 'Select location first'
+              <Label>Custom Dates</Label>
+              <Calendar
+                mode="multiple"
+                selected={formData.custom_dates}
+                onSelect={(dates) =>
+                  updateFormData('custom_dates', dates || [])
+                }
+                disabled={(date) =>
+                  date < subjectStartDate || date > subjectEndDate
+                }
+              />
+            </div>
+          )}
+
+          {/* Date Range */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !formData.start_date && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.start_date
+                      ? format(formData.start_date, 'PPP')
+                      : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.start_date}
+                    onSelect={(date) => updateFormData('start_date', date)}
+                    disabled={(date) =>
+                      date < subjectStartDate || date > subjectEndDate
                     }
                   />
-                </SelectTrigger>
-                <SelectContent>
-                  {groups.map((g) => (
-                    <SelectItem key={g.id} value={g.id as string}>
-                      {g.name} ({g.current_enrollment_count}/{g.max_capacity})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                </PopoverContent>
+              </Popover>
             </div>
-
-            {/* Trainer */}
             <div className="space-y-2">
-              <Label>Trainer</Label>
-              <Select
-                value={formData.trainer_id || ''}
-                onValueChange={(v) => updateFormData('trainer_id', v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select trainer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {trainers.map((t) => (
-                    <SelectItem key={t.id} value={t.id as string}>
-                      {t.first_name} {t.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>End Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !formData.end_date && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.end_date
+                      ? format(formData.end_date, 'PPP')
+                      : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.end_date}
+                    onSelect={(date) => updateFormData('end_date', date)}
+                    disabled={(date) =>
+                      date < subjectStartDate || date > subjectEndDate
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
+          </div>
 
-            {/* Classroom */}
+          {/* Time */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Classroom</Label>
-              <Select
-                value={formData.classroom_id || ''}
-                onValueChange={(v) => updateFormData('classroom_id', v)}
-                disabled={!formData.location_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select classroom" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableClassrooms.map((c) => (
-                    <SelectItem key={c.id} value={c.id as string}>
-                      {c.name} (Capacity: {c.capacity})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="start_time">Start Time</Label>
+              <Input
+                id="start_time"
+                type="time"
+                value={formData.start_time || ''}
+                onChange={(e) => updateFormData('start_time', e.target.value)}
+              />
             </div>
-
-            {/* Class Type */}
             <div className="space-y-2">
-              <Label>Class Type</Label>
-              <Select
-                value={formData.class_type || ''}
-                onValueChange={(v) => updateFormData('class_type', v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="THEORY">Theory</SelectItem>
-                  <SelectItem value="WORKSHOP">Workshop</SelectItem>
-                  <SelectItem value="LAB">Lab</SelectItem>
-                  <SelectItem value="ONLINE">Online</SelectItem>
-                  <SelectItem value="HYBRID">Hybrid</SelectItem>
-                  <SelectItem value="ASSESSMENT">Assessment</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="Optional notes about this recurring class pattern"
-                value={formData.notes || ''}
-                onChange={(e) => updateFormData('notes', e.target.value)}
+              <Label htmlFor="end_time">End Time</Label>
+              <Input
+                id="end_time"
+                type="time"
+                value={formData.end_time || ''}
+                onChange={(e) => updateFormData('end_time', e.target.value)}
               />
             </div>
           </div>
-        ) : (
-          <div className="space-y-4 py-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">
-                Preview: Classes to be Created
-              </h4>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPreview(false)}
-              >
-                Back to Edit
-              </Button>
-            </div>
-            <ScrollArea className="h-[400px] rounded-md border p-4">
-              {previewLoading ? (
-                <p className="text-muted-foreground text-sm">
-                  Loading preview...
-                </p>
-              ) : previewDates.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No classes will be created
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {previewDates.map((item, index) => (
-                    <div
-                      key={index}
-                      className={cn(
-                        'flex items-center justify-between rounded-md p-2',
-                        item.is_blackout_date
-                          ? 'bg-muted text-muted-foreground line-through'
-                          : 'bg-background'
-                      )}
-                    >
-                      <span className="text-sm">
-                        {format(new Date(item.generated_date), 'PPP')} -{' '}
-                        {formData.start_time} to {formData.end_time}
-                      </span>
-                      {item.is_blackout_date && (
-                        <Badge variant="outline" className="text-xs">
-                          Blackout
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-            <p className="text-muted-foreground text-sm">
-              Total: {previewDates.filter((d) => !d.is_blackout_date).length}{' '}
-              classes will be created
-              {previewDates.filter((d) => d.is_blackout_date).length > 0 &&
-                ` (${previewDates.filter((d) => d.is_blackout_date).length} dates skipped due to blackouts)`}
-            </p>
+
+          {/* Location */}
+          <div className="space-y-2">
+            <Label>Location *</Label>
+            <Select
+              value={formData.location_id || ''}
+              onValueChange={(v) => {
+                updateFormData('location_id', v);
+                updateFormData('classroom_id', '');
+                updateFormData('group_id', '');
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                {locations.map((l) => (
+                  <SelectItem key={l.id} value={l.id as string}>
+                    {l.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        )}
+
+          {/* Group */}
+          <div className="space-y-2">
+            <Label>Group *</Label>
+            <Select
+              value={formData.group_id || ''}
+              onValueChange={(v) => updateFormData('group_id', v)}
+              disabled={!formData.location_id}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    formData.location_id
+                      ? 'Select group'
+                      : 'Select location first'
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {groups.map((g) => (
+                  <SelectItem key={g.id} value={g.id as string}>
+                    {g.name} ({g.current_enrollment_count}/{g.max_capacity})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Trainer */}
+          <div className="space-y-2">
+            <Label>Trainer</Label>
+            <Select
+              value={formData.trainer_id || ''}
+              onValueChange={(v) => updateFormData('trainer_id', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select trainer" />
+              </SelectTrigger>
+              <SelectContent>
+                {trainers.map((t) => (
+                  <SelectItem key={t.id} value={t.id as string}>
+                    {t.first_name} {t.last_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Classroom */}
+          <div className="space-y-2">
+            <Label>Classroom</Label>
+            <Select
+              value={formData.classroom_id || ''}
+              onValueChange={(v) => updateFormData('classroom_id', v)}
+              disabled={!formData.location_id}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select classroom" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableClassrooms.map((c) => (
+                  <SelectItem key={c.id} value={c.id as string}>
+                    {c.name} (Capacity: {c.capacity})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Class Type */}
+          <div className="space-y-2">
+            <Label>Class Type</Label>
+            <Select
+              value={formData.class_type || ''}
+              onValueChange={(v) => updateFormData('class_type', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="THEORY">Theory</SelectItem>
+                <SelectItem value="WORKSHOP">Workshop</SelectItem>
+                <SelectItem value="LAB">Lab</SelectItem>
+                <SelectItem value="ONLINE">Online</SelectItem>
+                <SelectItem value="HYBRID">Hybrid</SelectItem>
+                <SelectItem value="ASSESSMENT">Assessment</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              placeholder="Optional notes about this recurring class pattern"
+              value={formData.notes || ''}
+              onChange={(e) => updateFormData('notes', e.target.value)}
+            />
+          </div>
+
+          {/* Filter by subject range */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="filter_by_subject_range"
+              checked={formData.filter_by_subject_range}
+              onCheckedChange={(checked) =>
+                updateFormData('filter_by_subject_range', checked === true)
+              }
+            />
+            <Label
+              htmlFor="filter_by_subject_range"
+              className="text-sm font-normal"
+            >
+              Only create classes within subject date range (
+              {format(subjectStartDate, 'MMM dd')} -{' '}
+              {format(subjectEndDate, 'MMM dd')})
+            </Label>
+          </div>
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          {!showPreview ? (
-            <Button onClick={handlePreview} disabled={upsertTemplate.isPending}>
-              <Eye className="mr-2 h-4 w-4" />
-              Preview Classes
-            </Button>
-          ) : (
-            <Button onClick={handleCreate} disabled={expandTemplate.isPending}>
-              Create {previewDates.filter((d) => !d.is_blackout_date).length}{' '}
-              Classes
-            </Button>
-          )}
+          <Button
+            onClick={handleCreate}
+            disabled={createRecurringClasses.isPending}
+          >
+            Create Classes
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
