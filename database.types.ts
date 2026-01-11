@@ -291,6 +291,85 @@ export type Database = {
           },
         ]
       }
+      application_deposit_invoices: {
+        Row: {
+          amount_due_cents: number
+          amount_paid_cents: number
+          application_id: string
+          application_payment_schedule_id: string
+          created_at: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          name: string
+          rto_id: string
+          status: Database["public"]["Enums"]["deposit_invoice_status"]
+          updated_at: string
+          xero_invoice_id: string | null
+          xero_sync_error: string | null
+          xero_sync_status: string | null
+        }
+        Insert: {
+          amount_due_cents: number
+          amount_paid_cents?: number
+          application_id: string
+          application_payment_schedule_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          invoice_number: string
+          issue_date: string
+          name: string
+          rto_id: string
+          status?: Database["public"]["Enums"]["deposit_invoice_status"]
+          updated_at?: string
+          xero_invoice_id?: string | null
+          xero_sync_error?: string | null
+          xero_sync_status?: string | null
+        }
+        Update: {
+          amount_due_cents?: number
+          amount_paid_cents?: number
+          application_id?: string
+          application_payment_schedule_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          name?: string
+          rto_id?: string
+          status?: Database["public"]["Enums"]["deposit_invoice_status"]
+          updated_at?: string
+          xero_invoice_id?: string | null
+          xero_sync_error?: string | null
+          xero_sync_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_deposit_invoices_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_deposit_invoices_application_payment_schedule__fkey"
+            columns: ["application_payment_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "application_payment_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_deposit_invoices_rto_id_fkey"
+            columns: ["rto_id"]
+            isOneToOne: false
+            referencedRelation: "rtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       application_disabilities: {
         Row: {
           application_id: string
@@ -485,6 +564,7 @@ export type Database = {
           created_at: string
           due_date: string
           id: string
+          is_deposit: boolean
           name: string
           sequence_order: number | null
           template_id: string
@@ -498,6 +578,7 @@ export type Database = {
           created_at?: string
           due_date: string
           id?: string
+          is_deposit?: boolean
           name: string
           sequence_order?: number | null
           template_id: string
@@ -511,6 +592,7 @@ export type Database = {
           created_at?: string
           due_date?: string
           id?: string
+          is_deposit?: boolean
           name?: string
           sequence_order?: number | null
           template_id?: string
@@ -1307,6 +1389,61 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "delivery_locations_rto_id_fkey"
+            columns: ["rto_id"]
+            isOneToOne: false
+            referencedRelation: "rtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deposit_payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          created_by: string | null
+          deposit_invoice_id: string
+          id: string
+          notes: string | null
+          payment_date: string
+          rto_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          created_by?: string | null
+          deposit_invoice_id: string
+          id?: string
+          notes?: string | null
+          payment_date: string
+          rto_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          created_by?: string | null
+          deposit_invoice_id?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          rto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deposit_payments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_payments_deposit_invoice_id_fkey"
+            columns: ["deposit_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "application_deposit_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_payments_rto_id_fkey"
             columns: ["rto_id"]
             isOneToOne: false
             referencedRelation: "rtos"
@@ -2167,6 +2304,7 @@ export type Database = {
           due_date_rule_days: number
           id: string
           is_commissionable: boolean
+          is_deposit: boolean
           name: string
           template_id: string
         }
@@ -2175,6 +2313,7 @@ export type Database = {
           due_date_rule_days: number
           id?: string
           is_commissionable?: boolean
+          is_deposit?: boolean
           name: string
           template_id: string
         }
@@ -2183,6 +2322,7 @@ export type Database = {
           due_date_rule_days?: number
           id?: string
           is_commissionable?: boolean
+          is_deposit?: boolean
           name?: string
           template_id?: string
         }
@@ -4034,6 +4174,10 @@ export type Database = {
       }
     }
     Functions: {
+      check_deposits_fully_paid: {
+        Args: { p_application_id: string }
+        Returns: boolean
+      }
       compute_student_check_char: { Args: { p_stem: string }; Returns: string }
       create_recurring_classes: {
         Args: {
@@ -4156,6 +4300,15 @@ export type Database = {
         Returns: number
       }
       promote_scheduled_invoices: { Args: never; Returns: undefined }
+      record_deposit_payment: {
+        Args: {
+          p_amount_cents: number
+          p_deposit_invoice_id: string
+          p_notes?: string
+          p_payment_date: string
+        }
+        Returns: string
+      }
       record_payment: {
         Args: {
           p_amount_cents: number
@@ -4222,6 +4375,7 @@ export type Database = {
         | "KITCHEN"
         | "MEETING_ROOM"
         | "OTHER"
+      deposit_invoice_status: "UNPAID" | "PARTIALLY_PAID" | "PAID"
       email_participant_type: "TO" | "CC" | "BCC"
       email_status:
         | "QUEUED"
@@ -4442,6 +4596,7 @@ export const Constants = {
         "MEETING_ROOM",
         "OTHER",
       ],
+      deposit_invoice_status: ["UNPAID", "PARTIALLY_PAID", "PAID"],
       email_participant_type: ["TO", "CC", "BCC"],
       email_status: [
         "QUEUED",

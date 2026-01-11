@@ -2,7 +2,7 @@
 
 import { UseFormReturn } from 'react-hook-form';
 import { useFieldArray } from 'react-hook-form';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   FormField,
   FormItem,
@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -44,6 +45,7 @@ const templateSchema = z.object({
         amount_cents: z.number().min(1, 'Amount must be greater than 0'),
         due_date_rule_days: z.number().min(0, 'Offset must be 0 or greater'),
         is_commissionable: z.boolean(),
+        is_deposit: z.boolean(),
         lines: z
           .array(
             z.object({
@@ -210,6 +212,7 @@ export function PaymentPlanTemplateForm({ form }: Props) {
                 amount_cents: 0,
                 due_date_rule_days: 0,
                 is_commissionable: false, // Commissionability is now handled at line level
+                is_deposit: false,
                 lines: [
                   {
                     name: '',
@@ -260,9 +263,6 @@ function InstallmentCard({
     name: `installments.${index}.lines`,
   });
 
-  const watchedLines =
-    (form.watch(`installments.${index}.lines`) as InstallmentLines) ?? [];
-
   const updateInstallmentAmount = useCallback(
     (lines?: InstallmentLines) => {
       const values =
@@ -281,14 +281,17 @@ function InstallmentCard({
   );
 
   useEffect(() => {
+    const watchedLines =
+      (form.watch(`installments.${index}.lines`) as InstallmentLines) ?? [];
     updateInstallmentAmount(watchedLines);
-  }, [watchedLines, updateInstallmentAmount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.watch(`installments.${index}.lines`), updateInstallmentAmount]);
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
       <div className="rounded-md border">
         {/* Installment Header */}
-        <div className="grid grid-cols-[auto_1fr_150px_150px_auto] items-end gap-2 p-3">
+        <div className="grid grid-cols-[auto_1fr_150px_150px_120px_auto] items-end gap-2 p-3">
           <CollapsibleTrigger asChild>
             <Button
               type="button"
@@ -360,6 +363,27 @@ function InstallmentCard({
                     />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid gap-1">
+            <FormLabel className="text-xs">Deposit</FormLabel>
+            <FormField
+              control={form.control}
+              name={`installments.${index}.is_deposit`}
+              render={({ field }) => (
+                <FormItem className="flex items-center space-y-0 space-x-2">
+                  <FormControl>
+                    <Switch
+                      checked={field.value ?? false}
+                      onCheckedChange={(checked) =>
+                        field.onChange(checked ?? false)
+                      }
+                      aria-label="Mark as deposit"
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

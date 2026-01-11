@@ -12,6 +12,7 @@ import {
 import { useCallback } from 'react';
 import Link from 'next/link';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
+import { useGetApplicationDepositStatus } from '@/src/hooks/useGetApplicationDepositStatus';
 import {
   Table,
   TableBody,
@@ -48,6 +49,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   MoreHorizontal,
   GripVertical,
@@ -121,31 +128,77 @@ const ArchiveButton = ({ onArchive }: { onArchive: () => void }) => {
   );
 };
 
+// Wrapper component that fetches deposit status and renders AcceptRejectButtonGroup
+const AcceptRejectButtonGroupWithStatus = ({
+  applicationId,
+  onAccept,
+  onReject,
+}: {
+  applicationId: string;
+  onAccept: () => void;
+  onReject: () => void;
+}) => {
+  const { data: depositStatus } = useGetApplicationDepositStatus(applicationId);
+
+  return (
+    <AcceptRejectButtonGroup
+      onAccept={onAccept}
+      onReject={onReject}
+      depositsFullyPaid={depositStatus?.allDepositsPaid ?? true}
+      hasDeposits={depositStatus?.hasDeposits ?? false}
+    />
+  );
+};
+
 // Accept/Reject button group component that handles hover animations
 const AcceptRejectButtonGroup = ({
   onAccept,
   onReject,
+  depositsFullyPaid,
+  hasDeposits,
 }: {
   onAccept: () => void;
   onReject: () => void;
+  depositsFullyPaid: boolean;
+  hasDeposits: boolean;
 }) => {
   const upvoteIconRef = useRef<UpvoteIconHandle>(null);
   const downvoteIconRef = useRef<DownvoteIconHandle>(null);
 
+  const acceptDisabled = hasDeposits && !depositsFullyPaid;
+
+  const acceptButton = (
+    <Button
+      variant="outline"
+      size="sm"
+      className="hover:bg-primary/10 hover:text-primary flex-1 justify-start gap-2 rounded-none rounded-l-md shadow-none transition-all duration-200 focus-visible:z-10 disabled:cursor-not-allowed disabled:opacity-50"
+      onClick={onAccept}
+      onMouseEnter={() =>
+        !acceptDisabled && upvoteIconRef.current?.startAnimation()
+      }
+      onMouseLeave={() => upvoteIconRef.current?.stopAnimation()}
+      disabled={acceptDisabled}
+      aria-label="Accept application"
+    >
+      <UpvoteIcon ref={upvoteIconRef} size={16} className="shrink-0" />
+      <span className="whitespace-nowrap">Accept</span>
+    </Button>
+  );
+
   return (
     <div className="flex w-full -space-x-px rounded-md shadow-sm">
-      <Button
-        variant="outline"
-        size="sm"
-        className="hover:bg-primary/10 hover:text-primary flex-1 justify-start gap-2 rounded-none rounded-l-md shadow-none transition-all duration-200 focus-visible:z-10"
-        onClick={onAccept}
-        onMouseEnter={() => upvoteIconRef.current?.startAnimation()}
-        onMouseLeave={() => upvoteIconRef.current?.stopAnimation()}
-        aria-label="Accept application"
-      >
-        <UpvoteIcon ref={upvoteIconRef} size={16} className="shrink-0" />
-        <span className="whitespace-nowrap">Accept</span>
-      </Button>
+      {acceptDisabled ? (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>{acceptButton}</TooltipTrigger>
+            <TooltipContent>
+              <p>Deposits must be fully paid before acceptance</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : (
+        acceptButton
+      )}
       <Button
         variant="outline"
         size="sm"
@@ -225,7 +278,6 @@ export const ApplicationsDataTable = forwardRef<
 >(function ApplicationsDataTable({ filters }: Props, ref) {
   const { data, isLoading, isError } = useGetApplications(filters);
   const generateOfferMutation = useGenerateOfferLetter();
-  const deleteMutation = useDeleteApplication();
   const updateMutation = useUpdateApplication();
   const checkCapacityMutation = useCheckGroupCapacity();
   const [sendOfferDialog, setSendOfferDialog] = useState<{
@@ -276,6 +328,20 @@ export const ApplicationsDataTable = forwardRef<
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const persistPrefs = useCallback(
+    (next: Partial<TablePreferences>) => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        upsertPrefs.mutate({
+          tableKey,
+          visible_columns: next.visible_columns ?? visibleColumns,
+          column_widths: next.column_widths ?? columnWidths,
+        });
+      }, 300);
+    },
+    [tableKey, visibleColumns, columnWidths, upsertPrefs]
+  );
+
   useEffect(() => {
     if (!prefs) return;
     // Defaults if none set: keep current six columns
@@ -289,7 +355,7 @@ export const ApplicationsDataTable = forwardRef<
     if (!hasPrefs) {
       persistPrefs({ visible_columns: defaults });
     }
-  }, [prefs]);
+  }, [prefs, persistPrefs]);
 
   const approveMutation = useApproveApplication();
   const recreateDraftMutation = useRecreateDraftApplication();
@@ -304,20 +370,6 @@ export const ApplicationsDataTable = forwardRef<
       return { key, direction: 'asc' };
     });
   };
-
-  const persistPrefs = useCallback(
-    (next: Partial<TablePreferences>) => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        upsertPrefs.mutate({
-          tableKey,
-          visible_columns: next.visible_columns ?? visibleColumns,
-          column_widths: next.column_widths ?? columnWidths,
-        });
-      }, 300);
-    },
-    [tableKey, visibleColumns, columnWidths, upsertPrefs]
-  );
 
   const allColumns: ColumnDef[] = getApplicationsColumns();
 
@@ -661,7 +713,8 @@ export const ApplicationsDataTable = forwardRef<
     // For OFFER_SENT status, show Accept/Reject button group
     if (app.status === 'OFFER_SENT') {
       return (
-        <AcceptRejectButtonGroup
+        <AcceptRejectButtonGroupWithStatus
+          applicationId={app.id}
           onAccept={() => handleAccept(app.id)}
           onReject={() => handleReject(app.id)}
         />

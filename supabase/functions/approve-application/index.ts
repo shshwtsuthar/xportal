@@ -106,6 +106,55 @@ serve(async (req: Request) => {
     );
   }
 
+  // Check if all deposits are fully paid
+  const { data: depositsFullyPaid, error: depositCheckErr } =
+    await supabase.rpc('check_deposits_fully_paid', {
+      p_application_id: app.id,
+    });
+
+  if (depositCheckErr) {
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to check deposit payment status',
+        details: depositCheckErr.message,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+
+  if (!depositsFullyPaid) {
+    // Fetch unpaid deposits for error message
+    const { data: unpaidDeposits } = await supabase
+      .from('application_deposit_invoices')
+      .select('id, name, amount_due_cents, amount_paid_cents')
+      .eq('application_id', app.id);
+
+    const unpaid = (unpaidDeposits ?? []).filter(
+      (d) => d.amount_paid_cents < d.amount_due_cents
+    );
+
+    if (unpaid.length > 0) {
+      return new Response(
+        JSON.stringify({
+          error: 'Cannot approve application: deposits not fully paid',
+          unpaidDeposits: unpaid.map((d) => ({
+            name: d.name,
+            amountDue: d.amount_due_cents,
+            amountPaid: d.amount_paid_cents,
+            amountRemaining: d.amount_due_cents - d.amount_paid_cents,
+          })),
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 409,
+        }
+      );
+    }
+  }
+
   // If newGroupId is provided, update the application's group_id
   // This handles the race condition where the original group became full
   if (newGroupId) {
@@ -425,11 +474,44 @@ serve(async (req: Request) => {
 
   const { data: snapshot, error: snapErr } = await supabase
     .from('application_payment_schedule')
-    .select('id, name, amount_cents, due_date, template_installment_id')
+    .select(
+      'id, name, amount_cents, due_date, template_installment_id, is_deposit'
+    )
     .eq('application_id', app.id)
     .order('sequence_order', { ascending: true })
     .order('due_date', { ascending: true })
     .order('name', { ascending: true });
+
+  // Fetch deposit invoices to get payment information
+  const { data: depositInvoices, error: depositInvErr } = await supabase
+    .from('application_deposit_invoices')
+    .select('id, application_payment_schedule_id, amount_paid_cents')
+    .eq('application_id', app.id);
+
+  if (depositInvErr) {
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to fetch deposit invoices',
+        details: depositInvErr.message,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+
+  // Create a map of schedule_id -> deposit payment info
+  const depositPaymentMap = new Map<
+    string,
+    { amount_paid_cents: number; deposit_invoice_id: string }
+  >();
+  (depositInvoices ?? []).forEach((dep) => {
+    depositPaymentMap.set(dep.application_payment_schedule_id, {
+      amount_paid_cents: dep.amount_paid_cents,
+      deposit_invoice_id: dep.id,
+    });
+  });
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -521,6 +603,16 @@ serve(async (req: Request) => {
       const issueDate =
         idx === 0 ? todayIso : ((row.due_date as string) ?? todayIso);
 
+      // Check if this is a deposit installment with payment
+      const depositInfo = depositPaymentMap.get(schedId);
+      const amountPaid = depositInfo?.amount_paid_cents ?? 0;
+      const internalPaymentStatus: Db['public']['Enums']['internal_payment_status'] =
+        amountPaid >= amountCents
+          ? 'PAID_INTERNAL'
+          : amountPaid > 0
+            ? 'PARTIALLY_PAID'
+            : 'UNPAID';
+
       let invoiceNumber: string;
       try {
         invoiceNumber = await requestInvoiceNumber(issueDate);
@@ -583,7 +675,8 @@ serve(async (req: Request) => {
         issue_date: issueDate,
         due_date: row.due_date as string,
         amount_due_cents: amountCents,
-        amount_paid_cents: 0,
+        amount_paid_cents: amountPaid,
+        internal_payment_status: internalPaymentStatus,
       } as Db['public']['Tables']['invoices']['Insert']);
     }
 
@@ -793,6 +886,88 @@ serve(async (req: Request) => {
     console.log(
       `Skipping invoice_lines creation - using existing invoices with existing lines`
     );
+  }
+
+  // Transfer deposit payments to invoices
+  if (
+    existingInvoices.length === 0 &&
+    depositInvoices &&
+    depositInvoices.length > 0
+  ) {
+    // Fetch all deposit payments for this application
+    const depositInvoiceIds = depositInvoices.map((d) => d.id);
+    const { data: depositPayments, error: depPayErr } = await supabase
+      .from('deposit_payments')
+      .select('*')
+      .in('deposit_invoice_id', depositInvoiceIds);
+
+    if (depPayErr) {
+      console.error('Failed to fetch deposit payments:', depPayErr);
+    } else if (depositPayments && depositPayments.length > 0) {
+      // Map schedule IDs to invoice IDs
+      const scheduleToInvoiceMap = new Map<string, string>();
+
+      for (const row of snapshot ?? []) {
+        const invoiceNumber = invoiceRows.find(
+          (inv) =>
+            inv.due_date === row.due_date &&
+            inv.amount_due_cents === row.amount_cents
+        )?.invoice_number;
+
+        if (invoiceNumber) {
+          const invoice = insertedInvoices.find(
+            (inv) => inv.invoice_number === invoiceNumber
+          );
+          if (invoice) {
+            scheduleToInvoiceMap.set(row.id, invoice.id);
+          }
+        }
+      }
+
+      // Transfer deposit payments to regular payments
+      const paymentsToInsert: Db['public']['Tables']['payments']['Insert'][] =
+        [];
+
+      for (const depPayment of depositPayments) {
+        const depositInvoice = depositInvoices.find(
+          (di) => di.id === depPayment.deposit_invoice_id
+        );
+        if (!depositInvoice) continue;
+
+        const invoiceId = scheduleToInvoiceMap.get(
+          depositInvoice.application_payment_schedule_id
+        );
+        if (!invoiceId) continue;
+
+        paymentsToInsert.push({
+          invoice_id: invoiceId,
+          rto_id: depPayment.rto_id,
+          payment_date: depPayment.payment_date,
+          amount_cents: depPayment.amount_cents,
+          reconciliation_notes: depPayment.notes
+            ? `Deposit payment transferred: ${depPayment.notes}`
+            : 'Deposit payment transferred upon approval',
+        });
+      }
+
+      if (paymentsToInsert.length > 0) {
+        const { error: paymentInsertErr } = await supabase
+          .from('payments')
+          .insert(paymentsToInsert);
+
+        if (paymentInsertErr) {
+          console.error(
+            'Failed to transfer deposit payments:',
+            paymentInsertErr
+          );
+          // Don't fail the entire approval - log and continue
+        } else {
+          console.log(
+            `Transferred ${paymentsToInsert.length} deposit payments to invoices`
+          );
+        }
+      }
+    }
   }
 
   // --- Extended copy: student domain normalization ---
