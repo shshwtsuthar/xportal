@@ -3,6 +3,7 @@
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../_shared/database.types.ts';
+import { generateInvoicePdf } from '../_shared/generate-invoice-pdf.tsx';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -221,167 +222,29 @@ serve(async (req) => {
         throw new Error('Student not found for invoice');
       }
 
-      const { data: rto } = await supabase
-        .from('rtos')
-        .select('name')
-        .eq('id', claimed.rto_id)
-        .single();
-
-      const { data: lines } = await supabase
-        .from('invoice_lines')
-        .select(
-          'name, description, amount_cents, sequence_order, xero_account_code, xero_tax_type'
-        )
-        .eq('invoice_id', claimed.id)
-        .order('sequence_order', { ascending: true });
-
-      const lineItems = lines ?? [];
       const studentName =
         student.preferred_name ||
         [student.first_name, student.last_name].filter(Boolean).join(' ') ||
         'Student';
       const studentEmail = student.email ?? null;
-      const rtoName = rto?.name ?? null;
-
-      // Load react-pdf (deno-friendly via esm.sh)
-      const reactPdf =
-        await import('https://esm.sh/@react-pdf/renderer@3.4.3?target=deno');
-      const react = await import('https://esm.sh/react@18.2.0?target=deno');
-
-      const { Document, Page, Text, View, StyleSheet, renderToBuffer } =
-        reactPdf as typeof import('https://esm.sh/@react-pdf/renderer@3.4.3?target=deno');
-      const { createElement } =
-        react as typeof import('https://esm.sh/react@18.2.0?target=deno');
-
-      const styles = StyleSheet.create({
-        page: {
-          paddingTop: 40,
-          paddingBottom: 40,
-          paddingHorizontal: 42,
-          fontSize: 11,
-        },
-        h1: { fontSize: 18, marginBottom: 8 },
-        row: { marginTop: 6, display: 'flex', flexDirection: 'row' },
-        right: { textAlign: 'right' },
-        tableHeader: { marginTop: 16, fontSize: 12, fontWeight: 700 },
-        tableRow: {
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          marginTop: 4,
-        },
-      });
-
-      const InvoiceDoc = ({
-        data,
-      }: {
-        data: {
-          invoice_number: string;
-          issue_date: string;
-          due_date: string;
-          student_name: string;
-          rto_name: string | null;
-          amount_due_cents: number;
-          lines: typeof lineItems;
-        };
-      }) => {
-        return createElement(
-          Document,
-          { title: `Invoice ${data.invoice_number}` },
-          createElement(
-            Page,
-            { size: 'A4', style: styles.page },
-            createElement(
-              View,
-              {},
-              createElement(Text, { style: styles.h1 }, 'Tax Invoice'),
-              createElement(
-                Text,
-                {},
-                `${data.rto_name ?? 'Training Organisation'}`
-              ),
-              createElement(Text, {}, `Invoice: ${data.invoice_number}`)
-            ),
-            createElement(
-              View,
-              { style: styles.row },
-              createElement(Text, {}, `Issued: ${data.issue_date}`),
-              createElement(
-                Text,
-                { style: styles.right },
-                `Due: ${data.due_date}`
-              )
-            ),
-            createElement(
-              View,
-              { style: styles.row },
-              createElement(Text, {}, `Bill To: ${data.student_name}`)
-            ),
-            createElement(
-              View,
-              {},
-              createElement(Text, { style: styles.tableHeader }, 'Line items'),
-              ...data.lines.map((line) =>
-                createElement(
-                  View,
-                  {
-                    style: styles.tableRow,
-                    key: `${line.sequence_order}-${line.name}`,
-                  },
-                  createElement(
-                    Text,
-                    {},
-                    line.name +
-                      (line.description ? ` — ${line.description}` : '')
-                  ),
-                  createElement(
-                    Text,
-                    { style: styles.right },
-                    formatCurrencyAud(line.amount_cents ?? 0)
-                  )
-                )
-              )
-            ),
-            createElement(
-              View,
-              { style: { marginTop: 16 } },
-              createElement(
-                Text,
-                { style: { fontWeight: 700 } },
-                `Amount Due: ${formatCurrencyAud(data.amount_due_cents)}`
-              )
-            )
-          )
-        );
-      };
 
       let filePath = claimed.pdf_path ?? null;
       let pdfGeneratedAt: string | null = null;
       let pdfBytes: Uint8Array | null = null;
       if (mode === 'generate') {
-        const element = createElement(InvoiceDoc, {
-          data: {
-            invoice_number: String(claimed.invoice_number),
-            issue_date: claimed.issue_date as string,
-            due_date: claimed.due_date as string,
-            student_name: studentName,
-            rto_name: rtoName,
-            amount_due_cents: claimed.amount_due_cents ?? 0,
-            lines: lineItems,
-          },
+        // Use unified PDF generator
+        pdfBytes = await generateInvoicePdf({
+          invoiceId: claimed.id,
+          supabaseUrl,
+          serviceRoleKey,
         });
-        const pdfBuffer = await renderToBuffer(
-          element as Parameters<typeof renderToBuffer>[0]
-        );
-        const bytes = new Uint8Array(pdfBuffer);
-        pdfBytes = bytes;
 
         const year = yyyy(claimed.due_date as string);
         filePath = `${claimed.rto_id}/${year}/${claimed.invoice_number}.pdf`;
 
         const { error: uploadErr } = await supabase.storage
           .from('invoices')
-          .upload(filePath, bytes, {
+          .upload(filePath, pdfBytes, {
             contentType: 'application/pdf',
             upsert: true,
           });

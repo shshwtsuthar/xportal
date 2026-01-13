@@ -4,23 +4,15 @@ type Params = {
   invoiceId: string;
 };
 
-type Response = {
-  filePath: string;
-  signedUrl: string;
-};
-
 /**
- * Hook to generate invoice PDF on-demand.
- * If PDF already exists, returns existing signed URL.
- * Otherwise generates PDF, uploads to storage, and returns download URL.
- * Follows the same pattern as useGenerateOfferLetter.
+ * Hook to generate and download invoice PDF on-demand.
+ * Generates PDF and triggers browser download.
  */
 export const useGenerateInvoicePdf = () => {
-  return useMutation<Response, Error, Params>({
+  return useMutation<void, Error, Params>({
     mutationFn: async ({ invoiceId }) => {
       const res = await fetch(`/api/invoices/${invoiceId}/generate-pdf`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!res.ok) {
@@ -30,7 +22,16 @@ export const useGenerateInvoicePdf = () => {
         throw new Error(msg || 'Failed to generate invoice PDF');
       }
 
-      return res.json();
+      // Get PDF blob and create download
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invoiceId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     },
   });
 };

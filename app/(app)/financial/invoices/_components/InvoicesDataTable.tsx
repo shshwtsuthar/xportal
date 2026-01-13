@@ -124,16 +124,6 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
       [allColumns]
     );
 
-    const onToggleColumn = (id: string) => {
-      setVisibleColumns((prev) => {
-        const next = prev.includes(id)
-          ? prev.filter((x) => x !== id)
-          : [...prev, id];
-        persistPrefs({ visible_columns: next });
-        return next;
-      });
-    };
-
     const startResize = (id: string, startX: number) => {
       const col = colById.get(id);
       const base = columnWidths[id] ?? col?.width ?? 160;
@@ -397,16 +387,9 @@ export const InvoicesDataTable = forwardRef<InvoicesDataTableRef, Props>(
                         const invoiceId = row.id as string;
                         setGeneratingInvoiceId(invoiceId);
                         try {
-                          const { signedUrl } = await generatePdf.mutateAsync({
+                          await generatePdf.mutateAsync({
                             invoiceId,
                           });
-                          if (signedUrl) {
-                            window.open(
-                              signedUrl,
-                              '_blank',
-                              'noopener,noreferrer'
-                            );
-                          }
                           toast.success('Invoice PDF generated');
                         } catch (error) {
                           toast.error(
