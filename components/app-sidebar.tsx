@@ -90,6 +90,7 @@ const NAV: NavItem[] = [
       },
       { title: 'Payment Templates', url: '/financial/templates' },
       { title: 'New Template', url: '/financial/templates/new' },
+      { title: 'Reminders', url: '/financial/reminders' },
     ],
   },
   {

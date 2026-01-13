@@ -1,0 +1,13 @@
+{
+  "name": "send-payment-reminders-daily",
+  "description": "Daily send payment reminders for invoices due at reminder offset dates",
+  "cron": "0 8 * * *",
+  "request": {
+    "method": "POST",
+    "headers": {
+      "Authorization": "Bearer ${SERVICE_ROLE_KEY}"
+    },
+    "body": "{}"
+  }
+}
+

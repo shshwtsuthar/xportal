@@ -1905,6 +1905,42 @@ export type Database = {
           },
         ]
       }
+      invoice_reminders_sent: {
+        Row: {
+          id: string
+          invoice_id: string
+          reminder_id: string
+          sent_at: string
+        }
+        Insert: {
+          id?: string
+          invoice_id: string
+          reminder_id: string
+          sent_at?: string
+        }
+        Update: {
+          id?: string
+          invoice_id?: string
+          reminder_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_reminders_sent_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_reminders_sent_reminder_id_fkey"
+            columns: ["reminder_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plan_reminders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount_due_cents: number
@@ -2114,6 +2150,64 @@ export type Database = {
           },
         ]
       }
+      payment_plan_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          mail_template_id: string
+          name: string
+          offset_days: number
+          regenerate_invoice: boolean
+          rto_id: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mail_template_id: string
+          name: string
+          offset_days: number
+          regenerate_invoice?: boolean
+          rto_id: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mail_template_id?: string
+          name?: string
+          offset_days?: number
+          regenerate_invoice?: boolean
+          rto_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_plan_reminders_mail_template_id_fkey"
+            columns: ["mail_template_id"]
+            isOneToOne: false
+            referencedRelation: "mail_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_plan_reminders_rto_id_fkey"
+            columns: ["rto_id"]
+            isOneToOne: false
+            referencedRelation: "rtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_plan_reminders_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_plan_template_installment_lines: {
         Row: {
           amount_cents: number
@@ -2167,6 +2261,7 @@ export type Database = {
           due_date_rule_days: number
           id: string
           is_commissionable: boolean
+          is_deposit: boolean
           name: string
           template_id: string
         }
@@ -2175,6 +2270,7 @@ export type Database = {
           due_date_rule_days: number
           id?: string
           is_commissionable?: boolean
+          is_deposit?: boolean
           name: string
           template_id: string
         }
@@ -2183,6 +2279,7 @@ export type Database = {
           due_date_rule_days?: number
           id?: string
           is_commissionable?: boolean
+          is_deposit?: boolean
           name?: string
           template_id?: string
         }
@@ -2200,6 +2297,7 @@ export type Database = {
         Row: {
           id: string
           is_default: boolean | null
+          issue_date_offset_days: number
           name: string
           program_id: string
           rto_id: string
@@ -2210,6 +2308,7 @@ export type Database = {
         Insert: {
           id?: string
           is_default?: boolean | null
+          issue_date_offset_days?: number
           name: string
           program_id: string
           rto_id: string
@@ -2220,6 +2319,7 @@ export type Database = {
         Update: {
           id?: string
           is_default?: boolean | null
+          issue_date_offset_days?: number
           name?: string
           program_id?: string
           rto_id?: string
@@ -4170,6 +4270,10 @@ export type Database = {
         Returns: string
       }
       seed_initial_data: { Args: never; Returns: undefined }
+      update_template_issue_date_offset: {
+        Args: { p_offset_days: number; p_template_id: string }
+        Returns: Json
+      }
       upsert_application_learning_plan_draft: {
         Args: { app_id: string }
         Returns: {

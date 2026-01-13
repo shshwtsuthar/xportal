@@ -678,6 +678,7 @@ export type Database = {
           g_phone_number: string | null
           g_relationship: string | null
           gender: string | null
+          group_id: string | null
           has_english_test: boolean | null
           has_previous_study_australia: boolean | null
           has_release_letter: boolean | null
@@ -783,6 +784,7 @@ export type Database = {
           g_phone_number?: string | null
           g_relationship?: string | null
           gender?: string | null
+          group_id?: string | null
           has_english_test?: boolean | null
           has_previous_study_australia?: boolean | null
           has_release_letter?: boolean | null
@@ -888,6 +890,7 @@ export type Database = {
           g_phone_number?: string | null
           g_relationship?: string | null
           gender?: string | null
+          group_id?: string | null
           has_english_test?: boolean | null
           has_previous_study_australia?: boolean | null
           has_release_letter?: boolean | null
@@ -978,6 +981,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
@@ -1798,6 +1808,7 @@ export type Database = {
           created_at: string
           current_enrollment_count: number
           id: string
+          location_id: string
           max_capacity: number
           name: string
           program_id: string
@@ -1807,6 +1818,7 @@ export type Database = {
           created_at?: string
           current_enrollment_count?: number
           id?: string
+          location_id: string
           max_capacity: number
           name: string
           program_id: string
@@ -1816,12 +1828,20 @@ export type Database = {
           created_at?: string
           current_enrollment_count?: number
           id?: string
+          location_id?: string
           max_capacity?: number
           name?: string
           program_id?: string
           rto_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "groups_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "groups_program_id_fkey"
             columns: ["program_id"]
@@ -1881,6 +1901,42 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_reminders_sent: {
+        Row: {
+          id: string
+          invoice_id: string
+          reminder_id: string
+          sent_at: string
+        }
+        Insert: {
+          id?: string
+          invoice_id: string
+          reminder_id: string
+          sent_at?: string
+        }
+        Update: {
+          id?: string
+          invoice_id?: string
+          reminder_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_reminders_sent_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_reminders_sent_reminder_id_fkey"
+            columns: ["reminder_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plan_reminders"
             referencedColumns: ["id"]
           },
         ]
@@ -2094,6 +2150,64 @@ export type Database = {
           },
         ]
       }
+      payment_plan_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          mail_template_id: string
+          name: string
+          offset_days: number
+          regenerate_invoice: boolean
+          rto_id: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mail_template_id: string
+          name: string
+          offset_days: number
+          regenerate_invoice?: boolean
+          rto_id: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mail_template_id?: string
+          name?: string
+          offset_days?: number
+          regenerate_invoice?: boolean
+          rto_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_plan_reminders_mail_template_id_fkey"
+            columns: ["mail_template_id"]
+            isOneToOne: false
+            referencedRelation: "mail_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_plan_reminders_rto_id_fkey"
+            columns: ["rto_id"]
+            isOneToOne: false
+            referencedRelation: "rtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_plan_reminders_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_plan_template_installment_lines: {
         Row: {
           amount_cents: number
@@ -2147,6 +2261,7 @@ export type Database = {
           due_date_rule_days: number
           id: string
           is_commissionable: boolean
+          is_deposit: boolean
           name: string
           template_id: string
         }
@@ -2155,6 +2270,7 @@ export type Database = {
           due_date_rule_days: number
           id?: string
           is_commissionable?: boolean
+          is_deposit?: boolean
           name: string
           template_id: string
         }
@@ -2163,6 +2279,7 @@ export type Database = {
           due_date_rule_days?: number
           id?: string
           is_commissionable?: boolean
+          is_deposit?: boolean
           name?: string
           template_id?: string
         }
@@ -2180,6 +2297,7 @@ export type Database = {
         Row: {
           id: string
           is_default: boolean | null
+          issue_date_offset_days: number
           name: string
           program_id: string
           rto_id: string
@@ -2190,6 +2308,7 @@ export type Database = {
         Insert: {
           id?: string
           is_default?: boolean | null
+          issue_date_offset_days?: number
           name: string
           program_id: string
           rto_id: string
@@ -2200,6 +2319,7 @@ export type Database = {
         Update: {
           id?: string
           is_default?: boolean | null
+          issue_date_offset_days?: number
           name?: string
           program_id?: string
           rto_id?: string
@@ -2359,6 +2479,7 @@ export type Database = {
           classroom_id: string | null
           created_at: string
           end_time: string | null
+          group_id: string | null
           id: string
           location_id: string
           notes: string | null
@@ -2372,6 +2493,7 @@ export type Database = {
           classroom_id?: string | null
           created_at?: string
           end_time?: string | null
+          group_id?: string | null
           id?: string
           location_id: string
           notes?: string | null
@@ -2385,6 +2507,7 @@ export type Database = {
           classroom_id?: string | null
           created_at?: string
           end_time?: string | null
+          group_id?: string | null
           id?: string
           location_id?: string
           notes?: string | null
@@ -2398,6 +2521,13 @@ export type Database = {
             columns: ["classroom_id"]
             isOneToOne: false
             referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_plan_classes_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
@@ -2473,34 +2603,24 @@ export type Database = {
       }
       program_plans: {
         Row: {
-          group_id: string | null
           id: string
           name: string
           program_id: string
           rto_id: string
         }
         Insert: {
-          group_id?: string | null
           id?: string
           name: string
           program_id: string
           rto_id: string
         }
         Update: {
-          group_id?: string | null
           id?: string
           name?: string
           program_id?: string
           rto_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "program_plans_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "program_plans_program_id_fkey"
             columns: ["program_id"]
@@ -2599,6 +2719,38 @@ export type Database = {
           },
           {
             foreignKeyName: "qualifications_rto_id_fkey"
+            columns: ["rto_id"]
+            isOneToOne: false
+            referencedRelation: "rtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rto_blackout_dates: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          reason: string
+          rto_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          reason: string
+          rto_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          reason?: string
+          rto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rto_blackout_dates_rto_id_fkey"
             columns: ["rto_id"]
             isOneToOne: false
             referencedRelation: "rtos"
@@ -3983,6 +4135,49 @@ export type Database = {
     }
     Functions: {
       compute_student_check_char: { Args: { p_stem: string }; Returns: string }
+      create_recurring_classes: {
+        Args: {
+          p_class_type?: Database["public"]["Enums"]["class_type"]
+          p_classroom_id?: string
+          p_end_date: string
+          p_end_time: string
+          p_filter_by_subject_range?: boolean
+          p_group_id?: string
+          p_location_id?: string
+          p_notes?: string
+          p_program_plan_subject_id: string
+          p_recurrence_pattern: Json
+          p_recurrence_type: Database["public"]["Enums"]["recurrence_type"]
+          p_start_date: string
+          p_start_time: string
+          p_trainer_id?: string
+        }
+        Returns: Json
+      }
+      create_recurring_classes_batch: {
+        Args: {
+          p_class_type?: Database["public"]["Enums"]["class_type"]
+          p_classroom_id?: string
+          p_end_date: string
+          p_end_time: string
+          p_filter_by_subject_range?: boolean
+          p_group_id?: string
+          p_location_id?: string
+          p_notes?: string
+          p_program_plan_id: string
+          p_recurrence_pattern: Json
+          p_recurrence_type: Database["public"]["Enums"]["recurrence_type"]
+          p_start_date: string
+          p_start_time: string
+          p_subject_ids: string[]
+          p_trainer_id?: string
+        }
+        Returns: Json
+      }
+      expand_class_template: {
+        Args: { p_preserve_edited?: boolean; p_template_id: string }
+        Returns: Json
+      }
       freeze_application_learning_plan: {
         Args: { app_id: string }
         Returns: {
@@ -4008,6 +4203,34 @@ export type Database = {
         Args: { p_created: string; p_uuid: string }
         Returns: string
       }
+      generate_recurrence_dates:
+        | {
+            Args: {
+              p_blackout_dates: string[]
+              p_end_date: string
+              p_recurrence_pattern: Json
+              p_recurrence_type: Database["public"]["Enums"]["recurrence_type"]
+              p_start_date: string
+            }
+            Returns: {
+              generated_date: string
+            }[]
+          }
+        | {
+            Args: {
+              p_blackout_dates?: string[]
+              p_end_date: string
+              p_filter_by_subject_range?: boolean
+              p_recurrence_pattern: Json
+              p_recurrence_type: Database["public"]["Enums"]["recurrence_type"]
+              p_start_date: string
+              p_subject_end_date?: string
+              p_subject_start_date?: string
+            }
+            Returns: {
+              generated_date: string
+            }[]
+          }
       generate_student_display_id:
         | { Args: { p_created: string; p_uuid: string }; Returns: string }
         | { Args: { p_created: string; p_rto: string }; Returns: string }
@@ -4047,6 +4270,10 @@ export type Database = {
         Returns: string
       }
       seed_initial_data: { Args: never; Returns: undefined }
+      update_template_issue_date_offset: {
+        Args: { p_offset_days: number; p_template_id: string }
+        Returns: Json
+      }
       upsert_application_learning_plan_draft: {
         Args: { app_id: string }
         Returns: {
@@ -4058,6 +4285,17 @@ export type Database = {
         Args: { app_id: string }
         Returns: {
           inserted_rows: number
+        }[]
+      }
+      upsert_enrollment_plan: {
+        Args: {
+          app_id: string
+          proposed_commencement_date: string
+          timetable_id: string
+        }
+        Returns: {
+          classes_count: number
+          subjects_count: number
         }[]
       }
     }
@@ -4119,6 +4357,7 @@ export type Database = {
         | "COMMENCEMENT_DATE"
         | "OFFER_DATE"
         | "CUSTOM_DATE"
+      recurrence_type: "once" | "daily" | "weekly" | "monthly" | "custom"
       student_address_type: "street" | "postal"
       student_status: "ACTIVE" | "INACTIVE" | "COMPLETED" | "WITHDRAWN"
       twilio_channel: "whatsapp" | "sms"
@@ -4336,6 +4575,7 @@ export const Constants = {
         "OFFER_DATE",
         "CUSTOM_DATE",
       ],
+      recurrence_type: ["once", "daily", "weekly", "monthly", "custom"],
       student_address_type: ["street", "postal"],
       student_status: ["ACTIVE", "INACTIVE", "COMPLETED", "WITHDRAWN"],
       twilio_channel: ["whatsapp", "sms"],

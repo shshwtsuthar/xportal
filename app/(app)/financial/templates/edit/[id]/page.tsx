@@ -35,6 +35,7 @@ const templateSchema = z.object({
         amount_cents: z.number().min(1, 'Amount must be greater than 0'),
         due_date_rule_days: z.number().min(0, 'Offset must be 0 or greater'),
         is_commissionable: z.boolean(),
+        is_deposit: z.boolean(),
         lines: z
           .array(
             z.object({
@@ -95,6 +96,7 @@ export default function EditPaymentPlanTemplatePage() {
           amount_cents: 0,
           due_date_rule_days: 0,
           is_commissionable: false,
+          is_deposit: false,
           lines: [
             {
               name: '',
@@ -132,6 +134,7 @@ export default function EditPaymentPlanTemplatePage() {
             amount_cents: inst.amount_cents,
             due_date_rule_days: inst.due_date_rule_days,
             is_commissionable: inst.is_commissionable ?? false,
+            is_deposit: inst.is_deposit ?? false,
             lines:
               lines && lines.length > 0
                 ? lines.map((line) => ({
@@ -278,6 +281,7 @@ export default function EditPaymentPlanTemplatePage() {
         amount_cents: inst.amount_cents,
         due_date_rule_days: inst.due_date_rule_days,
         is_commissionable: inst.is_commissionable,
+        is_deposit: inst.is_deposit,
         ...(inst.id ? { id: inst.id } : {}),
       }));
 
@@ -407,9 +411,9 @@ export default function EditPaymentPlanTemplatePage() {
                   ): value is { message?: string } =>
                     Boolean(
                       typeof value === 'object' &&
-                        value !== null &&
-                        'message' in value &&
-                        (value as { message?: unknown }).message
+                      value !== null &&
+                      'message' in value &&
+                      (value as { message?: unknown }).message
                     );
 
                   const findFirstError = (obj: ErrorNode): string | null => {

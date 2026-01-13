@@ -44,6 +44,7 @@ const templateSchema = z.object({
         amount_cents: z.number().min(1, 'Amount must be greater than 0'),
         due_date_rule_days: z.number().min(0, 'Offset must be 0 or greater'),
         is_commissionable: z.boolean(),
+        is_deposit: z.boolean(),
         lines: z
           .array(
             z.object({
@@ -210,6 +211,7 @@ export function PaymentPlanTemplateForm({ form }: Props) {
                 amount_cents: 0,
                 due_date_rule_days: 0,
                 is_commissionable: false, // Commissionability is now handled at line level
+                is_deposit: false,
                 lines: [
                   {
                     name: '',
@@ -288,7 +290,7 @@ function InstallmentCard({
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
       <div className="rounded-md border">
         {/* Installment Header */}
-        <div className="grid grid-cols-[auto_1fr_150px_150px_auto] items-end gap-2 p-3">
+        <div className="grid grid-cols-[auto_1fr_150px_150px_100px_auto] items-end gap-2 p-3">
           <CollapsibleTrigger asChild>
             <Button
               type="button"
@@ -357,6 +359,25 @@ function InstallmentCard({
                       placeholder="0"
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid gap-1">
+            <FormLabel className="text-xs">Is Deposit?</FormLabel>
+            <FormField
+              control={form.control}
+              name={`installments.${index}.is_deposit`}
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-center space-y-0 pt-2">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage />

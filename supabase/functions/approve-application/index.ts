@@ -132,7 +132,7 @@ serve(async (req: Request) => {
 
   const { data: template, error: tplErr } = await supabase
     .from('payment_plan_templates')
-    .select('id')
+    .select('id, issue_date_offset_days')
     .eq('id', app.payment_plan_template_id)
     .single();
   if (tplErr || !template) {
@@ -144,6 +144,9 @@ serve(async (req: Request) => {
       }
     );
   }
+
+  // Get the issue date offset from template (default 0 = same as due date)
+  const issueDateOffsetDays = template.issue_date_offset_days ?? 0;
 
   // Use the required payment anchor date
   const anchorDate = app.payment_anchor_date as string;
@@ -518,8 +521,20 @@ serve(async (req: Request) => {
       const row = snapshot[idx];
       const amountCents = row.amount_cents as number;
       const schedId = row.id as string;
+
+      // Calculate issue date from due date + template offset
+      const dueDate = new Date(row.due_date as string);
+      const calculatedIssueDate = new Date(dueDate);
+      calculatedIssueDate.setDate(
+        calculatedIssueDate.getDate() + issueDateOffsetDays
+      );
+      const calculatedIssueDateStr = calculatedIssueDate
+        .toISOString()
+        .slice(0, 10);
+
+      // Use today if calculated issue date is in the past
       const issueDate =
-        idx === 0 ? todayIso : ((row.due_date as string) ?? todayIso);
+        calculatedIssueDateStr < todayIso ? todayIso : calculatedIssueDateStr;
 
       let invoiceNumber: string;
       try {
@@ -643,7 +658,20 @@ serve(async (req: Request) => {
       const due = new Date(anchor);
       due.setDate(due.getDate() + Number(installment.due_date_rule_days));
       const dueDateStr = due.toISOString().slice(0, 10);
-      const issueDate = idx === 0 ? todayIso : dueDateStr;
+
+      // Calculate issue date from due date + template offset
+      const dueDate = new Date(dueDateStr);
+      const calculatedIssueDate = new Date(dueDate);
+      calculatedIssueDate.setDate(
+        calculatedIssueDate.getDate() + issueDateOffsetDays
+      );
+      const calculatedIssueDateStr = calculatedIssueDate
+        .toISOString()
+        .slice(0, 10);
+
+      // Use today if calculated issue date is in the past
+      const issueDate =
+        calculatedIssueDateStr < todayIso ? todayIso : calculatedIssueDateStr;
       const amountCents = installment.amount_cents as number;
 
       let invoiceNumber: string;

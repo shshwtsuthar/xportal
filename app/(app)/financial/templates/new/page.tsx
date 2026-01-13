@@ -32,6 +32,7 @@ const templateSchema = z.object({
         amount_cents: z.number().min(1, 'Amount must be greater than 0'),
         due_date_rule_days: z.number().min(0, 'Offset must be 0 or greater'),
         is_commissionable: z.boolean(),
+        is_deposit: z.boolean(),
         lines: z
           .array(
             z.object({
@@ -84,6 +85,7 @@ export default function NewPaymentPlanTemplatePage() {
           amount_cents: 0,
           due_date_rule_days: 0,
           is_commissionable: false,
+          is_deposit: false,
           lines: [
             {
               name: '',
@@ -128,6 +130,7 @@ export default function NewPaymentPlanTemplatePage() {
         amount_cents: inst.amount_cents,
         due_date_rule_days: inst.due_date_rule_days,
         is_commissionable: inst.is_commissionable,
+        is_deposit: inst.is_deposit,
       }));
 
       await upsertInstallments.mutateAsync(installmentPayloads);
