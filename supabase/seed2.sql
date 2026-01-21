@@ -20,6 +20,19 @@ DECLARE
   v_timetable_2025_2026_id UUID;
   v_timetable_2026_2027_id UUID;
   v_timetable_2027_2028_id UUID;
+  v_payment_plan_template_id UUID;
+  v_inst_1_id UUID;
+  v_inst_2_id UUID;
+  v_inst_3_id UUID;
+  v_inst_4_id UUID;
+  v_inst_5_id UUID;
+  v_inst_6_id UUID;
+  v_inst_7_id UUID;
+  v_inst_8_id UUID;
+  v_inst_9_id UUID;
+  v_inst_10_id UUID;
+  v_inst_11_id UUID;
+  v_inst_12_id UUID;
   v_subject_id UUID;
   v_location_geelong_id UUID;
   v_location_melbourne_id UUID;
@@ -251,6 +264,289 @@ BEGIN
 
   RAISE NOTICE 'Timetables created/linked: 2025-2026=%, 2026-2027=%, 2027-2028=%',
     v_timetable_2025_2026_id, v_timetable_2026_2027_id, v_timetable_2027_2028_id;
+
+  -- Step 4c: Create Payment Plan Template + Installments + Lines
+  -- Note: due dates are computed from an anchor date using due_date_rule_days offsets.
+  SELECT id INTO v_payment_plan_template_id
+  FROM public.payment_plan_templates
+  WHERE program_id = v_program_id AND name = 'Certificate III in Carpentry - Standard'
+  LIMIT 1;
+
+  IF v_payment_plan_template_id IS NULL THEN
+    INSERT INTO public.payment_plan_templates (
+      rto_id,
+      program_id,
+      name,
+      is_default,
+      issue_date_offset_days,
+      xero_account_code,
+      xero_tax_type,
+      xero_item_code
+    ) VALUES (
+      v_rto_id,
+      v_program_id,
+      'Certificate III in Carpentry - Standard',
+      true,
+      0,
+      NULL,
+      NULL,
+      NULL
+    )
+    RETURNING id INTO v_payment_plan_template_id;
+  ELSE
+    UPDATE public.payment_plan_templates
+    SET
+      rto_id = v_rto_id,
+      program_id = v_program_id,
+      name = 'Certificate III in Carpentry - Standard',
+      is_default = true,
+      issue_date_offset_days = 0
+    WHERE id = v_payment_plan_template_id;
+  END IF;
+
+  -- Ensure this is the only default template for this program
+  UPDATE public.payment_plan_templates
+  SET is_default = false
+  WHERE program_id = v_program_id
+    AND id <> v_payment_plan_template_id
+    AND is_default = true;
+
+  -- Upsert installments (amount_cents = sum of line items)
+  -- Installment 1: offset 0 days, total $1,500.00
+  SELECT id INTO v_inst_1_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 0 AND name = 'Installment 1'
+  LIMIT 1;
+  IF v_inst_1_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 1', 150000, 0, true, false)
+    RETURNING id INTO v_inst_1_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 150000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_1_id;
+  END IF;
+
+  -- Installment 2: offset 30 days, total $1,250.00
+  SELECT id INTO v_inst_2_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 30 AND name = 'Installment 2'
+  LIMIT 1;
+  IF v_inst_2_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 2', 125000, 30, true, false)
+    RETURNING id INTO v_inst_2_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 125000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_2_id;
+  END IF;
+
+  -- Installment 3: offset 60 days, total $1,400.00
+  SELECT id INTO v_inst_3_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 60 AND name = 'Installment 3'
+  LIMIT 1;
+  IF v_inst_3_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 3', 140000, 60, true, false)
+    RETURNING id INTO v_inst_3_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 140000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_3_id;
+  END IF;
+
+  -- Installment 4: offset 90 days, total $1,150.00
+  SELECT id INTO v_inst_4_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 90 AND name = 'Installment 4'
+  LIMIT 1;
+  IF v_inst_4_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 4', 115000, 90, true, false)
+    RETURNING id INTO v_inst_4_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 115000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_4_id;
+  END IF;
+
+  -- Installment 5: offset 120 days, total $900.00
+  SELECT id INTO v_inst_5_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 120 AND name = 'Installment 5'
+  LIMIT 1;
+  IF v_inst_5_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 5', 90000, 120, true, false)
+    RETURNING id INTO v_inst_5_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 90000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_5_id;
+  END IF;
+
+  -- Installment 6: offset 150 days, total $900.00
+  SELECT id INTO v_inst_6_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 150 AND name = 'Installment 6'
+  LIMIT 1;
+  IF v_inst_6_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 6', 90000, 150, true, false)
+    RETURNING id INTO v_inst_6_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 90000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_6_id;
+  END IF;
+
+  -- Installment 7: offset 180 days, total $900.00
+  SELECT id INTO v_inst_7_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 180 AND name = 'Installment 7'
+  LIMIT 1;
+  IF v_inst_7_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 7', 90000, 180, true, false)
+    RETURNING id INTO v_inst_7_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 90000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_7_id;
+  END IF;
+
+  -- Installment 8: offset 210 days, total $900.00
+  SELECT id INTO v_inst_8_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 210 AND name = 'Installment 8'
+  LIMIT 1;
+  IF v_inst_8_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 8', 90000, 210, true, false)
+    RETURNING id INTO v_inst_8_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 90000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_8_id;
+  END IF;
+
+  -- Installment 9: offset 240 days, total $900.00
+  SELECT id INTO v_inst_9_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 240 AND name = 'Installment 9'
+  LIMIT 1;
+  IF v_inst_9_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 9', 90000, 240, true, false)
+    RETURNING id INTO v_inst_9_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 90000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_9_id;
+  END IF;
+
+  -- Installment 10: offset 270 days, total $900.00
+  SELECT id INTO v_inst_10_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 270 AND name = 'Installment 10'
+  LIMIT 1;
+  IF v_inst_10_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 10', 90000, 270, true, false)
+    RETURNING id INTO v_inst_10_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 90000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_10_id;
+  END IF;
+
+  -- Installment 11: offset 300 days, total $900.00
+  SELECT id INTO v_inst_11_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 300 AND name = 'Installment 11'
+  LIMIT 1;
+  IF v_inst_11_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 11', 90000, 300, true, false)
+    RETURNING id INTO v_inst_11_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 90000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_11_id;
+  END IF;
+
+  -- Installment 12: offset 330 days, total $900.00
+  SELECT id INTO v_inst_12_id
+  FROM public.payment_plan_template_installments
+  WHERE template_id = v_payment_plan_template_id AND due_date_rule_days = 330 AND name = 'Installment 12'
+  LIMIT 1;
+  IF v_inst_12_id IS NULL THEN
+    INSERT INTO public.payment_plan_template_installments (template_id, name, amount_cents, due_date_rule_days, is_commissionable, is_deposit)
+    VALUES (v_payment_plan_template_id, 'Installment 12', 90000, 330, true, false)
+    RETURNING id INTO v_inst_12_id;
+  ELSE
+    UPDATE public.payment_plan_template_installments
+    SET amount_cents = 90000, is_commissionable = true, is_deposit = false
+    WHERE id = v_inst_12_id;
+  END IF;
+
+  -- Replace lines to keep seed idempotent (no unique constraint on lines)
+  DELETE FROM public.payment_plan_template_installment_lines
+  WHERE installment_id IN (
+    v_inst_1_id, v_inst_2_id, v_inst_3_id, v_inst_4_id, v_inst_5_id, v_inst_6_id,
+    v_inst_7_id, v_inst_8_id, v_inst_9_id, v_inst_10_id, v_inst_11_id, v_inst_12_id
+  );
+
+  -- Installment 1 lines (Total $1,500.00)
+  INSERT INTO public.payment_plan_template_installment_lines (
+    installment_id, name, description, amount_cents, sequence_order, is_commissionable,
+    xero_account_code, xero_tax_type, xero_item_code
+  ) VALUES
+    (v_inst_1_id, '1st Installment', NULL, 75000, 1, true, NULL, NULL, NULL),
+    (v_inst_1_id, 'Enrolment Fee', NULL, 25000, 2, true, NULL, NULL, NULL),
+    (v_inst_1_id, 'Promotional Material (1 CPC)', NULL, 50000, 3, true, NULL, NULL, NULL);
+
+  -- Installment 2 lines (Total $1,250.00)
+  INSERT INTO public.payment_plan_template_installment_lines (
+    installment_id, name, description, amount_cents, sequence_order, is_commissionable,
+    xero_account_code, xero_tax_type, xero_item_code
+  ) VALUES
+    (v_inst_2_id, '2nd Installment', NULL, 75000, 1, true, NULL, NULL, NULL),
+    (v_inst_2_id, 'Promotional Material (2 CPC)', NULL, 50000, 2, true, NULL, NULL, NULL);
+
+  -- Installment 3 lines (Total $1,400.00)
+  INSERT INTO public.payment_plan_template_installment_lines (
+    installment_id, name, description, amount_cents, sequence_order, is_commissionable,
+    xero_account_code, xero_tax_type, xero_item_code
+  ) VALUES
+    (v_inst_3_id, '3rd Installment', NULL, 90000, 1, true, NULL, NULL, NULL),
+    (v_inst_3_id, 'Promotional Material (3 CPC)', NULL, 50000, 2, true, NULL, NULL, NULL);
+
+  -- Installment 4 lines (Total $1,150.00)
+  INSERT INTO public.payment_plan_template_installment_lines (
+    installment_id, name, description, amount_cents, sequence_order, is_commissionable,
+    xero_account_code, xero_tax_type, xero_item_code
+  ) VALUES
+    (v_inst_4_id, '4th Installment', NULL, 90000, 1, true, NULL, NULL, NULL),
+    (v_inst_4_id, 'Promotional Material (4 CPC)', NULL, 25000, 2, true, NULL, NULL, NULL);
+
+  -- Installments 5–12 lines (single line each, $900.00)
+  INSERT INTO public.payment_plan_template_installment_lines (
+    installment_id, name, description, amount_cents, sequence_order, is_commissionable,
+    xero_account_code, xero_tax_type, xero_item_code
+  ) VALUES
+    (v_inst_5_id,  '5th Installment',  NULL, 90000, 1, true, NULL, NULL, NULL),
+    (v_inst_6_id,  '6th Installment',  NULL, 90000, 1, true, NULL, NULL, NULL),
+    (v_inst_7_id,  '7th Installment',  NULL, 90000, 1, true, NULL, NULL, NULL),
+    (v_inst_8_id,  '8th Installment',  NULL, 90000, 1, true, NULL, NULL, NULL),
+    (v_inst_9_id,  '9th Installment',  NULL, 90000, 1, true, NULL, NULL, NULL),
+    (v_inst_10_id, '10th Installment', NULL, 90000, 1, true, NULL, NULL, NULL),
+    (v_inst_11_id, '11th Installment', NULL, 90000, 1, true, NULL, NULL, NULL),
+    (v_inst_12_id, '12th Installment', NULL, 90000, 1, true, NULL, NULL, NULL);
+
+  RAISE NOTICE 'Payment plan template seeded: %', v_payment_plan_template_id;
 
   -- Step 5: Insert subjects into Program Plan 2025
   INSERT INTO public.program_plan_subjects (
