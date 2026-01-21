@@ -20,6 +20,17 @@ DECLARE
   v_subject_id UUID;
   v_location_geelong_id UUID;
   v_location_melbourne_id UUID;
+  v_room2_id UUID;
+  v_room4_id UUID;
+  v_workshop_id UUID;
+  v_group1_id UUID;
+  v_group2_id UUID;
+  v_group3_id UUID;
+  v_group4_id UUID;
+  v_group5_id UUID;
+  v_subject_ids UUID[];
+  v_start_date DATE;
+  v_end_date DATE;
 BEGIN
   -- Get first RTO
   SELECT id INTO v_rto_id FROM public.rtos LIMIT 1;
@@ -576,6 +587,162 @@ BEGIN
     max_capacity = EXCLUDED.max_capacity;
 
   RAISE NOTICE 'Created 5 groups for Melbourne Main Campus';
+
+  -- Step 15: Create recurring classes for Intake 2025 (Geelong Carpentry groups)
+  -- Resolve Geelong classrooms
+  SELECT id INTO v_room2_id
+  FROM public.classrooms
+  WHERE location_id = v_location_geelong_id AND name = 'Room 2'
+  LIMIT 1;
+
+  SELECT id INTO v_room4_id
+  FROM public.classrooms
+  WHERE location_id = v_location_geelong_id AND name = 'Room 4'
+  LIMIT 1;
+
+  SELECT id INTO v_workshop_id
+  FROM public.classrooms
+  WHERE location_id = v_location_geelong_id AND name = 'Carpentry Workshop'
+  LIMIT 1;
+
+  IF v_room2_id IS NULL OR v_room4_id IS NULL OR v_workshop_id IS NULL THEN
+    RAISE EXCEPTION 'Missing classroom IDs (Room 2, Room 4, Carpentry Workshop)';
+  END IF;
+
+  -- Resolve Geelong groups
+  SELECT id INTO v_group1_id FROM public.groups WHERE program_id = v_program_id AND location_id = v_location_geelong_id AND name = 'Carpentry Group 1' LIMIT 1;
+  SELECT id INTO v_group2_id FROM public.groups WHERE program_id = v_program_id AND location_id = v_location_geelong_id AND name = 'Carpentry Group 2' LIMIT 1;
+  SELECT id INTO v_group3_id FROM public.groups WHERE program_id = v_program_id AND location_id = v_location_geelong_id AND name = 'Carpentry Group 3' LIMIT 1;
+  SELECT id INTO v_group4_id FROM public.groups WHERE program_id = v_program_id AND location_id = v_location_geelong_id AND name = 'Carpentry Group 4' LIMIT 1;
+  SELECT id INTO v_group5_id FROM public.groups WHERE program_id = v_program_id AND location_id = v_location_geelong_id AND name = 'Carpentry Group 5' LIMIT 1;
+
+  IF v_group1_id IS NULL OR v_group2_id IS NULL OR v_group3_id IS NULL OR v_group4_id IS NULL OR v_group5_id IS NULL THEN
+    RAISE EXCEPTION 'Missing one or more Carpentry Group IDs for Geelong';
+  END IF;
+
+  -- Build subject list and recurrence window for Intake 2025
+  SELECT ARRAY_AGG(id ORDER BY sequence_order) INTO v_subject_ids
+  FROM public.program_plan_subjects
+  WHERE program_plan_id = v_program_plan_2025_id;
+
+  IF v_subject_ids IS NULL OR array_length(v_subject_ids, 1) IS NULL THEN
+    RAISE EXCEPTION 'No subjects found for Intake 2025';
+  END IF;
+
+  SELECT MIN(start_date), MAX(end_date) INTO v_start_date, v_end_date
+  FROM public.program_plan_subjects
+  WHERE program_plan_id = v_program_plan_2025_id;
+
+  -- Helper: weekly pattern builder (Postgres DOW: 0=Sun ... 6=Sat)
+  -- CAR 1 (Group 1) – Theory: Sat+Sun 08:00–17:00, Room 2
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(6, 0)),
+    v_start_date, v_end_date,
+    '08:00', '17:00',
+    NULL, v_location_geelong_id, v_room2_id, v_group1_id, 'THEORY', NULL, true
+  );
+
+  -- CAR 1 (Group 1) – Workshop: Fri 08:00–12:15, Carpentry Workshop
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(5)),
+    v_start_date, v_end_date,
+    '08:00', '12:15',
+    NULL, v_location_geelong_id, v_workshop_id, v_group1_id, 'WORKSHOP', NULL, true
+  );
+
+  -- CAR 2 (Group 2) – Theory: Wed+Thu 08:00–17:00, Room 2
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(3, 4)),
+    v_start_date, v_end_date,
+    '08:00', '17:00',
+    NULL, v_location_geelong_id, v_room2_id, v_group2_id, 'THEORY', NULL, true
+  );
+
+  -- CAR 2 (Group 2) – Workshop: Sat 12:45–17:00, Carpentry Workshop
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(6)),
+    v_start_date, v_end_date,
+    '12:45', '17:00',
+    NULL, v_location_geelong_id, v_workshop_id, v_group2_id, 'WORKSHOP', NULL, true
+  );
+
+  -- CAR 3 (Group 3) – Theory: Mon+Tue 08:00–17:00, Room 2
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(1, 2)),
+    v_start_date, v_end_date,
+    '08:00', '17:00',
+    NULL, v_location_geelong_id, v_room2_id, v_group3_id, 'THEORY', NULL, true
+  );
+
+  -- CAR 3 (Group 3) – Workshop: Sun 08:00–12:15, Carpentry Workshop
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(0)),
+    v_start_date, v_end_date,
+    '08:00', '12:15',
+    NULL, v_location_geelong_id, v_workshop_id, v_group3_id, 'WORKSHOP', NULL, true
+  );
+
+  -- CAR 4 (Group 4) – Theory: Sat+Sun 08:00–17:00, Room 4
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(6, 0)),
+    v_start_date, v_end_date,
+    '08:00', '17:00',
+    NULL, v_location_geelong_id, v_room4_id, v_group4_id, 'THEORY', NULL, true
+  );
+
+  -- CAR 4 (Group 4) – Workshop: Thu 17:15–21:30, Carpentry Workshop
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(4)),
+    v_start_date, v_end_date,
+    '17:15', '21:30',
+    NULL, v_location_geelong_id, v_workshop_id, v_group4_id, 'WORKSHOP', NULL, true
+  );
+
+  -- CAR 5 (Group 5) – Theory: Mon+Tue 17:15–21:30, Room 2
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(1, 2)),
+    v_start_date, v_end_date,
+    '17:15', '21:30',
+    NULL, v_location_geelong_id, v_room2_id, v_group5_id, 'THEORY', NULL, true
+  );
+
+  -- CAR 5 (Group 5) – Theory: Fri 08:00–17:00, Room 2
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(5)),
+    v_start_date, v_end_date,
+    '08:00', '17:00',
+    NULL, v_location_geelong_id, v_room2_id, v_group5_id, 'THEORY', NULL, true
+  );
+
+  -- CAR 5 (Group 5) – Workshop: Thu 08:00–12:15, Carpentry Workshop
+  PERFORM public.create_recurring_classes_batch(
+    v_program_plan_2025_id, v_subject_ids,
+    'weekly',
+    jsonb_build_object('interval', 1, 'days_of_week', jsonb_build_array(4)),
+    v_start_date, v_end_date,
+    '08:00', '12:15',
+    NULL, v_location_geelong_id, v_workshop_id, v_group5_id, 'WORKSHOP', NULL, true
+  );
 
   RAISE NOTICE 'Seed completed successfully!';
   RAISE NOTICE 'Program ID: %', v_program_id;
