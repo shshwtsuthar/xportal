@@ -464,13 +464,17 @@ BEGIN
     (v_rto_id, v_location_geelong_id, 'Room 2', 'CLASSROOM', 20, 'AVAILABLE'),
     (v_rto_id, v_location_geelong_id, 'Room 3', 'CLASSROOM', 20, 'AVAILABLE'),
     (v_rto_id, v_location_geelong_id, 'Room 4', 'CLASSROOM', 20, 'AVAILABLE'),
-    (v_rto_id, v_location_geelong_id, 'Room 5', 'CLASSROOM', 20, 'AVAILABLE')
+    (v_rto_id, v_location_geelong_id, 'Room 5', 'CLASSROOM', 20, 'AVAILABLE'),
+    (v_rto_id, v_location_geelong_id, 'Carpentry Workshop', 'WORKSHOP', 100, 'AVAILABLE'),
+    (v_rto_id, v_location_geelong_id, 'Kitchen', 'WORKSHOP', 100, 'AVAILABLE'),
+    (v_rto_id, v_location_geelong_id, 'Painting Workshop', 'WORKSHOP', 100, 'AVAILABLE'),
+    (v_rto_id, v_location_geelong_id, 'Building Site', 'WORKSHOP', 100, 'AVAILABLE')
   ON CONFLICT (location_id, name) DO UPDATE SET
     type = EXCLUDED.type,
     capacity = EXCLUDED.capacity,
     status = EXCLUDED.status;
 
-  RAISE NOTICE 'Created 5 classrooms for Geelong Main Campus';
+  RAISE NOTICE 'Created classrooms for Geelong Main Campus';
 
   -- Step 11: Create 5 groups for Geelong Main Campus
   INSERT INTO public.groups (
@@ -540,13 +544,17 @@ BEGIN
     status
   ) VALUES
     (v_rto_id, v_location_melbourne_id, 'Room 1', 'CLASSROOM', 20, 'AVAILABLE'),
-    (v_rto_id, v_location_melbourne_id, 'Room 2', 'CLASSROOM', 20, 'AVAILABLE')
+    (v_rto_id, v_location_melbourne_id, 'Room 2', 'CLASSROOM', 20, 'AVAILABLE'),
+    (v_rto_id, v_location_melbourne_id, 'Building Site', 'WORKSHOP', 100, 'AVAILABLE'),
+    (v_rto_id, v_location_melbourne_id, 'Painting Workshop', 'WORKSHOP', 100, 'AVAILABLE'),
+    (v_rto_id, v_location_melbourne_id, 'Carpentry Workshop', 'WORKSHOP', 100, 'AVAILABLE'),
+    (v_rto_id, v_location_melbourne_id, 'Kitchen', 'WORKSHOP', 100, 'AVAILABLE')
   ON CONFLICT (location_id, name) DO UPDATE SET
     type = EXCLUDED.type,
     capacity = EXCLUDED.capacity,
     status = EXCLUDED.status;
 
-  RAISE NOTICE 'Created 2 classrooms for Melbourne Main Campus';
+  RAISE NOTICE 'Created classrooms for Melbourne Main Campus';
 
   -- Step 14: Create 5 groups for Melbourne Main Campus
   INSERT INTO public.groups (

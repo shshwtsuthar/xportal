@@ -484,6 +484,7 @@ export function ClassesManager({
                 <TableHeader className="border-b">
                   <TableRow className="divide-x">
                     <TableHead>Date</TableHead>
+                    <TableHead>Day</TableHead>
                     <TableHead>Time</TableHead>
                     <TableHead>Trainer</TableHead>
                     <TableHead>Location</TableHead>
@@ -499,6 +500,11 @@ export function ClassesManager({
                       <TableCell>
                         {cls.class_date
                           ? format(new Date(cls.class_date), 'MMM dd')
+                          : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {cls.class_date
+                          ? format(new Date(cls.class_date), 'EEEE')
                           : '—'}
                       </TableCell>
                       <TableCell>
@@ -530,7 +536,7 @@ export function ClassesManager({
                   ))}
                   {classes.length === 0 && (
                     <TableRow className="divide-x">
-                      <TableCell colSpan={8}>
+                      <TableCell colSpan={9}>
                         <p className="text-muted-foreground text-sm">
                           No classes added yet
                         </p>
