@@ -480,11 +480,11 @@ BEGIN
     name,
     max_capacity
   ) VALUES
-    (v_rto_id, v_program_id, v_location_geelong_id, 'Group 1', 20),
-    (v_rto_id, v_program_id, v_location_geelong_id, 'Group 2', 20),
-    (v_rto_id, v_program_id, v_location_geelong_id, 'Group 3', 20),
-    (v_rto_id, v_program_id, v_location_geelong_id, 'Group 4', 20),
-    (v_rto_id, v_program_id, v_location_geelong_id, 'Group 5', 20)
+    (v_rto_id, v_program_id, v_location_geelong_id, 'Carpentry Group 1', 20),
+    (v_rto_id, v_program_id, v_location_geelong_id, 'Carpentry Group 2', 20),
+    (v_rto_id, v_program_id, v_location_geelong_id, 'Carpentry Group 3', 20),
+    (v_rto_id, v_program_id, v_location_geelong_id, 'Carpentry Group 4', 20),
+    (v_rto_id, v_program_id, v_location_geelong_id, 'Carpentry Group 5', 20)
   ON CONFLICT (program_id, location_id, name) DO UPDATE SET
     rto_id = EXCLUDED.rto_id,
     program_id = EXCLUDED.program_id,
@@ -556,11 +556,11 @@ BEGIN
     name,
     max_capacity
   ) VALUES
-    (v_rto_id, v_program_id, v_location_melbourne_id, 'Group 1', 20),
-    (v_rto_id, v_program_id, v_location_melbourne_id, 'Group 2', 20),
-    (v_rto_id, v_program_id, v_location_melbourne_id, 'Group 3', 20),
-    (v_rto_id, v_program_id, v_location_melbourne_id, 'Group 4', 20),
-    (v_rto_id, v_program_id, v_location_melbourne_id, 'Group 5', 20)
+    (v_rto_id, v_program_id, v_location_melbourne_id, 'Carpentry Group 1', 20),
+    (v_rto_id, v_program_id, v_location_melbourne_id, 'Carpentry Group 2', 20),
+    (v_rto_id, v_program_id, v_location_melbourne_id, 'Carpentry Group 3', 20),
+    (v_rto_id, v_program_id, v_location_melbourne_id, 'Carpentry Group 4', 20),
+    (v_rto_id, v_program_id, v_location_melbourne_id, 'Carpentry Group 5', 20)
   ON CONFLICT (program_id, location_id, name) DO UPDATE SET
     rto_id = EXCLUDED.rto_id,
     program_id = EXCLUDED.program_id,
