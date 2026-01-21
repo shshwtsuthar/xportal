@@ -10,7 +10,7 @@
     "prepare": "husky",
     "seed:prod": "ENV_FILE=.env.production tsx scripts/seed-first-admin.ts",
     "seed:local": "ENV_FILE=.env.local tsx scripts/seed-first-admin.ts",
-    "db:setup": "supabase db reset --no-seed && supabase gen types typescript --local > database.types.ts && npm run seed:local && psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f supabase/seed.sql",
+    "db:setup": "supabase db reset --no-seed && supabase gen types typescript --local > database.types.ts && npm run seed:local && psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f supabase/seed2.sql",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
