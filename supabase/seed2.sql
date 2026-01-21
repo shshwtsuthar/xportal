@@ -33,6 +33,7 @@ DECLARE
   v_inst_10_id UUID;
   v_inst_11_id UUID;
   v_inst_12_id UUID;
+  v_offer_letter_mail_template_id UUID;
   v_subject_id UUID;
   v_location_geelong_id UUID;
   v_location_melbourne_id UUID;
@@ -547,6 +548,43 @@ BEGIN
     (v_inst_12_id, '12th Installment', NULL, 90000, 1, true, NULL, NULL, NULL);
 
   RAISE NOTICE 'Payment plan template seeded: %', v_payment_plan_template_id;
+
+  -- Step 4d: Create Mail Template (Offer Letter)
+  SELECT id INTO v_offer_letter_mail_template_id
+  FROM public.mail_templates
+  WHERE rto_id = v_rto_id
+    AND name = 'Offer Letter Mail Template'
+  LIMIT 1;
+
+  IF v_offer_letter_mail_template_id IS NULL THEN
+    INSERT INTO public.mail_templates (
+      rto_id,
+      name,
+      subject,
+      html_body,
+      created_by
+    ) VALUES (
+      v_rto_id,
+      'Offer Letter Mail Template',
+      'Your application to Ashford College has been accepted! PFA Offer Letter',
+      '<p>Hello,</p>' ||
+      '<p>Please find your offer letter attached. If you have any questions about your offer or next steps, reply to this email and our team will be happy to help.</p>' ||
+      '<p>Sincerely,<br/>Admin</p>',
+      NULL
+    )
+    RETURNING id INTO v_offer_letter_mail_template_id;
+  ELSE
+    UPDATE public.mail_templates
+    SET
+      subject = 'Your application to Ashford College has been accepted! PFA Offer Letter',
+      html_body =
+        '<p>Hello,</p>' ||
+        '<p>Please find your offer letter attached. If you have any questions about your offer or next steps, reply to this email and our team will be happy to help.</p>' ||
+        '<p>Sincerely,<br/>Admin</p>'
+    WHERE id = v_offer_letter_mail_template_id;
+  END IF;
+
+  RAISE NOTICE 'Mail template seeded (Offer Letter): %', v_offer_letter_mail_template_id;
 
   -- Step 5: Insert subjects into Program Plan 2025
   INSERT INTO public.program_plan_subjects (
