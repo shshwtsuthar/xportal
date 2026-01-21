@@ -18,6 +18,8 @@ DECLARE
   v_program_plan_2027_id UUID;
   v_program_plan_2028_id UUID;
   v_subject_id UUID;
+  v_location_geelong_id UUID;
+  v_location_melbourne_id UUID;
 BEGIN
   -- Get first RTO
   SELECT id INTO v_rto_id FROM public.rtos LIMIT 1;
@@ -412,10 +414,167 @@ BEGIN
 
   RAISE NOTICE 'Program Plan 2028 subjects inserted/updated: 34 subjects';
 
+  -- Step 9: Create Geelong Main Campus location
+  INSERT INTO public.delivery_locations (
+    rto_id,
+    location_id_internal,
+    name,
+    building_property_name,
+    flat_unit_details,
+    street_number,
+    street_name,
+    suburb,
+    state,
+    postcode
+  ) VALUES (
+    v_rto_id,
+    'GEE-MAIN',
+    'Geelong Main Campus',
+    NULL,
+    'Level 3',
+    '65',
+    'Brougham St',
+    'Geelong',
+    'VIC',
+    '3220'
+  )
+  ON CONFLICT (rto_id, location_id_internal) DO UPDATE SET
+    name = EXCLUDED.name,
+    building_property_name = EXCLUDED.building_property_name,
+    flat_unit_details = EXCLUDED.flat_unit_details,
+    street_number = EXCLUDED.street_number,
+    street_name = EXCLUDED.street_name,
+    suburb = EXCLUDED.suburb,
+    state = EXCLUDED.state,
+    postcode = EXCLUDED.postcode
+  RETURNING id INTO v_location_geelong_id;
+
+  RAISE NOTICE 'Geelong Main Campus location created/updated: %', v_location_geelong_id;
+
+  -- Step 10: Create 5 classrooms for Geelong Main Campus
+  INSERT INTO public.classrooms (
+    rto_id,
+    location_id,
+    name,
+    type,
+    capacity,
+    status
+  ) VALUES
+    (v_rto_id, v_location_geelong_id, 'Room 1', 'CLASSROOM', 20, 'AVAILABLE'),
+    (v_rto_id, v_location_geelong_id, 'Room 2', 'CLASSROOM', 20, 'AVAILABLE'),
+    (v_rto_id, v_location_geelong_id, 'Room 3', 'CLASSROOM', 20, 'AVAILABLE'),
+    (v_rto_id, v_location_geelong_id, 'Room 4', 'CLASSROOM', 20, 'AVAILABLE'),
+    (v_rto_id, v_location_geelong_id, 'Room 5', 'CLASSROOM', 20, 'AVAILABLE')
+  ON CONFLICT (location_id, name) DO UPDATE SET
+    type = EXCLUDED.type,
+    capacity = EXCLUDED.capacity,
+    status = EXCLUDED.status;
+
+  RAISE NOTICE 'Created 5 classrooms for Geelong Main Campus';
+
+  -- Step 11: Create 5 groups for Geelong Main Campus
+  INSERT INTO public.groups (
+    rto_id,
+    program_id,
+    location_id,
+    name,
+    max_capacity
+  ) VALUES
+    (v_rto_id, v_program_id, v_location_geelong_id, 'Group 1', 20),
+    (v_rto_id, v_program_id, v_location_geelong_id, 'Group 2', 20),
+    (v_rto_id, v_program_id, v_location_geelong_id, 'Group 3', 20),
+    (v_rto_id, v_program_id, v_location_geelong_id, 'Group 4', 20),
+    (v_rto_id, v_program_id, v_location_geelong_id, 'Group 5', 20)
+  ON CONFLICT (program_id, location_id, name) DO UPDATE SET
+    rto_id = EXCLUDED.rto_id,
+    program_id = EXCLUDED.program_id,
+    location_id = EXCLUDED.location_id,
+    max_capacity = EXCLUDED.max_capacity;
+
+  RAISE NOTICE 'Created 5 groups for Geelong Main Campus';
+
+  -- Step 12: Create Melbourne Main Campus location
+  INSERT INTO public.delivery_locations (
+    rto_id,
+    location_id_internal,
+    name,
+    building_property_name,
+    flat_unit_details,
+    street_number,
+    street_name,
+    suburb,
+    state,
+    postcode
+  ) VALUES (
+    v_rto_id,
+    'MEL-MAIN',
+    'Melbourne Main Campus',
+    NULL,
+    '5G & 6G',
+    '427',
+    'Docklands Dr',
+    'Docklands',
+    'VIC',
+    '3008'
+  )
+  ON CONFLICT (rto_id, location_id_internal) DO UPDATE SET
+    name = EXCLUDED.name,
+    building_property_name = EXCLUDED.building_property_name,
+    flat_unit_details = EXCLUDED.flat_unit_details,
+    street_number = EXCLUDED.street_number,
+    street_name = EXCLUDED.street_name,
+    suburb = EXCLUDED.suburb,
+    state = EXCLUDED.state,
+    postcode = EXCLUDED.postcode
+  RETURNING id INTO v_location_melbourne_id;
+
+  RAISE NOTICE 'Melbourne Main Campus location created/updated: %', v_location_melbourne_id;
+
+  -- Step 13: Create 2 classrooms for Melbourne Main Campus
+  INSERT INTO public.classrooms (
+    rto_id,
+    location_id,
+    name,
+    type,
+    capacity,
+    status
+  ) VALUES
+    (v_rto_id, v_location_melbourne_id, 'Room 1', 'CLASSROOM', 20, 'AVAILABLE'),
+    (v_rto_id, v_location_melbourne_id, 'Room 2', 'CLASSROOM', 20, 'AVAILABLE')
+  ON CONFLICT (location_id, name) DO UPDATE SET
+    type = EXCLUDED.type,
+    capacity = EXCLUDED.capacity,
+    status = EXCLUDED.status;
+
+  RAISE NOTICE 'Created 2 classrooms for Melbourne Main Campus';
+
+  -- Step 14: Create 5 groups for Melbourne Main Campus
+  INSERT INTO public.groups (
+    rto_id,
+    program_id,
+    location_id,
+    name,
+    max_capacity
+  ) VALUES
+    (v_rto_id, v_program_id, v_location_melbourne_id, 'Group 1', 20),
+    (v_rto_id, v_program_id, v_location_melbourne_id, 'Group 2', 20),
+    (v_rto_id, v_program_id, v_location_melbourne_id, 'Group 3', 20),
+    (v_rto_id, v_program_id, v_location_melbourne_id, 'Group 4', 20),
+    (v_rto_id, v_program_id, v_location_melbourne_id, 'Group 5', 20)
+  ON CONFLICT (program_id, location_id, name) DO UPDATE SET
+    rto_id = EXCLUDED.rto_id,
+    program_id = EXCLUDED.program_id,
+    location_id = EXCLUDED.location_id,
+    max_capacity = EXCLUDED.max_capacity;
+
+  RAISE NOTICE 'Created 5 groups for Melbourne Main Campus';
+
   RAISE NOTICE 'Seed completed successfully!';
   RAISE NOTICE 'Program ID: %', v_program_id;
   RAISE NOTICE 'Program Plan IDs: 2025=%, 2026=%, 2027=%, 2028=%', 
     v_program_plan_2025_id, v_program_plan_2026_id, v_program_plan_2027_id, v_program_plan_2028_id;
+  RAISE NOTICE 'Location IDs: Geelong=%, Melbourne=%', 
+    v_location_geelong_id, v_location_melbourne_id;
 
 END $$;
 
