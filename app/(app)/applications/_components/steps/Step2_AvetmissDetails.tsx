@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
+import ISO6391 from 'iso-639-1';
 import {
   FormControl,
   FormField,
@@ -26,81 +27,139 @@ import {
 } from '@/src/lib/applicationSchema';
 
 // AVETMISS Language Codes (NAT00080: Language Identifier)
-// Standard 4-digit codes used in Australian VET data collection
-const LANGUAGE_CODES = [
-  { code: '1201', label: 'English' },
-  { code: '2101', label: 'Afrikaans' },
-  { code: '2201', label: 'Albanian' },
-  { code: '2301', label: 'Amharic' },
-  { code: '2401', label: 'Arabic' },
-  { code: '2501', label: 'Armenian' },
-  { code: '2601', label: 'Assyrian' },
-  { code: '2701', label: 'Azerbaijani' },
-  { code: '2801', label: 'Bengali' },
-  { code: '2901', label: 'Bosnian' },
-  { code: '3001', label: 'Bulgarian' },
-  { code: '3101', label: 'Burmese' },
-  { code: '3201', label: 'Cantonese' },
-  { code: '3301', label: 'Catalan' },
-  { code: '3401', label: 'Croatian' },
-  { code: '3501', label: 'Czech' },
-  { code: '3601', label: 'Danish' },
-  { code: '3701', label: 'Dari' },
-  { code: '3801', label: 'Dutch' },
-  { code: '3901', label: 'Estonian' },
-  { code: '4001', label: 'Fijian' },
-  { code: '4101', label: 'Filipino (Tagalog)' },
-  { code: '4201', label: 'Finnish' },
-  { code: '4301', label: 'French' },
-  { code: '4401', label: 'German' },
-  { code: '4501', label: 'Greek' },
-  { code: '4601', label: 'Gujarati' },
-  { code: '4701', label: 'Hakka' },
-  { code: '4801', label: 'Hebrew' },
-  { code: '4901', label: 'Hindi' },
-  { code: '5001', label: 'Hungarian' },
-  { code: '5101', label: 'Indonesian' },
-  { code: '5201', label: 'Italian' },
-  { code: '5301', label: 'Japanese' },
-  { code: '5401', label: 'Khmer (Cambodian)' },
-  { code: '5501', label: 'Korean' },
-  { code: '5601', label: 'Kurdish' },
-  { code: '5701', label: 'Lao' },
-  { code: '5801', label: 'Latvian' },
-  { code: '5901', label: 'Lithuanian' },
-  { code: '6001', label: 'Macedonian' },
-  { code: '6101', label: 'Malay' },
-  { code: '6201', label: 'Maltese' },
-  { code: '6301', label: 'Mandarin' },
-  { code: '6401', label: 'Nepali' },
-  { code: '6501', label: 'Norwegian' },
-  { code: '6601', label: 'Persian (Farsi)' },
-  { code: '6701', label: 'Polish' },
-  { code: '6801', label: 'Portuguese' },
-  { code: '6901', label: 'Punjabi' },
-  { code: '7001', label: 'Romanian' },
-  { code: '7101', label: 'Russian' },
-  { code: '7201', label: 'Samoan' },
-  { code: '7301', label: 'Serbian' },
-  { code: '7401', label: 'Sinhalese' },
-  { code: '7501', label: 'Slovak' },
-  { code: '7601', label: 'Slovenian' },
-  { code: '7701', label: 'Somali' },
-  { code: '7801', label: 'Spanish' },
-  { code: '7901', label: 'Swedish' },
-  { code: '8001', label: 'Tamil' },
-  { code: '8101', label: 'Telugu' },
-  { code: '8201', label: 'Thai' },
-  { code: '8301', label: 'Tigrinya' },
-  { code: '8401', label: 'Tongan' },
-  { code: '8501', label: 'Turkish' },
-  { code: '8601', label: 'Ukrainian' },
-  { code: '8701', label: 'Urdu' },
-  { code: '8801', label: 'Vietnamese' },
-  { code: '8901', label: 'Yiddish' },
-  { code: '9001', label: 'Yoruba' },
-  { code: '9101', label: 'Other' },
-] as const;
+// Mapping of language names to AVETMISS 4-digit codes
+const AVETMISS_LANGUAGE_MAP: Record<string, string> = {
+  English: '1201',
+  Afrikaans: '2101',
+  Albanian: '2201',
+  Amharic: '2301',
+  Arabic: '2401',
+  Armenian: '2501',
+  Assyrian: '2601',
+  Azerbaijani: '2701',
+  Bengali: '2801',
+  Bosnian: '2901',
+  Bulgarian: '3001',
+  Burmese: '3101',
+  Cantonese: '3201',
+  Catalan: '3301',
+  Croatian: '3401',
+  Czech: '3501',
+  Danish: '3601',
+  Dari: '3701',
+  Dutch: '3801',
+  Estonian: '3901',
+  Fijian: '4001',
+  'Filipino (Tagalog)': '4101',
+  Finnish: '4201',
+  French: '4301',
+  German: '4401',
+  Greek: '4501',
+  Gujarati: '4601',
+  Hakka: '4701',
+  Hebrew: '4801',
+  Hindi: '4901',
+  Hungarian: '5001',
+  Indonesian: '5101',
+  Italian: '5201',
+  Japanese: '5301',
+  'Khmer (Cambodian)': '5401',
+  Korean: '5501',
+  Kurdish: '5601',
+  Lao: '5701',
+  Latvian: '5801',
+  Lithuanian: '5901',
+  Macedonian: '6001',
+  Malay: '6101',
+  Maltese: '6201',
+  Mandarin: '6301',
+  Nepali: '6401',
+  Norwegian: '6501',
+  'Persian (Farsi)': '6601',
+  Polish: '6701',
+  Portuguese: '6801',
+  Punjabi: '6901',
+  Romanian: '7001',
+  Russian: '7101',
+  Samoan: '7201',
+  Serbian: '7301',
+  Sinhalese: '7401',
+  Slovak: '7501',
+  Slovenian: '7601',
+  Somali: '7701',
+  Spanish: '7801',
+  Swedish: '7901',
+  Tamil: '8001',
+  Telugu: '8101',
+  Thai: '8201',
+  Tigrinya: '8301',
+  Tongan: '8401',
+  Turkish: '8501',
+  Ukrainian: '8601',
+  Urdu: '8701',
+  Vietnamese: '8801',
+  Yiddish: '8901',
+  Yoruba: '9001',
+  Other: '9101',
+};
+
+// Additional language name variations and mappings
+const LANGUAGE_NAME_VARIATIONS: Record<string, string> = {
+  Tagalog: 'Filipino (Tagalog)',
+  Filipino: 'Filipino (Tagalog)',
+  Khmer: 'Khmer (Cambodian)',
+  Cambodian: 'Khmer (Cambodian)',
+  Persian: 'Persian (Farsi)',
+  Farsi: 'Persian (Farsi)',
+  Sinhala: 'Sinhalese',
+  'Mandarin Chinese': 'Mandarin',
+  'Cantonese Chinese': 'Cantonese',
+};
+
+// Generate comprehensive language list
+// Combines AVETMISS codes with ISO 639-1 languages
+const generateLanguageList = (): Array<{ code: string; label: string }> => {
+  const languages: Array<{ code: string; label: string }> = [];
+  const usedLabels = new Set<string>();
+
+  // First, add all AVETMISS languages
+  Object.entries(AVETMISS_LANGUAGE_MAP).forEach(([label, code]) => {
+    languages.push({ code, label });
+    usedLabels.add(label.toLowerCase());
+  });
+
+  // Then, add all ISO 639-1 languages that aren't already included
+  const isoLanguages = ISO6391.getAllNames();
+  isoLanguages.forEach((isoName) => {
+    const lowerName = isoName.toLowerCase();
+
+    // Skip if already in AVETMISS list
+    if (usedLabels.has(lowerName)) {
+      return;
+    }
+
+    // Check for name variations
+    const variation = LANGUAGE_NAME_VARIATIONS[isoName];
+    if (variation && usedLabels.has(variation.toLowerCase())) {
+      return;
+    }
+
+    // Use ISO 639-1 code as the code value
+    const isoCode = ISO6391.getCode(isoName);
+    if (isoCode) {
+      languages.push({ code: isoCode.toUpperCase(), label: isoName });
+      usedLabels.add(lowerName);
+    }
+  });
+
+  // Sort alphabetically by label
+  languages.sort((a, b) => a.label.localeCompare(b.label));
+
+  return languages;
+};
+
+// Generate the comprehensive language list once
+const LANGUAGE_CODES = generateLanguageList();
 
 export const Step2_AvetmissDetails = () => {
   const form = useFormContext<ApplicationFormValues>();
