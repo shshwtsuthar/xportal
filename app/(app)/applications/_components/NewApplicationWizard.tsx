@@ -395,6 +395,14 @@ export function NewApplicationWizard({ applicationId }: Props) {
     }
   }, [applicationId, isLoading, currentApplication, createMutation]);
 
+  // Readiness engine (manual checking on SaveDraft and step changes)
+  const {
+    isReady: isFormReadyForSubmission,
+    isValidating,
+    missing: missingFields,
+    checkReadiness,
+  } = useSubmissionReadiness(form);
+
   const handleSaveDraft = useCallback(async () => {
     if (isReadOnly) {
       toast.error(
@@ -682,6 +690,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
               await afterPersistDisabilitiesAndPriorEducation(
                 currentApplication.id
               );
+              checkReadiness();
             },
             onError: (error) =>
               toast.error(`Failed to save draft: ${error.message}`),
@@ -701,6 +710,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
               await afterPersistDisabilitiesAndPriorEducation(
                 createMutation.data.id
               );
+              checkReadiness();
             },
             onError: (error) =>
               toast.error(`Failed to save draft: ${error.message}`),
@@ -720,6 +730,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
             await afterPersistLearningPlan(created.id);
             await afterPersistPaymentSchedule(created.id);
             await afterPersistDisabilitiesAndPriorEducation(created.id);
+            checkReadiness();
           },
           onError: (err) =>
             toast.error(`Failed to create application: ${err.message}`),
@@ -729,7 +740,14 @@ export function NewApplicationWizard({ applicationId }: Props) {
       console.error('Save draft error:', error);
       toast.error('Failed to save draft');
     }
-  }, [isReadOnly, form, updateMutation, createMutation, currentApplication]);
+  }, [
+    isReadOnly,
+    form,
+    updateMutation,
+    createMutation,
+    currentApplication,
+    checkReadiness,
+  ]);
 
   // Store the latest handleSaveDraft in a ref to avoid re-registering the event listener
   const handleSaveDraftRef = useRef(handleSaveDraft);
@@ -765,6 +783,8 @@ export function NewApplicationWizard({ applicationId }: Props) {
   const goStep = async (next: number) => {
     await handleSaveDraft();
     setActiveStep(next);
+    // Check readiness after step change
+    checkReadiness();
   };
 
   const handleSubmitApplication = async () => {
@@ -1073,12 +1093,6 @@ export function NewApplicationWizard({ applicationId }: Props) {
     }
   };
 
-  // Debounced readiness engine (single subscription; avoids heavy useWatch arrays)
-  const {
-    isReady: isFormReadyForSubmission,
-    isValidating,
-    missing: missingFields,
-  } = useSubmissionReadiness(form);
   const readinessPreview = useMemo(() => {
     const preview = missingFields.slice(0, 10);
     const remainder =

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { getSubmissionMissingFields } from '@/src/schemas/application-submission';
 import {
@@ -6,29 +6,11 @@ import {
   type ApplicationFormValues,
 } from '@/src/lib/applicationSchema';
 
-function useDebouncedCallback<T extends unknown[]>(
-  fn: (...args: T) => void,
-  delayMs: number
-) {
-  const timeoutRef = useRef<number | undefined>(undefined);
-  const fnRef = useRef(fn);
-  useEffect(() => {
-    fnRef.current = fn;
-  }, [fn]);
-  return (...args: T) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    timeoutRef.current = window.setTimeout(() => {
-      fnRef.current(...args);
-    }, delayMs);
-  };
-}
-
 export type ReadinessResult = {
   isReady: boolean;
   missing: string[];
   isValidating: boolean;
+  checkReadiness: () => void;
 };
 
 /**
@@ -85,13 +67,12 @@ function normalizeFormValuesForValidation(
 
 // Accept both draft (partial) and full form types
 export function useSubmissionReadiness(
-  form: UseFormReturn<Partial<ApplicationFormValues>>,
-  debounceMs = 150
+  form: UseFormReturn<Partial<ApplicationFormValues>>
 ): ReadinessResult {
   const [missing, setMissing] = useState<string[]>([]);
   const [isValidating, setIsValidating] = useState(false);
 
-  const recompute = useDebouncedCallback(() => {
+  const checkReadiness = useCallback(() => {
     setIsValidating(true);
     try {
       const values = form.getValues();
@@ -134,22 +115,16 @@ export function useSubmissionReadiness(
     } finally {
       setIsValidating(false);
     }
-  }, debounceMs);
+  }, [form]);
 
-  // Subscribe to any form change. This is a single subscription (not 45+ watchers).
+  // Initial compute on mount
   useEffect(() => {
-    const subscription = form.watch(() => {
-      setIsValidating(true);
-      recompute();
-    });
-    // Initial compute
-    recompute();
-    return () => subscription.unsubscribe();
-  }, [form, recompute]);
+    checkReadiness();
+  }, [checkReadiness]);
 
   const isReady = useMemo(
     () => !isValidating && missing.length === 0,
     [isValidating, missing]
   );
-  return { isReady, missing, isValidating };
+  return { isReady, missing, isValidating, checkReadiness };
 }
