@@ -433,7 +433,6 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
                     value={field.value}
                     onValueChange={field.onChange}
                     placeholder="Select country"
-                    allowedCountries={['AU']}
                   />
                 </FormControl>
                 <FormMessage />
@@ -584,7 +583,6 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Select country"
-                        allowedCountries={['AU']}
                       />
                     </FormControl>
                     <FormMessage />
