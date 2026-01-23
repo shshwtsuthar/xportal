@@ -8,11 +8,10 @@ import {
   applyDateMask,
 } from '@/lib/utils/date-input';
 
-export interface DateInputProps
-  extends Omit<
-    React.ComponentProps<typeof Input>,
-    'type' | 'value' | 'onChange'
-  > {
+export interface DateInputProps extends Omit<
+  React.ComponentProps<typeof Input>,
+  'type' | 'value' | 'onChange'
+> {
   value?: string | Date;
   onChange?: (value: string) => void;
   placeholder?: string;
@@ -23,11 +22,16 @@ export interface DateInputProps
  * but stores them as YYYY-MM-DD strings for database compatibility
  */
 export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
-  ({ value, onChange, placeholder = 'dd/mm/yyyy', ...props }, ref) => {
+  ({ value, onChange, placeholder = 'dd/mm/yyyy', onBlur, ...props }, ref) => {
     const [displayValue, setDisplayValue] = React.useState<string>('');
 
     // Update display value when prop value changes
+    // But preserve display value if the form value is 'INVALID_DATE' (set on blur for invalid dates)
     React.useEffect(() => {
+      if (value === 'INVALID_DATE') {
+        // Don't update display value - keep showing what user typed
+        return;
+      }
       const formatted = formatDateForDisplay(value);
       setDisplayValue(formatted);
     }, [value]);
@@ -88,6 +92,23 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
       }
     };
 
+    const handleBlurInternal = (e: React.FocusEvent<HTMLInputElement>) => {
+      // On blur, validate the display value
+      // If display value is non-empty but invalid, set an invalid value that will fail validation
+      if (displayValue.trim() && !parseDateFromDisplay(displayValue)) {
+        // Set an invalid date string that will fail schema validation
+        // This ensures incomplete dates like "14" show validation errors
+        if (onChange) {
+          onChange('INVALID_DATE');
+        }
+      }
+
+      // Call the original onBlur handler if provided
+      if (onBlur) {
+        onBlur(e);
+      }
+    };
+
     return (
       <Input
         ref={ref}
@@ -96,6 +117,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
         onChange={handleChange}
         onPaste={handlePaste}
         onKeyDown={handleKeyDown}
+        onBlur={handleBlurInternal}
         placeholder={placeholder}
         maxLength={10}
         {...props}

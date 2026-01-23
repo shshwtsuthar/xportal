@@ -148,6 +148,10 @@ export const Step3_Cricos = () => {
                       <DateInput
                         value={field.value}
                         onChange={(value) => field.onChange(value || '')}
+                        onBlur={(e) => {
+                          field.onBlur();
+                          form.trigger('passport_issue_date');
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -165,6 +169,10 @@ export const Step3_Cricos = () => {
                       <DateInput
                         value={field.value}
                         onChange={(value) => field.onChange(value || '')}
+                        onBlur={(e) => {
+                          field.onBlur();
+                          form.trigger('passport_expiry_date');
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -367,6 +375,10 @@ export const Step3_Cricos = () => {
                             <DateInput
                               value={field.value}
                               onChange={(value) => field.onChange(value || '')}
+                              onBlur={(e) => {
+                                field.onBlur();
+                                form.trigger('welfare_start_date');
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
@@ -521,6 +533,10 @@ export const Step3_Cricos = () => {
                             className="w-full"
                             value={field.value}
                             onChange={(value) => field.onChange(value || '')}
+                            onBlur={(e) => {
+                              field.onBlur();
+                              form.trigger('oshc_start_date');
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -539,6 +555,10 @@ export const Step3_Cricos = () => {
                             className="w-full"
                             value={field.value}
                             onChange={(value) => field.onChange(value || '')}
+                            onBlur={(e) => {
+                              field.onBlur();
+                              form.trigger('oshc_end_date');
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -636,6 +656,10 @@ export const Step3_Cricos = () => {
                             className="w-full"
                             value={field.value}
                             onChange={(value) => field.onChange(value || '')}
+                            onBlur={(e) => {
+                              field.onBlur();
+                              form.trigger('english_test_date');
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
