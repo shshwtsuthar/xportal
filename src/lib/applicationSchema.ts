@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { verifyUSI } from '@/lib/utils/usiValidator';
 
 const AU_STATE_CODES = new Set([
   'ACT',
@@ -251,7 +252,19 @@ export const applicationSchema = z
     // International (CRICOS)
     is_international: z.boolean(),
     // NAT00080: USI - required for domestic students
-    usi: z.string().optional(),
+    usi: z
+      .string()
+      .optional()
+      .refine(
+        (val) => {
+          // If USI is provided, validate its format
+          if (!val || val.trim().length === 0) return true;
+          return verifyUSI(val);
+        },
+        {
+          message: 'Invalid USI format. Please check for typos.',
+        }
+      ),
     // USI exemption codes
     usi_exemption_code: z.enum(['INDIV', 'INTOFF']).optional(),
     passport_number: z.string().optional(),

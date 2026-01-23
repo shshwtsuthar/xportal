@@ -577,6 +577,8 @@ export const Step2_AvetmissDetails = () => {
                         {...field}
                         placeholder="Enter your 10-character USI"
                         className="w-full"
+                        maxLength={10}
+                        value={field.value ?? ''}
                         onChange={(e) => {
                           // Convert to uppercase and remove spaces
                           const value = e.target.value
@@ -584,7 +586,11 @@ export const Step2_AvetmissDetails = () => {
                             .replace(/\s/g, '');
                           field.onChange(value);
                         }}
-                        maxLength={10}
+                        onBlur={(e) => {
+                          field.onBlur();
+                          // Trigger validation after blur
+                          form.trigger('usi');
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
