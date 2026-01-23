@@ -157,6 +157,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
 
   const form = useForm({
     resolver: zodResolver(draftApplicationSchema), // Use draft schema for form validation
+    mode: 'onBlur', // Validate fields on blur to show UI indicators for invalid inputs
     defaultValues: {
       salutation: '',
       first_name: '',
