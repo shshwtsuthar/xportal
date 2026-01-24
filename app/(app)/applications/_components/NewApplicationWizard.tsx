@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MagneticButton } from '@/components/ui/magnetic-button';
 import { draftApplicationSchema } from '@/src/schemas';
-import type { ApplicationFormValues } from '@/src/lib/applicationSchema';
 import { useSubmissionReadiness } from '@/src/hooks/useSubmissionReadiness';
 import { useCreateApplication } from '@/src/hooks/useCreateApplication';
 import { useGetApplication } from '@/src/hooks/useGetApplication';
@@ -36,6 +35,7 @@ import { Step3_Cricos } from './steps/Step3_Cricos';
 import { EnrollmentStep } from './steps/Step4_Enrollment';
 import { DocumentsPane } from './DocumentsPane';
 import { PaymentStep } from './PaymentStep';
+import { EnrollmentErrorBoundary } from './EnrollmentErrorBoundary';
 import { useUploadApplicationFile } from '@/src/hooks/useApplicationFiles';
 import { toast } from 'sonner';
 import { useSubmitApplication } from '@/src/hooks/useSubmitApplication';
@@ -188,6 +188,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       program_id: '',
       timetable_id: '',
       preferred_location_id: '',
+      group_id: '',
       proposed_commencement_date: '',
       payment_plan_template_id: '',
       payment_anchor_date: '',
@@ -292,6 +293,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       : [];
   }, [dbPriorEducation]);
 
+  // Effect 1: Initialize form when application changes (core data only)
   useEffect(() => {
     if (
       currentApplication &&
@@ -299,19 +301,64 @@ export function NewApplicationWizard({ applicationId }: Props) {
     ) {
       const formValues = mapApplicationToFormValues(currentApplication);
 
-      // Merge in disabilities and prior education if loaded
-      if (disabilitiesFormData.length > 0) {
-        formValues.disabilities = disabilitiesFormData;
-      }
-
-      if (priorEducationFormData.length > 0) {
-        formValues.prior_education = priorEducationFormData;
-      }
-
+      // Don't merge arrays here - they'll be handled by separate effects
+      // This prevents race conditions where arrays load slower than the main application
       form.reset(formValues);
       lastInitializedAppId.current = currentApplication.id;
     }
-  }, [currentApplication, form, disabilitiesFormData, priorEducationFormData]);
+  }, [currentApplication, form]);
+
+  // Effect 2: Update disabilities array when it loads (handles late arrival of data)
+  useEffect(() => {
+    if (
+      currentApplication?.id &&
+      lastInitializedAppId.current === currentApplication.id &&
+      disabilitiesFormData.length > 0
+    ) {
+      // Only update if the form doesn't already have these values
+      const currentFormDisabilities = form.getValues('disabilities') || [];
+      const formMatches =
+        disabilitiesFormData.length === currentFormDisabilities.length &&
+        disabilitiesFormData.every((dbDis) =>
+          currentFormDisabilities.some(
+            (formDis) => formDis.disability_type_id === dbDis.disability_type_id
+          )
+        );
+
+      if (!formMatches) {
+        form.setValue('disabilities', disabilitiesFormData, {
+          shouldDirty: false,
+        });
+      }
+    }
+  }, [currentApplication?.id, disabilitiesFormData, form]);
+
+  // Effect 3: Update prior education array when it loads (handles late arrival of data)
+  useEffect(() => {
+    if (
+      currentApplication?.id &&
+      lastInitializedAppId.current === currentApplication.id &&
+      priorEducationFormData.length > 0
+    ) {
+      // Only update if the form doesn't already have these values
+      const currentFormPriorEd = form.getValues('prior_education') || [];
+      const formMatches =
+        priorEducationFormData.length === currentFormPriorEd.length &&
+        priorEducationFormData.every((dbEd) =>
+          currentFormPriorEd.some(
+            (formEd) =>
+              formEd.prior_achievement_id === dbEd.prior_achievement_id &&
+              formEd.recognition_type === dbEd.recognition_type
+          )
+        );
+
+      if (!formMatches) {
+        form.setValue('prior_education', priorEducationFormData, {
+          shouldDirty: false,
+        });
+      }
+    }
+  }, [currentApplication?.id, priorEducationFormData, form]);
 
   useEffect(() => {
     // Only auto-create if we're on /new route and no application exists yet
@@ -639,7 +686,12 @@ export function NewApplicationWizard({ applicationId }: Props) {
     if (activeStep === 2) return <Step3_Cricos />;
     if (activeStep === 3)
       return <Step3_AdditionalInfo application={currentApplication} />;
-    if (activeStep === 4) return <EnrollmentStep form={form} />;
+    if (activeStep === 4)
+      return (
+        <EnrollmentErrorBoundary>
+          <EnrollmentStep form={form} />
+        </EnrollmentErrorBoundary>
+      );
     if (activeStep === 5 && !!currentApplication)
       return <PaymentStep application={currentApplication} form={form} />;
     if (activeStep === 6)

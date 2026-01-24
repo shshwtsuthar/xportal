@@ -11,36 +11,10 @@ import {
 } from '@/components/ui/table';
 import { useCalculateEnrollmentProgression } from '@/src/hooks/useCalculateEnrollmentProgression';
 import { format } from 'date-fns';
+import { getNowInAustraliaSydney } from '@/lib/utils/date';
 
 type Props = {
   timetableId?: string;
-};
-
-const getNowInAustraliaSydney = (): Date => {
-  // Build a Date representing the current wall-clock time in Australia/Sydney
-  const fmt = new Intl.DateTimeFormat('en-AU', {
-    timeZone: 'Australia/Sydney',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
-
-  const parts = fmt.formatToParts(new Date());
-  const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-  const y = Number(lookup.year);
-  const m = Number(lookup.month);
-  const d = Number(lookup.day);
-  const hh = Number(lookup.hour);
-  const mm = Number(lookup.minute);
-  const ss = Number(lookup.second);
-
-  // Create a Date in local timezone using the Sydney wall-clock fields
-  // This is sufficient for ordering comparisons within the same zone context
-  return new Date(y, m - 1, d, hh, mm, ss);
 };
 
 export function OngoingSubjectPreview({ timetableId }: Props) {

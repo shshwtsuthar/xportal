@@ -1,7 +1,8 @@
 'use client';
 
 import { UseFormReturn } from 'react-hook-form';
-import { ApplicationFormValues } from '@/src/lib/applicationSchema';
+import { z } from 'zod';
+import { draftApplicationSchema } from '@/src/schemas';
 import {
   FormField,
   FormItem,
@@ -46,50 +47,57 @@ import {
 import { CalendarIcon, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { useEffect, useState } from 'react';
-import { formatDateToLocal } from '@/lib/utils/date';
+import { useState } from 'react';
+import { formatDateToLocal, getTodayInAustraliaSydney } from '@/lib/utils/date';
+import {
+  isGroupFull,
+  isGroupNearFull,
+  getGroupCapacityAriaLabel,
+} from '@/lib/utils/enrollment-utils';
 
-// Union type that can handle both draft and final application forms
-type FlexibleFormValues =
-  | ApplicationFormValues
-  | {
-      email?: string; // Optional in draftApplicationSchema
-      program_id?: string;
-      timetable_id?: string;
-      preferred_location_id?: string;
-      proposed_commencement_date?: string;
-      [key: string]: unknown; // Allow other fields for flexibility
-    };
+// Type inferred from the draft schema (all fields optional)
+type DraftApplicationFormValues = z.infer<typeof draftApplicationSchema>;
 
 type Props = {
-  form: UseFormReturn<FlexibleFormValues>;
+  form: UseFormReturn<DraftApplicationFormValues>;
 };
 
 export function EnrollmentStep({ form }: Props) {
-  const { data: programs, isLoading } = useGetPrograms();
-  const { data: locations = [], isLoading: locationsLoading } =
-    useGetLocations();
+  const { data: programs, isLoading, error: programsError } = useGetPrograms();
+  const {
+    data: locations = [],
+    isLoading: locationsLoading,
+    error: locationsError,
+  } = useGetLocations();
 
   // Use form state directly - single source of truth
-  const programId = form.watch('program_id');
-  const selectedLocationId = form.watch('preferred_location_id') as string;
-  const selectedGroupId = form.watch('group_id') as string;
-  const selectedTimetableId = form.watch('timetable_id');
+  const programId = form.watch('program_id') as string | undefined;
+  const selectedLocationId = form.watch('preferred_location_id') as
+    | string
+    | undefined;
+  const selectedGroupId = form.watch('group_id') as string | undefined;
+  const selectedTimetableId = form.watch('timetable_id') as string | undefined;
   const selectedDateString = form.watch('proposed_commencement_date') as
     | string
     | undefined;
 
   // Get groups for the selected location
-  const { data: groups = [], isLoading: groupsLoading } =
-    useGetGroupsByLocation(programId, selectedLocationId);
+  const {
+    data: groups = [],
+    isLoading: groupsLoading,
+    error: groupsError,
+  } = useGetGroupsByLocation(programId, selectedLocationId);
 
   // Get timetables filtered by group and location
-  const { data: timetables = [], isLoading: timetablesLoading } =
-    useGetTimetablesByGroupAndLocation(
-      programId,
-      selectedGroupId,
-      selectedLocationId
-    );
+  const {
+    data: timetables = [],
+    isLoading: timetablesLoading,
+    error: timetablesError,
+  } = useGetTimetablesByGroupAndLocation(
+    programId,
+    selectedGroupId,
+    selectedLocationId
+  );
 
   const selectedDate = selectedDateString
     ? new Date(selectedDateString)
@@ -99,10 +107,9 @@ export function EnrollmentStep({ form }: Props) {
   const disableDate = (date: Date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getTodayInAustraliaSydney();
 
-    // Disable dates before today
+    // Disable dates before today (in Australia/Sydney timezone)
     if (d < today) return true;
 
     // Allow any future date for timetable-based enrollment
@@ -130,22 +137,26 @@ export function EnrollmentStep({ form }: Props) {
                   <FormLabel>Program *</FormLabel>
                   <FormControl>
                     <Select
-                      value={field.value || programId}
+                      value={field.value || ''}
                       onValueChange={(value) => {
                         field.onChange(value);
-                        form.setValue('program_id', value);
-                        // Explicitly clear dependent selections on program change
-                        form.setValue('preferred_location_id', '');
-                        form.setValue('group_id', '');
-                        form.setValue('timetable_id', '');
-                        form.setValue('proposed_commencement_date', '');
+                        // Clear dependent selections on program change
+                        form.setValue('preferred_location_id', undefined);
+                        form.setValue('group_id', undefined);
+                        form.setValue('timetable_id', undefined);
+                        form.setValue('proposed_commencement_date', undefined);
                       }}
+                      disabled={isLoading}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select a program" />
                       </SelectTrigger>
                       <SelectContent>
-                        {isLoading ? (
+                        {programsError ? (
+                          <div className="text-destructive px-2 py-1.5 text-sm">
+                            Error loading programs. Please try again.
+                          </div>
+                        ) : isLoading ? (
                           <div className="text-muted-foreground px-2 py-1.5 text-sm">
                             Loading programs...
                           </div>
@@ -176,28 +187,33 @@ export function EnrollmentStep({ form }: Props) {
                   <FormLabel>Preferred Location *</FormLabel>
                   <FormControl>
                     <Select
-                      value={field.value || selectedLocationId}
+                      value={field.value || ''}
                       onValueChange={(value) => {
                         field.onChange(value);
-                        form.setValue('preferred_location_id', value);
                         // Clear dependent selections on location change
-                        form.setValue('group_id', '');
-                        form.setValue('timetable_id', '');
-                        form.setValue('proposed_commencement_date', '');
+                        form.setValue('group_id', undefined);
+                        form.setValue('timetable_id', undefined);
+                        form.setValue('proposed_commencement_date', undefined);
                       }}
-                      disabled={!programId}
+                      disabled={!programId || locationsLoading}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue
                           placeholder={
-                            programId
-                              ? 'Select a location'
-                              : 'Select a program first'
+                            !programId
+                              ? 'Select a program first'
+                              : locationsLoading
+                                ? 'Loading locations...'
+                                : 'Select a location'
                           }
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        {locationsLoading ? (
+                        {locationsError ? (
+                          <div className="text-destructive px-2 py-1.5 text-sm">
+                            Error loading locations. Please try again.
+                          </div>
+                        ) : locationsLoading ? (
                           <div className="text-muted-foreground px-2 py-1.5 text-sm">
                             Loading locations...
                           </div>
@@ -231,22 +247,23 @@ export function EnrollmentStep({ form }: Props) {
                   <FormLabel>Group *</FormLabel>
                   <FormControl>
                     <Select
-                      value={(field.value as string) || selectedGroupId}
+                      value={field.value || ''}
                       onValueChange={(value: string) => {
                         field.onChange(value);
-                        form.setValue('group_id', value);
                         // Clear dependent selections on group change
-                        form.setValue('timetable_id', '');
-                        form.setValue('proposed_commencement_date', '');
+                        form.setValue('timetable_id', undefined);
+                        form.setValue('proposed_commencement_date', undefined);
                       }}
-                      disabled={!selectedLocationId}
+                      disabled={!selectedLocationId || groupsLoading}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue
                           placeholder={
-                            selectedLocationId
-                              ? 'Select a group'
-                              : 'Select a location first'
+                            !selectedLocationId
+                              ? 'Select a location first'
+                              : groupsLoading
+                                ? 'Loading groups...'
+                                : 'Select a group'
                           }
                         />
                       </SelectTrigger>
@@ -254,6 +271,10 @@ export function EnrollmentStep({ form }: Props) {
                         {!selectedLocationId ? (
                           <div className="text-muted-foreground px-2 py-1.5 text-sm">
                             Select a location first
+                          </div>
+                        ) : groupsError ? (
+                          <div className="text-destructive px-2 py-1.5 text-sm">
+                            Error loading groups. Please try again.
                           </div>
                         ) : groupsLoading ? (
                           <div className="text-muted-foreground px-2 py-1.5 text-sm">
@@ -265,12 +286,14 @@ export function EnrollmentStep({ form }: Props) {
                           </div>
                         ) : (
                           groups.map((group) => {
-                            const isFull =
-                              group.current_enrollment_count >=
-                              group.max_capacity;
-                            const isNearFull =
-                              group.current_enrollment_count >=
-                              group.max_capacity * 0.9;
+                            const isFull = isGroupFull(
+                              group.current_enrollment_count,
+                              group.max_capacity
+                            );
+                            const isNearFull = isGroupNearFull(
+                              group.current_enrollment_count,
+                              group.max_capacity
+                            );
 
                             return (
                               <TooltipProvider key={group.id}>
@@ -279,6 +302,11 @@ export function EnrollmentStep({ form }: Props) {
                                     <SelectItem
                                       value={group.id as string}
                                       disabled={isFull}
+                                      aria-label={getGroupCapacityAriaLabel(
+                                        group.name,
+                                        group.current_enrollment_count,
+                                        group.max_capacity
+                                      )}
                                       className={cn(
                                         isFull &&
                                           'cursor-not-allowed opacity-50'
@@ -337,19 +365,20 @@ export function EnrollmentStep({ form }: Props) {
                   <FormLabel>Timetable *</FormLabel>
                   <FormControl>
                     <Select
-                      value={field.value || selectedTimetableId}
+                      value={field.value || ''}
                       onValueChange={(value) => {
                         field.onChange(value);
-                        form.setValue('timetable_id', value);
                       }}
-                      disabled={!selectedGroupId}
+                      disabled={!selectedGroupId || timetablesLoading}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue
                           placeholder={
-                            selectedGroupId
-                              ? 'Select a timetable'
-                              : 'Select a group first'
+                            !selectedGroupId
+                              ? 'Select a group first'
+                              : timetablesLoading
+                                ? 'Loading timetables...'
+                                : 'Select a timetable'
                           }
                         />
                       </SelectTrigger>
@@ -357,6 +386,10 @@ export function EnrollmentStep({ form }: Props) {
                         {!selectedGroupId ? (
                           <div className="text-muted-foreground px-2 py-1.5 text-sm">
                             Select a group first
+                          </div>
+                        ) : timetablesError ? (
+                          <div className="text-destructive px-2 py-1.5 text-sm">
+                            Error loading timetables. Please try again.
                           </div>
                         ) : timetablesLoading ? (
                           <div className="text-muted-foreground px-2 py-1.5 text-sm">

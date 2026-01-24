@@ -2,19 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Tables } from '@/database.types';
 
-// Extended timetable type with nested relations
-type TimetableWithProgramPlans = Tables<'timetables'> & {
-  timetable_program_plans: TimetableProgramPlanRelation[];
-};
-
-// Type for timetable_program_plans relation when selecting only program_plan_id
-type TimetableProgramPlanRelation = {
-  program_plan_id: string;
-};
-
 /**
  * Fetch timetables that contain classes for a specific group at a specific location
  * Used in enrollment flow after Group selection to show only valid timetables
+ *
+ * Optimized to avoid N+1 queries by fetching all necessary data in a single query
  */
 export const useGetTimetablesByGroupAndLocation = (
   programId?: string,
@@ -32,10 +24,34 @@ export const useGetTimetablesByGroupAndLocation = (
     queryFn: async (): Promise<Tables<'timetables'>[]> => {
       const supabase = createClient();
 
-      // Get timetables that:
-      // 1. Belong to the selected program
-      // 2. Contain program plans with classes for the selected group at the selected location
-      const { data, error } = await supabase
+      // Step 1: Get all program plan IDs that have classes for this group and location
+      const { data: validProgramPlanIds, error: planError } = await supabase
+        .from('program_plan_classes')
+        .select('program_plan_subjects!inner(program_plan_id)')
+        .eq('group_id', groupId!)
+        .eq('location_id', locationId!);
+
+      if (planError) throw new Error(planError.message);
+
+      // Extract unique program plan IDs
+      const programPlanIdSet = new Set<string>();
+      validProgramPlanIds?.forEach(
+        (item: { program_plan_subjects?: { program_plan_id: string } }) => {
+          if (item.program_plan_subjects?.program_plan_id) {
+            programPlanIdSet.add(item.program_plan_subjects.program_plan_id);
+          }
+        }
+      );
+
+      const uniqueProgramPlanIds = Array.from(programPlanIdSet);
+
+      // If no valid program plans found, return empty array
+      if (uniqueProgramPlanIds.length === 0) {
+        return [];
+      }
+
+      // Step 2: Get timetables that include these program plans (single query)
+      const { data: timetables, error: timetableError } = await supabase
         .from('timetables')
         .select(
           `
@@ -47,56 +63,28 @@ export const useGetTimetablesByGroupAndLocation = (
         )
         .eq('program_id', programId!)
         .eq('is_archived', false)
+        .in('timetable_program_plans.program_plan_id', uniqueProgramPlanIds)
         .order('name', { ascending: true });
 
-      if (error) throw new Error(error.message);
+      if (timetableError) throw new Error(timetableError.message);
 
-      if (!data || data.length === 0) {
+      if (!timetables || timetables.length === 0) {
         return [];
       }
 
-      // Filter timetables that have at least one class for the selected group at the selected location
-      const timetablesWithValidClasses = await Promise.all(
-        data.map(async (timetable) => {
-          // Check if this timetable has any classes for the group+location combination
-          const { data: classData, error: classError } = await supabase
-            .from('program_plan_classes')
-            .select(
-              `
-              id,
-              program_plan_subjects!inner (
-                program_plan_id
-              )
-            `
-            )
-            .eq('group_id', groupId!)
-            .eq('location_id', locationId!)
-            .in(
-              'program_plan_subjects.program_plan_id',
-              (
-                timetable.timetable_program_plans as TimetableProgramPlanRelation[]
-              ).map((tpp) => tpp.program_plan_id)
-            )
-            .limit(1);
-
-          if (classError) {
-            console.error('Error checking classes:', classError);
-            return null;
-          }
-
-          // Only include this timetable if it has valid classes
-          if (classData && classData.length > 0) {
-            return timetable;
-          }
-
-          return null;
-        })
+      // Remove duplicate timetables (since a timetable can have multiple program plans)
+      const uniqueTimetables = Array.from(
+        new Map(
+          timetables.map((t) => {
+            // Extract only the timetable fields (remove nested relations)
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { timetable_program_plans, ...timetableFields } = t;
+            return [t.id, timetableFields as Tables<'timetables'>];
+          })
+        ).values()
       );
 
-      // Filter out nulls and return only timetables with valid classes (without the nested relation)
-      return timetablesWithValidClasses
-        .filter((t): t is TimetableWithProgramPlans => t !== null)
-        .map(({ timetable_program_plans, ...timetable }) => timetable);
+      return uniqueTimetables;
     },
     enabled: !!programId && !!groupId && !!locationId,
   });

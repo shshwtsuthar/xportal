@@ -1,7 +1,50 @@
 /**
- * Date utilities for AEST (Australia Melbourne) timezone
+ * Date utilities for AEST (Australia Melbourne/Sydney) timezone
  * All date operations should use these utilities to ensure consistency
  */
+
+/**
+ * The standard timezone used across the application
+ */
+export const APP_TIMEZONE = 'Australia/Sydney';
+
+/**
+ * Get the current date and time in Australia/Sydney timezone
+ * @returns Date object representing current time in Sydney timezone
+ */
+export const getNowInAustraliaSydney = (): Date => {
+  const fmt = new Intl.DateTimeFormat('en-AU', {
+    timeZone: APP_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const parts = fmt.formatToParts(new Date());
+  const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  const y = Number(lookup.year);
+  const m = Number(lookup.month);
+  const d = Number(lookup.day);
+  const hh = Number(lookup.hour);
+  const mm = Number(lookup.minute);
+  const ss = Number(lookup.second);
+
+  // Create a Date in local timezone using the Sydney wall-clock fields
+  return new Date(y, m - 1, d, hh, mm, ss);
+};
+
+/**
+ * Get today's date at midnight in Australia/Sydney timezone
+ * @returns Date object representing midnight today in Sydney timezone
+ */
+export const getTodayInAustraliaSydney = (): Date => {
+  const now = getNowInAustraliaSydney();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+};
 
 /**
  * Format a Date object to YYYY-MM-DD string in local timezone (AEST)

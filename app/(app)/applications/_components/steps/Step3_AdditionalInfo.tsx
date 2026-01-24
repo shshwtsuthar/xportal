@@ -134,7 +134,9 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
     }
   }, [application, form]);
 
-  // Load existing disabilities into form state
+  // Secondary sync: Load existing disabilities into form state
+  // Note: Primary initialization happens in NewApplicationWizard
+  // This effect serves as a defensive fallback to ensure data consistency
   useEffect(() => {
     if (!applicationId) return;
 
@@ -172,7 +174,9 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
     isFetchingDisabilities,
   ]);
 
-  // Load existing prior education into form state
+  // Secondary sync: Load existing prior education into form state
+  // Note: Primary initialization happens in NewApplicationWizard
+  // This effect serves as a defensive fallback to ensure data consistency
   useEffect(() => {
     if (!applicationId) return;
 

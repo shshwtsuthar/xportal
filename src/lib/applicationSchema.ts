@@ -168,7 +168,10 @@ export const applicationSchema = z
     // Preferred Location Selection
     preferred_location_id: z.string().min(1, 'Preferred location is required'),
     // Group Selection
-    group_id: z.string().uuid().optional(),
+    group_id: z
+      .string()
+      .uuid('Group selection is required')
+      .min(1, 'Group selection is required'),
     // Commencement Date
     proposed_commencement_date: z
       .string()
