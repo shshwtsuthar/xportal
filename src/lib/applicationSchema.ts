@@ -40,6 +40,51 @@ export const deriveIsInternational = (citizenship?: string | null) => {
 };
 
 /**
+ * Validates Australian phone number formats.
+ * Accepts common formats:
+ * - Mobile: 04XX XXX XXX, 04XXXXXXXX, +614XXXXXXXX, 614XXXXXXXX
+ * - Landline: (0X) XXXX XXXX, 0X XXXX XXXX, +61X XXXX XXXX, 61X XXXX XXXX
+ */
+const isValidPhoneNumber = (phone: string | undefined | null): boolean => {
+  if (!phone || phone.trim().length === 0) return true; // Allow empty (handled by required validation)
+
+  // Remove all spaces, parentheses, dashes, and plus signs for validation
+  const cleaned = phone.replace(/[\s()\-+]/g, '');
+
+  // Mobile: 04XX followed by 6 digits (10 digits total)
+  // Landline: 0X followed by 8 digits (10 digits total)
+  // International: +61 or 61 followed by 9-10 digits (11-12 digits total)
+
+  // Check for Australian mobile (04XX followed by 6 digits)
+  if (/^04\d{8}$/.test(cleaned)) return true;
+
+  // Check for Australian landline (0X followed by 8 digits, where X is 2-9)
+  if (/^0[2-9]\d{8}$/.test(cleaned)) return true;
+
+  // Check for international format with +61 or 61 prefix
+  // Mobile: 614 followed by 8 digits (11 digits total)
+  // Landline: 61[2-9] followed by 8 digits (11 digits total)
+  if (/^61[2-9]\d{8}$/.test(cleaned)) return true;
+  if (/^614\d{8}$/.test(cleaned)) return true;
+
+  return false;
+};
+
+/**
+ * Validates Australian postcode format.
+ * Australian postcodes must be exactly 4 digits.
+ */
+const isValidPostcode = (postcode: string | undefined | null): boolean => {
+  if (!postcode || postcode.trim().length === 0) return true; // Allow empty (handled by required validation)
+
+  // Remove spaces for validation
+  const cleaned = postcode.replace(/\s/g, '');
+
+  // Australian postcodes are exactly 4 digits
+  return /^\d{4}$/.test(cleaned);
+};
+
+/**
  * Master application schema shared between the Next.js app and Supabase edge functions.
  * All validation logic (AVETMISS + CRICOS) must live here to prevent drift.
  */
@@ -148,9 +193,15 @@ export const applicationSchema = z
       .string()
       .min(1, 'Email is required')
       .email('Enter a valid email address'),
-    work_phone: z.string().optional(),
+    work_phone: z
+      .string()
+      .optional()
+      .refine((val) => isValidPhoneNumber(val), 'Enter a valid phone number'),
     // Mobile phone is MANDATORY for all students (database constraint)
-    mobile_phone: z.string().optional(),
+    mobile_phone: z
+      .string()
+      .optional()
+      .refine((val) => isValidPhoneNumber(val), 'Enter a valid phone number'),
     alternative_email: z
       .string()
       .email('Enter a valid email address')
@@ -161,7 +212,13 @@ export const applicationSchema = z
     address_line_1: z.string().optional().or(z.literal('')),
     suburb: z.string().min(1, 'Suburb is required'),
     state: z.string().min(1, 'State is required'),
-    postcode: z.string().min(1, 'Postcode is required'),
+    postcode: z
+      .string()
+      .min(1, 'Postcode is required')
+      .refine(
+        (val) => isValidPostcode(val),
+        'Enter a valid postcode (4 digits)'
+      ),
 
     // Structured Street Address
     street_building_name: z.string().optional(),
@@ -178,7 +235,13 @@ export const applicationSchema = z
     postal_po_box: z.string().optional(),
     postal_suburb: z.string().optional(),
     postal_state: z.string().optional(),
-    postal_postcode: z.string().optional(),
+    postal_postcode: z
+      .string()
+      .optional()
+      .refine(
+        (val) => isValidPostcode(val),
+        'Enter a valid postcode (4 digits)'
+      ),
     postal_country: z.string().optional(),
 
     // AVETMISS Core
@@ -397,7 +460,10 @@ export const applicationSchema = z
     // Embedded Emergency Contact
     ec_name: z.string().optional(),
     ec_relationship: z.string().optional(),
-    ec_phone_number: z.string().optional(),
+    ec_phone_number: z
+      .string()
+      .optional()
+      .refine((val) => isValidPhoneNumber(val), 'Enter a valid phone number'),
 
     // Embedded Parent/Guardian
     g_name: z.string().optional(),
@@ -406,7 +472,10 @@ export const applicationSchema = z
       .email('Enter a valid email address')
       .optional()
       .or(z.literal('')),
-    g_phone_number: z.string().optional(),
+    g_phone_number: z
+      .string()
+      .optional()
+      .refine((val) => isValidPhoneNumber(val), 'Enter a valid phone number'),
     g_relationship: z.string().optional(),
   })
   .refine(

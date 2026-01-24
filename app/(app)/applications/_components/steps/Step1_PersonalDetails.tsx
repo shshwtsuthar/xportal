@@ -223,6 +223,10 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
                   <DateInput
                     value={field.value}
                     onChange={(value) => field.onChange(value || '')}
+                    onBlur={(e) => {
+                      field.onBlur();
+                      form.trigger('date_of_birth');
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
