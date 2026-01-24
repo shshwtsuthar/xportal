@@ -237,6 +237,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       has_release_letter: undefined,
       provider_accepting_welfare_responsibility: undefined,
       welfare_start_date: '',
+      is_under_18: false,
       provider_arranged_oshc: false,
       oshc_provider_name: '',
       oshc_start_date: '',

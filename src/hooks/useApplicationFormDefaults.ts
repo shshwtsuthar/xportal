@@ -102,6 +102,7 @@ export function mapApplicationToFormValues(
     provider_accepting_welfare_responsibility:
       application.provider_accepting_welfare_responsibility ?? undefined,
     welfare_start_date: application.welfare_start_date ?? '',
+    is_under_18: Boolean(application.is_under_18),
     provider_arranged_oshc: Boolean(application.provider_arranged_oshc),
     oshc_provider_name: application.oshc_provider_name ?? '',
     oshc_start_date: application.oshc_start_date ?? '',
