@@ -18,6 +18,7 @@ export function mapApplicationToFormValues(
     program_id: application.program_id ?? '',
     timetable_id: application.timetable_id ?? '',
     preferred_location_id: application.preferred_location_id ?? '',
+    group_id: application.group_id ?? '',
     proposed_commencement_date: application.proposed_commencement_date ?? '',
     payment_plan_template_id: application.payment_plan_template_id ?? '',
     payment_anchor_date: application.payment_anchor_date ?? '',
