@@ -25,6 +25,10 @@ import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
 import { usePersistApplicationArrays } from '@/src/hooks/usePersistApplicationArrays';
 import { useSaveApplicationDraft } from '@/src/hooks/useSaveApplicationDraft';
 import { mapApplicationToFormValues } from '@/src/hooks/useApplicationFormDefaults';
+import {
+  useGetApplicationDisabilities,
+  useGetApplicationPriorEducation,
+} from '@/src/hooks/useGetApplicationRelations';
 import { Step1_PersonalDetails } from './steps/Step1_PersonalDetails';
 import { Step2_AvetmissDetails } from './steps/Step2_AvetmissDetails';
 import { Step3_AdditionalInfo } from './steps/Step3_AdditionalInfo';
@@ -146,8 +150,18 @@ export function NewApplicationWizard({ applicationId }: Props) {
   const createMutation = useCreateApplication();
   const { data: application, isLoading } = useGetApplication(applicationId);
 
-  // Use created application data if we just created one
-  const currentApplication = application || createMutation.data;
+  // Use created application data ONLY if we don't have an applicationId (new route)
+  // This prevents stale createMutation.data from being used when editing existing apps
+  const currentApplication =
+    application || (!applicationId ? createMutation.data : undefined);
+
+  // Fetch disabilities and prior education for form initialization
+  const { data: dbDisabilities = [] } = useGetApplicationDisabilities(
+    currentApplication?.id
+  );
+  const { data: dbPriorEducation = [] } = useGetApplicationPriorEducation(
+    currentApplication?.id
+  );
 
   // Only read-only if status exists and is not DRAFT (treat null/undefined as DRAFT)
   const isReadOnly = currentApplication?.status
@@ -252,16 +266,52 @@ export function NewApplicationWizard({ applicationId }: Props) {
     },
   });
 
+  // Track the last initialized application to prevent infinite loops
+  const lastInitializedAppId = useRef<string | undefined>(undefined);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Memoize disabilities array to prevent unnecessary re-renders
+  const disabilitiesFormData = useMemo(() => {
+    return dbDisabilities && dbDisabilities.length > 0
+      ? dbDisabilities.map((d) => ({
+          disability_type_id: d.disability_type_id,
+        }))
+      : [];
+  }, [dbDisabilities]);
+
+  // Memoize prior education array to prevent unnecessary re-renders
+  const priorEducationFormData = useMemo(() => {
+    return dbPriorEducation && dbPriorEducation.length > 0
+      ? dbPriorEducation.map((e) => ({
+          prior_achievement_id: e.prior_achievement_id,
+          recognition_type: e.recognition_type || undefined,
+        }))
+      : [];
+  }, [dbPriorEducation]);
+
   useEffect(() => {
-    if (currentApplication) {
+    if (
+      currentApplication &&
+      lastInitializedAppId.current !== currentApplication.id
+    ) {
       const formValues = mapApplicationToFormValues(currentApplication);
+
+      // Merge in disabilities and prior education if loaded
+      if (disabilitiesFormData.length > 0) {
+        formValues.disabilities = disabilitiesFormData;
+      }
+
+      if (priorEducationFormData.length > 0) {
+        formValues.prior_education = priorEducationFormData;
+      }
+
       form.reset(formValues);
+      lastInitializedAppId.current = currentApplication.id;
     }
-  }, [currentApplication, form]);
+  }, [currentApplication, form, disabilitiesFormData, priorEducationFormData]);
 
   useEffect(() => {
     // Only auto-create if we're on /new route and no application exists yet

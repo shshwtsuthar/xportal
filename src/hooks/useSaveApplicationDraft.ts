@@ -153,23 +153,6 @@ export const useSaveApplicationDraft = () => {
         } else if (createMutation.isPending) {
           // If creation is already in progress, wait for it to complete
           toast.info('Creating application, please wait...');
-        } else if (createMutation.isSuccess && createMutation.data?.id) {
-          // If creation was successful but application state hasn't updated yet
-          updateMutation.mutate(
-            { id: createMutation.data.id, ...cleanedValues },
-            {
-              onSuccess: async () => {
-                try {
-                  await persistRelatedData(createMutation.data.id);
-                  toast.success('Draft saved');
-                } catch (error) {
-                  console.error('Related data persistence failed:', error);
-                }
-              },
-              onError: (error) =>
-                toast.error(`Failed to save draft: ${error.message}`),
-            }
-          );
         } else {
           // Create new application with form data
           createMutation.mutate(cleanedValues, {

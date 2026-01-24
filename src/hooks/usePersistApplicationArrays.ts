@@ -49,21 +49,69 @@ export const usePersistApplicationArrays = () => {
       console.log('Form disabilities:', disabilities);
       console.log('Form prior education:', priorEducation);
 
-      // Handle disabilities
-      // Delete all existing disabilities for this application
-      const { error: deleteDisErr } = await supabase
-        .from('application_disabilities')
-        .delete()
-        .eq('application_id', applicationId);
+      // Handle disabilities using diff-based approach to avoid race conditions
+      // Fetch existing disabilities from database
+      const { data: existingDisabilitiesData, error: fetchDisErr } =
+        await supabase
+          .from('application_disabilities')
+          .select('disability_type_id')
+          .eq('application_id', applicationId);
 
-      if (deleteDisErr) {
-        console.error('Error deleting existing disabilities:', deleteDisErr);
-        throw new Error(`Failed to save disabilities: ${deleteDisErr.message}`);
+      if (fetchDisErr) {
+        console.error('Error fetching existing disabilities:', fetchDisErr);
+        throw new Error(`Failed to fetch disabilities: ${fetchDisErr.message}`);
       }
 
-      // Insert new disabilities from form state
-      if (disabilities.length > 0) {
-        const disabilityInserts = disabilities.map((d) => ({
+      // Ensure we have a valid array
+      const existingDisabilities = existingDisabilitiesData || [];
+
+      // Calculate diff: what to delete and what to insert
+      const existingIds = new Set(
+        existingDisabilities.map((d) => d.disability_type_id)
+      );
+      const newIds = new Set(disabilities.map((d) => d.disability_type_id));
+
+      // Items to delete: in DB but not in form
+      const toDelete = existingDisabilities.filter(
+        (d) => !newIds.has(d.disability_type_id)
+      );
+
+      // Items to insert: in form but not in DB
+      const toInsert = disabilities.filter(
+        (d) => !existingIds.has(d.disability_type_id)
+      );
+
+      console.log('Disability diff analysis:', {
+        existing: existingIds.size,
+        new: newIds.size,
+        toDelete: toDelete.length,
+        toInsert: toInsert.length,
+      });
+
+      // Delete only items that need to be removed
+      if (toDelete.length > 0) {
+        const { error: deleteDisErr } = await supabase
+          .from('application_disabilities')
+          .delete()
+          .eq('application_id', applicationId)
+          .in(
+            'disability_type_id',
+            toDelete.map((d) => d.disability_type_id)
+          );
+
+        if (deleteDisErr) {
+          console.error('Error deleting disabilities:', deleteDisErr);
+          throw new Error(
+            `Failed to delete disabilities: ${deleteDisErr.message}`
+          );
+        }
+
+        console.log('Successfully deleted', toDelete.length, 'disabilities');
+      }
+
+      // Insert only new items
+      if (toInsert.length > 0) {
+        const disabilityInserts = toInsert.map((d) => ({
           application_id: applicationId,
           rto_id: rtoId,
           disability_type_id: d.disability_type_id,
@@ -76,39 +124,106 @@ export const usePersistApplicationArrays = () => {
         if (insertDisErr) {
           console.error('Error inserting disabilities:', insertDisErr);
           throw new Error(
-            `Failed to save disabilities: ${insertDisErr.message}`
+            `Failed to insert disabilities: ${insertDisErr.message}`
           );
         }
 
-        console.log(
-          'Successfully inserted',
-          disabilityInserts.length,
-          'disabilities'
-        );
+        console.log('Successfully inserted', toInsert.length, 'disabilities');
       }
 
-      // Handle prior education
+      // Handle prior education using diff-based approach to avoid race conditions
       console.log('Prior education array length:', priorEducation.length);
 
-      // Delete all existing prior education for this application
-      const { error: deletePriorEdErr } = await supabase
-        .from('application_prior_education')
-        .delete()
-        .eq('application_id', applicationId);
+      // Fetch existing prior education from database
+      const { data: existingPriorEdData, error: fetchPriorEdErr } =
+        await supabase
+          .from('application_prior_education')
+          .select('prior_achievement_id, recognition_type')
+          .eq('application_id', applicationId);
 
-      if (deletePriorEdErr) {
+      if (fetchPriorEdErr) {
         console.error(
-          'Error deleting existing prior education:',
-          deletePriorEdErr
+          'Error fetching existing prior education:',
+          fetchPriorEdErr
         );
         throw new Error(
-          `Failed to save prior education: ${deletePriorEdErr.message}`
+          `Failed to fetch prior education: ${fetchPriorEdErr.message}`
         );
       }
 
-      // Insert new prior education from form state
-      if (priorEducation.length > 0) {
-        const priorEdInserts = priorEducation.map((e) => ({
+      // Ensure we have a valid array
+      const existingPriorEd = existingPriorEdData || [];
+
+      // Create unique keys for comparison (combination of achievement + recognition)
+      const makeKey = (
+        achievementId: string,
+        recognitionType: string | null | undefined
+      ) => `${achievementId}|${recognitionType || 'null'}`;
+
+      const existingKeys = new Set(
+        existingPriorEd.map((e) =>
+          makeKey(e.prior_achievement_id, e.recognition_type)
+        )
+      );
+      const newKeys = new Set(
+        priorEducation.map((e) =>
+          makeKey(e.prior_achievement_id, e.recognition_type)
+        )
+      );
+
+      // Items to delete: in DB but not in form
+      const toDeletePriorEd = existingPriorEd.filter(
+        (e) => !newKeys.has(makeKey(e.prior_achievement_id, e.recognition_type))
+      );
+
+      // Items to insert: in form but not in DB
+      const toInsertPriorEd = priorEducation.filter(
+        (e) =>
+          !existingKeys.has(makeKey(e.prior_achievement_id, e.recognition_type))
+      );
+
+      console.log('Prior education diff analysis:', {
+        existing: existingKeys.size,
+        new: newKeys.size,
+        toDelete: toDeletePriorEd.length,
+        toInsert: toInsertPriorEd.length,
+      });
+
+      // Delete only items that need to be removed
+      // Note: We need to delete by matching both fields since there's no single unique ID
+      for (const item of toDeletePriorEd) {
+        const deleteQuery = supabase
+          .from('application_prior_education')
+          .delete()
+          .eq('application_id', applicationId)
+          .eq('prior_achievement_id', item.prior_achievement_id);
+
+        // Handle recognition_type which can be null
+        const finalQuery = item.recognition_type
+          ? deleteQuery.eq('recognition_type', item.recognition_type)
+          : deleteQuery.is('recognition_type', null);
+
+        const { error: deletePriorEdErr } = await finalQuery;
+
+        if (deletePriorEdErr) {
+          console.error('Error deleting prior education:', deletePriorEdErr);
+          throw new Error(
+            `Failed to delete prior education: ${deletePriorEdErr.message}`
+          );
+        }
+      }
+
+      if (toDeletePriorEd.length > 0) {
+        console.log(
+          'Successfully deleted',
+          toDeletePriorEd.length,
+          'prior education records'
+        );
+      }
+
+      // Insert only new items
+      if (toInsertPriorEd.length > 0) {
+        const priorEdInserts = toInsertPriorEd.map((e) => ({
           application_id: applicationId,
           rto_id: rtoId,
           prior_achievement_id: e.prior_achievement_id,
@@ -129,7 +244,7 @@ export const usePersistApplicationArrays = () => {
             JSON.stringify(insertPriorEdErr, null, 2)
           );
           throw new Error(
-            `Failed to save prior education: ${insertPriorEdErr.message}`
+            `Failed to insert prior education: ${insertPriorEdErr.message}`
           );
         }
 
@@ -140,7 +255,7 @@ export const usePersistApplicationArrays = () => {
         );
         console.log('Inserted data:', insertedData);
       } else {
-        console.log('No prior education records to insert (array is empty)');
+        console.log('No prior education records to insert');
       }
     },
     onSuccess: (_, variables) => {

@@ -101,10 +101,16 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
   );
 
   // Fetch existing disabilities and prior education from database (for initial load)
-  const { data: dbDisabilities = [] } =
-    useGetApplicationDisabilities(applicationId);
-  const { data: dbPriorEducation = [] } =
-    useGetApplicationPriorEducation(applicationId);
+  const {
+    data: dbDisabilities = [],
+    isLoading: isLoadingDisabilities,
+    isFetching: isFetchingDisabilities,
+  } = useGetApplicationDisabilities(applicationId);
+  const {
+    data: dbPriorEducation = [],
+    isLoading: isLoadingPriorEducation,
+    isFetching: isFetchingPriorEducation,
+  } = useGetApplicationPriorEducation(applicationId);
 
   // Sync database data to form state on mount or when data loads
   useEffect(() => {
@@ -132,6 +138,13 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
   useEffect(() => {
     if (!applicationId) return;
 
+    // Don't sync while loading or refetching - prevents clearing form during race conditions
+    if (isLoadingDisabilities || isFetchingDisabilities) {
+      return;
+    }
+
+    // Only sync DB → form when database has data
+    // Never clear form when DB is empty (preserves unsaved user selections)
     if (dbDisabilities.length > 0) {
       const formDisabilities = dbDisabilities.map((d) => ({
         disability_type_id: d.disability_type_id,
@@ -150,19 +163,26 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
       if (!formMatches) {
         form.setValue('disabilities', formDisabilities, { shouldDirty: false });
       }
-    } else if (dbDisabilities.length === 0) {
-      // Clear form state if database has no records (but only if we have an application)
-      const currentFormDisabilities = form.getValues('disabilities') || [];
-      if (currentFormDisabilities.length > 0) {
-        form.setValue('disabilities', [], { shouldDirty: false });
-      }
     }
-  }, [dbDisabilities, applicationId, form]);
+  }, [
+    dbDisabilities,
+    applicationId,
+    form,
+    isLoadingDisabilities,
+    isFetchingDisabilities,
+  ]);
 
   // Load existing prior education into form state
   useEffect(() => {
     if (!applicationId) return;
 
+    // Don't sync while loading or refetching - prevents clearing form during race conditions
+    if (isLoadingPriorEducation || isFetchingPriorEducation) {
+      return;
+    }
+
+    // Only sync DB → form when database has data
+    // Never clear form when DB is empty (preserves unsaved user selections)
     if (dbPriorEducation.length > 0) {
       const formPriorEd = dbPriorEducation.map((e) => ({
         prior_achievement_id: e.prior_achievement_id,
@@ -184,14 +204,14 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
       if (!formMatches) {
         form.setValue('prior_education', formPriorEd, { shouldDirty: false });
       }
-    } else if (dbPriorEducation.length === 0) {
-      // Clear form state if database has no records (but only if we have an application)
-      const currentFormPriorEd = form.getValues('prior_education') || [];
-      if (currentFormPriorEd.length > 0) {
-        form.setValue('prior_education', [], { shouldDirty: false });
-      }
     }
-  }, [dbPriorEducation, applicationId, form]);
+  }, [
+    dbPriorEducation,
+    applicationId,
+    form,
+    isLoadingPriorEducation,
+    isFetchingPriorEducation,
+  ]);
 
   // Handle disability flag change - AVETMISS requires Y, N, or @ only
   const handleDisabilityFlagChange = (value: 'Y' | 'N' | '@') => {
