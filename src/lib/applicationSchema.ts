@@ -330,9 +330,33 @@ export const applicationSchema = z
       ),
     // USI exemption codes
     usi_exemption_code: z.enum(['INDIV', 'INTOFF']).optional(),
-    passport_number: z.string().optional(),
+    passport_number: z
+      .string()
+      .optional()
+      .refine(
+        (val) => {
+          if (!val || val.trim().length === 0) return true;
+          // Must be 6-12 characters and alphanumeric only
+          return /^[A-Za-z0-9]{6,12}$/.test(val.trim());
+        },
+        {
+          message: 'Passport number must be 6-12 alphanumeric characters',
+        }
+      ),
     visa_type: z.string().optional(),
-    visa_number: z.string().optional(),
+    visa_number: z
+      .string()
+      .optional()
+      .refine(
+        (val) => {
+          if (!val || val.trim().length === 0) return true;
+          // Flexible format, just require minimum 3 characters
+          return val.trim().length >= 3;
+        },
+        {
+          message: 'Visa number must be at least 3 characters',
+        }
+      ),
     country_of_citizenship: z.string().optional(),
     ielts_score: z.string().optional(),
 
@@ -453,7 +477,19 @@ export const applicationSchema = z
 
     // CRICOS: Previous study in Australia
     has_previous_study_australia: z.boolean().optional(),
-    previous_provider_name: z.string().optional(),
+    previous_provider_name: z
+      .string()
+      .optional()
+      .refine(
+        (val) => {
+          if (!val || val.trim().length === 0) return true;
+          // Must be at least 1 character (not empty/whitespace only)
+          return val.trim().length >= 1;
+        },
+        {
+          message: 'Previous provider name cannot be empty',
+        }
+      ),
     completed_previous_course: z.boolean().optional(),
     has_release_letter: z.boolean().optional(),
 

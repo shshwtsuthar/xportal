@@ -130,7 +130,14 @@ export const Step3_Cricos = () => {
                         )}
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="E1234567" />
+                        <Input
+                          {...field}
+                          placeholder="E1234567"
+                          onBlur={(e) => {
+                            field.onBlur();
+                            form.trigger('passport_number');
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -268,7 +275,14 @@ export const Step3_Cricos = () => {
                           <span className="text-destructive"> *</span>
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="0123ABC456" />
+                          <Input
+                            {...field}
+                            placeholder="0123ABC456"
+                            onBlur={(e) => {
+                              field.onBlur();
+                              form.trigger('visa_number');
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -433,7 +447,14 @@ export const Step3_Cricos = () => {
                               Parent/Legal Guardian mobile phone *
                             </FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="0400 000 000" />
+                              <Input
+                                {...field}
+                                placeholder="0400 000 000"
+                                onBlur={(e) => {
+                                  field.onBlur();
+                                  form.trigger('g_phone_number');
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -451,6 +472,10 @@ export const Step3_Cricos = () => {
                                 type="email"
                                 {...field}
                                 placeholder="guardian@example.com"
+                                onBlur={(e) => {
+                                  field.onBlur();
+                                  form.trigger('g_email');
+                                }}
                               />
                             </FormControl>
                             <FormMessage />
@@ -638,6 +663,10 @@ export const Step3_Cricos = () => {
                             className="w-full"
                             {...field}
                             placeholder="e.g., 6.5"
+                            onBlur={(e) => {
+                              field.onBlur();
+                              form.trigger('ielts_score');
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -711,6 +740,10 @@ export const Step3_Cricos = () => {
                             className="w-full"
                             {...field}
                             placeholder="Previous RTO name"
+                            onBlur={(e) => {
+                              field.onBlur();
+                              form.trigger('previous_provider_name');
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
