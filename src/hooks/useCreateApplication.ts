@@ -110,7 +110,17 @@ export const useCreateApplication = () => {
 
       if (error) {
         console.error('Database error creating application:', error);
-        throw new Error(error.message);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        console.error('Application data attempted:', applicationData);
+        throw new Error(
+          error.message ||
+            error.hint ||
+            `Database error: ${error.code || 'Unknown error'}. Check console for details.`
+        );
+      }
+
+      if (!data) {
+        throw new Error('No data returned from database after insert');
       }
 
       return data;
