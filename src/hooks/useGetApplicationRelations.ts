@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Tables } from '@/database.types';
+import { queryKeys } from '@/src/lib/queryKeys';
 
 /**
  * Fetch disabilities for a specific application
  */
 export const useGetApplicationDisabilities = (applicationId?: string) => {
   return useQuery({
-    queryKey: ['application_disabilities', applicationId],
+    queryKey: queryKeys.applicationDisabilities(applicationId || ''),
     queryFn: async (): Promise<Tables<'application_disabilities'>[]> => {
       if (!applicationId) return [];
       const supabase = createClient();
@@ -27,7 +28,7 @@ export const useGetApplicationDisabilities = (applicationId?: string) => {
  */
 export const useGetApplicationPriorEducation = (applicationId?: string) => {
   return useQuery({
-    queryKey: ['application_prior_education', applicationId],
+    queryKey: queryKeys.applicationPriorEducation(applicationId || ''),
     queryFn: async (): Promise<Tables<'application_prior_education'>[]> => {
       if (!applicationId) return [];
       const supabase = createClient();

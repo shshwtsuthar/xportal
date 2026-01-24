@@ -68,48 +68,22 @@ type Props = {
 export const PaymentStep = ({ application, form }: Props) => {
   const programId = form.watch('program_id');
   const { data: programs = [], isLoading: programsLoading } = useGetPrograms();
+
+  // Use form state directly - single source of truth
+  const selectedTemplateId = form.watch('payment_plan_template_id');
+  const anchorDateString = form.watch('payment_anchor_date') as
+    | string
+    | undefined;
+  const anchorDate = anchorDateString ? new Date(anchorDateString) : undefined;
+
   const {
     data: templates = [],
     isLoading: templatesLoading,
     error: templatesError,
   } = useGetPaymentPlanTemplates(programId ?? undefined);
 
-  const [selectedTemplateId, setSelectedTemplateId] = useState<
-    string | undefined
-  >(application.payment_plan_template_id ?? undefined);
-
   const { data: installments = [], isLoading: installmentsLoading } =
     useGetTemplateInstallments(selectedTemplateId);
-
-  const [localAnchorDate, setLocalAnchorDate] = useState<Date | undefined>(
-    application.payment_anchor_date
-      ? new Date(application.payment_anchor_date)
-      : undefined
-  );
-
-  // Sync selectedTemplateId from application when application changes (e.g., on page reload)
-  useEffect(() => {
-    if (
-      application.payment_plan_template_id &&
-      application.payment_plan_template_id !== selectedTemplateId
-    ) {
-      setSelectedTemplateId(application.payment_plan_template_id);
-    }
-  }, [application.payment_plan_template_id, selectedTemplateId]);
-
-  // Watch form value to sync selectedTemplateId when form is reset/loaded
-  // This ensures local state matches form state after form.reset() is called
-  const formTemplateId = form.watch('payment_plan_template_id');
-  useEffect(() => {
-    if (
-      formTemplateId &&
-      formTemplateId.trim() !== '' &&
-      formTemplateId !== selectedTemplateId
-    ) {
-      // Form has a value that doesn't match local state - sync local state to form
-      setSelectedTemplateId(formTemplateId);
-    }
-  }, [formTemplateId, selectedTemplateId]);
 
   // Update selected template when templates load and we don't have a selection
   useEffect(() => {
@@ -117,9 +91,6 @@ export const PaymentStep = ({ application, form }: Props) => {
       const defaultTemplate = templates.find((t) => t.is_default);
       if (defaultTemplate) {
         const templateId = defaultTemplate.id as string;
-        setSelectedTemplateId(templateId);
-        // Immediately set form value when auto-selecting default template
-        // This ensures the form state is synchronized and triggers watch subscription
         form.setValue('payment_plan_template_id', templateId, {
           shouldValidate: false,
           shouldDirty: true,
@@ -128,53 +99,6 @@ export const PaymentStep = ({ application, form }: Props) => {
       }
     }
   }, [templates, selectedTemplateId, form]);
-
-  // Update form values when payment plan data changes (for manual selections and auto-selections)
-  // This ensures form state always matches selectedTemplateId
-  useEffect(() => {
-    if (selectedTemplateId) {
-      const currentFormValue = form.getValues('payment_plan_template_id');
-      // Update if the form value doesn't match the selected template
-      // Also update if form value is empty string or null/undefined (which would fail validation)
-      // This ensures form state is always synchronized with selectedTemplateId
-      if (
-        !currentFormValue ||
-        currentFormValue.trim() === '' ||
-        currentFormValue !== selectedTemplateId
-      ) {
-        form.setValue('payment_plan_template_id', selectedTemplateId, {
-          shouldValidate: false,
-          shouldDirty: true,
-        });
-      }
-    }
-  }, [selectedTemplateId, form]);
-
-  // Use local state as primary source (matching Enrollment pattern exactly)
-  // Memoize to ensure stable Date reference - only change when date value actually changes
-  const anchorDate = useMemo(() => {
-    return localAnchorDate;
-  }, [localAnchorDate]);
-
-  // Initialize local state from form on mount or when application changes
-  useEffect(() => {
-    const formAnchorDate = form.getValues('payment_anchor_date');
-    if (formAnchorDate && typeof formAnchorDate === 'string') {
-      try {
-        const parsedDate = new Date(formAnchorDate);
-        // Only set if we don't have a local date or if it's different
-        if (
-          !localAnchorDate ||
-          parsedDate.getTime() !== localAnchorDate.getTime()
-        ) {
-          setLocalAnchorDate(parsedDate);
-        }
-      } catch {
-        // Invalid date string, ignore
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [application.payment_anchor_date]);
 
   const preview = useMemo(() => {
     if (!anchorDate || installments.length === 0)
@@ -195,7 +119,6 @@ export const PaymentStep = ({ application, form }: Props) => {
         shouldValidate: false,
         shouldDirty: true,
       });
-      setLocalAnchorDate(d); // Update local state immediately
       setIsDateOpen(false);
     },
     [form]
@@ -243,20 +166,15 @@ export const PaymentStep = ({ application, form }: Props) => {
             control={form.control}
             name="payment_plan_template_id"
             render={({ field }) => {
-              // Use selectedTemplateId as fallback only if field.value is truly empty
-              // This ensures the UI shows the selected template even if form value hasn't synced yet
-              // The useEffect hooks will ensure form value is eventually synchronized
-              const displayValue = field.value || selectedTemplateId || '';
-
               return (
                 <FormItem>
                   <FormLabel>Template *</FormLabel>
                   <FormControl>
                     <Select
-                      value={displayValue}
+                      value={field.value || ''}
                       onValueChange={(value) => {
-                        setSelectedTemplateId(value);
                         field.onChange(value);
+                        form.setValue('payment_plan_template_id', value);
                       }}
                     >
                       <SelectTrigger

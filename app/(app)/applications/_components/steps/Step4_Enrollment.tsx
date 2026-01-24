@@ -70,22 +70,14 @@ export function EnrollmentStep({ form }: Props) {
   const { data: locations = [], isLoading: locationsLoading } =
     useGetLocations();
 
-  // Use local state for immediate reactivity
-  const [localProgramId, setLocalProgramId] = useState<string>('');
-  const [localSelectedLocationId, setLocalSelectedLocationId] =
-    useState<string>('');
-  const [localSelectedGroupId, setLocalSelectedGroupId] = useState<string>('');
-  const [localSelectedTimetableId, setLocalSelectedTimetableId] =
-    useState<string>('');
-  const [localSelectedDate, setLocalSelectedDate] = useState<Date | undefined>(
-    undefined
-  );
-
-  const programId = form.watch('program_id') || localProgramId;
-  const selectedLocationId =
-    (form.watch('preferred_location_id') as string) || localSelectedLocationId;
-  const selectedGroupId =
-    (form.watch('group_id') as string) || localSelectedGroupId;
+  // Use form state directly - single source of truth
+  const programId = form.watch('program_id');
+  const selectedLocationId = form.watch('preferred_location_id') as string;
+  const selectedGroupId = form.watch('group_id') as string;
+  const selectedTimetableId = form.watch('timetable_id');
+  const selectedDateString = form.watch('proposed_commencement_date') as
+    | string
+    | undefined;
 
   // Get groups for the selected location
   const { data: groups = [], isLoading: groupsLoading } =
@@ -99,109 +91,10 @@ export function EnrollmentStep({ form }: Props) {
       selectedLocationId
     );
 
-  const selectedTimetableId =
-    form.watch('timetable_id') || localSelectedTimetableId;
-
-  // Debug logging
-  console.log('EnrollmentStep Debug:', {
-    programId,
-    programIdType: typeof programId,
-    programIdTruthy: !!programId,
-    timetablesCount: timetables.length,
-    timetablesLoading,
-    selectedTimetableId,
-    selectedTimetableIdType: typeof selectedTimetableId,
-    selectedTimetableIdTruthy: !!selectedTimetableId,
-  });
-
-  // Do not auto-clear timetable/date on initial load; we clear explicitly on user-driven program change
-
-  // Sync local program state with form when form is reset/loaded
-  useEffect(() => {
-    const formProgramId = form.getValues('program_id');
-    if (formProgramId && formProgramId !== localProgramId) {
-      console.log(
-        'Syncing local program state with form value:',
-        formProgramId
-      );
-      setLocalProgramId(formProgramId);
-    }
-  }, [form, localProgramId]);
-
-  // Commencement date selection helpers
-  const selectedDateString = form.watch('proposed_commencement_date') as
-    | string
-    | undefined;
-  const selectedDate =
-    localSelectedDate ||
-    (selectedDateString ? new Date(selectedDateString) : undefined);
+  const selectedDate = selectedDateString
+    ? new Date(selectedDateString)
+    : undefined;
   const [isDateOpen, setIsDateOpen] = useState(false);
-
-  // Watch for changes in programId
-  useEffect(() => {
-    console.log('programId changed to:', programId);
-  }, [programId]);
-
-  // Watch for changes in selectedTimetableId
-  useEffect(() => {
-    console.log('selectedTimetableId changed to:', selectedTimetableId);
-  }, [selectedTimetableId]);
-
-  // Sync local state with form when form is reset/loaded
-  useEffect(() => {
-    const formProgramId = form.getValues('program_id');
-    if (formProgramId && formProgramId !== localProgramId) {
-      console.log(
-        'Syncing local program state with form value:',
-        formProgramId
-      );
-      setLocalProgramId(formProgramId);
-    }
-
-    const formTimetableId = form.getValues('timetable_id');
-    if (formTimetableId && formTimetableId !== localSelectedTimetableId) {
-      console.log(
-        'Syncing local timetable state with form value:',
-        formTimetableId
-      );
-      setLocalSelectedTimetableId(formTimetableId);
-    }
-
-    const formDateString = form.getValues('proposed_commencement_date');
-    if (
-      formDateString &&
-      typeof formDateString === 'string' &&
-      formDateString !== selectedDateString
-    ) {
-      console.log('Syncing local date state with form value:', formDateString);
-      try {
-        setLocalSelectedDate(new Date(formDateString));
-      } catch {
-        console.error('Invalid date string:', formDateString);
-      }
-    }
-
-    const formLocationId = form.getValues('preferred_location_id');
-    if (
-      formLocationId &&
-      typeof formLocationId === 'string' &&
-      formLocationId !== localSelectedLocationId
-    ) {
-      console.log(
-        'Syncing local location state with form value:',
-        formLocationId
-      );
-      setLocalSelectedLocationId(formLocationId);
-    }
-  }, [
-    form,
-    localProgramId,
-    localSelectedTimetableId,
-    localSelectedLocationId,
-    selectedDateString,
-  ]);
-
-  // Note: Preview logic is now handled by EnrollmentPreview component
 
   const disableDate = (date: Date) => {
     const d = new Date(date);
@@ -237,21 +130,15 @@ export function EnrollmentStep({ form }: Props) {
                   <FormLabel>Program *</FormLabel>
                   <FormControl>
                     <Select
-                      value={field.value || localProgramId}
+                      value={field.value || programId}
                       onValueChange={(value) => {
-                        console.log('Program selected:', value);
                         field.onChange(value);
                         form.setValue('program_id', value);
-                        setLocalProgramId(value); // Update local state immediately
                         // Explicitly clear dependent selections on program change
                         form.setValue('preferred_location_id', '');
                         form.setValue('group_id', '');
                         form.setValue('timetable_id', '');
                         form.setValue('proposed_commencement_date', '');
-                        setLocalSelectedLocationId('');
-                        setLocalSelectedGroupId('');
-                        setLocalSelectedTimetableId('');
-                        setLocalSelectedDate(undefined);
                       }}
                     >
                       <SelectTrigger className="w-full">
@@ -289,19 +176,14 @@ export function EnrollmentStep({ form }: Props) {
                   <FormLabel>Preferred Location *</FormLabel>
                   <FormControl>
                     <Select
-                      value={field.value || localSelectedLocationId}
+                      value={field.value || selectedLocationId}
                       onValueChange={(value) => {
-                        console.log('Location selected:', value);
                         field.onChange(value);
                         form.setValue('preferred_location_id', value);
-                        setLocalSelectedLocationId(value);
                         // Clear dependent selections on location change
                         form.setValue('group_id', '');
                         form.setValue('timetable_id', '');
                         form.setValue('proposed_commencement_date', '');
-                        setLocalSelectedGroupId('');
-                        setLocalSelectedTimetableId('');
-                        setLocalSelectedDate(undefined);
                       }}
                       disabled={!programId}
                     >
@@ -349,17 +231,13 @@ export function EnrollmentStep({ form }: Props) {
                   <FormLabel>Group *</FormLabel>
                   <FormControl>
                     <Select
-                      value={(field.value as string) || localSelectedGroupId}
+                      value={(field.value as string) || selectedGroupId}
                       onValueChange={(value: string) => {
-                        console.log('Group selected:', value);
                         field.onChange(value);
                         form.setValue('group_id', value);
-                        setLocalSelectedGroupId(value);
                         // Clear dependent selections on group change
                         form.setValue('timetable_id', '');
                         form.setValue('proposed_commencement_date', '');
-                        setLocalSelectedTimetableId('');
-                        setLocalSelectedDate(undefined);
                       }}
                       disabled={!selectedLocationId}
                     >
@@ -459,12 +337,10 @@ export function EnrollmentStep({ form }: Props) {
                   <FormLabel>Timetable *</FormLabel>
                   <FormControl>
                     <Select
-                      value={field.value || localSelectedTimetableId}
+                      value={field.value || selectedTimetableId}
                       onValueChange={(value) => {
-                        console.log('Timetable selected:', value);
                         field.onChange(value);
                         form.setValue('timetable_id', value);
-                        setLocalSelectedTimetableId(value);
                       }}
                       disabled={!selectedGroupId}
                     >
@@ -536,12 +412,9 @@ export function EnrollmentStep({ form }: Props) {
                         mode="single"
                         selected={selectedDate}
                         onSelect={(d) => {
-                          console.log('Date selected:', d);
                           if (!d) return;
                           const iso = formatDateToLocal(d);
-                          console.log('Setting date to:', iso);
                           form.setValue('proposed_commencement_date', iso);
-                          setLocalSelectedDate(d); // Update local state immediately
                           setIsDateOpen(false);
                         }}
                         disabled={disableDate}

@@ -268,21 +268,19 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
         'prior_education',
         currentPriorEd.filter((e) => e.prior_achievement_id !== educationCode)
       );
-      // Update checked state
-      setCheckedQualifications((prev) => {
+      // Collapse the recognition types
+      setExpandedQualifications((prev) => {
         const next = new Set(prev);
         next.delete(educationCode);
         return next;
       });
     } else {
-      // When checked, show recognition type checkboxes
-      // Update checked state
-      setCheckedQualifications((prev) => {
+      // Expand to show recognition type checkboxes
+      setExpandedQualifications((prev) => {
         const next = new Set(prev);
         next.add(educationCode);
         return next;
       });
-      // Note: The recognition type checkboxes will handle the actual addition
     }
   };
 
@@ -343,31 +341,11 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
     };
   }, [isPriorEducationSelected]);
 
-  // Track which qualifications have their main checkbox checked (for showing recognition types)
-  // This is needed because recognition types should show when main checkbox is checked,
-  // even if no recognition types are selected yet
-  const [checkedQualifications, setCheckedQualifications] = React.useState<
+  // Track temporarily expanded qualifications (for showing recognition types before any are selected)
+  // Derive initial state from priorEducation form data
+  const [expandedQualifications, setExpandedQualifications] = React.useState<
     Set<string>
-  >(new Set());
-
-  // Sync checked qualifications with form state
-  // This ensures the UI state matches the form data
-  React.useEffect(() => {
-    const checked = new Set<string>();
-    (priorEducation || []).forEach((pe) => {
-      checked.add(pe.prior_achievement_id);
-    });
-    // Only update if there's a difference to avoid unnecessary re-renders
-    setCheckedQualifications((prev) => {
-      if (
-        prev.size !== checked.size ||
-        !Array.from(prev).every((code) => checked.has(code))
-      ) {
-        return checked;
-      }
-      return prev;
-    });
-  }, [priorEducation]);
+  >(() => new Set((priorEducation || []).map((pe) => pe.prior_achievement_id)));
 
   return (
     <div className="grid gap-8">
@@ -502,17 +480,15 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
                   const hasAnyRecognition = hasAnyRecognitionForQualification(
                     type.code
                   );
-                  const isQualificationChecked = checkedQualifications.has(
-                    type.code
-                  );
+                  const isExpanded = expandedQualifications.has(type.code);
+                  const isChecked = hasAnyRecognition || isExpanded;
+
                   return (
                     <div key={type.code} className="grid gap-2">
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id={`prior-ed-${type.code}`}
-                          checked={Boolean(
-                            hasAnyRecognition || isQualificationChecked
-                          )}
+                          checked={isChecked}
                           onCheckedChange={(checked) =>
                             handlePriorEducationQualificationToggle(
                               type.code,
@@ -527,8 +503,8 @@ export const Step3_AdditionalInfo = ({ application }: Props) => {
                           {type.label}
                         </label>
                       </div>
-                      {/* Recognition type selector - show when qualification is checked */}
-                      {(hasAnyRecognition || isQualificationChecked) && (
+                      {/* Recognition type selector - show when qualification is checked/expanded */}
+                      {isChecked && (
                         <div className="ml-6 grid gap-2">
                           <FormLabel className="text-muted-foreground text-xs">
                             Recognition type (select at least one):

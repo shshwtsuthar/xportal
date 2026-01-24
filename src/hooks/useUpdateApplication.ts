@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Tables } from '@/database.types';
+import { queryKeys } from '@/src/lib/queryKeys';
 
 type UpdatePayload = Partial<Tables<'applications'>> & { id: string };
 
@@ -26,9 +27,11 @@ export const useUpdateApplication = () => {
     },
     onSuccess: (data, variables) => {
       // Optimistically write the updated row to the cache
-      queryClient.setQueryData(['application', variables.id], data);
+      queryClient.setQueryData(queryKeys.application(variables.id), data);
       // Invalidate lists to refresh aggregates/views
-      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.applications() });
+      // Note: Disabilities and prior education are invalidated by usePersistApplicationArrays
+      // when those specific arrays are updated, avoiding unnecessary refetches
     },
   });
 };

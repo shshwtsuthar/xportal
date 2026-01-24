@@ -22,6 +22,9 @@ import { useSubmissionReadiness } from '@/src/hooks/useSubmissionReadiness';
 import { useCreateApplication } from '@/src/hooks/useCreateApplication';
 import { useGetApplication } from '@/src/hooks/useGetApplication';
 import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
+import { usePersistApplicationArrays } from '@/src/hooks/usePersistApplicationArrays';
+import { useSaveApplicationDraft } from '@/src/hooks/useSaveApplicationDraft';
+import { mapApplicationToFormValues } from '@/src/hooks/useApplicationFormDefaults';
 import { Step1_PersonalDetails } from './steps/Step1_PersonalDetails';
 import { Step2_AvetmissDetails } from './steps/Step2_AvetmissDetails';
 import { Step3_AdditionalInfo } from './steps/Step3_AdditionalInfo';
@@ -154,6 +157,9 @@ export function NewApplicationWizard({ applicationId }: Props) {
   const updateMutation = useUpdateApplication();
   const submitMutation = useSubmitApplication();
   const uploadFileMutation = useUploadApplicationFile();
+  const persistArraysMutation = usePersistApplicationArrays();
+  const { saveDraft: saveDraftFn, isPending: isSavingDraft } =
+    useSaveApplicationDraft();
 
   const form = useForm({
     resolver: zodResolver(draftApplicationSchema), // Use draft schema for form validation
@@ -251,127 +257,8 @@ export function NewApplicationWizard({ applicationId }: Props) {
 
   useEffect(() => {
     if (currentApplication) {
-      const toReset: Partial<ApplicationFormValues> = {
-        salutation: currentApplication.salutation ?? '',
-        first_name: currentApplication.first_name ?? '',
-        middle_name: currentApplication.middle_name ?? '',
-        last_name: currentApplication.last_name ?? '',
-        preferred_name: currentApplication.preferred_name ?? '',
-        date_of_birth: currentApplication.date_of_birth ?? '',
-        program_id: currentApplication.program_id ?? '',
-        timetable_id: currentApplication.timetable_id ?? '',
-        preferred_location_id: currentApplication.preferred_location_id ?? '',
-        proposed_commencement_date:
-          currentApplication.proposed_commencement_date ?? '',
-        payment_plan_template_id:
-          currentApplication.payment_plan_template_id ?? '',
-        payment_anchor_date: currentApplication.payment_anchor_date ?? '',
-        agent_id: currentApplication.agent_id
-          ? currentApplication.agent_id
-          : 'none',
-        email: currentApplication.email ?? '',
-        work_phone: currentApplication.work_phone ?? '',
-        mobile_phone: currentApplication.mobile_phone ?? '',
-        alternative_email: currentApplication.alternative_email ?? '',
-        address_line_1: currentApplication.address_line_1 ?? '',
-        suburb: currentApplication.suburb ?? '',
-        state: currentApplication.state ?? '',
-        postcode: currentApplication.postcode ?? '',
-        street_building_name: currentApplication.street_building_name ?? '',
-        street_unit_details: currentApplication.street_unit_details ?? '',
-        street_number_name: currentApplication.street_number_name ?? '',
-        street_po_box: currentApplication.street_po_box ?? '',
-        street_country: currentApplication.street_country ?? 'AU',
-        postal_is_same_as_street: Boolean(
-          currentApplication.postal_is_same_as_street
-        ),
-        postal_building_name: currentApplication.postal_building_name ?? '',
-        postal_unit_details: currentApplication.postal_unit_details ?? '',
-        postal_number_name: currentApplication.postal_number_name ?? '',
-        postal_po_box: currentApplication.postal_po_box ?? '',
-        postal_suburb: currentApplication.postal_suburb ?? '',
-        postal_state: currentApplication.postal_state ?? '',
-        postal_postcode: currentApplication.postal_postcode ?? '',
-        postal_country: currentApplication.postal_country ?? 'AU',
-        gender: currentApplication.gender ?? '',
-        highest_school_level_id:
-          currentApplication.highest_school_level_id ?? '',
-        indigenous_status_id: currentApplication.indigenous_status_id ?? '',
-        labour_force_status_id: currentApplication.labour_force_status_id ?? '',
-        country_of_birth_id: currentApplication.country_of_birth_id ?? 'AU',
-        language_code: currentApplication.language_code ?? '',
-        citizenship_status_code:
-          currentApplication.citizenship_status_code ?? '',
-        at_school_flag: currentApplication.at_school_flag ?? '',
-        disability_flag:
-          currentApplication.disability_flag === null ||
-          currentApplication.disability_flag === undefined
-            ? ('@' as const)
-            : (currentApplication.disability_flag as 'Y' | 'N' | '@'),
-        prior_education_flag:
-          currentApplication.prior_education_flag === null ||
-          currentApplication.prior_education_flag === undefined
-            ? ('@' as const)
-            : (currentApplication.prior_education_flag as 'Y' | 'N' | '@'),
-        disabilities: [], // Will be loaded by Step3_AdditionalInfo component
-        prior_education: [], // Will be loaded by Step3_AdditionalInfo component
-        year_highest_school_level_completed:
-          currentApplication.year_highest_school_level_completed ?? '',
-        survey_contact_status: (currentApplication.survey_contact_status &&
-        ['A', 'C', 'D', 'E', 'I', 'M', 'O'].includes(
-          currentApplication.survey_contact_status
-        )
-          ? currentApplication.survey_contact_status
-          : 'A') as 'A' | 'C' | 'D' | 'E' | 'I' | 'M' | 'O',
-        vsn: currentApplication.vsn ?? '',
-        is_international: Boolean(currentApplication.is_international),
-        usi: currentApplication.usi ?? '',
-        usi_exemption_code: (() => {
-          const value = (currentApplication as Record<string, unknown>)
-            .usi_exemption_code;
-          return value === 'INDIV' || value === 'INTOFF' ? value : undefined;
-        })(),
-        passport_number: currentApplication.passport_number ?? '',
-        passport_issue_date: currentApplication.passport_issue_date ?? '',
-        passport_expiry_date: currentApplication.passport_expiry_date ?? '',
-        place_of_birth: currentApplication.place_of_birth ?? '',
-        visa_type: currentApplication.visa_type ?? '',
-        visa_number: currentApplication.visa_number ?? '',
-        visa_application_office:
-          currentApplication.visa_application_office ?? '',
-        holds_visa: currentApplication.holds_visa ?? false,
-        country_of_citizenship:
-          currentApplication.country_of_citizenship ?? 'AU',
-        ielts_score: currentApplication.ielts_score ?? '',
-        has_english_test: Boolean(currentApplication.has_english_test),
-        english_test_type: currentApplication.english_test_type ?? '',
-        english_test_date: currentApplication.english_test_date ?? '',
-        has_previous_study_australia: Boolean(
-          currentApplication.has_previous_study_australia
-        ),
-        previous_provider_name: currentApplication.previous_provider_name ?? '',
-        completed_previous_course:
-          currentApplication.completed_previous_course ?? undefined,
-        has_release_letter: currentApplication.has_release_letter ?? undefined,
-        provider_accepting_welfare_responsibility:
-          currentApplication.provider_accepting_welfare_responsibility ??
-          undefined,
-        welfare_start_date: currentApplication.welfare_start_date ?? '',
-        provider_arranged_oshc: Boolean(
-          currentApplication.provider_arranged_oshc
-        ),
-        oshc_provider_name: currentApplication.oshc_provider_name ?? '',
-        oshc_start_date: currentApplication.oshc_start_date ?? '',
-        oshc_end_date: currentApplication.oshc_end_date ?? '',
-        ec_name: currentApplication.ec_name ?? '',
-        ec_relationship: currentApplication.ec_relationship ?? '',
-        ec_phone_number: currentApplication.ec_phone_number ?? '',
-        g_name: currentApplication.g_name ?? '',
-        g_email: currentApplication.g_email ?? '',
-        g_phone_number: currentApplication.g_phone_number ?? '',
-        g_relationship: currentApplication.g_relationship ?? '',
-      };
-      form.reset(toReset);
+      const formValues = mapApplicationToFormValues(currentApplication);
+      form.reset(formValues);
     }
   }, [currentApplication, form]);
 
@@ -405,348 +292,19 @@ export function NewApplicationWizard({ applicationId }: Props) {
   } = useSubmissionReadiness(form);
 
   const handleSaveDraft = useCallback(async () => {
-    if (isReadOnly) {
-      toast.error(
-        'Cannot save: Application has been submitted and is read-only.'
-      );
-      return;
-    }
-    try {
-      const values = form.getValues();
-
-      // Save Draft: Save whatever is in the form, NO VALIDATION
-      // Validation only happens when submitting via handleSubmitApplication
-
-      // Helper function to convert Date objects to ISO strings
-      const convertDateToString = (
-        date: string | Date | null | undefined
-      ): string | null => {
-        if (!date) return null;
-        if (typeof date === 'string') return date;
-        if (date instanceof Date) return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-        return null;
-      };
-
-      // Clean up empty strings for date fields to prevent PostgreSQL errors
-      // Note: disabilities and prior_education arrays are NOT part of applications table
-      // They are stored separately in junction tables via afterPersistDisabilitiesAndPriorEducation
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { disabilities, prior_education, ...valuesWithoutArrays } = values;
-
-      // For updates, exclude preferred_location_id if it's null/empty to avoid overwriting existing value
-      // For creates, useCreateApplication will set a default location
-      const { preferred_location_id, ...valuesWithoutLocation } =
-        valuesWithoutArrays;
-      const cleanedPreferredLocationId =
-        preferred_location_id && preferred_location_id.trim() !== ''
-          ? preferred_location_id
-          : undefined;
-
-      const cleanedValues = {
-        ...valuesWithoutLocation,
-        ...(cleanedPreferredLocationId !== undefined && {
-          preferred_location_id: cleanedPreferredLocationId,
-        }),
-        date_of_birth: values.date_of_birth
-          ? typeof values.date_of_birth === 'string'
-            ? values.date_of_birth
-            : values.date_of_birth.toISOString()
-          : null,
-        proposed_commencement_date: convertDateToString(
-          values.proposed_commencement_date
-        ),
-        payment_anchor_date: convertDateToString(values.payment_anchor_date),
-        // CRICOS date fields
-        passport_issue_date: convertDateToString(values.passport_issue_date),
-        passport_expiry_date: convertDateToString(values.passport_expiry_date),
-        welfare_start_date: convertDateToString(values.welfare_start_date),
-        oshc_start_date: convertDateToString(values.oshc_start_date),
-        oshc_end_date: convertDateToString(values.oshc_end_date),
-        english_test_date: convertDateToString(values.english_test_date),
-        // Clean up null values for optional flag fields
-        // Schema expects 'Y', 'N', '@', or undefined (not null)
-        disability_flag:
-          values.disability_flag === null ? undefined : values.disability_flag,
-        prior_education_flag:
-          values.prior_education_flag === null
-            ? undefined
-            : values.prior_education_flag,
-        email: values.email || null,
-        alternative_email: values.alternative_email || null,
-        g_email: values.g_email || null,
-        agent_id: values.agent_id === 'none' ? null : values.agent_id || null,
-        timetable_id: values.timetable_id || null,
-        program_id: values.program_id || null,
-        payment_plan_template_id: values.payment_plan_template_id || null,
-      };
-
-      const afterPersistLearningPlan = async (applicationId: string) => {
-        try {
-          // Persist draft learning plan only if both drivers exist
-          if (
-            cleanedValues.timetable_id &&
-            cleanedValues.proposed_commencement_date
-          ) {
-            const supabase = createClient();
-            const { error } = await supabase.rpc(
-              'upsert_application_learning_plan_draft',
-              { app_id: applicationId }
-            );
-            if (error) {
-              console.error('Draft plan RPC error:', error.message);
-              toast.error('Saved draft, but failed to persist learning plan');
-              return;
-            }
-          }
-          toast.success('Draft saved');
-        } catch (e) {
-          console.error('Draft learning plan error:', e);
-          toast.error('Saved draft, but failed to persist learning plan');
-        }
-      };
-
-      const afterPersistPaymentSchedule = async (applicationId: string) => {
-        try {
-          // Persist draft payment schedule only when template AND anchor date exist
-          if (
-            cleanedValues.payment_plan_template_id &&
-            cleanedValues.payment_anchor_date
-          ) {
-            const supabase = createClient();
-            const { error } = await supabase.rpc(
-              'upsert_application_payment_schedule_draft',
-              { app_id: applicationId }
-            );
-            if (error) {
-              console.error('Draft payment schedule RPC error:', error.message);
-              toast.error(
-                'Saved draft, but failed to persist payment schedule'
-              );
-              return;
-            }
-          } else if (
-            cleanedValues.payment_plan_template_id &&
-            !cleanedValues.payment_anchor_date
-          ) {
-            // Soft guidance: no RPC call without anchor date
-            // Keep silent success for draft save; preview will prompt for date
-          }
-        } catch (e) {
-          console.error('Draft payment schedule error:', e);
-          toast.error('Saved draft, but failed to persist payment schedule');
-        }
-      };
-
-      const afterPersistDisabilitiesAndPriorEducation = async (
-        applicationId: string
-      ) => {
-        try {
-          const supabase = createClient();
-
-          // Get the RTO ID from the user's session
-          const { data: sessionData } = await supabase.auth.getSession();
-          const rtoId = (
-            sessionData.session?.user?.app_metadata as Record<string, unknown>
-          )?.rto_id as string;
-          if (!rtoId) {
-            console.error('User RTO not found in session metadata.');
-            toast.error('Failed to save: User RTO not found.');
-            return;
-          }
-
-          // Handle disabilities
-          const formDisabilities = values.disabilities || [];
-          console.log('=== PERSISTING DISABILITIES & PRIOR EDUCATION ===');
-          console.log('Application ID:', applicationId);
-          console.log('RTO ID:', rtoId);
-          console.log('Form disabilities:', formDisabilities);
-
-          // Delete all existing disabilities for this application
-          const { error: deleteDisErr } = await supabase
-            .from('application_disabilities')
-            .delete()
-            .eq('application_id', applicationId);
-
-          if (deleteDisErr) {
-            console.error(
-              'Error deleting existing disabilities:',
-              deleteDisErr
-            );
-            toast.error(`Failed to save disabilities: ${deleteDisErr.message}`);
-            return;
-          }
-
-          // Insert new disabilities from form state
-          if (formDisabilities.length > 0) {
-            const disabilityInserts = formDisabilities.map((d) => ({
-              application_id: applicationId,
-              rto_id: rtoId,
-              disability_type_id: d.disability_type_id,
-            }));
-
-            const { error: insertDisErr } = await supabase
-              .from('application_disabilities')
-              .insert(disabilityInserts);
-
-            if (insertDisErr) {
-              console.error('Error inserting disabilities:', insertDisErr);
-              toast.error(
-                `Failed to save disabilities: ${insertDisErr.message}`
-              );
-            } else {
-              console.log(
-                'Successfully inserted',
-                disabilityInserts.length,
-                'disabilities'
-              );
-            }
-          }
-
-          // Handle prior education
-          const formPriorEducation = values.prior_education || [];
-          console.log('Form prior education:', formPriorEducation);
-          console.log(
-            'Prior education array length:',
-            formPriorEducation.length
-          );
-
-          // Delete all existing prior education for this application
-          const { error: deletePriorEdErr } = await supabase
-            .from('application_prior_education')
-            .delete()
-            .eq('application_id', applicationId);
-
-          if (deletePriorEdErr) {
-            console.error(
-              'Error deleting existing prior education:',
-              deletePriorEdErr
-            );
-            toast.error(
-              `Failed to save prior education: ${deletePriorEdErr.message}`
-            );
-            return;
-          }
-
-          // Insert new prior education from form state
-          if (formPriorEducation.length > 0) {
-            const priorEdInserts = formPriorEducation.map((e) => ({
-              application_id: applicationId,
-              rto_id: rtoId,
-              prior_achievement_id: e.prior_achievement_id,
-              recognition_type: e.recognition_type || null,
-            }));
-
-            console.log('Prior education inserts to be saved:', priorEdInserts);
-
-            const { error: insertPriorEdErr, data: insertedData } =
-              await supabase
-                .from('application_prior_education')
-                .insert(priorEdInserts)
-                .select();
-
-            if (insertPriorEdErr) {
-              console.error(
-                'Error inserting prior education:',
-                insertPriorEdErr
-              );
-              console.error(
-                'Error details:',
-                JSON.stringify(insertPriorEdErr, null, 2)
-              );
-              toast.error(
-                `Failed to save prior education: ${insertPriorEdErr.message}`
-              );
-            } else {
-              console.log(
-                'Successfully inserted',
-                priorEdInserts.length,
-                'prior education records'
-              );
-              console.log('Inserted data:', insertedData);
-            }
-          } else {
-            console.log(
-              'No prior education records to insert (array is empty)'
-            );
-          }
-        } catch (e) {
-          console.error(
-            'Error persisting disabilities and prior education:',
-            e
-          );
-          toast.error(
-            `Failed to save additional info: ${e instanceof Error ? e.message : String(e)}`
-          );
-        }
-      };
-
-      // If we have an application ID, update it
-      if (currentApplication?.id) {
-        updateMutation.mutate(
-          { id: currentApplication.id, ...cleanedValues },
-          {
-            onSuccess: async () => {
-              await afterPersistLearningPlan(currentApplication.id);
-              await afterPersistPaymentSchedule(currentApplication.id);
-              await afterPersistDisabilitiesAndPriorEducation(
-                currentApplication.id
-              );
-              checkReadiness();
-            },
-            onError: (error) =>
-              toast.error(`Failed to save draft: ${error.message}`),
-          }
-        );
-      } else if (createMutation.isPending) {
-        // If creation is already in progress, wait for it to complete
-        toast.info('Creating application, please wait...');
-      } else if (createMutation.isSuccess && createMutation.data?.id) {
-        // If creation was successful but application state hasn't updated yet, use the created data
-        updateMutation.mutate(
-          { id: createMutation.data.id, ...cleanedValues },
-          {
-            onSuccess: async () => {
-              await afterPersistLearningPlan(createMutation.data.id);
-              await afterPersistPaymentSchedule(createMutation.data.id);
-              await afterPersistDisabilitiesAndPriorEducation(
-                createMutation.data.id
-              );
-              checkReadiness();
-            },
-            onError: (error) =>
-              toast.error(`Failed to save draft: ${error.message}`),
-          }
-        );
-      } else {
-        // Only create if we're not already pending and haven't succeeded
-        // Pass the form data directly to create the application with the filled-in values
-        createMutation.mutate(cleanedValues, {
-          onSuccess: async (created) => {
-            // Redirect to edit page
-            window.history.replaceState(
-              null,
-              '',
-              `/applications/edit/${created.id}`
-            );
-            await afterPersistLearningPlan(created.id);
-            await afterPersistPaymentSchedule(created.id);
-            await afterPersistDisabilitiesAndPriorEducation(created.id);
-            checkReadiness();
-          },
-          onError: (err) =>
-            toast.error(`Failed to create application: ${err.message}`),
-        });
-      }
-    } catch (error) {
-      console.error('Save draft error:', error);
-      toast.error('Failed to save draft');
-    }
+    await saveDraftFn({
+      form,
+      currentApplication,
+      createMutation,
+      isReadOnly,
+      checkReadiness,
+    });
   }, [
-    isReadOnly,
+    saveDraftFn,
     form,
-    updateMutation,
-    createMutation,
     currentApplication,
+    createMutation,
+    isReadOnly,
     checkReadiness,
   ]);
 
@@ -768,7 +326,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       ) {
         // Only trigger if button is not disabled
         const isDisabled =
-          createMutation.isPending || updateMutation.isPending || isReadOnly;
+          createMutation.isPending || isSavingDraft || isReadOnly;
 
         if (!isDisabled) {
           event.preventDefault();
@@ -779,7 +337,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [createMutation.isPending, updateMutation.isPending, isReadOnly]);
+  }, [createMutation.isPending, isSavingDraft, isReadOnly]);
 
   const goStep = async (next: number) => {
     await handleSaveDraft();
@@ -867,97 +425,18 @@ export function NewApplicationWizard({ applicationId }: Props) {
           payment_plan_template_id: values.payment_plan_template_id || null,
         };
 
-        const afterPersistDisabilitiesAndPriorEducation = async (
-          applicationId: string
-        ) => {
-          const supabase = createClient();
-          const { data: sessionData } = await supabase.auth.getSession();
-          const rtoId = (
-            sessionData.session?.user?.app_metadata as Record<string, unknown>
-          )?.rto_id as string;
-          if (!rtoId) {
-            throw new Error(
-              'Failed to save draft: User RTO not found in session metadata. Please refresh the page and try again.'
-            );
-          }
-
-          // Defensive check: ensure arrays are defined
-          const formDisabilities = values.disabilities || [];
-          const formPriorEducation = values.prior_education || [];
-
-          // Delete all existing disabilities
-          const { error: deleteDisErr } = await supabase
-            .from('application_disabilities')
-            .delete()
-            .eq('application_id', applicationId);
-
-          if (deleteDisErr) {
-            throw new Error(
-              `Failed to save draft: Could not delete existing disabilities. ${deleteDisErr.message}`
-            );
-          }
-
-          // Insert new disabilities
-          if (formDisabilities.length > 0) {
-            const disabilityInserts = formDisabilities.map((d) => ({
-              application_id: applicationId,
-              rto_id: rtoId,
-              disability_type_id: d.disability_type_id,
-            }));
-
-            const { error: insertDisErr } = await supabase
-              .from('application_disabilities')
-              .insert(disabilityInserts);
-
-            if (insertDisErr) {
-              throw new Error(
-                `Failed to save draft: Could not save disabilities. ${insertDisErr.message}`
-              );
-            }
-          }
-
-          // Delete all existing prior education
-          const { error: deletePriorEdErr } = await supabase
-            .from('application_prior_education')
-            .delete()
-            .eq('application_id', applicationId);
-
-          if (deletePriorEdErr) {
-            throw new Error(
-              `Failed to save draft: Could not delete existing prior education. ${deletePriorEdErr.message}`
-            );
-          }
-
-          // Insert new prior education
-          if (formPriorEducation.length > 0) {
-            const priorEdInserts = formPriorEducation.map((e) => ({
-              application_id: applicationId,
-              rto_id: rtoId,
-              prior_achievement_id: e.prior_achievement_id,
-              recognition_type: e.recognition_type || null,
-            }));
-
-            const { error: insertPriorEdErr } = await supabase
-              .from('application_prior_education')
-              .insert(priorEdInserts);
-
-            if (insertPriorEdErr) {
-              throw new Error(
-                `Failed to save draft: Could not save prior education. ${insertPriorEdErr.message}`
-              );
-            }
-          }
-        };
-
         // Update application and persist arrays
         updateMutation.mutate(
           { id: currentApplication.id, ...cleanedValues },
           {
             onSuccess: async () => {
               try {
-                await afterPersistDisabilitiesAndPriorEducation(
-                  currentApplication.id
-                );
+                // Use the new hook to persist arrays with proper cache invalidation
+                await persistArraysMutation.mutateAsync({
+                  applicationId: currentApplication.id,
+                  disabilities: values.disabilities || [],
+                  priorEducation: values.prior_education || [],
+                });
                 resolve();
               } catch (e) {
                 reject(e);
@@ -1154,7 +633,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
               onClick={handleSaveDraft}
               disabled={
                 createMutation.isPending ||
-                updateMutation.isPending ||
+                isSavingDraft ||
                 isReadOnly ||
                 isValidating
               }
@@ -1171,7 +650,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
               onClick={handleSaveDraft}
               disabled={
                 createMutation.isPending ||
-                updateMutation.isPending ||
+                isSavingDraft ||
                 isReadOnly ||
                 isValidating
               }
@@ -1288,9 +767,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
                     variant="outline"
                     onClick={handleSaveDraft}
                     disabled={
-                      createMutation.isPending ||
-                      updateMutation.isPending ||
-                      isReadOnly
+                      createMutation.isPending || isSavingDraft || isReadOnly
                     }
                   >
                     Save Draft{' '}
@@ -1305,9 +782,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
                     variant="outline"
                     onClick={handleSaveDraft}
                     disabled={
-                      createMutation.isPending ||
-                      updateMutation.isPending ||
-                      isReadOnly
+                      createMutation.isPending || isSavingDraft || isReadOnly
                     }
                   >
                     Save Draft{' '}
