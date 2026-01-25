@@ -212,8 +212,9 @@ serve(async (req: Request) => {
       mobile_phone: app.mobile_phone,
       alternative_email: app.alternative_email,
       status: 'ACTIVE',
-      // Pass empty string - trigger will generate the actual display ID
-      student_id_display: '',
+      // Copy student_id_display from application if it exists (generated at submission)
+      // If not provided, trigger will generate it automatically
+      student_id_display: app.student_id_display || '',
     } as Db['public']['Tables']['students']['Insert'];
 
     const { data: newStudent, error: studentErr } = await supabase

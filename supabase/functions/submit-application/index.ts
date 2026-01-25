@@ -317,7 +317,69 @@ serve(async (req: Request) => {
       }
     }
 
-    // 6b. If all validation passes, update the application status to 'SUBMITTED'.
+    // 6b. Generate Student ID if not already set (for compliance - must be in offer letter)
+    // This ID will be copied to students.student_id_display on approval
+    if (!application.student_id_display) {
+      console.log(
+        `[Submit Application] Generating student_id_display for application ${applicationId}`
+      );
+      const { data: generatedId, error: idGenError } = await supabaseClient.rpc(
+        'generate_application_student_id',
+        {
+          p_application_id: applicationId,
+        }
+      );
+
+      if (idGenError || !generatedId) {
+        console.error(
+          'Failed to generate student ID:',
+          idGenError?.message || 'Unknown error'
+        );
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to generate student ID',
+            details: idGenError?.message || 'Unknown error',
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+
+      // Update application with generated student ID
+      const { error: idUpdateError } = await supabaseClient
+        .from('applications')
+        .update({ student_id_display: generatedId })
+        .eq('id', applicationId);
+
+      if (idUpdateError) {
+        console.error(
+          'Failed to update student_id_display:',
+          idUpdateError.message
+        );
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to persist student ID',
+            details: idUpdateError.message,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+
+      console.log(
+        `[Submit Application] Generated student_id_display: ${generatedId}`
+      );
+    } else {
+      console.log(
+        `[Submit Application] Application already has student_id_display: ${application.student_id_display}`
+      );
+    }
+
+    // 6c. If all validation passes, update the application status to 'SUBMITTED'.
     const { error: updateError } = await supabaseClient
       .from('applications')
       .update({ status: 'SUBMITTED' })

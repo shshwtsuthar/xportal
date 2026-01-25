@@ -735,6 +735,7 @@ export type Database = {
           street_number_name: string | null
           street_po_box: string | null
           street_unit_details: string | null
+          student_id_display: string | null
           suburb: string | null
           survey_contact_status: string
           timetable_id: string | null
@@ -841,6 +842,7 @@ export type Database = {
           street_number_name?: string | null
           street_po_box?: string | null
           street_unit_details?: string | null
+          student_id_display?: string | null
           suburb?: string | null
           survey_contact_status?: string
           timetable_id?: string | null
@@ -947,6 +949,7 @@ export type Database = {
           street_number_name?: string | null
           street_po_box?: string | null
           street_unit_details?: string | null
+          student_id_display?: string | null
           suburb?: string | null
           survey_contact_status?: string
           timetable_id?: string | null
@@ -4193,6 +4196,10 @@ export type Database = {
       }
       generate_application_display_id: {
         Args: { p_created: string; p_uuid: string }
+        Returns: string
+      }
+      generate_application_student_id: {
+        Args: { p_application_id: string }
         Returns: string
       }
       generate_commission_invoice_number: {

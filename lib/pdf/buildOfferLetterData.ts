@@ -514,7 +514,12 @@ export function buildOfferLetterData(input: {
         `${(application.first_name ?? '').toUpperCase()} ${(application.last_name ?? '').toUpperCase()}`.trim(),
     },
     student: {
-      studentId: application.application_id_display ?? application.id, // Fixed: use application_id_display
+      // Prioritize student_id_display (generated at submission) for compliance
+      // Fallback to application_id_display, then application.id
+      studentId:
+        application.student_id_display ??
+        application.application_id_display ??
+        application.id,
       firstName: (application.first_name ?? '').toUpperCase(),
       surname: (application.last_name ?? '').toUpperCase(),
       dateOfBirth: formatDate(application.date_of_birth),
