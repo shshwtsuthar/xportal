@@ -1,6 +1,6 @@
 'use client';
 
-import { UseFormReturn } from 'react-hook-form';
+import { UseFormReturn, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { draftApplicationSchema } from '@/src/schemas';
 import {
@@ -70,16 +70,30 @@ export function EnrollmentStep({ form }: Props) {
     error: locationsError,
   } = useGetLocations();
 
-  // Use form state directly - single source of truth
-  const programId = form.watch('program_id') as string | undefined;
-  const selectedLocationId = form.watch('preferred_location_id') as
-    | string
-    | undefined;
-  const selectedGroupId = form.watch('group_id') as string | undefined;
-  const selectedTimetableId = form.watch('timetable_id') as string | undefined;
-  const selectedDateString = form.watch('proposed_commencement_date') as
-    | string
-    | undefined;
+  // Use useWatch for reactive form state - ensures immediate updates
+  const programIdRaw = useWatch({
+    control: form.control,
+    name: 'program_id',
+  }) as string | undefined;
+  // Normalize programId: treat empty strings as undefined for consistent checks
+  const programId =
+    programIdRaw && programIdRaw.trim() !== '' ? programIdRaw : undefined;
+  const selectedLocationId = useWatch({
+    control: form.control,
+    name: 'preferred_location_id',
+  }) as string | undefined;
+  const selectedGroupId = useWatch({
+    control: form.control,
+    name: 'group_id',
+  }) as string | undefined;
+  const selectedTimetableId = useWatch({
+    control: form.control,
+    name: 'timetable_id',
+  }) as string | undefined;
+  const selectedDateString = useWatch({
+    control: form.control,
+    name: 'proposed_commencement_date',
+  }) as string | undefined;
 
   // Get groups for the selected location
   const {
@@ -187,7 +201,8 @@ export function EnrollmentStep({ form }: Props) {
                   <FormLabel>Preferred Location *</FormLabel>
                   <FormControl>
                     <Select
-                      value={field.value || ''}
+                      key={programId || 'no-program'}
+                      value={programId ? field.value || '' : ''}
                       onValueChange={(value) => {
                         field.onChange(value);
                         // Clear dependent selections on location change

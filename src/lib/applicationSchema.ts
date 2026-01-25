@@ -1,4 +1,7 @@
 import { z } from 'zod';
+// Import USI validator
+// Uses @/ alias which works in both Next.js (via tsconfig.json) and Deno (via deno.json import map)
+// Deno will resolve @/lib/utils/usiValidator to ../../../lib/utils/usiValidator from Edge Function context
 import { verifyUSI } from '@/lib/utils/usiValidator';
 
 const AU_STATE_CODES = new Set([

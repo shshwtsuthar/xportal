@@ -716,7 +716,7 @@ export type Database = {
           postal_suburb: string | null
           postal_unit_details: string | null
           postcode: string | null
-          preferred_location_id: string
+          preferred_location_id: string | null
           preferred_name: string | null
           previous_provider_name: string | null
           prior_education_flag: string | null
@@ -822,7 +822,7 @@ export type Database = {
           postal_suburb?: string | null
           postal_unit_details?: string | null
           postcode?: string | null
-          preferred_location_id: string
+          preferred_location_id?: string | null
           preferred_name?: string | null
           previous_provider_name?: string | null
           prior_education_flag?: string | null
@@ -928,7 +928,7 @@ export type Database = {
           postal_suburb?: string | null
           postal_unit_details?: string | null
           postcode?: string | null
-          preferred_location_id?: string
+          preferred_location_id?: string | null
           preferred_name?: string | null
           previous_provider_name?: string | null
           prior_education_flag?: string | null
