@@ -48,7 +48,7 @@ import { CalendarIcon, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useState } from 'react';
-import { formatDateToLocal, getTodayInAustraliaSydney } from '@/lib/utils/date';
+import { formatDateToLocal } from '@/lib/utils/date';
 import {
   isGroupFull,
   isGroupNearFull,
@@ -119,14 +119,7 @@ export function EnrollmentStep({ form }: Props) {
   const [isDateOpen, setIsDateOpen] = useState(false);
 
   const disableDate = (date: Date) => {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const today = getTodayInAustraliaSydney();
-
-    // Disable dates before today (in Australia/Sydney timezone)
-    if (d < today) return true;
-
-    // Allow any future date for timetable-based enrollment
+    // Enable all dates - no restrictions
     return false;
   };
 
