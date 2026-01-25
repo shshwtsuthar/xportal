@@ -372,10 +372,6 @@ export const OfferLetterTemplate: React.FC<{ data: OfferLetterData }> = ({
         >
           <View>
             <Text>
-              <Text style={styles.bold}>Offer Letter ID:</Text>{' '}
-              {data.offer.offerLetterId}
-            </Text>
-            <Text style={{ marginTop: 4 }}>
               <Text style={styles.bold}>Date:</Text> {data.offer.date}
             </Text>
           </View>
