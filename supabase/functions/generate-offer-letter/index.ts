@@ -104,6 +104,57 @@ serve(async (req) => {
       );
     }
 
+    // Payment schedule line items (optional - will fall back to installments if empty)
+    const { data: scheduleLines, error: linesErr } = await supabaseUserClient
+      .from('application_payment_schedule_lines')
+      .select('*')
+      .eq('application_id', applicationId)
+      .order('sequence_order', { ascending: true });
+
+    // Only error if there's a real database error (empty results are fine for backward compatibility)
+    if (linesErr) {
+      console.error('Error loading schedule lines:', linesErr);
+      return new Response(
+        JSON.stringify({ error: 'Failed to load payment schedule lines' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
+    // Join lines with schedule to get due_date and installment sequence_order
+    const scheduleMap = new Map(
+      (schedule ?? [])
+        .filter((s) => s.due_date && s.sequence_order !== null)
+        .map((s) => [
+          s.id,
+          {
+            due_date: s.due_date as string,
+            sequence_order: s.sequence_order as number,
+          },
+        ])
+    );
+    const scheduleLinesWithDueDate = (scheduleLines ?? [])
+      .filter((line) => {
+        const scheduleEntry = scheduleMap.get(
+          line.application_payment_schedule_id
+        );
+        return scheduleEntry !== undefined;
+      })
+      .map((line) => ({
+        ...line,
+        application_payment_schedule: scheduleMap.get(
+          line.application_payment_schedule_id
+        )!,
+      }))
+      .sort((a, b) => {
+        const seqA = a.application_payment_schedule.sequence_order;
+        const seqB = b.application_payment_schedule.sequence_order;
+        if (seqA !== seqB) return seqA - seqB;
+        return (a.sequence_order ?? 0) - (b.sequence_order ?? 0);
+      });
+
     let rtoLogoUrl: string | null = null;
     const logoPath = application.rtos?.profile_image_path;
     if (logoPath) {
@@ -119,6 +170,7 @@ serve(async (req) => {
     const data: OfferLetterData = buildOfferLetterData({
       application,
       schedule: schedule ?? [],
+      scheduleLines: scheduleLinesWithDueDate,
       rtoLogoUrl,
     });
 

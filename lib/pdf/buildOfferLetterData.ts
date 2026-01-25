@@ -37,6 +37,14 @@ type AppRow = Database['public']['Tables']['applications']['Row'] & {
 type ScheduleRow =
   Database['public']['Tables']['application_payment_schedule']['Row'];
 
+type ScheduleLineRow =
+  Database['public']['Tables']['application_payment_schedule_lines']['Row'] & {
+    application_payment_schedule: {
+      due_date: string;
+      sequence_order: number;
+    };
+  };
+
 // 2. Helpers
 const formatDate = (d?: string | null) => {
   if (!d) return '';
@@ -353,9 +361,10 @@ const calculateTotalWeeks = (
 export function buildOfferLetterData(input: {
   application: AppRow;
   schedule: ScheduleRow[];
+  scheduleLines: ScheduleLineRow[];
   rtoLogoUrl?: string | null;
 }): OfferLetterData {
-  const { application, schedule, rtoLogoUrl } = input;
+  const { application, schedule, scheduleLines, rtoLogoUrl } = input;
   const program = application.programs ?? null;
   const rto = application.rtos;
   const isInternational = application.is_international ?? false;
@@ -369,10 +378,41 @@ export function buildOfferLetterData(input: {
           !r.name?.toLowerCase().includes('overseas student health cover')
       );
 
-  const totalCents = filteredSchedule.reduce(
-    (sum, r) => sum + (r.amount_cents ?? 0),
-    0
-  );
+  // Use line items if available, otherwise fall back to installments
+  let paymentRows: Array<{ date: string; feeType: string; amount: string }>;
+  let totalCents: number;
+
+  if (scheduleLines && scheduleLines.length > 0) {
+    // Filter schedule lines by matching with filtered schedule IDs (for domestic OSHC filtering)
+    const filteredScheduleIds = new Set(filteredSchedule.map((s) => s.id));
+    const filteredLines = scheduleLines.filter((line) =>
+      filteredScheduleIds.has(line.application_payment_schedule_id)
+    );
+
+    // Map line items to payment plan rows
+    paymentRows = filteredLines.map((line) => ({
+      date: formatDate(line.application_payment_schedule.due_date),
+      feeType: line.name,
+      amount: formatCurrency(line.amount_cents),
+    }));
+    totalCents = filteredLines.reduce(
+      (sum, line) => sum + (line.amount_cents ?? 0),
+      0
+    );
+  } else {
+    // Fallback to installments
+    paymentRows = filteredSchedule
+      .sort((a, b) => (a.sequence_order ?? 0) - (b.sequence_order ?? 0))
+      .map((r) => ({
+        date: formatDate(r.due_date),
+        feeType: r.name,
+        amount: formatCurrency(r.amount_cents),
+      }));
+    totalCents = filteredSchedule.reduce(
+      (sum, r) => sum + (r.amount_cents ?? 0),
+      0
+    );
+  }
 
   // Address Construction
   const fullRtoAddress =
@@ -508,13 +548,7 @@ export function buildOfferLetterData(input: {
       : 'Entry requirements include completion of a Language, Literacy, and Numeracy (LLN) assessment. For specific course entry requirements, please refer to the course information brochure or visit https://ashford.edu.au/',
     paymentPlan: {
       enrolId: application.id,
-      rows: filteredSchedule
-        .sort((a, b) => (a.sequence_order ?? 0) - (b.sequence_order ?? 0))
-        .map((r) => ({
-          date: formatDate(r.due_date),
-          feeType: r.name,
-          amount: formatCurrency(r.amount_cents),
-        })),
+      rows: paymentRows,
       totalCourseFees: formatCurrency(totalCents),
     },
     // Dynamic Banking with 'Correct PDF' Fallbacks

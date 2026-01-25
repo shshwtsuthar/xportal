@@ -28,6 +28,14 @@ type AppRow = Database['public']['Tables']['applications']['Row'] & {
 type ScheduleRow =
   Database['public']['Tables']['application_payment_schedule']['Row'];
 
+type ScheduleLineRow =
+  Database['public']['Tables']['application_payment_schedule_lines']['Row'] & {
+    application_payment_schedule: {
+      due_date: string;
+      sequence_order: number;
+    };
+  };
+
 const BRAND = {
   institution: {
     name: 'Ashford College',
@@ -75,16 +83,37 @@ const formatCurrency = (cents?: number | null) => {
 export function buildOfferLetterData(input: {
   application: AppRow;
   schedule: ScheduleRow[];
+  scheduleLines: ScheduleLineRow[];
   rtoLogoUrl?: string | null;
 }): OfferLetterData {
-  const { application, schedule, rtoLogoUrl } = input;
+  const { application, schedule, scheduleLines, rtoLogoUrl } = input;
   const institution = BRAND.institution;
   const program = application.programs ?? null;
 
-  const totalCents = schedule.reduce(
-    (sum, r) => sum + (r.amount_cents ?? 0),
-    0
-  );
+  // Use line items if available, otherwise fall back to installments
+  let paymentRows: Array<{ date: string; feeType: string; amount: string }>;
+  let totalCents: number;
+
+  if (scheduleLines && scheduleLines.length > 0) {
+    // Map line items to payment plan rows
+    paymentRows = scheduleLines.map((line) => ({
+      date: formatDate(line.application_payment_schedule.due_date),
+      feeType: line.name,
+      amount: formatCurrency(line.amount_cents),
+    }));
+    totalCents = scheduleLines.reduce(
+      (sum, line) => sum + (line.amount_cents ?? 0),
+      0
+    );
+  } else {
+    // Fallback to installments
+    paymentRows = schedule.map((r) => ({
+      date: formatDate(r.due_date as unknown as string),
+      feeType: r.name,
+      amount: formatCurrency(r.amount_cents),
+    }));
+    totalCents = schedule.reduce((sum, r) => sum + (r.amount_cents ?? 0), 0);
+  }
 
   return {
     institution: {
@@ -150,11 +179,7 @@ export function buildOfferLetterData(input: {
       'Must be at least 18 years old and have completed Year 12 or equivalent.',
     paymentPlan: {
       enrolId: application.id,
-      rows: schedule.map((r) => ({
-        date: formatDate(r.due_date as unknown as string),
-        feeType: r.name,
-        amount: formatCurrency(r.amount_cents),
-      })),
+      rows: paymentRows,
       totalCourseFees: formatCurrency(totalCents),
     },
     bank: {

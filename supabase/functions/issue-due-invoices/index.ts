@@ -3,7 +3,7 @@
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../_shared/database.types.ts';
-import { generateInvoicePdf } from '../_shared/generate-invoice-pdf.tsx';
+import { generateInvoicePdf } from '../_shared/generate-invoice-pdf.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

@@ -269,6 +269,26 @@ serve(async (req: Request) => {
       );
     }
 
+    // 5a. Freeze payment schedule snapshot (including line items) before changing status
+    const { error: freezePaymentError } = await supabaseClient.rpc(
+      'freeze_application_payment_schedule',
+      { app_id: applicationId }
+    );
+
+    if (freezePaymentError) {
+      console.error(
+        'Freeze payment schedule failed:',
+        freezePaymentError.message
+      );
+      return new Response(
+        JSON.stringify({ error: 'Failed to freeze payment schedule' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
     // 6. Compute and persist derived fields (server is the SSoT).
     // Cast database row to SubmissionValues for computeDerivedFields
     // The database row structure is compatible with SubmissionValues
