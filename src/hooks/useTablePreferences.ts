@@ -13,6 +13,9 @@ export const getApplicationsTableKey = () => TABLE_KEY_APPLICATIONS;
 const TABLE_KEY_INVOICES = 'invoices.datatable';
 export const getInvoicesTableKey = () => TABLE_KEY_INVOICES;
 
+const TABLE_KEY_DEPOSITS = 'deposits.datatable';
+export const getDepositsTableKey = () => TABLE_KEY_DEPOSITS;
+
 const TABLE_KEY_COMMISSIONS = 'commissions.datatable';
 export const getCommissionsTableKey = () => TABLE_KEY_COMMISSIONS;
 

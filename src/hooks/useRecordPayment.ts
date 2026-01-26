@@ -40,6 +40,7 @@ export const useRecordPayment = () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['student-invoices'] }),
         queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['application-invoices'] }),
         queryClient.invalidateQueries({ queryKey: ['finance-invoices'] }),
         queryClient.invalidateQueries({ queryKey: ['commission-invoices'] }),
       ]);

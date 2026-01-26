@@ -84,6 +84,7 @@ const NAV: NavItem[] = [
     icon: ReceiptText,
     items: [
       { title: 'Invoices', url: '/financial/invoices' },
+      { title: 'Deposits', url: '/financial/deposits' },
       {
         title: 'Payment Confirmations',
         url: '/financial/payment-confirmations',
