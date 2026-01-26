@@ -38,6 +38,9 @@ export const useUpdateRto = () => {
         statistical_area_1_id: payload.statistical_area_1_id || null,
         statistical_area_2_id: payload.statistical_area_2_id || null,
         cricos_code: payload.cricos_code || null,
+        offer_letter_email_address:
+          (payload as { offer_letter_email_address?: string })
+            ?.offer_letter_email_address || null,
       };
 
       const { data, error } = await supabase

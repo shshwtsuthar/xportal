@@ -14,6 +14,7 @@ import {
   X,
   Paperclip,
   ChevronUp,
+  Loader2,
 } from 'lucide-react';
 import { useSendEmail } from '@/src/hooks/useSendEmail';
 import { useGetMailTemplates } from '@/src/hooks/useGetMailTemplates';
@@ -27,20 +28,64 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+type RecipientOption = {
+  value: string;
+  label: string;
+};
+
 type ComposeEmailDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialRecipients?: string[];
+  // Customization props
+  title?: string;
+  initialAttachments?: Array<{ file: File; id: string }>;
+  recipientMode?: 'input' | 'select';
+  recipientOptions?: RecipientOption[];
+  selectedRecipient?: string;
+  onRecipientChange?: (email: string) => void;
+  onSend?: (data: {
+    to: string[];
+    subject: string;
+    html: string;
+    cc?: string[];
+    bcc?: string[];
+    attachments?: Array<{
+      filename: string;
+      content: string;
+      contentType: string;
+      size: number;
+    }>;
+  }) => Promise<void>;
+  isLoading?: boolean;
+  error?: Error | null;
+  loadingMessage?: string;
+  errorMessage?: string;
+  disabled?: boolean;
 };
 
 export function ComposeEmailDialog({
   open,
   onOpenChange,
   initialRecipients = [],
+  title = 'New Message',
+  initialAttachments = [],
+  recipientMode = 'input',
+  recipientOptions = [],
+  selectedRecipient: externalSelectedRecipient,
+  onRecipientChange: externalOnRecipientChange,
+  onSend: customOnSend,
+  isLoading: externalIsLoading,
+  error: externalError,
+  loadingMessage = 'Loading...',
+  errorMessage,
+  disabled: externalDisabled = false,
 }: ComposeEmailDialogProps) {
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const [recipientInput, setRecipientInput] = React.useState('');
   const [recipients, setRecipients] = React.useState<string[]>([]);
+  const [internalSelectedRecipient, setInternalSelectedRecipient] =
+    React.useState<string>('');
   const [showCc, setShowCc] = React.useState(true);
   const [ccInput, setCcInput] = React.useState('');
   const [ccRecipients, setCcRecipients] = React.useState<string[]>([]);
@@ -56,7 +101,15 @@ export function ComposeEmailDialog({
     Array<{ file: File; id: string }>
   >([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const { mutateAsync, isPending } = useSendEmail();
+  const { mutateAsync, isPending: isSendingEmail } = useSendEmail();
+
+  // Use external or internal state for recipient selection
+  const selectedRecipient =
+    recipientMode === 'select'
+      ? (externalSelectedRecipient ?? internalSelectedRecipient)
+      : undefined;
+  const isPending = externalIsLoading ?? isSendingEmail;
+  const disabled = externalDisabled || isPending;
 
   // Fetch mail templates for the dropdown
   const { data: templatesData } = useGetMailTemplates({
@@ -70,7 +123,7 @@ export function ComposeEmailDialog({
 
   // Prefill recipients from initialRecipients when dialog opens
   React.useEffect(() => {
-    if (open && initialRecipients.length > 0) {
+    if (open && initialRecipients.length > 0 && recipientMode === 'input') {
       // Deduplicate and filter out empty values
       const uniqueRecipients = Array.from(
         new Set(
@@ -93,10 +146,19 @@ export function ComposeEmailDialog({
       setBccInput('');
       setAttachments([]);
       setSelectedTemplateId(undefined);
+      setInternalSelectedRecipient('');
+      setIsFullscreen(false);
       // Keep Cc and Bcc fields displayed/open by default
       // Don't reset showCc and showBcc to false
     }
-  }, [open, initialRecipients]);
+  }, [open, initialRecipients, recipientMode]);
+
+  // Initialize attachments from props
+  React.useEffect(() => {
+    if (open && initialAttachments.length > 0 && attachments.length === 0) {
+      setAttachments(initialAttachments);
+    }
+  }, [open, initialAttachments, attachments.length]);
 
   const addRecipient = React.useCallback(
     (value: string) => {
@@ -216,8 +278,22 @@ export function ComposeEmailDialog({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const handleRecipientChange = (email: string) => {
+    if (externalOnRecipientChange) {
+      externalOnRecipientChange(email);
+    } else {
+      setInternalSelectedRecipient(email);
+      setRecipients([email]);
+    }
+  };
+
   const handleSend = async () => {
-    if (recipients.length === 0 || !subject || !html) return;
+    const finalRecipients =
+      recipientMode === 'select' && selectedRecipient
+        ? [selectedRecipient]
+        : recipients;
+
+    if (finalRecipients.length === 0 || !subject || !html) return;
 
     // Convert attachments to base64
     const attachmentPromises = attachments.map(async (att) => {
@@ -243,14 +319,21 @@ export function ComposeEmailDialog({
 
     const emailAttachments = await Promise.all(attachmentPromises);
 
-    await mutateAsync({
-      to: recipients,
+    const emailData = {
+      to: finalRecipients,
       subject,
       html,
       cc: ccRecipients.length > 0 ? ccRecipients : undefined,
       bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
       attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
-    });
+    };
+
+    if (customOnSend) {
+      await customOnSend(emailData);
+    } else {
+      await mutateAsync(emailData);
+    }
+
     close();
     // Reset state after close
     setTimeout(() => {
@@ -265,6 +348,7 @@ export function ComposeEmailDialog({
       setAttachments([]);
       setIsFullscreen(false);
       setSelectedTemplateId(undefined);
+      setInternalSelectedRecipient('');
     }, 0);
   };
 
@@ -291,13 +375,16 @@ export function ComposeEmailDialog({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          'overflow-hidden p-0 sm:max-w-3xl',
-          isFullscreen && 'h-screen w-screen max-w-[100vw] sm:rounded-none'
+          'flex h-[90vh] max-h-[90vh] max-w-[95vw] flex-col overflow-hidden p-0 sm:max-w-2xl md:max-w-3xl lg:max-w-4xl',
+          isFullscreen &&
+            'h-screen max-h-screen w-screen max-w-[100vw] sm:rounded-none'
         )}
       >
-        <DialogTitle className="sr-only">New Message</DialogTitle>
-        <div className="flex items-center justify-between border-b px-4 py-2">
-          <span className="text-sm font-medium">New Message</span>
+        <DialogTitle className="sr-only">{title}</DialogTitle>
+
+        {/* Header */}
+        <div className="bg-muted/30 flex shrink-0 items-center justify-between border-b px-4 py-3 sm:px-6">
+          <h2 className="text-base font-semibold sm:text-lg">{title}</h2>
           <div className="flex items-center gap-1">
             <Button
               type="button"
@@ -305,6 +392,7 @@ export function ComposeEmailDialog({
               size="icon-sm"
               onClick={() => setIsFullscreen((s) => !s)}
               aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              className="h-8 w-8"
             >
               {isFullscreen ? (
                 <Minimize2 className="size-4" />
@@ -318,255 +406,352 @@ export function ComposeEmailDialog({
               size="icon-sm"
               onClick={close}
               aria-label="Close compose"
+              className="h-8 w-8"
             >
               <X className="size-4" />
             </Button>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 p-4">
-          <div>
-            <label
-              className="text-muted-foreground mb-1 block text-xs"
-              htmlFor="recipients"
-            >
-              To
-            </label>
-            <div
-              className="flex min-h-10 flex-wrap items-center gap-1 rounded-md border px-2 py-1"
-              role="group"
-              aria-label="Recipients"
-            >
-              {recipients.map((email) => (
-                <Badge key={email} variant="secondary" className="gap-1">
-                  <span>{email}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeRecipient(email)}
-                    className="focus:ring-ring -mr-1 ml-1 rounded-xs px-1 text-xs hover:bg-black/5 focus:ring-2 focus:outline-hidden"
-                    aria-label={`Remove ${email}`}
+        {/* Loading State */}
+        {externalIsLoading && (
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <span className="text-muted-foreground text-sm">
+              {loadingMessage}
+            </span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {externalError && !externalIsLoading && (
+          <div className="p-4">
+            <div className="bg-destructive/10 text-destructive rounded-md p-3 text-sm">
+              {errorMessage ||
+                `An error occurred: ${externalError.message || 'Unknown error'}`}
+            </div>
+          </div>
+        )}
+
+        {/* Scrollable Content Area */}
+        {!externalIsLoading && !externalError && (
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div className="flex flex-col gap-4 p-4 sm:p-6">
+              {/* Recipients Section */}
+              <div className="space-y-3">
+                <div>
+                  <label
+                    className="text-muted-foreground mb-1.5 block text-xs font-medium"
+                    htmlFor={
+                      recipientMode === 'select'
+                        ? 'recipient-select'
+                        : 'recipients'
+                    }
                   >
-                    ×
-                  </button>
-                </Badge>
-              ))}
-              <Input
-                id="recipients"
-                value={recipientInput}
-                onChange={(e) => setRecipientInput(e.target.value)}
-                onKeyDown={handleRecipientsKeyDown}
-                placeholder="Add recipients and press Enter"
-                className="h-8 min-w-40 flex-1 border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                aria-label="Recipients input"
-              />
-              {/* Comma after the last badge to mimic Gmail */}
-              {recipients.length > 0 && (
-                <span className="text-muted-foreground">,</span>
+                    To
+                  </label>
+                  {recipientMode === 'select' ? (
+                    <Select
+                      value={selectedRecipient || ''}
+                      onValueChange={handleRecipientChange}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger id="recipient-select" className="w-full">
+                        <SelectValue placeholder="Select recipient..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {recipientOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div
+                      className="bg-background focus-within:ring-ring flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border px-3 py-2 transition-colors focus-within:ring-2 focus-within:ring-offset-2"
+                      role="group"
+                      aria-label="Recipients"
+                    >
+                      {recipients.map((email) => (
+                        <Badge
+                          key={email}
+                          variant="secondary"
+                          className="gap-1.5 px-2 py-0.5 text-xs"
+                        >
+                          <span className="max-w-[200px] truncate sm:max-w-none">
+                            {email}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeRecipient(email)}
+                            className="focus:ring-ring hover:bg-destructive/20 hover:text-destructive ml-0.5 rounded-full p-0.5 text-xs focus:ring-2 focus:outline-hidden"
+                            aria-label={`Remove ${email}`}
+                            tabIndex={0}
+                            disabled={disabled}
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
+                      <Input
+                        id="recipients"
+                        value={recipientInput}
+                        onChange={(e) => setRecipientInput(e.target.value)}
+                        onKeyDown={handleRecipientsKeyDown}
+                        placeholder={
+                          recipients.length === 0
+                            ? 'Add recipients and press Enter'
+                            : ''
+                        }
+                        className="h-auto min-h-6 min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                        aria-label="Recipients input"
+                        disabled={disabled}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Cc field - collapsible */}
+                <div>
+                  {!showCc ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowCc(true)}
+                      className="text-muted-foreground hover:text-foreground text-xs font-medium transition-colors"
+                      aria-label="Show Cc field"
+                    >
+                      Cc
+                    </button>
+                  ) : (
+                    <div>
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <label
+                          className="text-muted-foreground block text-xs font-medium"
+                          htmlFor="cc"
+                        >
+                          Cc
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowCc(false)}
+                          className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm p-1 transition-colors"
+                          aria-label="Hide Cc"
+                        >
+                          <ChevronUp className="size-3.5" />
+                        </button>
+                      </div>
+                      <div
+                        className="bg-background focus-within:ring-ring flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border px-3 py-2 transition-colors focus-within:ring-2 focus-within:ring-offset-2"
+                        role="group"
+                        aria-label="Cc recipients"
+                      >
+                        {ccRecipients.map((email) => (
+                          <Badge
+                            key={email}
+                            variant="secondary"
+                            className="gap-1.5 px-2 py-0.5 text-xs"
+                          >
+                            <span className="max-w-[200px] truncate sm:max-w-none">
+                              {email}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeCcRecipient(email)}
+                              className="focus:ring-ring hover:bg-destructive/20 hover:text-destructive ml-0.5 rounded-full p-0.5 text-xs focus:ring-2 focus:outline-hidden"
+                              aria-label={`Remove ${email}`}
+                              tabIndex={0}
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        ))}
+                        <Input
+                          id="cc"
+                          value={ccInput}
+                          onChange={(e) => setCcInput(e.target.value)}
+                          onKeyDown={handleCcKeyDown}
+                          placeholder={
+                            ccRecipients.length === 0 ? 'Add Cc recipients' : ''
+                          }
+                          className="h-auto min-h-6 min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                          aria-label="Cc recipients input"
+                          disabled={disabled}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bcc field - collapsible */}
+                <div>
+                  {!showBcc ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowBcc(true)}
+                      className="text-muted-foreground hover:text-foreground text-xs font-medium transition-colors"
+                      aria-label="Show Bcc field"
+                    >
+                      Bcc
+                    </button>
+                  ) : (
+                    <div>
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <label
+                          className="text-muted-foreground block text-xs font-medium"
+                          htmlFor="bcc"
+                        >
+                          Bcc
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowBcc(false)}
+                          className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm p-1 transition-colors"
+                          aria-label="Hide Bcc"
+                        >
+                          <ChevronUp className="size-3.5" />
+                        </button>
+                      </div>
+                      <div
+                        className="bg-background focus-within:ring-ring flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border px-3 py-2 transition-colors focus-within:ring-2 focus-within:ring-offset-2"
+                        role="group"
+                        aria-label="Bcc recipients"
+                      >
+                        {bccRecipients.map((email) => (
+                          <Badge
+                            key={email}
+                            variant="secondary"
+                            className="gap-1.5 px-2 py-0.5 text-xs"
+                          >
+                            <span className="max-w-[200px] truncate sm:max-w-none">
+                              {email}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeBccRecipient(email)}
+                              className="focus:ring-ring hover:bg-destructive/20 hover:text-destructive ml-0.5 rounded-full p-0.5 text-xs focus:ring-2 focus:outline-hidden"
+                              aria-label={`Remove ${email}`}
+                              tabIndex={0}
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        ))}
+                        <Input
+                          id="bcc"
+                          value={bccInput}
+                          onChange={(e) => setBccInput(e.target.value)}
+                          onKeyDown={handleBccKeyDown}
+                          placeholder={
+                            bccRecipients.length === 0
+                              ? 'Add Bcc recipients'
+                              : ''
+                          }
+                          className="h-auto min-h-6 min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                          aria-label="Bcc recipients input"
+                          disabled={disabled}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Template Selection */}
+              <div>
+                <label
+                  className="text-muted-foreground mb-1.5 block text-xs font-medium"
+                  htmlFor="template-select"
+                >
+                  Template (optional)
+                </label>
+                <Select
+                  value={selectedTemplateId || 'none'}
+                  onValueChange={handleTemplateChange}
+                  disabled={disabled}
+                >
+                  <SelectTrigger id="template-select" className="w-full">
+                    <SelectValue placeholder="Select a template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Subject */}
+              <div>
+                <label
+                  className="text-muted-foreground mb-1.5 block text-xs font-medium"
+                  htmlFor="subject"
+                >
+                  Subject
+                </label>
+                <Input
+                  id="subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Subject"
+                  aria-label="Subject"
+                  className="w-full"
+                  disabled={disabled}
+                />
+              </div>
+
+              {/* Attachments */}
+              {attachments.length > 0 && (
+                <div className="bg-muted/30 flex flex-wrap gap-2 rounded-md border p-2">
+                  {attachments.map((att) => (
+                    <Badge
+                      key={att.id}
+                      variant="secondary"
+                      className="gap-1.5 px-2.5 py-1 text-xs"
+                    >
+                      <Paperclip className="size-3 shrink-0" />
+                      <span className="max-w-[150px] truncate sm:max-w-[200px]">
+                        {att.file.name}
+                      </span>
+                      <span className="text-muted-foreground shrink-0">
+                        ({formatFileSize(att.file.size)})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(att.id)}
+                        className="focus:ring-ring hover:bg-destructive/20 hover:text-destructive ml-1 rounded-full p-0.5 text-xs focus:ring-2 focus:outline-hidden"
+                        aria-label={`Remove ${att.file.name}`}
+                        tabIndex={0}
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
               )}
+
+              {/* Email Body Editor */}
+              <div className="min-h-[300px]">
+                <label className="text-muted-foreground mb-1.5 block text-xs font-medium">
+                  Message
+                </label>
+                <MinimalTiptap
+                  content={html}
+                  onChange={setHtml}
+                  placeholder="Start typing your message..."
+                  className="min-h-[280px]"
+                  editable={!disabled}
+                />
+              </div>
             </div>
           </div>
+        )}
 
-          {/* Cc field - collapsible */}
-          <div>
-            {!showCc ? (
-              <button
-                type="button"
-                onClick={() => setShowCc(true)}
-                className="text-muted-foreground hover:text-foreground text-xs"
-              >
-                Cc
-              </button>
-            ) : (
-              <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <label
-                    className="text-muted-foreground block text-xs"
-                    htmlFor="cc"
-                  >
-                    Cc
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowCc(false)}
-                    className="text-muted-foreground hover:text-foreground"
-                    aria-label="Hide Cc"
-                  >
-                    <ChevronUp className="size-3" />
-                  </button>
-                </div>
-                <div
-                  className="flex min-h-10 flex-wrap items-center gap-1 rounded-md border px-2 py-1"
-                  role="group"
-                  aria-label="Cc recipients"
-                >
-                  {ccRecipients.map((email) => (
-                    <Badge key={email} variant="secondary" className="gap-1">
-                      <span>{email}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeCcRecipient(email)}
-                        className="focus:ring-ring -mr-1 ml-1 rounded-xs px-1 text-xs hover:bg-black/5 focus:ring-2 focus:outline-hidden"
-                        aria-label={`Remove ${email}`}
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                  <Input
-                    id="cc"
-                    value={ccInput}
-                    onChange={(e) => setCcInput(e.target.value)}
-                    onKeyDown={handleCcKeyDown}
-                    placeholder="Add Cc recipients"
-                    className="h-8 min-w-40 flex-1 border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                    aria-label="Cc recipients input"
-                  />
-                  {ccRecipients.length > 0 && (
-                    <span className="text-muted-foreground">,</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Bcc field - collapsible */}
-          <div>
-            {!showBcc ? (
-              <button
-                type="button"
-                onClick={() => setShowBcc(true)}
-                className="text-muted-foreground hover:text-foreground text-xs"
-              >
-                Bcc
-              </button>
-            ) : (
-              <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <label
-                    className="text-muted-foreground block text-xs"
-                    htmlFor="bcc"
-                  >
-                    Bcc
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowBcc(false)}
-                    className="text-muted-foreground hover:text-foreground"
-                    aria-label="Hide Bcc"
-                  >
-                    <ChevronUp className="size-3" />
-                  </button>
-                </div>
-                <div
-                  className="flex min-h-10 flex-wrap items-center gap-1 rounded-md border px-2 py-1"
-                  role="group"
-                  aria-label="Bcc recipients"
-                >
-                  {bccRecipients.map((email) => (
-                    <Badge key={email} variant="secondary" className="gap-1">
-                      <span>{email}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeBccRecipient(email)}
-                        className="focus:ring-ring -mr-1 ml-1 rounded-xs px-1 text-xs hover:bg-black/5 focus:ring-2 focus:outline-hidden"
-                        aria-label={`Remove ${email}`}
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                  <Input
-                    id="bcc"
-                    value={bccInput}
-                    onChange={(e) => setBccInput(e.target.value)}
-                    onKeyDown={handleBccKeyDown}
-                    placeholder="Add Bcc recipients"
-                    className="h-8 min-w-40 flex-1 border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                    aria-label="Bcc recipients input"
-                  />
-                  {bccRecipients.length > 0 && (
-                    <span className="text-muted-foreground">,</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label
-              className="text-muted-foreground mb-1 block text-xs"
-              htmlFor="template-select"
-            >
-              Select a Template (optional)
-            </label>
-            <Select
-              value={selectedTemplateId || 'none'}
-              onValueChange={handleTemplateChange}
-            >
-              <SelectTrigger id="template-select" className="w-full">
-                <SelectValue placeholder="Select a template..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {templates.map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label
-              className="text-muted-foreground mb-1 block text-xs"
-              htmlFor="subject"
-            >
-              Subject
-            </label>
-            <Input
-              id="subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Subject"
-              aria-label="Subject"
-            />
-          </div>
-
-          {/* Attachments */}
-          {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {attachments.map((att) => (
-                <Badge key={att.id} variant="secondary" className="gap-1 pr-1">
-                  <Paperclip className="size-3" />
-                  <span className="max-w-32 truncate">{att.file.name}</span>
-                  <span className="text-muted-foreground text-xs">
-                    ({formatFileSize(att.file.size)})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeAttachment(att.id)}
-                    className="focus:ring-ring -mr-1 ml-1 rounded-xs px-1 text-xs hover:bg-black/5 focus:ring-2 focus:outline-hidden"
-                    aria-label={`Remove ${att.file.name}`}
-                  >
-                    ×
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          <div className="mt-2">
-            <MinimalTiptap
-              content={html}
-              onChange={setHtml}
-              placeholder="Start typing..."
-            />
-          </div>
-        </div>
-
-        <Separator />
-        <div className="flex items-center justify-between px-4 py-3">
+        {/* Footer */}
+        <div className="bg-muted/30 flex shrink-0 items-center justify-between border-t px-4 py-3 sm:px-6">
           <div>
             <input
               ref={fileInputRef}
@@ -582,16 +767,27 @@ export function ComposeEmailDialog({
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               aria-label="Attach files"
+              className="gap-2"
+              disabled={disabled}
             >
-              <Paperclip className="mr-2 size-4" />
-              Attach
+              <Paperclip className="size-4" />
+              <span className="hidden sm:inline">Attach</span>
             </Button>
           </div>
           <Button
             type="button"
             onClick={handleSend}
-            disabled={isPending || recipients.length === 0 || !subject || !html}
+            disabled={
+              disabled ||
+              isPending ||
+              (recipientMode === 'select'
+                ? !selectedRecipient
+                : recipients.length === 0) ||
+              !subject ||
+              !html
+            }
             aria-label="Send email"
+            className="gap-2"
           >
             <Send className="size-4" />
             <span>Send</span>
