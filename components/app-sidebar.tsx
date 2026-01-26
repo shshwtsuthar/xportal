@@ -137,6 +137,7 @@ const NAV: NavItem[] = [
       { title: 'Users', url: '/users' },
     ],
   },
+  { title: 'Settings', url: '/settings/global', icon: Settings },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -189,7 +190,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {NAV.map((section) => {
               const Icon = section.icon;
               return (
-                <SidebarMenuItem key={section.title}>
+                <SidebarMenuItem key={section.url}>
                   <SidebarMenuButton
                     asChild
                     isActive={isParentActive(section.url)}
