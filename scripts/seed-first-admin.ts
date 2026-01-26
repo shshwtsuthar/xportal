@@ -37,6 +37,76 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 });
 
 /**
+ * Retries an operation with exponential backoff.
+ * Useful for handling transient errors like 502 Bad Gateway when services are starting up.
+ */
+const retryWithBackoff = async <T>(
+  operation: () => Promise<T>,
+  maxRetries = 5,
+  initialDelayMs = 1000
+): Promise<T> => {
+  let delay = initialDelayMs;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const result = await operation();
+      // For Supabase operations that return { data, error }, check if there's an error
+      if (
+        result &&
+        typeof result === 'object' &&
+        'error' in result &&
+        result.error
+      ) {
+        const error = result.error as {
+          status?: number;
+          __isAuthError?: boolean;
+        };
+        const isRetryable =
+          error.status === 502 ||
+          error.status === 503 ||
+          error.status === 504 ||
+          error.__isAuthError === true;
+
+        if (!isRetryable || attempt === maxRetries - 1) {
+          throw result.error;
+        }
+
+        console.log(
+          `Auth service not ready yet (attempt ${attempt + 1}/${maxRetries}). Retrying in ${delay}ms...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay *= 2; // Exponential backoff
+        continue;
+      }
+      return result;
+    } catch (error: unknown) {
+      // Check if this is a retryable error (502, 503, 504, or Auth errors)
+      const errorObj = error as {
+        status?: number;
+        __isAuthError?: boolean;
+      };
+      const isRetryable =
+        errorObj.status === 502 ||
+        errorObj.status === 503 ||
+        errorObj.status === 504 ||
+        errorObj.__isAuthError === true;
+
+      if (!isRetryable || attempt === maxRetries - 1) {
+        throw error;
+      }
+
+      console.log(
+        `Auth service not ready yet (attempt ${attempt + 1}/${maxRetries}). Retrying in ${delay}ms...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      delay *= 2; // Exponential backoff
+    }
+  }
+
+  throw new Error('Max retries exceeded');
+};
+
+/**
  * Ensures a profile record exists for the given user.
  * Creates it if it doesn't exist (idempotent).
  */
@@ -103,9 +173,10 @@ async function seedFirstAdmin() {
     if (existingRTOs && existingRTOs.length > 0) {
       console.log('Found existing RTO:', existingRTOs[0]);
 
-      // Check if admin user exists
-      const { data: adminUser, error: adminError } =
-        await supabase.auth.admin.listUsers();
+      // Check if admin user exists (with retry for service startup)
+      const { data: adminUser, error: adminError } = await retryWithBackoff(
+        () => supabase.auth.admin.listUsers()
+      );
 
       if (adminError) throw adminError;
 
@@ -130,21 +201,23 @@ async function seedFirstAdmin() {
       } else {
         console.log('Creating admin user for existing RTO...');
         const rtoId = existingRTOs[0].id;
-        // Continue with creating admin user only
-        const { data: user, error: createUserError } =
-          await supabase.auth.admin.createUser({
-            email: ADMIN_EMAIL,
-            password: ADMIN_PASSWORD,
-            email_confirm: true,
-            user_metadata: {
-              first_name: ADMIN_FIRST_NAME,
-              last_name: ADMIN_LAST_NAME,
-            },
-            app_metadata: {
-              rto_id: rtoId,
-              role: 'ADMIN',
-            },
-          });
+        // Continue with creating admin user only (with retry for service startup)
+        const { data: user, error: createUserError } = await retryWithBackoff(
+          () =>
+            supabase.auth.admin.createUser({
+              email: ADMIN_EMAIL,
+              password: ADMIN_PASSWORD,
+              email_confirm: true,
+              user_metadata: {
+                first_name: ADMIN_FIRST_NAME,
+                last_name: ADMIN_LAST_NAME,
+              },
+              app_metadata: {
+                rto_id: rtoId,
+                role: 'ADMIN',
+              },
+            })
+        );
 
         if (createUserError) throw createUserError;
         if (!user) throw new Error('Failed to create admin user');
@@ -176,9 +249,9 @@ async function seedFirstAdmin() {
     if (!rto) throw new Error('No RTO found after seed_initial_data');
     console.log('Using RTO:', rto.id);
 
-    // Create the admin user
-    const { data: user, error: createUserError } =
-      await supabase.auth.admin.createUser({
+    // Create the admin user (with retry for service startup)
+    const { data: user, error: createUserError } = await retryWithBackoff(() =>
+      supabase.auth.admin.createUser({
         email: ADMIN_EMAIL,
         password: ADMIN_PASSWORD,
         email_confirm: true,
@@ -190,7 +263,8 @@ async function seedFirstAdmin() {
           rto_id: rto.id,
           role: 'ADMIN',
         },
-      });
+      })
+    );
 
     if (createUserError) throw createUserError;
     if (!user) throw new Error('Failed to create admin user');

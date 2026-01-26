@@ -3057,6 +3057,7 @@ export type Database = {
           facsimile_number: string | null
           id: string
           name: string
+          offer_letter_email_address: string | null
           phone_number: string | null
           postcode: string | null
           profile_image_path: string | null
@@ -3086,6 +3087,7 @@ export type Database = {
           facsimile_number?: string | null
           id?: string
           name: string
+          offer_letter_email_address?: string | null
           phone_number?: string | null
           postcode?: string | null
           profile_image_path?: string | null
@@ -3115,6 +3117,7 @@ export type Database = {
           facsimile_number?: string | null
           id?: string
           name?: string
+          offer_letter_email_address?: string | null
           phone_number?: string | null
           postcode?: string | null
           profile_image_path?: string | null
