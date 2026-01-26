@@ -32,9 +32,9 @@ export type { EnrollmentSubject };
  * Calculate enrollment progression across cycles based on timetable and commencement date.
  *
  * Median cut-off rule:
- * - A subject is eligible to commence only if its median_date is strictly after the chosen commencement date.
- *   That is, eligibility requires new Date(subject.median_date) > commencementDate.
- * - Subjects with median_date <= commencementDate are considered missed in the current plan and will be
+ * - A subject is eligible to commence if its median_date is greater than or equal to the chosen commencement date.
+ *   That is, eligibility requires new Date(subject.median_date) >= commencementDate.
+ * - Subjects with median_date < commencementDate are considered missed in the current plan and will be
  *   mapped to catch-up subjects in the next plan (when available) based on sequence order.
  *
  * @param timetableId - The selected timetable identifier.

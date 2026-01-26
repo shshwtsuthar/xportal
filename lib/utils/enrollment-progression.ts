@@ -76,13 +76,13 @@ export const findCurrentPlanIndex = (
 
 /**
  * Find the first eligible subject based on the median cut-off rule
- * A subject is eligible if its median_date > commencementDate
+ * A subject is eligible if its median_date >= commencementDate
  */
 export const findFirstEligibleSubject = (
   subjects: EnrollmentSubject[],
   commencementDate: Date
 ): number => {
-  return subjects.findIndex((s) => new Date(s.median_date) > commencementDate);
+  return subjects.findIndex((s) => new Date(s.median_date) >= commencementDate);
 };
 
 /**
@@ -112,9 +112,9 @@ export const getCatchUpSubjects = (
   nextPlanSubjects: EnrollmentSubject[],
   commencementDate: Date
 ): EnrollmentSubject[] => {
-  // Find which subjects were missed in the current plan (median_date <= commencement)
+  // Find which subjects were missed in the current plan (median_date < commencement)
   const missedSubjectsInCurrentPlan = currentPlanSubjects.filter(
-    (s) => new Date(s.median_date) <= commencementDate
+    (s) => new Date(s.median_date) < commencementDate
   );
 
   // Get corresponding subjects from next plan based on sequence order
