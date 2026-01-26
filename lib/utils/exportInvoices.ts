@@ -3,7 +3,7 @@ import { format as formatDateFn } from 'date-fns';
 import { getInvoicesColumns } from '@/app/(app)/financial/invoices/_components/invoicesTableColumns';
 import type { InvoiceFilters } from '@/src/hooks/useInvoicesFilters';
 
-type RowType = Tables<'invoices'> & {
+type RowType = Tables<'enrollment_invoices'> & {
   enrollments?: {
     student_id: string;
     program_id: string;

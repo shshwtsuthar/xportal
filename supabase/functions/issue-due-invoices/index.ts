@@ -235,6 +235,7 @@ serve(async (req) => {
         // Use unified PDF generator
         pdfBytes = await generateInvoicePdf({
           invoiceId: claimed.id,
+          invoiceType: 'ENROLLMENT',
           supabaseUrl,
           serviceRoleKey,
         });
@@ -243,7 +244,7 @@ serve(async (req) => {
         filePath = `${claimed.rto_id}/${year}/${claimed.invoice_number}.pdf`;
 
         const { error: uploadErr } = await supabase.storage
-          .from('invoices')
+          .from('enrollment_invoices')
           .upload(filePath, pdfBytes, {
             contentType: 'application/pdf',
             upsert: true,
@@ -258,7 +259,7 @@ serve(async (req) => {
 
       if (!pdfBytes && filePath) {
         const { data: downloaded, error: downloadErr } = await supabase.storage
-          .from('invoices')
+          .from('enrollment_invoices')
           .download(filePath);
 
         if (downloadErr || !downloaded) {
@@ -328,7 +329,7 @@ serve(async (req) => {
             ('succeeded' as PdfStatus));
 
       await supabase
-        .from('invoices')
+        .from('enrollment_invoices')
         .update({
           pdf_path: filePath,
           pdf_generated_at: pdfGeneratedAt ?? claimed.pdf_generated_at ?? null,
@@ -349,7 +350,7 @@ serve(async (req) => {
       console.error(`Invoice ${claimed.id} failed:`, message);
 
       await supabase
-        .from('invoices')
+        .from('enrollment_invoices')
         .update({
           pdf_generation_status: 'failed',
           last_pdf_error: message,

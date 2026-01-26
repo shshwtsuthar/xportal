@@ -4,7 +4,7 @@ import type { Tables } from '@/database.types';
 import type { InvoiceFilters } from './useInvoicesFilters';
 import { serializeInvoicesFilters } from './useInvoicesFilters';
 
-type InvoiceRow = Tables<'invoices'> & {
+type InvoiceRow = Tables<'enrollment_invoices'> & {
   enrollments?: {
     student_id: string;
     program_id: string;
@@ -27,7 +27,7 @@ export const useGetInvoices = (filters?: InvoiceFilters) => {
       const supabase = createClient();
       // Join enrollments -> students/programs for display
       let query = supabase
-        .from('invoices')
+        .from('enrollment_invoices')
         .select(
           `*, enrollments:enrollment_id ( student_id, program_id, students:student_id ( id, first_name, last_name, student_id_display ), programs:program_id ( id, name, code ) )`
         )

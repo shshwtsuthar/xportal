@@ -45,11 +45,11 @@ export default async function DashboardPage() {
     supabase.from('students').select('id', { head: true, count: 'exact' }),
     supabase.from('applications').select('id', { head: true, count: 'exact' }),
     supabase
-      .from('invoices')
+      .from('enrollment_invoices')
       .select('id', { head: true, count: 'exact' })
       .eq('status', 'OVERDUE'),
     supabase
-      .from('invoices')
+      .from('enrollment_invoices')
       .select('id', { head: true, count: 'exact' })
       .eq('status', 'PAID'),
   ]);

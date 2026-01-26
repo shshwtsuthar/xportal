@@ -20,14 +20,21 @@ const {
 const { createElement } = react as typeof import('react');
 
 type Db = Database;
-type InvoiceRow = Db['public']['Tables']['invoices']['Row'];
+type EnrollmentInvoiceRow =
+  Db['public']['Tables']['enrollment_invoices']['Row'];
+type ApplicationInvoiceRow =
+  Db['public']['Tables']['application_invoices']['Row'];
 type StudentRow = Db['public']['Tables']['students']['Row'];
 type RTORow = Db['public']['Tables']['rtos']['Row'];
-type InvoiceLineRow = Db['public']['Tables']['invoice_lines']['Row'];
+type EnrollmentInvoiceLineRow =
+  Db['public']['Tables']['enrollment_invoice_lines']['Row'];
+type ApplicationInvoiceLineRow =
+  Db['public']['Tables']['application_invoice_lines']['Row'];
 type StudentAddressRow = Db['public']['Tables']['student_addresses']['Row'];
 
 interface GenerateInvoicePdfParams {
   invoiceId: string;
+  invoiceType: 'APPLICATION' | 'ENROLLMENT';
   supabaseUrl: string;
   serviceRoleKey: string;
 }
@@ -66,55 +73,134 @@ interface InvoicePdfData {
  */
 export async function generateInvoicePdf({
   invoiceId,
+  invoiceType,
   supabaseUrl,
   serviceRoleKey,
 }: GenerateInvoicePdfParams): Promise<Uint8Array> {
   const supabase = createClient<Db>(supabaseUrl, serviceRoleKey);
 
-  // Fetch comprehensive invoice data
-  const { data: invoice, error: invErr } = await supabase
-    .from('invoices')
-    .select(
+  let invoice: EnrollmentInvoiceRow | ApplicationInvoiceRow;
+  let invoiceLines: EnrollmentInvoiceLineRow[] | ApplicationInvoiceLineRow[];
+  let student: StudentRow | null = null;
+  let studentAddresses: StudentAddressRow[] = [];
+  let rto: RTORow | null = null;
+
+  if (invoiceType === 'ENROLLMENT') {
+    // Fetch enrollment invoice data
+    const { data: enrInvoice, error: invErr } = await supabase
+      .from('enrollment_invoices')
+      .select(
+        `
+        *,
+        enrollments:enrollment_id (
+          student_id,
+          students:student_id (
+            id,
+            first_name,
+            last_name,
+            email,
+            preferred_name,
+            student_addresses (*)
+          )
+        ),
+        enrollment_invoice_lines (*),
+        rtos:rto_id (*)
       `
-      *,
-      enrollments:enrollment_id (
-        student_id,
-        students:student_id (
+      )
+      .eq('id', invoiceId)
+      .single();
+
+    if (invErr || !enrInvoice) {
+      throw new Error(
+        `Enrollment invoice not found: ${invErr?.message || 'Unknown error'}`
+      );
+    }
+
+    invoice = enrInvoice as EnrollmentInvoiceWithRelations;
+    const enrollment = invoice.enrollments;
+
+    student = enrollment?.students ?? null;
+    rto = invoice.rtos ?? null;
+    invoiceLines = invoice.enrollment_invoice_lines ?? [];
+    studentAddresses = student?.student_addresses ?? [];
+  } else {
+    // Fetch application invoice data
+    const { data: appInvoice, error: invErr } = await supabase
+      .from('application_invoices')
+      .select(
+        `
+        *,
+        applications:application_id (
           id,
           first_name,
           last_name,
           email,
           preferred_name,
-          student_addresses (*)
-        )
-      ),
-      invoice_lines (*),
-      rtos:rto_id (*)
-    `
-    )
-    .eq('id', invoiceId)
-    .single();
+          street_building_name,
+          street_unit_details,
+          street_number_name,
+          suburb,
+          state,
+          postcode
+        ),
+        application_invoice_lines (*),
+        rtos:rto_id (*)
+      `
+      )
+      .eq('id', invoiceId)
+      .single();
 
-  if (invErr || !invoice) {
-    throw new Error(`Invoice not found: ${invErr?.message || 'Unknown error'}`);
+    if (invErr || !appInvoice) {
+      throw new Error(
+        `Application invoice not found: ${invErr?.message || 'Unknown error'}`
+      );
+    }
+
+    invoice = appInvoice as ApplicationInvoiceWithRelations;
+    const application = invoice.applications;
+
+    // Create student-like object from application data
+    if (application) {
+      student = {
+        id: '',
+        first_name: application.first_name,
+        last_name: application.last_name,
+        email: application.email,
+        preferred_name: application.preferred_name,
+      } as StudentRow;
+
+      // Build address from application fields
+      const addressParts = [
+        application.street_building_name,
+        application.street_unit_details,
+        application.street_number_name,
+        application.suburb,
+        application.state,
+        application.postcode,
+      ].filter(Boolean);
+
+      if (addressParts.length > 0) {
+        studentAddresses = [
+          {
+            id: '',
+            building_name: application.street_building_name,
+            unit_details: application.street_unit_details,
+            number_name: application.street_number_name,
+            suburb: application.suburb,
+            state: application.state,
+            postcode: application.postcode,
+            is_primary: true,
+          } as StudentAddressRow,
+        ];
+      }
+    }
+
+    rto = invoice.rtos ?? null;
+    invoiceLines = invoice.application_invoice_lines ?? [];
   }
 
-  // Extract and validate related data
-  const enrollment = invoice.enrollments as unknown as {
-    student_id: string;
-    students?: StudentRow & {
-      student_addresses?: StudentAddressRow[];
-    };
-  } | null;
-
-  const student = enrollment?.students ?? null;
-  const rto = invoice.rtos as unknown as RTORow | null;
-  const invoiceLines =
-    (invoice.invoice_lines as unknown as InvoiceLineRow[]) ?? [];
-  const studentAddresses = student?.student_addresses ?? [];
-
   if (!student) {
-    throw new Error('Student not found for invoice');
+    throw new Error('Student/application data not found for invoice');
   }
 
   if (!rto) {
@@ -135,10 +221,16 @@ export async function generateInvoicePdf({
 
   // Build PDF data using the same logic as buildInvoiceData.ts
   const pdfData = buildInvoicePdfData({
-    invoice: invoice as InvoiceRow,
+    invoice:
+      invoiceType === 'ENROLLMENT'
+        ? (invoice as EnrollmentInvoiceWithRelations as EnrollmentInvoiceRow)
+        : (invoice as ApplicationInvoiceWithRelations as ApplicationInvoiceRow),
     student,
     rto: { ...rto, profile_image_path: rtoLogoUrl },
-    invoiceLines,
+    invoiceLines:
+      invoiceType === 'ENROLLMENT'
+        ? (invoiceLines as EnrollmentInvoiceLineRow[])
+        : (invoiceLines as ApplicationInvoiceLineRow[]),
     studentAddresses,
   });
 
@@ -160,10 +252,10 @@ function buildInvoicePdfData({
   invoiceLines,
   studentAddresses,
 }: {
-  invoice: InvoiceRow;
+  invoice: EnrollmentInvoiceRow | ApplicationInvoiceRow;
   student: StudentRow & { student_addresses?: StudentAddressRow[] };
   rto: RTORow & { profile_image_path?: string | null };
-  invoiceLines: InvoiceLineRow[];
+  invoiceLines: EnrollmentInvoiceLineRow[] | ApplicationInvoiceLineRow[];
   studentAddresses: StudentAddressRow[];
 }): InvoicePdfData {
   // 1. Format student address (Primary -> First available -> Empty)

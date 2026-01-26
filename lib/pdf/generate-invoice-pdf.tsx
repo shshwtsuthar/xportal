@@ -8,52 +8,13 @@ type Db = Database;
 
 interface GenerateInvoicePdfParams {
   invoiceId: string;
+  invoiceType: 'APPLICATION' | 'ENROLLMENT';
   supabaseUrl: string;
   serviceRoleKey: string;
 }
 
-/**
- * Next.js compatible version of the unified invoice PDF generator.
- * Fetches all required data from database and generates PDF bytes.
- */
-export async function generateInvoicePdf({
-  invoiceId,
-  supabaseUrl,
-  serviceRoleKey,
-}: GenerateInvoicePdfParams): Promise<Uint8Array> {
-  const supabase = createClient<Db>(supabaseUrl, serviceRoleKey);
-
-  // Fetch comprehensive invoice data
-  const { data: invoice, error: invErr } = await supabase
-    .from('invoices')
-    .select(
-      `
-      *,
-      enrollments:enrollment_id (
-        id,
-        student_id,
-        students:student_id (
-          id,
-          first_name,
-          last_name,
-          email,
-          preferred_name,
-          student_addresses (*)
-        )
-      ),
-      invoice_lines (*),
-      rtos:rto_id (*)
-    `
-    )
-    .eq('id', invoiceId)
-    .single();
-
-  if (invErr || !invoice) {
-    throw new Error(`Invoice not found: ${invErr?.message || 'Unknown error'}`);
-  }
-
-  // Extract and validate related data
-  const enrollment = invoice.enrollments as unknown as {
+type EnrollmentInvoiceWithRelations = Tables<'enrollment_invoices'> & {
+  enrollments: {
     id: string;
     student_id: string;
     students?: {
@@ -62,43 +23,167 @@ export async function generateInvoicePdf({
       last_name: string | null;
       email: string | null;
       preferred_name: string | null;
-      student_addresses?: Array<{
-        id: string;
-        building_name: string | null;
-        unit_details: string | null;
-        number_name: string | null;
-        suburb: string | null;
-        state: string | null;
-        postcode: string | null;
-        is_primary: boolean;
-      }>;
+      student_addresses?: Tables<'student_addresses'>[];
     };
   } | null;
+  enrollment_invoice_lines?: Tables<'enrollment_invoice_lines'>[];
+  rtos?: Tables<'rtos'>;
+};
 
-  const student = enrollment?.students ?? null;
-  const rto = invoice.rtos as unknown as {
+type ApplicationInvoiceWithRelations = Tables<'application_invoices'> & {
+  applications?: {
     id: string;
-    name: string | null;
-    address_line_1: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    preferred_name: string | null;
+    street_building_name: string | null;
+    street_unit_details: string | null;
+    street_number_name: string | null;
     suburb: string | null;
     state: string | null;
     postcode: string | null;
-    rto_code: string | null;
-    cricos_code: string | null;
-    email_address: string | null;
-    phone_number: string | null;
-    profile_image_path: string | null;
-    bank_name: string | null;
-    bank_account_name: string | null;
-    bank_bsb: string | null;
-    bank_account_number: string | null;
-  } | null;
+  };
+  application_invoice_lines?: Tables<'application_invoice_lines'>[];
+  rtos?: Tables<'rtos'>;
+};
 
-  const invoiceLines =
-    (invoice.invoice_lines as unknown as Tables<'invoice_lines'>[]) ?? [];
+type StudentData = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  preferred_name: string | null;
+  student_addresses?: Tables<'student_addresses'>[];
+};
+
+/**
+ * Next.js compatible version of the unified invoice PDF generator.
+ * Fetches all required data from database and generates PDF bytes.
+ */
+export async function generateInvoicePdf({
+  invoiceId,
+  invoiceType,
+  supabaseUrl,
+  serviceRoleKey,
+}: GenerateInvoicePdfParams): Promise<Uint8Array> {
+  const supabase = createClient<Db>(supabaseUrl, serviceRoleKey);
+
+  let invoice: EnrollmentInvoiceWithRelations | ApplicationInvoiceWithRelations;
+  let invoiceLines:
+    | Tables<'enrollment_invoice_lines'>[]
+    | Tables<'application_invoice_lines'>[];
+  let student: StudentData | null = null;
+  let studentAddresses: Tables<'student_addresses'>[] = [];
+  let rto: Tables<'rtos'> | null = null;
+
+  if (invoiceType === 'ENROLLMENT') {
+    // Fetch enrollment invoice data
+    const { data: enrInvoice, error: invErr } = await supabase
+      .from('enrollment_invoices')
+      .select(
+        `
+        *,
+        enrollments:enrollment_id (
+          id,
+          student_id,
+          students:student_id (
+            id,
+            first_name,
+            last_name,
+            email,
+            preferred_name,
+            student_addresses (*)
+          )
+        ),
+        enrollment_invoice_lines (*),
+        rtos:rto_id (*)
+      `
+      )
+      .eq('id', invoiceId)
+      .single();
+
+    if (invErr || !enrInvoice) {
+      throw new Error(
+        `Enrollment invoice not found: ${invErr?.message || 'Unknown error'}`
+      );
+    }
+
+    invoice = enrInvoice as EnrollmentInvoiceWithRelations;
+    const enrollment = invoice.enrollments;
+    student = enrollment?.students ?? null;
+    rto = invoice.rtos ?? null;
+    invoiceLines = invoice.enrollment_invoice_lines ?? [];
+    studentAddresses = student?.student_addresses ?? [];
+  } else {
+    // Fetch application invoice data
+    const { data: appInvoice, error: invErr } = await supabase
+      .from('application_invoices')
+      .select(
+        `
+        *,
+        applications:application_id (
+          id,
+          first_name,
+          last_name,
+          email,
+          preferred_name,
+          street_building_name,
+          street_unit_details,
+          street_number_name,
+          suburb,
+          state,
+          postcode
+        ),
+        application_invoice_lines (*),
+        rtos:rto_id (*)
+      `
+      )
+      .eq('id', invoiceId)
+      .single();
+
+    if (invErr || !appInvoice) {
+      throw new Error(
+        `Application invoice not found: ${invErr?.message || 'Unknown error'}`
+      );
+    }
+
+    invoice = appInvoice as ApplicationInvoiceWithRelations;
+    const application = invoice.applications;
+
+    // Create student-like object from application data
+    if (application) {
+      student = {
+        id: '',
+        first_name: application.first_name,
+        last_name: application.last_name,
+        email: application.email,
+        preferred_name: application.preferred_name,
+      };
+
+      // Build address from application fields
+      if (application.suburb || application.state || application.postcode) {
+        studentAddresses = [
+          {
+            id: '',
+            building_name: application.street_building_name,
+            unit_details: application.street_unit_details,
+            number_name: application.street_number_name,
+            suburb: application.suburb,
+            state: application.state,
+            postcode: application.postcode,
+            is_primary: true,
+          } as Tables<'student_addresses'>,
+        ];
+      }
+    }
+
+    rto = invoice.rtos ?? null;
+    invoiceLines = invoice.application_invoice_lines ?? [];
+  }
 
   if (!student) {
-    throw new Error('Student not found for invoice');
+    throw new Error('Student/application data not found for invoice');
   }
 
   if (!student.first_name || !student.last_name || !student.email) {
@@ -122,23 +207,37 @@ export async function generateInvoicePdf({
   }
 
   // Build PDF data using the existing buildInvoiceData function
-  const pdfData = buildInvoiceData({
-    invoice: {
-      ...invoice,
-      enrollments: enrollment
-        ? { id: enrollment.id, student_id: enrollment.student_id }
-        : null,
-      students: {
-        id: student.id,
-        first_name: student.first_name,
-        last_name: student.last_name,
-        email: student.email,
-      },
-      rtos: { ...rto, profile_image_path: rtoLogoUrl } as Tables<'rtos'>,
-      invoice_lines: invoiceLines,
-      student_addresses:
-        (student.student_addresses as Tables<'student_addresses'>[]) ?? [],
+  const enrollmentData =
+    invoiceType === 'ENROLLMENT' &&
+    'enrollments' in invoice &&
+    invoice.enrollments
+      ? {
+          id: invoice.enrollments.id,
+          student_id: invoice.enrollments.student_id,
+        }
+      : null;
+
+  // Create invoice object compatible with buildInvoiceData
+  const invoiceForBuild = {
+    ...invoice,
+    enrollments: enrollmentData,
+    students: {
+      id: student.id || '',
+      first_name: student.first_name,
+      last_name: student.last_name,
+      email: student.email,
     },
+    rtos: { ...rto, profile_image_path: rtoLogoUrl } as Tables<'rtos'>,
+    invoice_lines: invoiceLines,
+    enrollment_invoice_lines:
+      invoiceType === 'ENROLLMENT' ? invoiceLines : undefined,
+    application_invoice_lines:
+      invoiceType === 'APPLICATION' ? invoiceLines : undefined,
+    student_addresses: studentAddresses,
+  } as Parameters<typeof buildInvoiceData>[0]['invoice'];
+
+  const pdfData = buildInvoiceData({
+    invoice: invoiceForBuild,
   });
 
   // Generate PDF using professional template

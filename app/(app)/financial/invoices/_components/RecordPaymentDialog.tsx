@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 
 type Props = {
   invoiceId?: string;
+  invoiceType?: 'APPLICATION' | 'ENROLLMENT'; // Defaults to ENROLLMENT if not provided
   onClose: () => void;
 };
 
@@ -27,7 +28,11 @@ type FormValues = {
   notes: string;
 };
 
-export function RecordPaymentDialog({ invoiceId, onClose }: Props) {
+export function RecordPaymentDialog({
+  invoiceId,
+  invoiceType = 'ENROLLMENT',
+  onClose,
+}: Props) {
   const recordPayment = useRecordPayment();
   const form = useForm<FormValues>({
     defaultValues: {
@@ -57,6 +62,7 @@ export function RecordPaymentDialog({ invoiceId, onClose }: Props) {
       }
       const paymentId = await recordPayment.mutateAsync({
         invoiceId,
+        invoiceType,
         paymentDate: values.paymentDate,
         amountCents,
         notes: values.notes || undefined,

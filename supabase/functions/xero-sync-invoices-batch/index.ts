@@ -43,7 +43,7 @@ serve(async (req: Request) => {
     // 1. Query invoices that need syncing
     // Status must be SENT, and xero_sync_status must be 'pending' or NULL
     const { data: invoices, error: invoicesErr } = await supabase
-      .from('invoices')
+      .from('enrollment_invoices')
       .select('id, rto_id')
       .eq('status', 'SENT')
       .or('xero_sync_status.is.null,xero_sync_status.eq.pending')

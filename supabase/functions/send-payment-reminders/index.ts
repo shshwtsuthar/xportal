@@ -127,7 +127,7 @@ serve(async (req) => {
       // - status is SCHEDULED or SENT (not PAID or VOID)
       // - no reminder has been sent yet for this (invoice, reminder) pair
       const { data: invoices, error: invoicesErr } = await supabase
-        .from('invoices')
+        .from('enrollment_invoices')
         .select(
           `
           id,
@@ -276,6 +276,7 @@ serve(async (req) => {
           // Use unified PDF generator
           pdfBytes = await generateInvoicePdf({
             invoiceId: invoice.id,
+            invoiceType: 'ENROLLMENT',
             supabaseUrl,
             serviceRoleKey,
           });
@@ -285,7 +286,7 @@ serve(async (req) => {
           pdfPath = `${invoice.rto_id}/${year}/${invoice.invoice_number}.pdf`;
 
           const { error: uploadErr } = await supabase.storage
-            .from('invoices')
+            .from('enrollment_invoices')
             .upload(pdfPath, pdfBytes, {
               contentType: 'application/pdf',
               upsert: true,
@@ -300,7 +301,7 @@ serve(async (req) => {
           } else {
             // Update invoice with new PDF path
             await supabase
-              .from('invoices')
+              .from('enrollment_invoices')
               .update({ pdf_path: pdfPath })
               .eq('id', invoice.id);
           }

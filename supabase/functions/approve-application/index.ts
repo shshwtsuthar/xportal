@@ -145,8 +145,7 @@ serve(async (req: Request) => {
     );
   }
 
-  // Get the issue date offset from template (default 0 = same as due date)
-  const issueDateOffsetDays = template.issue_date_offset_days ?? 0;
+  // Issue date offset is now handled by the migration function
 
   // Use the required payment anchor date
   const anchorDate = app.payment_anchor_date as string;
@@ -397,12 +396,12 @@ serve(async (req: Request) => {
     enrollment = newEnrollment;
   }
 
-  // 3) Use application_payment_schedule snapshot if present; fallback to on-the-fly calc.
-  //    Always create invoices as SCHEDULED and attach at least one invoice_lines row per invoice.
+  // 3) Migrate application invoices and payment schedule to enrollment
   //    Check if invoices already exist for this enrollment (idempotency)
-  let existingInvoices: Db['public']['Tables']['invoices']['Row'][] = [];
+  let existingInvoices: Db['public']['Tables']['enrollment_invoices']['Row'][] =
+    [];
   const { data: existingInvoicesData, error: checkInvErr } = await supabase
-    .from('invoices')
+    .from('enrollment_invoices')
     .select('*')
     .eq('enrollment_id', enrollment.id);
 
@@ -425,347 +424,21 @@ serve(async (req: Request) => {
       `Invoices already exist for enrollment ${enrollment.id}, using ${existingInvoicesData.length} existing invoices`
     );
     existingInvoices = existingInvoicesData;
-  }
-
-  const { data: snapshot, error: snapErr } = await supabase
-    .from('application_payment_schedule')
-    .select('id, name, amount_cents, due_date, template_installment_id')
-    .eq('application_id', app.id)
-    .order('sequence_order', { ascending: true })
-    .order('due_date', { ascending: true })
-    .order('name', { ascending: true });
-
-  const todayIso = new Date().toISOString().slice(0, 10);
-
-  const requestInvoiceNumber = async (issueDate: string) => {
-    const seed = crypto.randomUUID();
-    const { data, error } = await supabase.rpc('generate_invoice_number', {
-      p_created: issueDate,
-      p_uuid: seed,
-    });
-    if (error || !data) {
-      throw new Error(error?.message || 'Failed to generate invoice number');
-    }
-    return data as string;
-  };
-
-  let invoiceRows: Db['public']['Tables']['invoices']['Insert'][] = [];
-  const invoiceLineTemplates: {
-    invoice_number: string;
-    name: string;
-    amount_cents: number;
-    sequence_order: number;
-    is_commissionable: boolean;
-    description: string | null;
-    xero_account_code: string | null;
-    xero_tax_type: string | null;
-    xero_item_code: string | null;
-  }[] = [];
-
-  if (!snapErr && snapshot && snapshot.length > 0) {
-    const { data: snapshotLines, error: snapLinesErr } = await supabase
-      .from('application_payment_schedule_lines')
-      .select(
-        'application_payment_schedule_id, name, description, amount_cents, sequence_order, is_commissionable, xero_account_code, xero_tax_type, xero_item_code'
-      )
-      .eq('application_id', app.id)
-      .order('application_payment_schedule_id', { ascending: true })
-      .order('sequence_order', { ascending: true });
-
-    if (snapLinesErr) {
-      return new Response(
-        JSON.stringify({
-          error: 'Failed to read payment schedule lines snapshot',
-          details: snapLinesErr.message,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
-
-    const snapshotLinesMap = new Map<
-      string,
-      Array<{
-        name: string;
-        description: string | null;
-        amount_cents: number;
-        sequence_order: number;
-        is_commissionable: boolean;
-        xero_account_code: string | null;
-        xero_tax_type: string | null;
-        xero_item_code: string | null;
-      }>
-    >();
-
-    (snapshotLines ?? []).forEach((line) => {
-      const schedId = line.application_payment_schedule_id as string;
-      if (!snapshotLinesMap.has(schedId)) {
-        snapshotLinesMap.set(schedId, []);
-      }
-      snapshotLinesMap.get(schedId)!.push({
-        name: line.name,
-        description: line.description,
-        amount_cents: line.amount_cents,
-        sequence_order: line.sequence_order,
-        is_commissionable: line.is_commissionable,
-        xero_account_code: line.xero_account_code,
-        xero_tax_type: line.xero_tax_type,
-        xero_item_code: line.xero_item_code,
-      });
-    });
-
-    const rows: Db['public']['Tables']['invoices']['Insert'][] = [];
-
-    for (let idx = 0; idx < snapshot.length; idx++) {
-      const row = snapshot[idx];
-      const amountCents = row.amount_cents as number;
-      const schedId = row.id as string;
-
-      // Calculate issue date from due date + template offset
-      const dueDate = new Date(row.due_date as string);
-      const calculatedIssueDate = new Date(dueDate);
-      calculatedIssueDate.setDate(
-        calculatedIssueDate.getDate() + issueDateOffsetDays
-      );
-      const calculatedIssueDateStr = calculatedIssueDate
-        .toISOString()
-        .slice(0, 10);
-
-      // Use today if calculated issue date is in the past
-      const issueDate =
-        calculatedIssueDateStr < todayIso ? todayIso : calculatedIssueDateStr;
-
-      let invoiceNumber: string;
-      try {
-        invoiceNumber = await requestInvoiceNumber(issueDate);
-      } catch (invNumErr) {
-        console.error(
-          'Failed to generate invoice number (snapshot path):',
-          invNumErr
-        );
-        return new Response(
-          JSON.stringify({
-            error: 'Failed to generate invoice number',
-            details:
-              invNumErr instanceof Error
-                ? invNumErr.message
-                : String(invNumErr),
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-
-      // Get snapshot lines for this installment, or create a fallback line if none exist
-      const linesForInstallment = snapshotLinesMap.get(schedId) ?? [];
-
-      if (linesForInstallment.length > 0) {
-        linesForInstallment.forEach((line) => {
-          invoiceLineTemplates.push({
-            invoice_number: invoiceNumber,
-            name: line.name,
-            amount_cents: line.amount_cents,
-            sequence_order: line.sequence_order,
-            is_commissionable: line.is_commissionable,
-            description: line.description,
-            xero_account_code: line.xero_account_code,
-            xero_tax_type: line.xero_tax_type,
-            xero_item_code: line.xero_item_code,
-          });
-        });
-      } else {
-        invoiceLineTemplates.push({
-          invoice_number: invoiceNumber,
-          name: row.name ?? `Installment ${idx + 1}`,
-          amount_cents: amountCents,
-          sequence_order: idx,
-          is_commissionable: false,
-          description: null,
-          xero_account_code: null,
-          xero_tax_type: null,
-          xero_item_code: null,
-        });
-      }
-
-      rows.push({
-        enrollment_id: enrollment.id,
-        rto_id: app.rto_id,
-        status: 'SCHEDULED',
-        invoice_number: invoiceNumber,
-        issue_date: issueDate,
-        due_date: row.due_date as string,
-        amount_due_cents: amountCents,
-        amount_paid_cents: 0,
-      } as Db['public']['Tables']['invoices']['Insert']);
-    }
-
-    invoiceRows = rows;
   } else {
-    // Fallback: compute based on template installments and anchor
-    const { data: installments, error: instErr } = await supabase
-      .from('payment_plan_template_installments')
-      .select('id, name, amount_cents, due_date_rule_days, is_commissionable')
-      .eq('template_id', template.id)
-      .order('due_date_rule_days', { ascending: true });
-    if (instErr) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to read installments' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
-
-    // Fetch lines for each installment
-    const installmentIds = (installments ?? []).map((i) => i.id);
-    const { data: installmentLines, error: linesErr } = await supabase
-      .from('payment_plan_template_installment_lines')
-      .select('*')
-      .in('installment_id', installmentIds)
-      .order('installment_id', { ascending: true })
-      .order('sequence_order', { ascending: true });
-
-    if (linesErr) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to read installment lines' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
-
-    // Group lines by installment_id
-    const linesByInstallment = new Map<string, typeof installmentLines>();
-    (installmentLines ?? []).forEach((line) => {
-      const instId = line.installment_id;
-      if (!linesByInstallment.has(instId)) {
-        linesByInstallment.set(instId, []);
+    // Call migration function to copy application data to enrollment
+    const { data: migrationResult, error: migrationErr } = await supabase.rpc(
+      'migrate_application_invoices_to_enrollment',
+      {
+        p_application_id: app.id,
+        p_enrollment_id: enrollment.id,
       }
-      linesByInstallment.get(instId)!.push(line);
-    });
-
-    const anchor = new Date(anchorDate);
-    const rows: Db['public']['Tables']['invoices']['Insert'][] = [];
-    const safeInstallments = installments ?? [];
-
-    for (let idx = 0; idx < safeInstallments.length; idx++) {
-      const installment = safeInstallments[idx];
-      const due = new Date(anchor);
-      due.setDate(due.getDate() + Number(installment.due_date_rule_days));
-      const dueDateStr = due.toISOString().slice(0, 10);
-
-      // Calculate issue date from due date + template offset
-      const dueDate = new Date(dueDateStr);
-      const calculatedIssueDate = new Date(dueDate);
-      calculatedIssueDate.setDate(
-        calculatedIssueDate.getDate() + issueDateOffsetDays
-      );
-      const calculatedIssueDateStr = calculatedIssueDate
-        .toISOString()
-        .slice(0, 10);
-
-      // Use today if calculated issue date is in the past
-      const issueDate =
-        calculatedIssueDateStr < todayIso ? todayIso : calculatedIssueDateStr;
-      const amountCents = installment.amount_cents as number;
-
-      let invoiceNumber: string;
-      try {
-        invoiceNumber = await requestInvoiceNumber(issueDate);
-      } catch (invNumErr) {
-        console.error(
-          'Failed to generate invoice number (template path):',
-          invNumErr
-        );
-        return new Response(
-          JSON.stringify({
-            error: 'Failed to generate invoice number',
-            details:
-              invNumErr instanceof Error
-                ? invNumErr.message
-                : String(invNumErr),
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-
-      const lines = linesByInstallment.get(installment.id) ?? [];
-      if (lines.length > 0) {
-        lines.forEach((line) => {
-          invoiceLineTemplates.push({
-            invoice_number: invoiceNumber,
-            name: line.name,
-            amount_cents: line.amount_cents,
-            sequence_order: line.sequence_order,
-            is_commissionable: line.is_commissionable,
-            description: line.description ?? null,
-            xero_account_code: line.xero_account_code ?? null,
-            xero_tax_type: line.xero_tax_type ?? null,
-            xero_item_code: line.xero_item_code ?? null,
-          });
-        });
-      } else {
-        invoiceLineTemplates.push({
-          invoice_number: invoiceNumber,
-          name: installment.name ?? `Installment ${idx + 1}`,
-          amount_cents: amountCents,
-          sequence_order: idx,
-          is_commissionable: Boolean(
-            (installment as { is_commissionable?: boolean }).is_commissionable
-          ),
-          description: null,
-          xero_account_code: null,
-          xero_tax_type: null,
-          xero_item_code: null,
-        });
-      }
-
-      rows.push({
-        enrollment_id: enrollment.id,
-        rto_id: app.rto_id,
-        status: 'SCHEDULED',
-        invoice_number: invoiceNumber,
-        issue_date: issueDate,
-        due_date: dueDateStr,
-        amount_due_cents: amountCents,
-        amount_paid_cents: 0,
-      } as Db['public']['Tables']['invoices']['Insert']);
-    }
-
-    invoiceRows = rows;
-  }
-
-  // Only create invoices if they don't already exist (idempotency)
-  let insertedInvoices: Array<{ id: string; invoice_number: string }> = [];
-  if (existingInvoices.length > 0) {
-    // Use existing invoices
-    insertedInvoices = existingInvoices.map((inv) => ({
-      id: inv.id,
-      invoice_number: inv.invoice_number,
-    }));
-    console.log(
-      `Using ${insertedInvoices.length} existing invoices for enrollment ${enrollment.id}`
     );
-  } else if (invoiceRows.length > 0) {
-    // Create new invoices
-    const { data: newInvoices, error: invErr } = await supabase
-      .from('invoices')
-      .insert(invoiceRows)
-      .select('id, invoice_number');
-    if (invErr || !newInvoices) {
+
+    if (migrationErr) {
       return new Response(
         JSON.stringify({
-          error: 'Failed to create invoices',
-          details: invErr?.message || 'Unknown error',
+          error: 'Failed to migrate application invoices to enrollment',
+          details: migrationErr.message,
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -773,56 +446,36 @@ serve(async (req: Request) => {
         }
       );
     }
-    insertedInvoices = newInvoices;
-  }
 
-  // Insert one invoice_lines row per invoice based on the templates prepared above.
-  // Only create invoice_lines if invoices were just created (not if using existing invoices)
-  if (existingInvoices.length === 0 && invoiceLineTemplates.length > 0) {
-    const invoiceLines: Db['public']['Tables']['invoice_lines']['Insert'][] =
-      [];
-
-    for (const tpl of invoiceLineTemplates) {
-      const invoice = insertedInvoices.find(
-        (inv) => inv.invoice_number === tpl.invoice_number
-      );
-      if (!invoice) continue;
-
-      invoiceLines.push({
-        invoice_id: invoice.id,
-        name: tpl.name,
-        description: tpl.description,
-        amount_cents: tpl.amount_cents,
-        sequence_order: tpl.sequence_order,
-        is_commissionable: tpl.is_commissionable,
-        xero_account_code: tpl.xero_account_code,
-        xero_tax_type: tpl.xero_tax_type,
-        xero_item_code: tpl.xero_item_code,
-      });
-    }
-
-    if (invoiceLines.length > 0) {
-      const { error: lineErr } = await supabase
-        .from('invoice_lines')
-        .insert(invoiceLines);
-      if (lineErr) {
-        return new Response(
-          JSON.stringify({
-            error: 'Failed to create invoice lines',
-            details: lineErr.message,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-    }
-  } else if (existingInvoices.length > 0) {
     console.log(
-      `Skipping invoice_lines creation - using existing invoices with existing lines`
+      `Migration completed: ${migrationResult?.[0]?.enrollment_invoices_created || 0} invoices migrated, ${migrationResult?.[0]?.payments_migrated || 0} payments migrated, ${migrationResult?.[0]?.remaining_invoices_created || 0} remaining invoices created`
     );
+
+    // Fetch the newly created invoices
+    const { data: newInvoices, error: fetchErr } = await supabase
+      .from('enrollment_invoices')
+      .select('*')
+      .eq('enrollment_id', enrollment.id);
+
+    if (fetchErr) {
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to fetch migrated invoices',
+          details: fetchErr.message,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    existingInvoices = newInvoices || [];
   }
+
+  // Invoice migration is handled by migrate_application_invoices_to_enrollment function
+  // which copies application_invoices, creates remaining invoices, and handles all line items
+  // Note: existingInvoices is kept for potential future use but not currently needed
 
   // --- Extended copy: student domain normalization ---
   // 3b) Addresses (street + postal)

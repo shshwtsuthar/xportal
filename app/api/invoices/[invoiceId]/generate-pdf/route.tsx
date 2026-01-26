@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { generateInvoicePdf } from '@/lib/pdf/generate-invoice-pdf';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 
@@ -20,9 +21,24 @@ export async function POST(
       });
     }
 
+    // Determine invoice type by checking both tables
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SERVICE_ROLE_KEY!
+    );
+
+    const { data: enrollmentInvoice } = await supabase
+      .from('enrollment_invoices')
+      .select('id')
+      .eq('id', invoiceId)
+      .single();
+
+    const invoiceType = enrollmentInvoice ? 'ENROLLMENT' : 'APPLICATION';
+
     // Generate PDF using unified function
     const pdfBytes = await generateInvoicePdf({
       invoiceId,
+      invoiceType,
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
       serviceRoleKey: process.env.SERVICE_ROLE_KEY!,
     });

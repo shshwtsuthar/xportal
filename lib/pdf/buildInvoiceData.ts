@@ -1,14 +1,22 @@
 import { Tables } from '@/database.types';
 import type { InvoicePdfData } from './InvoiceTemplate';
 
-type InvoiceInput = Tables<'invoices'> & {
+type InvoiceInput = (
+  | Tables<'enrollment_invoices'>
+  | Tables<'application_invoices'>
+) & {
   enrollments?: Pick<Tables<'enrollments'>, 'id' | 'student_id'> | null;
   students?: Pick<
     Tables<'students'>,
     'id' | 'first_name' | 'last_name' | 'email'
   > | null;
   rtos?: Tables<'rtos'> | null;
-  invoice_lines?: Tables<'invoice_lines'>[] | null;
+  invoice_lines?:
+    | Tables<'enrollment_invoice_lines'>[]
+    | Tables<'application_invoice_lines'>[]
+    | null;
+  enrollment_invoice_lines?: Tables<'enrollment_invoice_lines'>[] | null;
+  application_invoice_lines?: Tables<'application_invoice_lines'>[] | null;
   student_addresses?: Tables<'student_addresses'>[] | null;
 };
 
@@ -16,7 +24,23 @@ export function buildInvoiceData(input: {
   invoice: InvoiceInput;
 }): InvoicePdfData {
   const { invoice } = input;
-  const invoiceLines = invoice.invoice_lines ?? [];
+  const invoiceLines = (invoice.invoice_lines ??
+    (
+      invoice as {
+        enrollment_invoice_lines?: Tables<'enrollment_invoice_lines'>[];
+      }
+    ).enrollment_invoice_lines ??
+    (
+      invoice as {
+        application_invoice_lines?: Tables<'application_invoice_lines'>[];
+      }
+    ).application_invoice_lines ??
+    []) as Array<{
+    amount_cents: number;
+    description: string | null;
+    name: string;
+    sequence_order: number;
+  }>;
   const studentAddresses = invoice.student_addresses ?? [];
   const rto = invoice.rtos ?? null;
   const student = invoice.students ?? null;
@@ -52,10 +76,11 @@ export function buildInvoiceData(input: {
   // 3. Calculate Financials
   // Assuming amount_cents is stored as an integer (e.g. $10.00 = 1000)
   const totalAmountCents = invoiceLines.reduce(
-    (acc, line) => acc + line.amount_cents,
+    (acc: number, line: { amount_cents: number }) => acc + line.amount_cents,
     0
   );
-  const amountPaidCents = invoice.amount_paid_cents ?? 0;
+  const amountPaidCents =
+    (invoice as { amount_paid_cents?: number }).amount_paid_cents ?? 0;
   const balanceDueCents = totalAmountCents - amountPaidCents;
 
   return {
@@ -88,11 +113,20 @@ export function buildInvoiceData(input: {
 
     // Line Items
     lines: invoiceLines
-      .sort((a, b) => (a.sequence_order ?? 0) - (b.sequence_order ?? 0))
-      .map((l) => ({
-        description: l.description || l.name,
-        amountCents: l.amount_cents,
-      })),
+      .sort(
+        (a: { sequence_order?: number }, b: { sequence_order?: number }) =>
+          (a.sequence_order ?? 0) - (b.sequence_order ?? 0)
+      )
+      .map(
+        (l: {
+          description: string | null;
+          name: string;
+          amount_cents: number;
+        }) => ({
+          description: l.description || l.name,
+          amountCents: l.amount_cents,
+        })
+      ),
 
     // Financial Totals
     totalAmountCents,

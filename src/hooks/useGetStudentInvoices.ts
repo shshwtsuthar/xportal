@@ -11,7 +11,7 @@ export const useGetStudentInvoices = (studentId?: string) => {
   return useQuery({
     queryKey: ['student-invoices', studentId],
     enabled: !!studentId,
-    queryFn: async (): Promise<Tables<'invoices'>[]> => {
+    queryFn: async (): Promise<Tables<'enrollment_invoices'>[]> => {
       const supabase = createClient();
 
       // First, fetch enrollment IDs for the student
@@ -33,7 +33,7 @@ export const useGetStudentInvoices = (studentId?: string) => {
 
       // Now fetch invoices for those enrollments
       const { data, error } = await supabase
-        .from('invoices')
+        .from('enrollment_invoices')
         .select('*')
         .in('enrollment_id', enrollmentIds)
         .order('due_date', { ascending: true });

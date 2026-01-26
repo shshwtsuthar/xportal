@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/client';
 
 type Params = {
   invoiceId: string;
+  invoiceType: 'APPLICATION' | 'ENROLLMENT';
   paymentDate: string; // yyyy-mm-dd
   amountCents: number;
   notes?: string;
@@ -17,12 +18,14 @@ export const useRecordPayment = () => {
   return useMutation({
     mutationFn: async ({
       invoiceId,
+      invoiceType,
       paymentDate,
       amountCents,
       notes,
     }: Params): Promise<string> => {
       const supabase = createClient();
       const { data: paymentId, error } = await supabase.rpc('record_payment', {
+        p_invoice_type: invoiceType,
         p_invoice_id: invoiceId,
         p_payment_date: paymentDate,
         p_amount_cents: amountCents,

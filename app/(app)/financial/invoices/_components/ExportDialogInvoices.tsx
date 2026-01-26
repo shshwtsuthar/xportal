@@ -20,7 +20,7 @@ import {
   exportInvoicesToXLSX,
 } from '@/lib/utils/exportInvoices';
 
-type RowType = Tables<'invoices'> & {
+type RowType = Tables<'enrollment_invoices'> & {
   enrollments?: {
     student_id: string;
     program_id: string;

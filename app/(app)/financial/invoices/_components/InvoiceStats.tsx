@@ -6,7 +6,7 @@ import { FileText, AlertCircle, DollarSign, TrendingUp } from 'lucide-react';
 import { startOfWeek, isAfter } from 'date-fns';
 import type { Tables } from '@/database.types';
 
-type InvoiceRow = Tables<'invoices'> & {
+type InvoiceRow = Tables<'enrollment_invoices'> & {
   enrollments?: {
     student_id: string;
     program_id: string;

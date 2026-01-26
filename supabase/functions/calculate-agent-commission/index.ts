@@ -54,7 +54,9 @@ serve(async (req: Request) => {
     // 1. Fetch payment details
     const { data: payment, error: paymentErr } = await supabase
       .from('payments')
-      .select('id, invoice_id, rto_id, amount_cents, payment_date')
+      .select(
+        'id, invoice_id, invoice_type, rto_id, amount_cents, payment_date'
+      )
       .eq('id', paymentId)
       .single();
 
@@ -67,6 +69,21 @@ serve(async (req: Request) => {
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 404,
+        }
+      );
+    }
+
+    // Skip if payment is for APPLICATION invoice (commissions only on enrollment invoices)
+    if (payment.invoice_type === 'APPLICATION') {
+      return new Response(
+        JSON.stringify({
+          created: false,
+          reason:
+            'Commissions are only calculated for enrollment invoice payments',
+        } as CommissionCalculationResponse),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
         }
       );
     }
@@ -106,9 +123,9 @@ serve(async (req: Request) => {
       );
     }
 
-    // 3. Fetch invoice and enrollment details
+    // 3. Fetch invoice and enrollment details (only for ENROLLMENT invoices)
     const { data: invoice, error: invoiceErr } = await supabase
-      .from('invoices')
+      .from('enrollment_invoices')
       .select('id, enrollment_id, amount_due_cents, due_date')
       .eq('id', payment.invoice_id)
       .single();

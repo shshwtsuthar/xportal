@@ -77,7 +77,7 @@ serve(async (req: Request) => {
 
     // 1. Fetch invoice with related data
     const { data: invoice, error: invoiceErr } = await supabase
-      .from('invoices')
+      .from('enrollment_invoices')
       .select(
         'id, rto_id, enrollment_id, invoice_number, issue_date, due_date, amount_due_cents, xero_invoice_id, xero_sync_status'
       )
@@ -381,7 +381,7 @@ serve(async (req: Request) => {
 
       // Update invoice with error status
       await supabase
-        .from('invoices')
+        .from('enrollment_invoices')
         .update({
           xero_sync_status: 'failed',
           xero_sync_error: errorMessage.slice(0, 500), // Truncate to reasonable length
@@ -412,7 +412,7 @@ serve(async (req: Request) => {
 
     if (!xeroInvoiceId) {
       await supabase
-        .from('invoices')
+        .from('enrollment_invoices')
         .update({
           xero_sync_status: 'failed',
           xero_sync_error: 'Xero returned invoice but no InvoiceID',
@@ -433,7 +433,7 @@ serve(async (req: Request) => {
 
     // 12. Update invoice with Xero InvoiceID and success status
     const { error: updateErr } = await supabase
-      .from('invoices')
+      .from('enrollment_invoices')
       .update({
         xero_invoice_id: xeroInvoiceId,
         xero_sync_status: 'synced',

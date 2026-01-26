@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     );
 
     const { data: inv, error } = await admin
-      .from('invoices')
+      .from('enrollment_invoices')
       .select(
         'id, rto_id, invoice_number, due_date, amount_due_cents, pdf_path'
       )
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: signed, error: signErr } = await admin.storage
-      .from('invoices')
+      .from('enrollment_invoices')
       .createSignedUrl(inv.pdf_path, 60 * 30);
     if (signErr || !signed?.signedUrl) {
       return new Response(JSON.stringify({ error: 'Failed to sign URL' }), {

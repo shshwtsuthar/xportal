@@ -8,7 +8,6 @@ import {
   markEventProcessed,
 } from '@/lib/xero/webhook';
 import { XeroClientNode } from '@/lib/xero/xero-client-node';
-import type { Json } from '@/database.types';
 
 export const runtime = 'nodejs';
 
@@ -59,15 +58,14 @@ function mapXeroInvoiceStatusToSms(
  */
 async function handleInvoiceEvent(
   rtoId: string,
-  event: XeroWebhookEvent,
-  payload: unknown
+  event: XeroWebhookEvent
 ): Promise<void> {
   const supabase = createAdminClient();
   const invoiceId = event.resourceId;
 
-  // Find invoice by xero_invoice_id
+  // Find invoice by xero_invoice_id (only enrollment invoices sync to Xero)
   const { data: invoice, error: invoiceError } = await supabase
-    .from('invoices')
+    .from('enrollment_invoices')
     .select('id, amount_due_cents, amount_paid_cents, status')
     .eq('rto_id', rtoId)
     .eq('xero_invoice_id', invoiceId)
@@ -141,7 +139,10 @@ async function handleInvoiceEvent(
       updates.status = smsStatus;
     }
 
-    await supabase.from('invoices').update(updates).eq('id', invoice.id);
+    await supabase
+      .from('enrollment_invoices')
+      .update(updates)
+      .eq('id', invoice.id);
 
     console.log(
       `Updated invoice ${invoice.id} from Xero webhook: ${event.eventType}`
@@ -157,8 +158,7 @@ async function handleInvoiceEvent(
  */
 async function handlePaymentEvent(
   rtoId: string,
-  event: XeroWebhookEvent,
-  payload: unknown
+  event: XeroWebhookEvent
 ): Promise<void> {
   const supabase = createAdminClient();
   const paymentId = event.resourceId;
@@ -206,7 +206,7 @@ async function handlePaymentEvent(
 
     // Find invoice by xero_invoice_id
     const { data: invoice, error: invoiceError } = await supabase
-      .from('invoices')
+      .from('enrollment_invoices')
       .select('id')
       .eq('rto_id', rtoId)
       .eq('xero_invoice_id', xeroPayment.Invoice.InvoiceID)
@@ -240,9 +240,11 @@ async function handlePaymentEvent(
       console.log(`Updated payment ${existingPayment.id} from Xero webhook`);
     } else {
       // New payment - create it using record_payment function
+      // Xero webhook only handles enrollment invoices (application invoices don't sync to Xero)
       const { data: paymentResult, error: recordError } = await supabase.rpc(
         'record_payment',
         {
+          p_invoice_type: 'ENROLLMENT',
           p_invoice_id: invoice.id ?? undefined, // Convert null to undefined
           p_payment_date:
             xeroPayment.Date || new Date().toISOString().split('T')[0],
@@ -287,8 +289,7 @@ async function handlePaymentEvent(
  */
 async function handleContactEvent(
   rtoId: string,
-  event: XeroWebhookEvent,
-  payload: unknown
+  event: XeroWebhookEvent
 ): Promise<void> {
   const supabase = createAdminClient();
   const contactId = event.resourceId;
@@ -439,7 +440,7 @@ async function processWebhookEvent(
         eventType === 'INVOICE.CREATED' ||
         eventType === 'INVOICE.UPDATED'
       ) {
-        await handleInvoiceEvent(rtoId, event, payload);
+        await handleInvoiceEvent(rtoId, event);
       } else {
         console.log(`Unhandled invoice event type: ${eventType}`, event);
       }
@@ -450,7 +451,7 @@ async function processWebhookEvent(
         eventType === 'PAYMENT.CREATED' ||
         eventType === 'PAYMENT.UPDATED'
       ) {
-        await handlePaymentEvent(rtoId, event, payload);
+        await handlePaymentEvent(rtoId, event);
       } else {
         console.log(`Unhandled payment event type: ${eventType}`, event);
       }
@@ -461,7 +462,7 @@ async function processWebhookEvent(
         eventType === 'CONTACT.CREATED' ||
         eventType === 'CONTACT.UPDATED'
       ) {
-        await handleContactEvent(rtoId, event, payload);
+        await handleContactEvent(rtoId, event);
       } else {
         console.log(`Unhandled contact event type: ${eventType}`, event);
       }

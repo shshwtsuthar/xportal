@@ -327,6 +327,155 @@ export type Database = {
           },
         ]
       }
+      application_invoice_lines: {
+        Row: {
+          amount_cents: number
+          application_invoice_id: string
+          description: string | null
+          id: string
+          is_commissionable: boolean
+          name: string
+          sequence_order: number
+          xero_account_code: string | null
+          xero_item_code: string | null
+          xero_tax_type: string | null
+        }
+        Insert: {
+          amount_cents: number
+          application_invoice_id: string
+          description?: string | null
+          id?: string
+          is_commissionable?: boolean
+          name: string
+          sequence_order?: number
+          xero_account_code?: string | null
+          xero_item_code?: string | null
+          xero_tax_type?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          application_invoice_id?: string
+          description?: string | null
+          id?: string
+          is_commissionable?: boolean
+          name?: string
+          sequence_order?: number
+          xero_account_code?: string | null
+          xero_item_code?: string | null
+          xero_tax_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_invoice_lines_application_invoice_id_fkey"
+            columns: ["application_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "application_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_invoices: {
+        Row: {
+          amount_due_cents: number
+          amount_paid_cents: number
+          application_id: string
+          created_at: string
+          due_date: string
+          first_overdue_at: string | null
+          id: string
+          internal_payment_status: Database["public"]["Enums"]["internal_payment_status"]
+          invoice_number: string
+          issue_date: string
+          last_email_sent_at: string | null
+          last_overdue_at: string | null
+          last_pdf_error: string | null
+          migrated_to_enrollment: boolean
+          notes: string | null
+          pdf_generated_at: string | null
+          pdf_generation_attempts: number
+          pdf_generation_status: Database["public"]["Enums"]["invoice_pdf_generation_status"]
+          pdf_path: string | null
+          rto_id: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          updated_at: string
+          xero_invoice_id: string | null
+          xero_sync_error: string | null
+          xero_sync_status: string | null
+          xero_synced_at: string | null
+        }
+        Insert: {
+          amount_due_cents: number
+          amount_paid_cents?: number
+          application_id: string
+          created_at?: string
+          due_date: string
+          first_overdue_at?: string | null
+          id?: string
+          internal_payment_status?: Database["public"]["Enums"]["internal_payment_status"]
+          invoice_number: string
+          issue_date: string
+          last_email_sent_at?: string | null
+          last_overdue_at?: string | null
+          last_pdf_error?: string | null
+          migrated_to_enrollment?: boolean
+          notes?: string | null
+          pdf_generated_at?: string | null
+          pdf_generation_attempts?: number
+          pdf_generation_status?: Database["public"]["Enums"]["invoice_pdf_generation_status"]
+          pdf_path?: string | null
+          rto_id: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          updated_at?: string
+          xero_invoice_id?: string | null
+          xero_sync_error?: string | null
+          xero_sync_status?: string | null
+          xero_synced_at?: string | null
+        }
+        Update: {
+          amount_due_cents?: number
+          amount_paid_cents?: number
+          application_id?: string
+          created_at?: string
+          due_date?: string
+          first_overdue_at?: string | null
+          id?: string
+          internal_payment_status?: Database["public"]["Enums"]["internal_payment_status"]
+          invoice_number?: string
+          issue_date?: string
+          last_email_sent_at?: string | null
+          last_overdue_at?: string | null
+          last_pdf_error?: string | null
+          migrated_to_enrollment?: boolean
+          notes?: string | null
+          pdf_generated_at?: string | null
+          pdf_generation_attempts?: number
+          pdf_generation_status?: Database["public"]["Enums"]["invoice_pdf_generation_status"]
+          pdf_path?: string | null
+          rto_id?: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          updated_at?: string
+          xero_invoice_id?: string | null
+          xero_sync_error?: string | null
+          xero_sync_status?: string | null
+          xero_synced_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_invoices_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_invoices_rto_id_fkey"
+            columns: ["rto_id"]
+            isOneToOne: false
+            referencedRelation: "rtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       application_learning_classes: {
         Row: {
           application_id: string
@@ -485,6 +634,7 @@ export type Database = {
           created_at: string
           due_date: string
           id: string
+          migrated_to_enrollment: boolean
           name: string
           sequence_order: number | null
           template_id: string
@@ -498,6 +648,7 @@ export type Database = {
           created_at?: string
           due_date: string
           id?: string
+          migrated_to_enrollment?: boolean
           name: string
           sequence_order?: number | null
           template_id: string
@@ -511,6 +662,7 @@ export type Database = {
           created_at?: string
           due_date?: string
           id?: string
+          migrated_to_enrollment?: boolean
           name?: string
           sequence_order?: number | null
           template_id?: string
@@ -1617,6 +1769,280 @@ export type Database = {
           },
         ]
       }
+      enrollment_invoice_lines: {
+        Row: {
+          amount_cents: number
+          description: string | null
+          id: string
+          invoice_id: string
+          is_commissionable: boolean
+          name: string
+          sequence_order: number
+          xero_account_code: string | null
+          xero_item_code: string | null
+          xero_tax_type: string | null
+        }
+        Insert: {
+          amount_cents: number
+          description?: string | null
+          id?: string
+          invoice_id: string
+          is_commissionable?: boolean
+          name: string
+          sequence_order?: number
+          xero_account_code?: string | null
+          xero_item_code?: string | null
+          xero_tax_type?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          description?: string | null
+          id?: string
+          invoice_id?: string
+          is_commissionable?: boolean
+          name?: string
+          sequence_order?: number
+          xero_account_code?: string | null
+          xero_item_code?: string | null
+          xero_tax_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollment_invoice_lines_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "enrollment_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enrollment_invoices: {
+        Row: {
+          amount_due_cents: number
+          amount_paid_cents: number | null
+          due_date: string
+          enrollment_id: string
+          first_overdue_at: string | null
+          id: string
+          internal_payment_status: Database["public"]["Enums"]["internal_payment_status"]
+          invoice_number: string
+          issue_date: string
+          last_email_sent_at: string | null
+          last_overdue_at: string | null
+          last_pdf_error: string | null
+          notes: string | null
+          pdf_generated_at: string | null
+          pdf_generation_attempts: number
+          pdf_generation_status: Database["public"]["Enums"]["invoice_pdf_generation_status"]
+          pdf_path: string | null
+          rto_id: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          xero_invoice_id: string | null
+          xero_sync_error: string | null
+          xero_sync_status: string | null
+          xero_synced_at: string | null
+        }
+        Insert: {
+          amount_due_cents: number
+          amount_paid_cents?: number | null
+          due_date: string
+          enrollment_id: string
+          first_overdue_at?: string | null
+          id?: string
+          internal_payment_status?: Database["public"]["Enums"]["internal_payment_status"]
+          invoice_number: string
+          issue_date: string
+          last_email_sent_at?: string | null
+          last_overdue_at?: string | null
+          last_pdf_error?: string | null
+          notes?: string | null
+          pdf_generated_at?: string | null
+          pdf_generation_attempts?: number
+          pdf_generation_status?: Database["public"]["Enums"]["invoice_pdf_generation_status"]
+          pdf_path?: string | null
+          rto_id: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          xero_invoice_id?: string | null
+          xero_sync_error?: string | null
+          xero_sync_status?: string | null
+          xero_synced_at?: string | null
+        }
+        Update: {
+          amount_due_cents?: number
+          amount_paid_cents?: number | null
+          due_date?: string
+          enrollment_id?: string
+          first_overdue_at?: string | null
+          id?: string
+          internal_payment_status?: Database["public"]["Enums"]["internal_payment_status"]
+          invoice_number?: string
+          issue_date?: string
+          last_email_sent_at?: string | null
+          last_overdue_at?: string | null
+          last_pdf_error?: string | null
+          notes?: string | null
+          pdf_generated_at?: string | null
+          pdf_generation_attempts?: number
+          pdf_generation_status?: Database["public"]["Enums"]["invoice_pdf_generation_status"]
+          pdf_path?: string | null
+          rto_id?: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          xero_invoice_id?: string | null
+          xero_sync_error?: string | null
+          xero_sync_status?: string | null
+          xero_synced_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_rto_id_fkey"
+            columns: ["rto_id"]
+            isOneToOne: false
+            referencedRelation: "rtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enrollment_payment_schedule: {
+        Row: {
+          amount_cents: number
+          anchor_date_used: string
+          anchor_type: Database["public"]["Enums"]["payment_plan_anchor_type"]
+          created_at: string
+          due_date: string
+          enrollment_id: string
+          id: string
+          name: string
+          sequence_order: number | null
+          template_id: string
+          template_installment_id: string
+        }
+        Insert: {
+          amount_cents: number
+          anchor_date_used: string
+          anchor_type: Database["public"]["Enums"]["payment_plan_anchor_type"]
+          created_at?: string
+          due_date: string
+          enrollment_id: string
+          id?: string
+          name: string
+          sequence_order?: number | null
+          template_id: string
+          template_installment_id: string
+        }
+        Update: {
+          amount_cents?: number
+          anchor_date_used?: string
+          anchor_type?: Database["public"]["Enums"]["payment_plan_anchor_type"]
+          created_at?: string
+          due_date?: string
+          enrollment_id?: string
+          id?: string
+          name?: string
+          sequence_order?: number | null
+          template_id?: string
+          template_installment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollment_payment_schedule_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_payment_schedule_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plan_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_payment_schedule_template_installment_id_fkey"
+            columns: ["template_installment_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plan_template_installments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enrollment_payment_schedule_lines: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          description: string | null
+          enrollment_id: string
+          enrollment_payment_schedule_id: string
+          id: string
+          is_commissionable: boolean
+          name: string
+          sequence_order: number
+          template_installment_line_id: string | null
+          xero_account_code: string | null
+          xero_item_code: string | null
+          xero_tax_type: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          description?: string | null
+          enrollment_id: string
+          enrollment_payment_schedule_id: string
+          id?: string
+          is_commissionable?: boolean
+          name: string
+          sequence_order?: number
+          template_installment_line_id?: string | null
+          xero_account_code?: string | null
+          xero_item_code?: string | null
+          xero_tax_type?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          description?: string | null
+          enrollment_id?: string
+          enrollment_payment_schedule_id?: string
+          id?: string
+          is_commissionable?: boolean
+          name?: string
+          sequence_order?: number
+          template_installment_line_id?: string | null
+          xero_account_code?: string | null
+          xero_item_code?: string | null
+          xero_tax_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollment_payment_schedule_l_enrollment_payment_schedule__fkey"
+            columns: ["enrollment_payment_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "enrollment_payment_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_payment_schedule_l_template_installment_line_id_fkey"
+            columns: ["template_installment_line_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plan_template_installment_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_payment_schedule_lines_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrollment_subjects: {
         Row: {
           delivery_location_id: string | null
@@ -1861,53 +2287,6 @@ export type Database = {
           },
         ]
       }
-      invoice_lines: {
-        Row: {
-          amount_cents: number
-          description: string | null
-          id: string
-          invoice_id: string
-          is_commissionable: boolean
-          name: string
-          sequence_order: number
-          xero_account_code: string | null
-          xero_item_code: string | null
-          xero_tax_type: string | null
-        }
-        Insert: {
-          amount_cents: number
-          description?: string | null
-          id?: string
-          invoice_id: string
-          is_commissionable?: boolean
-          name: string
-          sequence_order?: number
-          xero_account_code?: string | null
-          xero_item_code?: string | null
-          xero_tax_type?: string | null
-        }
-        Update: {
-          amount_cents?: number
-          description?: string | null
-          id?: string
-          invoice_id?: string
-          is_commissionable?: boolean
-          name?: string
-          sequence_order?: number
-          xero_account_code?: string | null
-          xero_item_code?: string | null
-          xero_tax_type?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invoice_lines_invoice_id_fkey"
-            columns: ["invoice_id"]
-            isOneToOne: false
-            referencedRelation: "invoices"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       invoice_reminders_sent: {
         Row: {
           id: string
@@ -1932,7 +2311,7 @@ export type Database = {
             foreignKeyName: "invoice_reminders_sent_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
-            referencedRelation: "invoices"
+            referencedRelation: "enrollment_invoices"
             referencedColumns: ["id"]
           },
           {
@@ -1940,99 +2319,6 @@ export type Database = {
             columns: ["reminder_id"]
             isOneToOne: false
             referencedRelation: "payment_plan_reminders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      invoices: {
-        Row: {
-          amount_due_cents: number
-          amount_paid_cents: number | null
-          due_date: string
-          enrollment_id: string
-          first_overdue_at: string | null
-          id: string
-          internal_payment_status: Database["public"]["Enums"]["internal_payment_status"]
-          invoice_number: string
-          issue_date: string
-          last_email_sent_at: string | null
-          last_overdue_at: string | null
-          last_pdf_error: string | null
-          notes: string | null
-          pdf_generated_at: string | null
-          pdf_generation_attempts: number
-          pdf_generation_status: Database["public"]["Enums"]["invoice_pdf_generation_status"]
-          pdf_path: string | null
-          rto_id: string
-          status: Database["public"]["Enums"]["invoice_status"]
-          xero_invoice_id: string | null
-          xero_sync_error: string | null
-          xero_sync_status: string | null
-          xero_synced_at: string | null
-        }
-        Insert: {
-          amount_due_cents: number
-          amount_paid_cents?: number | null
-          due_date: string
-          enrollment_id: string
-          first_overdue_at?: string | null
-          id?: string
-          internal_payment_status?: Database["public"]["Enums"]["internal_payment_status"]
-          invoice_number: string
-          issue_date: string
-          last_email_sent_at?: string | null
-          last_overdue_at?: string | null
-          last_pdf_error?: string | null
-          notes?: string | null
-          pdf_generated_at?: string | null
-          pdf_generation_attempts?: number
-          pdf_generation_status?: Database["public"]["Enums"]["invoice_pdf_generation_status"]
-          pdf_path?: string | null
-          rto_id: string
-          status?: Database["public"]["Enums"]["invoice_status"]
-          xero_invoice_id?: string | null
-          xero_sync_error?: string | null
-          xero_sync_status?: string | null
-          xero_synced_at?: string | null
-        }
-        Update: {
-          amount_due_cents?: number
-          amount_paid_cents?: number | null
-          due_date?: string
-          enrollment_id?: string
-          first_overdue_at?: string | null
-          id?: string
-          internal_payment_status?: Database["public"]["Enums"]["internal_payment_status"]
-          invoice_number?: string
-          issue_date?: string
-          last_email_sent_at?: string | null
-          last_overdue_at?: string | null
-          last_pdf_error?: string | null
-          notes?: string | null
-          pdf_generated_at?: string | null
-          pdf_generation_attempts?: number
-          pdf_generation_status?: Database["public"]["Enums"]["invoice_pdf_generation_status"]
-          pdf_path?: string | null
-          rto_id?: string
-          status?: Database["public"]["Enums"]["invoice_status"]
-          xero_invoice_id?: string | null
-          xero_sync_error?: string | null
-          xero_sync_status?: string | null
-          xero_synced_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invoices_enrollment_id_fkey"
-            columns: ["enrollment_id"]
-            isOneToOne: false
-            referencedRelation: "enrollments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_rto_id_fkey"
-            columns: ["rto_id"]
-            isOneToOne: false
-            referencedRelation: "rtos"
             referencedColumns: ["id"]
           },
         ]
@@ -2353,6 +2639,7 @@ export type Database = {
           external_ref: string | null
           id: string
           invoice_id: string
+          invoice_type: Database["public"]["Enums"]["invoice_type_enum"]
           method: string | null
           payment_date: string
           reconciliation_notes: string | null
@@ -2367,6 +2654,7 @@ export type Database = {
           external_ref?: string | null
           id?: string
           invoice_id: string
+          invoice_type?: Database["public"]["Enums"]["invoice_type_enum"]
           method?: string | null
           payment_date: string
           reconciliation_notes?: string | null
@@ -2381,6 +2669,7 @@ export type Database = {
           external_ref?: string | null
           id?: string
           invoice_id?: string
+          invoice_type?: Database["public"]["Enums"]["invoice_type_enum"]
           method?: string | null
           payment_date?: string
           reconciliation_notes?: string | null
@@ -2391,13 +2680,6 @@ export type Database = {
           xero_synced_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "payments_invoice_id_fkey"
-            columns: ["invoice_id"]
-            isOneToOne: false
-            referencedRelation: "invoices"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "payments_rto_id_fkey"
             columns: ["rto_id"]
@@ -4258,6 +4540,14 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: number
       }
+      migrate_application_invoices_to_enrollment: {
+        Args: { p_application_id: string; p_enrollment_id: string }
+        Returns: {
+          enrollment_invoices_created: number
+          payments_migrated: number
+          remaining_invoices_created: number
+        }[]
+      }
       next_student_seq: {
         Args: { p_rto: string; p_year: number }
         Returns: number
@@ -4267,6 +4557,7 @@ export type Database = {
         Args: {
           p_amount_cents: number
           p_invoice_id: string
+          p_invoice_type: Database["public"]["Enums"]["invoice_type_enum"]
           p_notes?: string
           p_payment_date: string
         }
@@ -4303,6 +4594,12 @@ export type Database = {
         Returns: {
           classes_count: number
           subjects_count: number
+        }[]
+      }
+      void_application_invoices: {
+        Args: { p_application_id: string }
+        Returns: {
+          voided_count: number
         }[]
       }
     }
@@ -4360,6 +4657,7 @@ export type Database = {
         | "VOID"
         | "OVERDUE"
         | "SCHEDULED"
+      invoice_type_enum: "APPLICATION" | "ENROLLMENT"
       payment_plan_anchor_type:
         | "COMMENCEMENT_DATE"
         | "OFFER_DATE"
@@ -4577,6 +4875,7 @@ export const Constants = {
       ],
       invoice_pdf_generation_status: ["pending", "succeeded", "failed"],
       invoice_status: ["DRAFT", "SENT", "PAID", "VOID", "OVERDUE", "SCHEDULED"],
+      invoice_type_enum: ["APPLICATION", "ENROLLMENT"],
       payment_plan_anchor_type: [
         "COMMENCEMENT_DATE",
         "OFFER_DATE",

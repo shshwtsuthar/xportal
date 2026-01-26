@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { randomUUID as cryptoRandomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
 
@@ -336,6 +337,192 @@ export async function POST(req: NextRequest) {
       event_type: 'SENT',
       payload: { id: emailResult?.id ?? null },
     });
+
+    // Create application invoices for deposits (if not already created)
+    try {
+      // Check if application invoices already exist
+      const { data: existingInvoices } = await admin
+        .from('application_invoices')
+        .select('id')
+        .eq('application_id', applicationId)
+        .limit(1);
+
+      if (!existingInvoices || existingInvoices.length === 0) {
+        // Get payment schedule for deposits
+        const { data: depositSchedule, error: scheduleErr } = await admin
+          .from('application_payment_schedule')
+          .select(
+            `
+            id,
+            name,
+            amount_cents,
+            due_date,
+            payment_plan_template_installments!inner(
+              is_deposit,
+              payment_plan_templates!inner(
+                issue_date_offset_days
+              )
+            )
+          `
+          )
+          .eq('application_id', applicationId);
+
+        if (!scheduleErr && depositSchedule) {
+          // Filter for deposits only
+          // The query returns payment_plan_template_installments as an array due to the join
+          type ScheduleWithInstallment = {
+            id: string;
+            name: string;
+            amount_cents: number;
+            due_date: string;
+            payment_plan_template_installments: Array<{
+              is_deposit: boolean;
+              payment_plan_templates?: Array<{
+                issue_date_offset_days: number | null;
+              }>;
+            }>;
+          };
+          const deposits = depositSchedule.filter((sched) => {
+            const installments = sched.payment_plan_template_installments;
+            return (
+              Array.isArray(installments) &&
+              installments.some(
+                (inst: { is_deposit?: boolean }) => inst.is_deposit === true
+              )
+            );
+          });
+
+          // Get template for issue_date_offset_days from first deposit
+          const firstDepositInstallments =
+            deposits[0]?.payment_plan_template_installments;
+          const firstInstallment = Array.isArray(firstDepositInstallments)
+            ? firstDepositInstallments[0]
+            : null;
+          const template = firstInstallment?.payment_plan_templates?.[0];
+
+          for (const deposit of deposits) {
+            const installments = deposit.payment_plan_template_installments;
+            const installment = Array.isArray(installments)
+              ? installments[0]
+              : null;
+            if (!installment?.is_deposit) continue;
+
+            // Calculate issue_date
+            const dueDate = new Date(deposit.due_date);
+            let issueDate = new Date(dueDate);
+            const offsetDays = template?.issue_date_offset_days ?? 0;
+            issueDate.setDate(issueDate.getDate() + offsetDays);
+            const today = new Date();
+            // Use today if calculated issue date is in the past
+            if (issueDate < today) {
+              issueDate = today;
+            }
+
+            // Generate invoice number
+            const seed = cryptoRandomUUID();
+            const { data: invoiceNumber, error: invNumErr } = await admin.rpc(
+              'generate_application_invoice_number',
+              {
+                p_created: issueDate.toISOString().slice(0, 10),
+                p_uuid: seed,
+              }
+            );
+
+            if (invNumErr || !invoiceNumber) {
+              console.error(
+                'Failed to generate application invoice number:',
+                invNumErr
+              );
+              continue;
+            }
+
+            // Create application invoice
+            const { data: appInvoice, error: invErr } = await admin
+              .from('application_invoices')
+              .insert({
+                application_id: applicationId,
+                rto_id: application.rto_id,
+                invoice_number: invoiceNumber,
+                status: 'SCHEDULED',
+                issue_date: issueDate.toISOString().slice(0, 10),
+                due_date: deposit.due_date,
+                amount_due_cents: deposit.amount_cents,
+                amount_paid_cents: 0,
+                internal_payment_status: 'UNPAID',
+              })
+              .select('id')
+              .single();
+
+            if (invErr || !appInvoice) {
+              console.error('Failed to create application invoice:', invErr);
+              continue;
+            }
+
+            // Get schedule lines for this deposit
+            const { data: scheduleLines, error: linesErr } = await admin
+              .from('application_payment_schedule_lines')
+              .select('*')
+              .eq('application_payment_schedule_id', deposit.id)
+              .order('sequence_order', { ascending: true });
+
+            if (!linesErr && scheduleLines && scheduleLines.length > 0) {
+              // Create invoice lines
+              type ScheduleLine = {
+                name: string;
+                description: string | null;
+                amount_cents: number;
+                sequence_order: number;
+                is_commissionable: boolean;
+                xero_account_code: string | null;
+                xero_tax_type: string | null;
+                xero_item_code: string | null;
+              };
+              const invoiceLines = scheduleLines.map((line: ScheduleLine) => ({
+                application_invoice_id: appInvoice.id,
+                name: line.name,
+                description: line.description,
+                amount_cents: line.amount_cents,
+                sequence_order: line.sequence_order,
+                is_commissionable: line.is_commissionable,
+                xero_account_code: line.xero_account_code,
+                xero_tax_type: line.xero_tax_type,
+                xero_item_code: line.xero_item_code,
+              }));
+
+              const { error: linesInsertErr } = await admin
+                .from('application_invoice_lines')
+                .insert(invoiceLines);
+
+              if (linesInsertErr) {
+                console.error(
+                  'Failed to create application invoice lines:',
+                  linesInsertErr
+                );
+              }
+            } else {
+              // Create a default line if no schedule lines exist
+              await admin.from('application_invoice_lines').insert({
+                application_invoice_id: appInvoice.id,
+                name: deposit.name || 'Deposit',
+                description: null,
+                amount_cents: deposit.amount_cents,
+                sequence_order: 0,
+                is_commissionable: false,
+                xero_account_code: null,
+                xero_tax_type: null,
+                xero_item_code: null,
+              });
+            }
+          }
+        }
+      }
+    } catch (invoiceErr) {
+      // Log but don't fail the offer send - invoice creation is non-critical
+      console.error(
+        'Error creating application invoices for deposits:',
+        invoiceErr
+      );
+    }
 
     // Update application status to OFFER_SENT
     const { error: statusErr } = await admin

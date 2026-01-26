@@ -25,10 +25,10 @@ export function StudentInvoicesTable({ studentId }: Props) {
 
   const { data: invoices, isLoading } = useQuery({
     queryKey: ['invoices', studentId],
-    queryFn: async (): Promise<Tables<'invoices'>[]> => {
+    queryFn: async (): Promise<Tables<'enrollment_invoices'>[]> => {
       const supabase = createClient();
       let query = supabase
-        .from('invoices')
+        .from('enrollment_invoices')
         .select('*, enrollments!inner(student_id)')
         .order('due_date', { ascending: true });
       if (studentId) {
@@ -37,13 +37,13 @@ export function StudentInvoicesTable({ studentId }: Props) {
       const { data, error } = await query;
       if (error) throw new Error(error.message);
       // strip join alias fields if present
-      return (data as unknown as Tables<'invoices'>[]) ?? [];
+      return (data as unknown as Tables<'enrollment_invoices'>[]) ?? [];
     },
   });
 
   const rows = useMemo(() => invoices ?? [], [invoices]);
 
-  const getStatusBadge = (invoice: Tables<'invoices'>) => {
+  const getStatusBadge = (invoice: Tables<'enrollment_invoices'>) => {
     const status = invoice.status as string;
     const dueDate = new Date(invoice.due_date as string);
     const today = new Date();

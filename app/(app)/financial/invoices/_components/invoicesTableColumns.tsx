@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import type { Tables } from '@/database.types';
 
-export type RowType = Tables<'invoices'> & {
+export type RowType = Tables<'enrollment_invoices'> & {
   enrollments?: {
     student_id: string;
     program_id: string;
