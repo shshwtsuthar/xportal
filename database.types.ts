@@ -4480,6 +4480,10 @@ export type Database = {
         Args: { p_created: string; p_uuid: string }
         Returns: string
       }
+      generate_application_invoice_number: {
+        Args: { p_created: string; p_uuid: string }
+        Returns: string
+      }
       generate_application_student_id: {
         Args: { p_application_id: string }
         Returns: string

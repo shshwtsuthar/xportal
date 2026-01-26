@@ -296,6 +296,34 @@ export function SendOfferComposeDialog({
       toast.error('Email sent but failed to update application status');
     }
 
+    // Create application invoices for deposits
+    try {
+      const invoiceRes = await fetch('/api/create-application-invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId }),
+      });
+
+      if (!invoiceRes.ok) {
+        const errorData = await invoiceRes.json().catch(() => ({}));
+        console.error(
+          'Failed to create application invoices:',
+          errorData.error || invoiceRes.statusText
+        );
+        // Don't show error toast - invoice creation is non-critical
+      } else {
+        const data = await invoiceRes.json();
+        if (data.count > 0) {
+          console.log(
+            `Created ${data.count} application invoice(s) for deposits`
+          );
+        }
+      }
+    } catch (error) {
+      // Log but don't fail - invoice creation is non-critical
+      console.error('Error creating application invoices:', error);
+    }
+
     close();
   };
 
