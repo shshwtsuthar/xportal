@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
-import { Resend } from 'resend';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
+import { createEmailService } from '@/lib/email/service';
+import type { EmailAttachment, EmailRecipient } from '@/lib/email/types';
 
 export const runtime = 'nodejs';
 
@@ -11,14 +12,18 @@ if (!resendApiKey) {
   throw new Error('Missing RESEND_API_KEY');
 }
 
-const resend = new Resend(resendApiKey);
+if (!resendFrom) {
+  throw new Error('Missing RESEND_FROM');
+}
 
-type EmailAttachment = {
-  filename: string;
-  content: string; // base64 encoded
-  contentType: string;
-  size: number;
-};
+// TypeScript: After validation, we know these are strings
+const validatedResendApiKey: string = resendApiKey;
+const validatedResendFrom: string = resendFrom;
+
+const emailService = createEmailService(
+  validatedResendApiKey,
+  validatedResendFrom
+);
 
 type SendEmailPayload = {
   to: string[];
@@ -29,11 +34,6 @@ type SendEmailPayload = {
   replyTo?: string | string[];
   attachments?: EmailAttachment[];
 };
-
-function isValidEmail(email: string): boolean {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,23 +60,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const invalid = uniqueRecipients.filter((r) => !isValidEmail(r));
-    if (invalid.length > 0) {
-      return new Response(
-        JSON.stringify({
-          error: `Invalid recipient(s): ${invalid.join(', ')}`,
-        }),
-        { status: 400 }
-      );
-    }
-
-    if (!resendFrom) {
-      return new Response(
-        JSON.stringify({ error: 'Missing RESEND_FROM configuration' }),
-        { status: 500 }
-      );
-    }
-
     // Build optional lists
     const uniqueCc = Array.from(
       new Set((cc ?? []).map((e) => e.trim()).filter((e) => e.length > 0))
@@ -84,16 +67,6 @@ export async function POST(req: NextRequest) {
     const uniqueBcc = Array.from(
       new Set((bcc ?? []).map((e) => e.trim()).filter((e) => e.length > 0))
     );
-    const invalidCc = uniqueCc.filter((e) => !isValidEmail(e));
-    const invalidBcc = uniqueBcc.filter((e) => !isValidEmail(e));
-    if (invalidCc.length || invalidBcc.length) {
-      return new Response(
-        JSON.stringify({
-          error: `Invalid cc/bcc recipient(s): ${[...invalidCc, ...invalidBcc].join(', ')}`,
-        }),
-        { status: 400 }
-      );
-    }
 
     // Validate attachments
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -187,7 +160,7 @@ export async function POST(req: NextRequest) {
     const insertPayload = {
       rto_id: rtoIdRes as string,
       created_by: profileRow?.id ?? null,
-      from_email: resendFrom,
+      from_email: validatedResendFrom,
       from_name: null,
       reply_to: Array.isArray(replyTo)
         ? replyTo
@@ -291,67 +264,104 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Prepare attachments for Resend API
-    const resendAttachments =
-      validAttachments.length > 0
-        ? validAttachments.map((att) => ({
-            filename: att.filename,
-            content: Buffer.from(att.content, 'base64'),
-          }))
-        : undefined;
+    // Convert recipients to EmailRecipient format
+    const emailRecipients: EmailRecipient[] = uniqueRecipients.map((email) => ({
+      email,
+    }));
+    const ccRecipients: EmailRecipient[] = uniqueCc.map((email) => ({
+      email,
+    }));
+    const bccRecipients: EmailRecipient[] = uniqueBcc.map((email) => ({
+      email,
+    }));
 
-    // Send via Resend
-    const { data, error } = await resend.emails.send({
-      from: resendFrom,
-      to: uniqueRecipients,
+    // Send via smart email service (automatically chooses best method)
+    const sendResult = await emailService.send({
+      from: validatedResendFrom,
+      to: emailRecipients,
       subject,
       html,
+      text: textBody || undefined,
+      cc: ccRecipients.length > 0 ? ccRecipients : undefined,
+      bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
       replyTo: replyTo as string | string[] | undefined,
-      cc: uniqueCc.length ? uniqueCc : undefined,
-      bcc: uniqueBcc.length ? uniqueBcc : undefined,
-      attachments: resendAttachments,
+      attachments: validAttachments.length > 0 ? validAttachments : undefined,
     });
 
-    if (error) {
+    if (!sendResult.success) {
+      const errorMessage =
+        sendResult.failed && sendResult.failed.length > 0
+          ? `Failed to send to ${sendResult.failed.length} recipient(s): ${sendResult.failed[0].error}`
+          : 'Failed to send email';
+
       await supabase
         .from('email_messages')
         .update({
           status: 'FAILED',
           status_updated_at: new Date().toISOString(),
           failed_at: new Date().toISOString(),
-          error_message: error.message,
+          error_message: errorMessage,
+          metadata: {
+            source: 'api/emails/send',
+            cc: uniqueCc,
+            bcc: uniqueBcc,
+            failed: sendResult.failed,
+          },
         })
         .eq('id', emailMessageId);
+
       await supabase.from('email_message_status_events').insert({
         email_message_id: emailMessageId,
         event_type: 'FAILED',
-        payload: { error: error.message },
+        payload: {
+          error: errorMessage,
+          failed: sendResult.failed,
+        },
       });
-      return new Response(
-        JSON.stringify({ error: `Failed to send email: ${error.message}` }),
-        { status: 500 }
-      );
+
+      return new Response(JSON.stringify({ error: errorMessage }), {
+        status: 500,
+      });
     }
 
     // Update to SENT and log event
+    // Store first resend ID in main record, all IDs in metadata
+    const firstResendId = sendResult.resendIds[0] ?? null;
+
     await supabase
       .from('email_messages')
       .update({
         status: 'SENT',
         status_updated_at: new Date().toISOString(),
         sent_at: new Date().toISOString(),
-        resend_message_id: data?.id ?? null,
+        resend_message_id: firstResendId,
+        metadata: {
+          source: 'api/emails/send',
+          cc: uniqueCc,
+          bcc: uniqueBcc,
+          resendIds: sendResult.resendIds,
+          totalRecipients: uniqueRecipients.length,
+        },
       })
       .eq('id', emailMessageId);
 
     await supabase.from('email_message_status_events').insert({
       email_message_id: emailMessageId,
       event_type: 'SENT',
-      payload: { id: data?.id ?? null },
+      payload: {
+        id: firstResendId,
+        allResendIds: sendResult.resendIds,
+        totalSent: sendResult.resendIds.length,
+      },
     });
 
     return new Response(
-      JSON.stringify({ id: emailMessageId, resendId: data?.id ?? null }),
+      JSON.stringify({
+        id: emailMessageId,
+        resendId: firstResendId,
+        resendIds: sendResult.resendIds,
+        totalSent: sendResult.resendIds.length,
+      }),
       {
         headers: { 'Content-Type': 'application/json' },
         status: 200,
