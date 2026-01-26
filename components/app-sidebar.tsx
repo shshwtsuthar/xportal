@@ -112,10 +112,9 @@ const NAV: NavItem[] = [
   },
   {
     title: 'RTO',
-    url: '/rto',
+    url: '/rto/financial-information',
     icon: Building2,
     items: [
-      { title: 'RTO Information', url: '/rto' },
       { title: 'Financial Information', url: '/rto/financial-information' },
       {
         title: 'Locations',
