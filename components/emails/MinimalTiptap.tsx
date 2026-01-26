@@ -47,7 +47,7 @@ export function MinimalTiptap({
     editorProps: {
       attributes: {
         class:
-          'prose prose-sm dark:prose-invert max-w-none focus:outline-hidden min-h-[280px] p-3',
+          'prose prose-sm dark:prose-invert max-w-none focus:outline-hidden min-h-[280px] max-h-[500px] overflow-y-auto p-3',
         'aria-label': 'Email body editor',
       },
     },
@@ -67,8 +67,10 @@ export function MinimalTiptap({
   }, [editor, content]);
 
   return (
-    <div className={cn('flex flex-col rounded-md border', className)}>
-      <div className="flex flex-wrap items-center gap-1 p-2">
+    <div
+      className={cn('bg-background flex flex-col rounded-md border', className)}
+    >
+      <div className="flex flex-wrap items-center gap-1 p-2 sm:gap-1.5">
         <Toggle
           size="sm"
           pressed={!!editor?.isActive('bold')}
@@ -193,13 +195,13 @@ export function MinimalTiptap({
         </Button>
       </div>
       <Separator />
-      <div className="relative">
+      <div className="relative flex-1 overflow-hidden">
         {!editor?.getText().length && (
-          <span className="text-muted-foreground pointer-events-none absolute top-3 left-3 text-sm">
+          <span className="text-muted-foreground pointer-events-none absolute top-3 left-3 z-10 text-sm">
             {placeholder}
           </span>
         )}
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} className="h-full" />
       </div>
     </div>
   );
