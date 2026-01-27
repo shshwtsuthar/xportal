@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DepositsDataTable,
   type DepositsDataTableRef,
@@ -12,6 +14,8 @@ import { DepositsFilter } from './_components/DepositsFilter';
 import { DepositStats } from './_components/DepositStats';
 import { useDepositsFilters } from '@/src/hooks/useDepositsFilters';
 import { useGetApplicationInvoices } from '@/src/hooks/useGetApplicationInvoices';
+import type { ExportFormat } from '@/components/data-table';
+import { Download } from 'lucide-react';
 
 export default function DepositsPage() {
   const tableRef = useRef<DepositsDataTableRef>(null);
@@ -22,15 +26,17 @@ export default function DepositsPage() {
   const [quickStatus, setQuickStatus] = useState<
     'ALL' | 'SCHEDULED' | 'VOID' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID_INTERNAL'
   >('ALL');
+
   const effectiveFilters = useMemo(() => {
     if (quickStatus === 'ALL') return filters;
+
     if (quickStatus === 'SCHEDULED' || quickStatus === 'VOID') {
       return {
         ...filters,
         statuses: [quickStatus],
       };
     }
-    // For payment statuses
+
     return {
       ...filters,
       internalPaymentStatuses: [
@@ -39,11 +45,18 @@ export default function DepositsPage() {
     };
   }, [filters, quickStatus]);
 
-  // Fetch all deposits for stats
   const { data: allDeposits, isLoading } = useGetApplicationInvoices();
 
+  const handleExport = async (format: ExportFormat) => {
+    if (!tableRef.current) {
+      return;
+    }
+
+    await tableRef.current.exportTable(format);
+  };
+
   const handleStatusClick = (
-    s:
+    status:
       | 'ALL'
       | 'SCHEDULED'
       | 'VOID'
@@ -51,22 +64,35 @@ export default function DepositsPage() {
       | 'PARTIALLY_PAID'
       | 'PAID_INTERNAL'
   ) => {
-    setQuickStatus(s);
+    setQuickStatus(status);
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Deposits</h1>
-        <p className="text-muted-foreground text-sm">
-          View and manage application deposit invoices and payments
-        </p>
+    <div className="mx-auto w-full max-w-full p-4 md:p-6 lg:p-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Deposits</h1>
+          <p className="text-muted-foreground text-sm">
+            View and manage application deposit invoices and payments
+          </p>
+        </div>
       </div>
 
-      {/* Deposit Statistics Cards */}
       <div className="mb-6">
         {isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading statistics...</p>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Card key={index}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         ) : (
           <DepositStats deposits={allDeposits ?? []} />
         )}
@@ -74,8 +100,11 @@ export default function DepositsPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <CardTitle className="text-xl font-semibold tracking-tight">
+            All Deposits
+          </CardTitle>
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <ButtonGroup className="flex-wrap">
               <Button
                 variant={quickStatus === 'ALL' ? 'default' : 'outline'}
                 size="sm"
@@ -122,7 +151,7 @@ export default function DepositsPage() {
               >
                 Paid
               </Button>
-            </div>
+            </ButtonGroup>
             <div className="flex items-center gap-2">
               <DepositsFilter
                 filters={filters}
@@ -131,6 +160,14 @@ export default function DepositsPage() {
                 activeFilterCount={activeFilterCount}
               />
               <DepositsColumnsMenu />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport('csv')}
+                aria-label="Export deposits"
+              >
+                <Download className="mr-2 h-4 w-4" /> Export
+              </Button>
             </div>
           </div>
         </CardHeader>
