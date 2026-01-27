@@ -12,6 +12,372 @@ const corsHeaders = {
 
 type Db = Database;
 
+// Type for the approval request body
+interface ApprovalRequest {
+  applicationId: string;
+  newGroupId?: string | null;
+}
+
+// Type for the atomic approval result
+interface ApprovalResult {
+  student_id: string;
+  enrollment_id: string;
+  student_email: string;
+  student_first_name: string;
+  student_last_name: string;
+  student_preferred_name: string | null;
+  student_id_display: string;
+  rto_id: string;
+  was_new_student: boolean;
+  was_new_enrollment: boolean;
+}
+
+// ==================== Helper Functions (DRY Principle) ====================
+
+/**
+ * Creates a standardized error response
+ */
+function errorResponse(message: string, status: number, details?: string) {
+  return new Response(JSON.stringify({ error: message, details }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status,
+  });
+}
+
+/**
+ * Creates a standardized success response
+ */
+function successResponse(data: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(data), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status,
+  });
+}
+
+/**
+ * Recursively lists all files in a storage bucket folder
+ */
+async function listFilesRecursively(
+  storage: ReturnType<typeof createClient>['storage'],
+  bucket: string,
+  prefix: string,
+  files: string[] = []
+): Promise<string[]> {
+  const { data, error } = await storage.from(bucket).list(prefix, {
+    limit: 1000,
+    sortBy: { column: 'name', order: 'asc' },
+  });
+
+  if (error) {
+    console.error(`Error listing files in ${prefix}:`, error);
+    return files;
+  }
+
+  if (!data || data.length === 0) {
+    return files;
+  }
+
+  for (const item of data) {
+    const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
+    if (item.id) {
+      // It's a file
+      files.push(fullPath);
+    } else {
+      // It's a folder, recurse into it
+      await listFilesRecursively(storage, bucket, fullPath, files);
+    }
+  }
+
+  return files;
+}
+
+/**
+ * Copies files from application bucket to student bucket
+ * Returns array of warnings (non-blocking operation)
+ */
+async function copyApplicationFilesToStudent(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  service: any,
+  applicationId: string,
+  studentId: string
+): Promise<string[]> {
+  const warnings: string[] = [];
+
+  try {
+    const applicationFiles = await listFilesRecursively(
+      service.storage,
+      'applications',
+      applicationId
+    );
+
+    for (const filePath of applicationFiles) {
+      try {
+        // Download from applications bucket
+        const { data: fileData, error: downloadErr } = await service.storage
+          .from('applications')
+          .download(filePath);
+
+        if (downloadErr || !fileData) {
+          warnings.push(
+            `Failed to download ${filePath}: ${downloadErr?.message || 'Unknown error'}`
+          );
+          continue;
+        }
+
+        // Calculate relative path (remove applicationId prefix)
+        const relativePath = filePath.startsWith(`${applicationId}/`)
+          ? filePath.slice(`${applicationId}/`.length)
+          : filePath;
+
+        // Upload to students bucket
+        const targetPath = `${studentId}/${relativePath}`;
+        const contentType = fileData.type || undefined;
+        const { error: uploadErr } = await service.storage
+          .from('students')
+          .upload(targetPath, fileData, {
+            contentType,
+            upsert: false,
+          });
+
+        if (uploadErr) {
+          warnings.push(`Failed to upload ${targetPath}: ${uploadErr.message}`);
+        }
+      } catch (fileErr) {
+        warnings.push(
+          `Error copying ${filePath}: ${fileErr instanceof Error ? fileErr.message : String(fileErr)}`
+        );
+      }
+    }
+  } catch (copyErr) {
+    console.error('Error during file copy:', copyErr);
+    warnings.push(
+      `File copy operation failed: ${copyErr instanceof Error ? copyErr.message : String(copyErr)}`
+    );
+  }
+
+  return warnings;
+}
+
+/**
+ * Creates Supabase auth user for the student
+ * Returns { userId, inviteLink, warnings }
+ */
+async function createStudentAuthUser(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  service: any,
+  student: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    preferred_name: string | null;
+  },
+  rtoId: string
+): Promise<{
+  userId: string | null;
+  inviteLink: string | null;
+  warnings: string[];
+}> {
+  const warnings: string[] = [];
+
+  if (!student.email) {
+    console.warn(`Student ${student.id} has no email, skipping user creation`);
+    warnings.push('Student has no email - auth user not created');
+    return { userId: null, inviteLink: null, warnings };
+  }
+
+  try {
+    const siteUrl =
+      Deno.env.get('SITE_URL') ||
+      Deno.env.get('NEXT_PUBLIC_SITE_URL') ||
+      'http://127.0.0.1:3000';
+
+    const { data: linkData, error: linkErr } =
+      await service.auth.admin.generateLink({
+        type: 'invite',
+        email: student.email,
+        options: {
+          data: {
+            first_name: student.first_name,
+            last_name: student.last_name,
+            rto_id: rtoId,
+            role: 'STUDENT',
+            student_id: student.id,
+          },
+          redirectTo: `${siteUrl}/auth/callback?next=/auth/update-password`,
+        },
+      });
+
+    if (linkErr || !linkData?.properties?.action_link) {
+      console.error('Failed to generate invite link:', linkErr);
+      warnings.push(
+        `Failed to generate invite link: ${linkErr?.message || 'Unknown error'}`
+      );
+      return { userId: null, inviteLink: null, warnings };
+    }
+
+    const authUserId = linkData.user?.id;
+    if (!authUserId) {
+      warnings.push('No user ID returned from auth link generation');
+      return {
+        userId: null,
+        inviteLink: linkData.properties.action_link,
+        warnings,
+      };
+    }
+
+    // Update user metadata and app_metadata
+    await service.auth.admin.updateUserById(authUserId, {
+      user_metadata: {
+        first_name: student.first_name,
+        last_name: student.last_name,
+        preferred_name: student.preferred_name,
+      },
+      app_metadata: {
+        rto_id: rtoId,
+        role: 'STUDENT',
+        student_id: student.id,
+      },
+    });
+
+    // Link user_id to student record
+    const { error: updateErr } = await service
+      .from('students')
+      .update({ user_id: authUserId })
+      .eq('id', student.id);
+
+    if (updateErr) {
+      console.error('Failed to link user_id to student:', updateErr);
+      warnings.push(`Failed to link user account: ${updateErr.message}`);
+    }
+
+    return {
+      userId: authUserId,
+      inviteLink: linkData.properties.action_link,
+      warnings,
+    };
+  } catch (userErr) {
+    console.error('Error creating user:', userErr);
+    warnings.push(
+      `User creation error: ${userErr instanceof Error ? userErr.message : String(userErr)}`
+    );
+    return { userId: null, inviteLink: null, warnings };
+  }
+}
+
+/**
+ * Sends acceptance email to student via Resend
+ * Returns array of warnings (non-blocking operation)
+ */
+async function sendAcceptanceEmail(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  student: {
+    id: string;
+    email: string;
+    first_name: string;
+    preferred_name: string | null;
+    student_id_display: string;
+  },
+  rtoId: string,
+  inviteLink: string
+): Promise<string[]> {
+  const warnings: string[] = [];
+
+  if (!student.email) {
+    warnings.push('Student has no email - acceptance email not sent');
+    return warnings;
+  }
+
+  try {
+    // Fetch RTO name
+    const { data: rtoInfo } = await supabase
+      .from('rtos')
+      .select('name')
+      .eq('id', rtoId)
+      .single();
+
+    const rtoName = rtoInfo?.name || 'your training organisation';
+    const studentName =
+      student.preferred_name || student.first_name || 'Student';
+
+    const resendKey = Deno.env.get('RESEND_API_KEY');
+    const resendFrom = Deno.env.get('RESEND_FROM');
+
+    if (!resendKey) {
+      console.warn('RESEND_API_KEY not found - skipping acceptance email');
+      warnings.push('Acceptance email not sent (Resend not configured)');
+      return warnings;
+    }
+
+    const emailRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: resendFrom ?? 'no-reply@example.com',
+        to: student.email,
+        subject: `Welcome to ${rtoName} - Your Application Has Been Approved`,
+        html: `
+          <p>Dear ${studentName},</p>
+          <p>Congratulations! Your application has been approved and you have been accepted to ${rtoName}.</p>
+          <p>A new user account has been created for you. Please click the button below to set your password and access your student portal.</p>
+          <p><a href="${inviteLink}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;text-decoration:none;border-radius:6px">Set Password & Access Portal</a></p>
+          <p>If the button doesn't work, copy and paste this link into your browser:</p>
+          <p><a href="${inviteLink}">${inviteLink}</a></p>
+          <p>Your Student ID: <strong>${student.student_id_display}</strong></p>
+          <p>Once you've set your password, you'll be able to:</p>
+          <ul>
+            <li>View your course progression</li>
+            <li>Access your assignments</li>
+            <li>View your finance and attendance records</li>
+          </ul>
+          <p>If you have any questions, please contact ${rtoName}.</p>
+          <p>— ${rtoName} Team</p>
+        `,
+      }),
+    });
+
+    if (!emailRes.ok) {
+      const errorText = await emailRes.text();
+      console.warn(`Email send failed for student ${student.id}:`, errorText);
+      warnings.push(`Failed to send acceptance email: ${errorText}`);
+    }
+  } catch (emailErr) {
+    console.error('Error sending email:', emailErr);
+    warnings.push(
+      `Email send error: ${emailErr instanceof Error ? emailErr.message : String(emailErr)}`
+    );
+  }
+
+  return warnings;
+}
+
+/**
+ * Syncs student to Xero as a contact (non-blocking, fire-and-forget)
+ */
+function syncStudentToXero(studentId: string): void {
+  try {
+    const xeroSyncUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/xero-sync-contact`;
+    fetch(xeroSyncUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+      },
+      body: JSON.stringify({ studentId }),
+    }).catch((err) => {
+      console.warn('Xero contact sync failed (non-blocking):', err);
+    });
+  } catch (xeroErr) {
+    console.warn('Xero contact sync error (non-blocking):', xeroErr);
+  }
+}
+
+// ==================== Main Request Handler ====================
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -27,1051 +393,132 @@ serve(async (req: Request) => {
     }
   );
 
-  // Service role client for storage operations that bypass RLS
+  // Service role client for privileged operations
   const service = createClient<Db>(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SERVICE_ROLE_KEY') ?? ''
   );
 
-  const { applicationId, newGroupId } = await req.json();
-  if (!applicationId) {
-    return new Response(
-      JSON.stringify({ error: 'applicationId is required' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    );
-  }
-
-  // Fetch application with needed fields
-  const { data: app, error: appErr } = await supabase
-    .from('applications')
-    .select('*')
-    .eq('id', applicationId)
-    .single();
-  if (appErr || !app) {
-    return new Response(JSON.stringify({ error: 'Application not found' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 404,
-    });
-  }
-
-  if (app.status === 'ARCHIVED') {
-    return new Response(
-      JSON.stringify({
-        error: 'Archived applications cannot be approved or edited.',
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 409,
-      }
-    );
-  }
-
-  if (app.status !== 'ACCEPTED') {
-    return new Response(
-      JSON.stringify({
-        error: `Application must be ACCEPTED to approve. Current: ${app.status}`,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 409,
-      }
-    );
-  }
-
-  // Payment plan template and anchor date are required
-  if (!app.payment_plan_template_id) {
-    return new Response(
-      JSON.stringify({
-        error: 'payment_plan_template_id is required',
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    );
-  }
-
-  if (!app.payment_anchor_date) {
-    return new Response(
-      JSON.stringify({
-        error: 'payment_anchor_date is required',
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    );
-  }
-
-  // If newGroupId is provided, update the application's group_id
-  // This handles the race condition where the original group became full
-  if (newGroupId) {
-    const { error: updateErr } = await supabase
-      .from('applications')
-      .update({ group_id: newGroupId })
-      .eq('id', applicationId);
-
-    if (updateErr) {
-      return new Response(
-        JSON.stringify({
-          error: `Failed to update group: ${updateErr.message}`,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
-
-    // Update the app object with the new group_id for subsequent operations
-    app.group_id = newGroupId;
-  }
-
-  const { data: template, error: tplErr } = await supabase
-    .from('payment_plan_templates')
-    .select('id, issue_date_offset_days')
-    .eq('id', app.payment_plan_template_id)
-    .single();
-  if (tplErr || !template) {
-    return new Response(
-      JSON.stringify({ error: 'Payment plan template not found' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    );
-  }
-
-  // Issue date offset is now handled by the migration function
-
-  // Use the required payment anchor date
-  const anchorDate = app.payment_anchor_date as string;
-
-  if (!anchorDate) {
-    return new Response(
-      JSON.stringify({
-        error: 'Anchor date cannot be determined for template',
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    );
-  }
-
-  // Begin approval transaction using PostgREST sequential operations
-  // 1) Create student (or fetch existing if already created - idempotent)
-  // Note: student_id_display will be auto-generated by trigger if empty/null
-  // TypeScript types mark it as required, but the database trigger handles empty strings
-
-  // Check if student already exists for this application (idempotency)
-  let student: Db['public']['Tables']['students']['Row'] | null = null;
-  const { data: existingStudent, error: checkErr } = await supabase
-    .from('students')
-    .select('*')
-    .eq('application_id', app.id)
-    .maybeSingle();
-
-  if (checkErr) {
-    console.error('Error checking for existing student:', checkErr);
-    return new Response(
-      JSON.stringify({
-        error: 'Failed to check for existing student',
-        details: checkErr.message,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
-  }
-
-  if (existingStudent) {
-    // Student already exists - use it (idempotent behavior)
-    console.log(
-      `Student already exists for application ${app.id}, using existing student ${existingStudent.id}`
-    );
-    student = existingStudent;
-  } else {
-    // Create new student
-    const studentInsert = {
-      rto_id: app.rto_id,
-      application_id: app.id,
-      salutation: app.salutation,
-      first_name: app.first_name!,
-      middle_name: app.middle_name,
-      last_name: app.last_name!,
-      preferred_name: app.preferred_name,
-      email: app.email!,
-      date_of_birth: app.date_of_birth!,
-      work_phone: app.work_phone,
-      mobile_phone: app.mobile_phone,
-      alternative_email: app.alternative_email,
-      status: 'ACTIVE',
-      // Copy student_id_display from application if it exists (generated at submission)
-      // If not provided, trigger will generate it automatically
-      student_id_display: app.student_id_display || '',
-    } as Db['public']['Tables']['students']['Insert'];
-
-    const { data: newStudent, error: studentErr } = await supabase
-      .from('students')
-      .insert(studentInsert)
-      .select('*')
-      .single();
-
-    if (studentErr || !newStudent) {
-      console.error('Student creation error:', studentErr);
-      return new Response(
-        JSON.stringify({
-          error: 'Failed to create student',
-          details: studentErr?.message || 'Unknown error',
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
-    student = newStudent;
-  }
-
-  // 1b) Copy files from applications bucket to students bucket
-  const fileCopyWarnings: string[] = [];
   try {
-    // Recursively list all files in the application folder
-    const listFilesRecursively = async (
-      bucket: string,
-      prefix: string,
-      files: string[] = []
-    ): Promise<string[]> => {
-      const { data, error } = await service.storage.from(bucket).list(prefix, {
-        limit: 1000,
-        sortBy: { column: 'name', order: 'asc' },
-      });
+    const { applicationId, newGroupId } = (await req.json()) as ApprovalRequest;
 
-      if (error) {
-        console.error(`Error listing files in ${prefix}:`, error);
-        return files;
-      }
-
-      if (!data || data.length === 0) {
-        return files;
-      }
-
-      for (const item of data) {
-        const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
-        // Files have an id property, folders don't
-        if (item.id) {
-          // It's a file
-          files.push(fullPath);
-        } else {
-          // It's a folder, recurse into it
-          await listFilesRecursively(bucket, fullPath, files);
-        }
-      }
-
-      return files;
-    };
-
-    const applicationFiles = await listFilesRecursively('applications', app.id);
-
-    // Copy each file to students bucket
-    for (const filePath of applicationFiles) {
-      try {
-        // Download from applications bucket
-        const { data: fileData, error: downloadErr } = await service.storage
-          .from('applications')
-          .download(filePath);
-
-        if (downloadErr || !fileData) {
-          fileCopyWarnings.push(
-            `Failed to download ${filePath}: ${downloadErr?.message || 'Unknown error'}`
-          );
-          continue;
-        }
-
-        // Calculate relative path (remove applicationId prefix)
-        const relativePath = filePath.startsWith(`${app.id}/`)
-          ? filePath.slice(`${app.id}/`.length)
-          : filePath;
-
-        // Upload to students bucket
-        const targetPath = `${student.id}/${relativePath}`;
-        // Get content type from file extension or metadata if available
-        const contentType = fileData.type || undefined;
-        const { error: uploadErr } = await service.storage
-          .from('students')
-          .upload(targetPath, fileData, {
-            contentType: contentType,
-            upsert: false,
-          });
-
-        if (uploadErr) {
-          fileCopyWarnings.push(
-            `Failed to upload ${targetPath}: ${uploadErr.message}`
-          );
-        }
-      } catch (fileErr) {
-        fileCopyWarnings.push(
-          `Error copying ${filePath}: ${fileErr instanceof Error ? fileErr.message : String(fileErr)}`
-        );
-      }
-    }
-  } catch (copyErr) {
-    // Log error but don't fail approval
-    console.error('Error during file copy:', copyErr);
-    fileCopyWarnings.push(
-      `File copy operation failed: ${copyErr instanceof Error ? copyErr.message : String(copyErr)}`
-    );
-  }
-
-  // 2) Create enrollment and copy template id (idempotent check)
-  if (!app.program_id) {
-    return new Response(
-      JSON.stringify({ error: 'Application program_id is required' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    );
-  }
-
-  // Check if enrollment already exists for this student and program
-  let enrollment: Db['public']['Tables']['enrollments']['Row'] | null = null;
-  const { data: existingEnrollment, error: checkEnrErr } = await supabase
-    .from('enrollments')
-    .select('*')
-    .eq('student_id', student.id)
-    .eq('program_id', app.program_id)
-    .maybeSingle();
-
-  if (checkEnrErr) {
-    return new Response(
-      JSON.stringify({
-        error: 'Failed to check for existing enrollment',
-        details: checkEnrErr.message,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
-  }
-
-  if (existingEnrollment) {
-    // Enrollment already exists - use it (idempotent behavior)
-    console.log(
-      `Enrollment already exists for student ${student.id} and program ${app.program_id}, using existing enrollment ${existingEnrollment.id}`
-    );
-    enrollment = existingEnrollment;
-  } else {
-    // Create new enrollment
-    const { data: newEnrollment, error: enrErr } = await supabase
-      .from('enrollments')
-      .insert({
-        student_id: student.id,
-        program_id: app.program_id,
-        rto_id: app.rto_id,
-        status: 'ACTIVE',
-        commencement_date: anchorDate,
-        payment_plan_template_id: app.payment_plan_template_id,
-      })
-      .select('*')
-      .single();
-    if (enrErr || !newEnrollment) {
-      return new Response(
-        JSON.stringify({
-          error: 'Failed to create enrollment',
-          details: enrErr?.message || 'Unknown error',
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
-    enrollment = newEnrollment;
-  }
-
-  // 3) Migrate application invoices and payment schedule to enrollment
-  //    Check if invoices already exist for this enrollment (idempotency)
-  let existingInvoices: Db['public']['Tables']['enrollment_invoices']['Row'][] =
-    [];
-  const { data: existingInvoicesData, error: checkInvErr } = await supabase
-    .from('enrollment_invoices')
-    .select('*')
-    .eq('enrollment_id', enrollment.id);
-
-  if (checkInvErr) {
-    return new Response(
-      JSON.stringify({
-        error: 'Failed to check for existing invoices',
-        details: checkInvErr.message,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
-  }
-
-  if (existingInvoicesData && existingInvoicesData.length > 0) {
-    // Invoices already exist - use them (idempotent behavior)
-    console.log(
-      `Invoices already exist for enrollment ${enrollment.id}, using ${existingInvoicesData.length} existing invoices`
-    );
-    existingInvoices = existingInvoicesData;
-  } else {
-    // Call migration function to copy application data to enrollment
-    const { data: migrationResult, error: migrationErr } = await supabase.rpc(
-      'migrate_application_invoices_to_enrollment',
-      {
-        p_application_id: app.id,
-        p_enrollment_id: enrollment.id,
-      }
-    );
-
-    if (migrationErr) {
-      return new Response(
-        JSON.stringify({
-          error: 'Failed to migrate application invoices to enrollment',
-          details: migrationErr.message,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
+    if (!applicationId) {
+      return errorResponse('applicationId is required', 400);
     }
 
-    console.log(
-      `Migration completed: ${migrationResult?.[0]?.enrollment_invoices_created || 0} invoices migrated, ${migrationResult?.[0]?.payments_migrated || 0} payments migrated, ${migrationResult?.[0]?.remaining_invoices_created || 0} remaining invoices created`
-    );
+    console.log(`Starting approval process for application ${applicationId}`);
 
-    // Fetch the newly created invoices
-    const { data: newInvoices, error: fetchErr } = await supabase
-      .from('enrollment_invoices')
-      .select('*')
-      .eq('enrollment_id', enrollment.id);
-
-    if (fetchErr) {
-      return new Response(
-        JSON.stringify({
-          error: 'Failed to fetch migrated invoices',
-          details: fetchErr.message,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
-
-    existingInvoices = newInvoices || [];
-  }
-
-  // Invoice migration is handled by migrate_application_invoices_to_enrollment function
-  // which copies application_invoices, creates remaining invoices, and handles all line items
-  // Note: existingInvoices is kept for potential future use but not currently needed
-
-  // --- Extended copy: student domain normalization ---
-  // 3b) Addresses (street + postal)
-  {
-    const street = {
-      student_id: student.id,
-      rto_id: app.rto_id,
-      type: 'street',
-      building_name: app.street_building_name,
-      unit_details: app.street_unit_details,
-      number_name: app.street_number_name,
-      po_box: app.street_po_box,
-      suburb: app.suburb,
-      state: app.state,
-      postcode: app.postcode,
-      country: app.street_country,
-      is_primary: true,
-    } as const;
-    const postal = app.postal_is_same_as_street
-      ? null
-      : {
-          student_id: student.id,
-          rto_id: app.rto_id,
-          type: 'postal',
-          building_name: app.postal_building_name,
-          unit_details: app.postal_unit_details,
-          number_name: app.postal_number_name,
-          po_box: app.postal_po_box,
-          suburb: app.postal_suburb,
-          state: app.postal_state,
-          postcode: app.postal_postcode,
-          country: app.postal_country,
-          is_primary: false,
-        };
-    const addrRows = [street, postal].filter(
-      Boolean
-    ) as Db['public']['Tables']['student_addresses']['Insert'][];
-    if (addrRows.length > 0) {
-      const { error: addrErr } = await supabase
-        .from('student_addresses')
-        .insert(addrRows);
-      if (addrErr) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to copy student addresses' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-    }
-  }
-
-  // 3c) AVETMISS snapshot
-  {
-    const { error: avErr } = await supabase.from('student_avetmiss').insert({
-      student_id: student.id,
-      rto_id: app.rto_id,
-      gender: app.gender,
-      highest_school_level_id: app.highest_school_level_id,
-      year_highest_school_level_completed:
-        app.year_highest_school_level_completed,
-      indigenous_status_id: app.indigenous_status_id,
-      labour_force_status_id: app.labour_force_status_id,
-      country_of_birth_id: app.country_of_birth_id,
-      language_code: app.language_code,
-      citizenship_status_code: app.citizenship_status_code,
-      at_school_flag: app.at_school_flag,
-      disability_flag: app.disability_flag || null,
-      prior_education_flag: app.prior_education_flag || null,
-      survey_contact_status: app.survey_contact_status || 'A',
-      vsn: app.vsn || null,
-      usi: app.usi || null,
+    // ==================== Phase 1: Atomic Database Operations ====================
+    // All database operations are now atomic - they either all succeed or all fail
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { data: approvalResultRaw, error: approvalErr } = await (
+      supabase as any
+    ).rpc('approve_application_atomic', {
+      p_application_id: applicationId,
+      p_new_group_id: newGroupId || null,
     });
-    if (avErr) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to copy AVETMISS details' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
-  }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  // 3c1) Copy disabilities from application to student
-  {
-    const { data: appDisabilities, error: fetchErr } = await supabase
-      .from('application_disabilities')
-      .select('disability_type_id')
-      .eq('application_id', app.id);
-
-    if (fetchErr) {
-      console.error('Error fetching application disabilities:', fetchErr);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch application disabilities' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
+    if (approvalErr) {
+      console.error('Atomic approval failed:', approvalErr);
+      return errorResponse(
+        'Failed to approve application',
+        500,
+        approvalErr.message
       );
     }
 
-    if (appDisabilities && appDisabilities.length > 0) {
-      const studentDisabilities = appDisabilities.map((d) => ({
-        student_id: student.id,
-        rto_id: app.rto_id,
-        disability_type_id: d.disability_type_id,
-      }));
-
-      const { error: disErr } = await supabase
-        .from('student_disabilities')
-        .insert(studentDisabilities);
-      if (disErr) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to copy disabilities' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-    }
-  }
-
-  // 3c2) Copy prior education from application to student
-  {
-    const { data: appPriorEd, error: fetchErr } = await supabase
-      .from('application_prior_education')
-      .select('prior_achievement_id, recognition_type')
-      .eq('application_id', app.id);
-
-    if (fetchErr) {
-      console.error('Error fetching application prior education:', fetchErr);
-      return new Response(
-        JSON.stringify({
-          error: 'Failed to fetch application prior education',
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
+    if (!approvalResultRaw) {
+      return errorResponse('Approval returned no result', 500);
     }
 
-    if (appPriorEd && appPriorEd.length > 0) {
-      const studentPriorEd = appPriorEd.map((e) => ({
-        student_id: student.id,
-        rto_id: app.rto_id,
-        prior_achievement_id: e.prior_achievement_id,
-        recognition_type: e.recognition_type || null,
-      }));
+    // Cast to proper type
+    const approvalResult = approvalResultRaw as ApprovalResult;
+    console.log('Atomic approval completed:', approvalResult);
 
-      const { error: priorEdErr } = await supabase
-        .from('student_prior_education')
-        .insert(studentPriorEd);
-      if (priorEdErr) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to copy prior education' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-    }
-  }
+    const studentId = approvalResult.student_id;
+    const enrollmentId = approvalResult.enrollment_id;
+    const studentEmail = approvalResult.student_email;
+    const studentFirstName = approvalResult.student_first_name;
+    const studentLastName = approvalResult.student_last_name;
+    const studentPreferredName = approvalResult.student_preferred_name;
+    const studentIdDisplay = approvalResult.student_id_display;
+    const rtoId = approvalResult.rto_id;
 
-  // 3d) CRICOS snapshot
-  {
-    const { error: crErr } = await supabase.from('student_cricos').insert({
-      student_id: student.id,
-      rto_id: app.rto_id,
-      is_international: Boolean(app.is_international),
-      passport_number: app.passport_number,
-      passport_issue_date: app.passport_issue_date,
-      passport_expiry_date: app.passport_expiry_date,
-      place_of_birth: app.place_of_birth,
-      visa_type: app.visa_type,
-      visa_number: app.visa_number,
-      visa_expiry_date: app.visa_expiry_date,
-      visa_grant_date: app.visa_grant_date,
-      visa_application_office: app.visa_application_office,
-      holds_visa: app.holds_visa,
-      country_of_citizenship: app.country_of_citizenship,
-      coe_number: app.coe_number,
-      is_under_18: app.is_under_18,
-      provider_accepting_welfare_responsibility:
-        app.provider_accepting_welfare_responsibility,
-      welfare_start_date: app.welfare_start_date,
-      provider_arranged_oshc: app.provider_arranged_oshc,
-      oshc_provider_name: app.oshc_provider_name,
-      oshc_policy_number: app.oshc_policy_number,
-      oshc_start_date: app.oshc_start_date,
-      oshc_end_date: app.oshc_end_date,
-      has_english_test: app.has_english_test,
-      english_test_type: app.english_test_type,
-      english_test_date: app.english_test_date,
-      ielts_score: app.ielts_score,
-      has_previous_study_australia: app.has_previous_study_australia,
-      previous_provider_name: app.previous_provider_name,
-      completed_previous_course: app.completed_previous_course,
-      has_release_letter: app.has_release_letter,
-      privacy_notice_accepted: app.privacy_notice_accepted,
-      written_agreement_accepted: app.written_agreement_accepted,
-      written_agreement_date: app.written_agreement_date,
-    });
-    if (crErr) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to copy CRICOS details' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
-  }
+    const warnings: string[] = [];
 
-  // 3e) Emergency and guardian contacts
-  {
-    const inserts: Db['public']['Tables']['student_contacts_emergency']['Insert'][] =
-      [];
-    if (app.ec_name || app.ec_phone_number || app.ec_relationship) {
-      if (!app.ec_name) {
-        return new Response(
-          JSON.stringify({
-            error:
-              'Emergency contact name is required when other emergency contact fields are provided',
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        );
-      }
-      inserts.push({
-        student_id: student.id,
-        rto_id: app.rto_id,
-        name: app.ec_name,
-        relationship: app.ec_relationship,
-        phone_number: app.ec_phone_number,
-      });
-    }
-    if (inserts.length > 0) {
-      const { error: ecErr } = await supabase
-        .from('student_contacts_emergency')
-        .insert(inserts);
-      if (ecErr) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to copy emergency contacts' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-    }
-    if (app.g_name || app.g_email || app.g_phone_number) {
-      if (!app.g_name) {
-        return new Response(
-          JSON.stringify({
-            error:
-              'Guardian contact name is required when other guardian contact fields are provided',
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        );
-      }
-      const { error: gErr } = await supabase
-        .from('student_contacts_guardians')
-        .insert({
-          student_id: student.id,
-          rto_id: app.rto_id,
-          name: app.g_name,
-          email: app.g_email,
-          phone_number: app.g_phone_number,
-          relationship: app.g_relationship,
-        });
-      if (gErr) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to copy guardian contact' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-    }
-  }
+    // ==================== Phase 2: Post-Transaction Operations ====================
+    // These operations are idempotent and non-blocking
+    // They run AFTER the atomic transaction succeeds
 
-  // 3f) Learning plan subjects → enrollment_subjects
-  {
-    const { data: subjects, error: subjErr } = await supabase
-      .from('application_learning_subjects')
-      .select(
-        'program_plan_subject_id, subject_id, planned_start_date, planned_end_date, is_catch_up, is_prerequisite'
-      )
-      .eq('application_id', app.id)
-      .order('sequence_order', { ascending: true });
-    if (!subjErr && subjects && subjects.length > 0) {
-      const rows = subjects.map((s) => ({
-        enrollment_id: enrollment.id,
-        program_plan_subject_id: s.program_plan_subject_id,
-        outcome_code: null,
-        start_date: s.planned_start_date,
-        end_date: s.planned_end_date,
-        is_catch_up: s.is_catch_up,
-        delivery_location_id: null,
-        delivery_mode_id: null,
-        scheduled_hours: null,
-      }));
-      const { error: insErr } = await supabase
-        .from('enrollment_subjects')
-        .insert(rows);
-      if (insErr) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to copy enrollment subjects' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-    }
-  }
-
-  // 3g) Learning plan classes → enrollment_classes
-  // Filter classes to only include those matching the student's preferred location
-  {
-    if (!app.preferred_location_id) {
-      return new Response(
-        JSON.stringify({
-          error: 'Application must have a preferred_location_id set',
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
-    const { data: classes, error: clsErr } = await supabase
-      .from('application_learning_classes')
-      .select(
-        'program_plan_class_id, class_date, start_time, end_time, trainer_id, location_id, classroom_id, class_type'
-      )
-      .eq('application_id', app.id)
-      .eq('location_id', app.preferred_location_id);
-    if (!clsErr && classes && classes.length > 0) {
-      const rows = classes.map((c) => ({
-        enrollment_id: enrollment.id,
-        program_plan_class_id: c.program_plan_class_id,
-        class_date: c.class_date,
-        start_time: c.start_time,
-        end_time: c.end_time,
-        trainer_id: c.trainer_id,
-        location_id: c.location_id,
-        classroom_id: c.classroom_id,
-        class_type: c.class_type,
-        notes: null,
-      }));
-      const { error: insErr } = await supabase
-        .from('enrollment_classes')
-        .insert(rows);
-      if (insErr) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to copy enrollment classes' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-    }
-  }
-
-  // 3h) Update offer_letters to link to student
-  {
-    const { error: offerErr } = await service
-      .from('offer_letters')
-      .update({ student_id: student.id })
-      .eq('application_id', app.id)
-      .is('student_id', null);
-    if (offerErr) {
-      // Log but don't fail approval
-      console.error('Failed to link offer letters to student:', offerErr);
-      fileCopyWarnings.push(
-        `Failed to link offer letters: ${offerErr.message}`
-      );
-    }
-  }
-
-  // 3i) Create Supabase auth user and send acceptance email with password reset link
-  {
-    const studentEmail = student.email;
-    if (!studentEmail) {
-      console.warn(
-        `Student ${student.id} has no email, skipping user creation and email`
-      );
-    } else {
-      try {
-        // Use explicit site URL for the frontend, not SUPABASE_URL (54321)
-        const siteUrl =
-          Deno.env.get('SITE_URL') ||
-          Deno.env.get('NEXT_PUBLIC_SITE_URL') ||
-          'http://127.0.0.1:3000';
-
-        const { data: linkData, error: linkErr } =
-          await service.auth.admin.generateLink({
-            type: 'invite',
-            email: studentEmail,
-            options: {
-              data: {
-                first_name: student.first_name,
-                last_name: student.last_name,
-                rto_id: app.rto_id,
-                role: 'STUDENT',
-                student_id: student.id,
-              },
-              // Route via callback so server can exchange code, then continue to update-password
-              redirectTo: `${siteUrl}/auth/callback?next=/auth/update-password`,
-            },
-          });
-
-        if (linkErr || !linkData?.properties?.action_link) {
-          console.error('Failed to generate invite link:', linkErr);
-          fileCopyWarnings.push(
-            `Failed to generate invite link: ${linkErr?.message || 'Unknown error'}`
-          );
-        } else {
-          // Get the user ID from the generated link
-          const authUserId = linkData.user?.id;
-
-          if (authUserId) {
-            // Update user metadata and app_metadata
-            await service.auth.admin.updateUserById(authUserId, {
-              user_metadata: {
-                first_name: student.first_name,
-                last_name: student.last_name,
-                preferred_name: student.preferred_name,
-              },
-              app_metadata: {
-                rto_id: app.rto_id,
-                role: 'STUDENT',
-                student_id: student.id,
-              },
-            });
-
-            // Update student record with user_id
-            const { error: updateErr } = await service
-              .from('students')
-              .update({ user_id: authUserId })
-              .eq('id', student.id);
-
-            if (updateErr) {
-              console.error('Failed to link user_id to student:', updateErr);
-              fileCopyWarnings.push(
-                `Failed to link user account: ${updateErr.message}`
-              );
-            }
-          }
-
-          // Fetch RTO name for email
-          const { data: rtoInfo } = await supabase
-            .from('rtos')
-            .select('name')
-            .eq('id', app.rto_id)
-            .single();
-
-          const rtoName = rtoInfo?.name || 'your training organisation';
-          const studentName =
-            student.preferred_name || student.first_name || 'Student';
-
-          // Send acceptance email via Resend
-          // Match the pattern used in daily-finance-tick: only require RESEND_API_KEY
-          const resendKey = Deno.env.get('RESEND_API_KEY');
-          const resendFrom = Deno.env.get('RESEND_FROM');
-
-          // Debug logging to help diagnose Resend configuration issues
-          if (!resendKey) {
-            console.warn(
-              'RESEND_API_KEY not found in environment variables. Available env vars:',
-              Object.keys(Deno.env.toObject()).filter((k) =>
-                k.toUpperCase().includes('RESEND')
-              )
-            );
-          }
-
-          if (resendKey) {
-            const emailRes = await fetch('https://api.resend.com/emails', {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${resendKey}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                from: resendFrom ?? 'no-reply@example.com',
-                to: studentEmail,
-                subject: `Welcome to ${rtoName} - Your Application Has Been Approved`,
-                html: `
-                  <p>Dear ${studentName},</p>
-                  <p>Congratulations! Your application has been approved and you have been accepted to ${rtoName}.</p>
-                  <p>A new user account has been created for you. Please click the button below to set your password and access your student portal.</p>
-                  <p><a href="${linkData.properties.action_link}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;text-decoration:none;border-radius:6px">Set Password & Access Portal</a></p>
-                  <p>If the button doesn't work, copy and paste this link into your browser:</p>
-                  <p><a href="${linkData.properties.action_link}">${linkData.properties.action_link}</a></p>
-                  <p>Your Student ID: <strong>${student.student_id_display}</strong></p>
-                  <p>Once you've set your password, you'll be able to:</p>
-                  <ul>
-                    <li>View your course progression</li>
-                    <li>Access your assignments</li>
-                    <li>View your finance and attendance records</li>
-                  </ul>
-                  <p>If you have any questions, please contact ${rtoName}.</p>
-                  <p>— ${rtoName} Team</p>
-                `,
-              }),
-            });
-
-            if (!emailRes.ok) {
-              const errorText = await emailRes.text();
-              console.warn(
-                `Email send failed for student ${student.id}:`,
-                errorText
-              );
-              fileCopyWarnings.push(
-                `Failed to send acceptance email: ${errorText}`
-              );
-            }
-          } else {
-            console.warn('Resend not configured - skipping acceptance email');
-            fileCopyWarnings.push(
-              'Acceptance email not sent (Resend not configured)'
-            );
-          }
-        }
-      } catch (userErr) {
-        // Log but don't fail approval - user creation is important but shouldn't block approval
-        console.error('Error creating user or sending email:', userErr);
-        fileCopyWarnings.push(
-          `User creation/email error: ${userErr instanceof Error ? userErr.message : String(userErr)}`
-        );
-      }
-    }
-  }
-
-  // 4) Update application status to APPROVED
-  // Only update if status is still ACCEPTED (prevents race conditions)
-  const { error: updErr } = await supabase
-    .from('applications')
-    .update({ status: 'APPROVED' })
-    .eq('id', app.id)
-    .eq('status', 'ACCEPTED'); // Ensure atomicity - only update if still ACCEPTED
-  if (updErr) {
-    return new Response(
-      JSON.stringify({ error: 'Failed to update application status' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+    // 2a) Copy application files to student bucket (non-blocking)
+    console.log(`Copying files for student ${studentId}`);
+    const fileCopyWarnings = await copyApplicationFilesToStudent(
+      service,
+      applicationId,
+      studentId
     );
-  }
+    warnings.push(...fileCopyWarnings);
 
-  // 5) Sync student to Xero as Contact (non-blocking)
-  // This is done asynchronously so failures don't block application approval
-  try {
-    const xeroSyncUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/xero-sync-contact`;
-    fetch(xeroSyncUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+    // 2b) Create Supabase auth user (non-blocking but important)
+    console.log(`Creating auth user for student ${studentId}`);
+    const {
+      userId,
+      inviteLink,
+      warnings: authWarnings,
+    } = await createStudentAuthUser(
+      service,
+      {
+        id: studentId,
+        email: studentEmail,
+        first_name: studentFirstName,
+        last_name: studentLastName,
+        preferred_name: studentPreferredName,
       },
-      body: JSON.stringify({ studentId: student.id }),
-    }).catch((err) => {
-      // Log but don't fail - Xero sync is non-critical for approval
-      console.warn('Xero contact sync failed (non-blocking):', err);
-    });
-    // Don't await - let it run in background
-  } catch (xeroErr) {
-    // Log but don't fail
-    console.warn('Xero contact sync error (non-blocking):', xeroErr);
-  }
+      rtoId
+    );
+    warnings.push(...authWarnings);
 
-  return new Response(
-    JSON.stringify({
-      message: 'Application approved, invoices scheduled for issue',
-      studentId: student.id,
-      enrollmentId: enrollment.id,
-      warnings: fileCopyWarnings.length > 0 ? fileCopyWarnings : undefined,
-    }),
-    {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
+    // 2c) Send acceptance email (non-blocking)
+    if (inviteLink) {
+      console.log(`Sending acceptance email to ${studentEmail}`);
+      const emailWarnings = await sendAcceptanceEmail(
+        supabase,
+        {
+          id: studentId,
+          email: studentEmail,
+          first_name: studentFirstName,
+          preferred_name: studentPreferredName,
+          student_id_display: studentIdDisplay,
+        },
+        rtoId,
+        inviteLink
+      );
+      warnings.push(...emailWarnings);
+    } else {
+      warnings.push('No invite link available - acceptance email not sent');
     }
-  );
+
+    // 2d) Sync to Xero (fire-and-forget, completely non-blocking)
+    console.log(`Initiating Xero sync for student ${studentId}`);
+    syncStudentToXero(studentId);
+
+    // ==================== Return Success Response ====================
+    console.log(`Approval process completed for application ${applicationId}`);
+
+    return successResponse({
+      message: 'Application approved, invoices scheduled for issue',
+      studentId,
+      enrollmentId,
+      userId,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    });
+  } catch (err) {
+    console.error('Unexpected error in approval process:', err);
+    return errorResponse(
+      'Internal server error',
+      500,
+      err instanceof Error ? err.message : String(err)
+    );
+  }
 });

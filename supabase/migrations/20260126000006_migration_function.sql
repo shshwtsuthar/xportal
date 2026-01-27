@@ -168,11 +168,11 @@ BEGIN
       p_enrollment_id,
       v_app_invoice.rto_id,
       v_invoice_number,
-      CASE 
+      (CASE 
         WHEN v_app_invoice.amount_paid_cents >= v_app_invoice.amount_due_cents THEN 'PAID'
         WHEN v_app_invoice.status = 'VOID' THEN 'VOID'
         ELSE 'SENT'  -- Migrated invoices become SENT (they were SCHEDULED before)
-      END,
+      END)::invoice_status,
       v_app_invoice.issue_date,
       v_app_invoice.due_date,
       v_app_invoice.amount_due_cents,
@@ -297,12 +297,12 @@ BEGIN
       p_enrollment_id,
       v_app.rto_id,
       v_invoice_number,
-      'SCHEDULED',
+      'SCHEDULED'::invoice_status,
       v_issue_date::date,
       v_schedule_row.due_date,
       v_schedule_row.amount_cents,
       0,
-      'UNPAID',
+      'UNPAID'::internal_payment_status,
       now(),
       now()
     )

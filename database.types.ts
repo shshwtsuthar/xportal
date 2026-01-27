@@ -4422,6 +4422,10 @@ export type Database = {
       }
     }
     Functions: {
+      approve_application_atomic: {
+        Args: { p_application_id: string; p_new_group_id?: string }
+        Returns: Json
+      }
       compute_student_check_char: { Args: { p_stem: string }; Returns: string }
       create_recurring_classes: {
         Args: {
