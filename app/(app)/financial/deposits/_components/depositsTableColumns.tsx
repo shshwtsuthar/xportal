@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import type { Tables } from '@/database.types';
@@ -69,7 +70,18 @@ export const getDepositsColumns = (): ColumnDef[] => {
       minWidth: 80,
       sortable: true,
       sortAccessor: (r) => r.invoice_number,
-      render: (r) => r.invoice_number,
+      render: (r) =>
+        r.invoice_number ? (
+          <Link
+            href={`/financial/invoices/${encodeURIComponent(r.invoice_number)}`}
+            className="text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+            aria-label={`View invoice ${r.invoice_number}`}
+          >
+            <span className="font-mono text-xs">{r.invoice_number}</span>
+          </Link>
+        ) : (
+          '—'
+        ),
       group: 'Identity',
     },
     {

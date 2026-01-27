@@ -27,6 +27,9 @@ const TABLE_KEY_PAYMENT_CONFIRMATIONS = 'payment-confirmations.datatable';
 export const getPaymentConfirmationsTableKey = () =>
   TABLE_KEY_PAYMENT_CONFIRMATIONS;
 
+const TABLE_KEY_INVOICE_PAYMENTS = 'invoice-payments.datatable';
+export const getInvoicePaymentsTableKey = () => TABLE_KEY_INVOICE_PAYMENTS;
+
 export const useGetTablePreferences = (tableKey: string) => {
   return useQuery({
     queryKey: ['table-prefs', tableKey],

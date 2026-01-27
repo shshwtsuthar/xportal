@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
@@ -12,13 +12,14 @@ import {
 import { DepositsColumnsMenu } from './_components/DepositsColumnsMenu';
 import { DepositsFilter } from './_components/DepositsFilter';
 import { DepositStats } from './_components/DepositStats';
+import { ExportDialog } from './_components/ExportDialog';
 import { useDepositsFilters } from '@/src/hooks/useDepositsFilters';
 import { useGetApplicationInvoices } from '@/src/hooks/useGetApplicationInvoices';
-import type { ExportFormat } from '@/components/data-table';
 import { Download } from 'lucide-react';
 
 export default function DepositsPage() {
   const tableRef = useRef<DepositsDataTableRef>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const { filters, updateFilters, resetFilters, activeFilterCount } =
     useDepositsFilters();
@@ -47,13 +48,9 @@ export default function DepositsPage() {
 
   const { data: allDeposits, isLoading } = useGetApplicationInvoices();
 
-  const handleExport = async (format: ExportFormat) => {
-    if (!tableRef.current) {
-      return;
-    }
-
-    await tableRef.current.exportTable(format);
-  };
+  const getRowsForExport = useCallback(() => {
+    return tableRef.current?.getRows() ?? [];
+  }, []);
 
   const handleStatusClick = (
     status:
@@ -163,7 +160,7 @@ export default function DepositsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleExport('csv')}
+                onClick={() => setExportOpen(true)}
                 aria-label="Export deposits"
               >
                 <Download className="mr-2 h-4 w-4" /> Export
@@ -177,6 +174,13 @@ export default function DepositsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        getRows={getRowsForExport}
+        filters={effectiveFilters}
+      />
     </div>
   );
 }

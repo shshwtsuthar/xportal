@@ -18,6 +18,7 @@ type CopyToClipboardBadgeProps = {
   resetDelayMs?: number;
   variant?: NonNullable<Parameters<typeof badgeVariants>[0]>['variant'];
   className?: string;
+  size?: 'sm' | 'md' | 'lg';
 };
 
 const DEFAULT_RESET_DELAY = 2000;
@@ -28,6 +29,7 @@ export const CopyToClipboardBadge = ({
   resetDelayMs = DEFAULT_RESET_DELAY,
   variant = 'outline',
   className,
+  size = 'sm',
 }: CopyToClipboardBadgeProps) => {
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -93,12 +95,24 @@ export const CopyToClipboardBadge = ({
     }
   }, [copied]);
 
+  const sizeClasses =
+    size === 'lg'
+      ? 'px-3 py-1.5 text-xl'
+      : size === 'md'
+        ? 'px-2.5 py-1 text-sm'
+        : 'px-2 py-1 text-xs';
+
+  const iconSize = size === 'lg' ? 16 : size === 'md' ? 15 : 14;
+  const iconBoxClasses =
+    size === 'lg' ? 'h-5 w-5' : size === 'md' ? 'h-4.5 w-4.5' : 'h-4 w-4';
+
   return (
     <Badge
       asChild
       variant={variant}
       className={cn(
-        'group hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring cursor-pointer gap-1 px-2 py-1 text-xs transition-colors duration-200 select-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden',
+        'group hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring cursor-pointer gap-1 transition-colors duration-200 select-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden',
+        sizeClasses,
         'aria-disabled:cursor-not-allowed aria-disabled:opacity-70',
         className
       )}
@@ -118,14 +132,15 @@ export const CopyToClipboardBadge = ({
         <span className="truncate select-none">{value}</span>
         <span
           className={cn(
-            'text-muted-foreground group-hover:text-foreground relative flex h-4 w-4 items-center justify-center overflow-hidden transition-colors duration-200',
+            'text-muted-foreground group-hover:text-foreground relative flex items-center justify-center overflow-hidden transition-colors duration-200',
+            iconBoxClasses,
             copied && 'text-green-600'
           )}
           aria-hidden="true"
         >
           <CopyIcon
             ref={copyIconRef}
-            size={14}
+            size={iconSize}
             className={cn(
               'absolute inset-0 flex scale-100 items-center justify-center opacity-100 transition-all duration-300 ease-in-out',
               copied && 'scale-75 opacity-0'
@@ -133,7 +148,7 @@ export const CopyToClipboardBadge = ({
           />
           <CheckIcon
             ref={checkIconRef}
-            size={14}
+            size={iconSize}
             className={cn(
               'absolute inset-0 flex scale-75 items-center justify-center opacity-0 transition-all duration-300 ease-in-out',
               copied && 'scale-100 opacity-100'
