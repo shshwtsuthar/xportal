@@ -47,10 +47,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get application to get rto_id
+    // Get application to get rto_id and validate status
     const { data: application, error: appErr } = await admin
       .from('applications')
-      .select('rto_id')
+      .select('rto_id, status')
       .eq('id', applicationId)
       .single();
 
@@ -58,6 +58,19 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'Application not found' }), {
         status: 404,
       });
+    }
+
+    // Validate application status - invoices can only be created for OFFER_GENERATED or OFFER_SENT
+    if (
+      application.status !== 'OFFER_GENERATED' &&
+      application.status !== 'OFFER_SENT'
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: `Cannot create invoices for application with status: ${application.status}. Invoices can only be created when status is OFFER_GENERATED or OFFER_SENT.`,
+        }),
+        { status: 400 }
+      );
     }
 
     // Step 1: Get all payment schedule entries for this application

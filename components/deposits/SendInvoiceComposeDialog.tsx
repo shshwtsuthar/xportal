@@ -1,31 +1,32 @@
 'use client';
 
 import * as React from 'react';
-import { ComposeEmailDialog } from './ComposeEmailDialog';
+import { ComposeEmailDialog } from '@/components/emails/ComposeEmailDialog';
 import { useGetApplicationWithAgent } from '@/src/hooks/useGetApplicationWithAgent';
-import { useDownloadOfferLetter } from '@/src/hooks/useDownloadOfferLetter';
-import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
+import { useGenerateInvoicePdf } from '@/src/hooks/useGenerateInvoicePdf';
 import { useSendEmail } from '@/src/hooks/useSendEmail';
 import { toast } from 'sonner';
 
-type SendOfferComposeDialogProps = {
+type SendInvoiceComposeDialogProps = {
+  invoiceId: string;
   applicationId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-export function SendOfferComposeDialog({
+export function SendInvoiceComposeDialog({
+  invoiceId,
   applicationId,
   open,
   onOpenChange,
-}: SendOfferComposeDialogProps) {
+}: SendInvoiceComposeDialogProps) {
   const [selectedRecipient, setSelectedRecipient] = React.useState<string>('');
   const [initialAttachments, setInitialAttachments] = React.useState<
     Array<{ file: File; id: string }>
   >([]);
 
   const { mutateAsync: sendEmail } = useSendEmail();
-  const updateApplicationMutation = useUpdateApplication();
+  const generatePdfMutation = useGenerateInvoicePdf();
 
   // Fetch application with agent data
   const {
@@ -33,13 +34,6 @@ export function SendOfferComposeDialog({
     isLoading: isLoadingApplication,
     error: applicationError,
   } = useGetApplicationWithAgent(applicationId);
-
-  // Fetch and download offer letter
-  const {
-    data: offerLetterFile,
-    isLoading: isLoadingOfferLetter,
-    error: offerLetterError,
-  } = useDownloadOfferLetter(applicationId);
 
   // Build recipient options based on available emails
   const recipientOptions = React.useMemo(() => {
@@ -67,17 +61,40 @@ export function SendOfferComposeDialog({
     }
   }, [open, recipientOptions, selectedRecipient]);
 
-  // Attach offer letter when it's loaded
+  // Generate and attach invoice PDF when dialog opens
   React.useEffect(() => {
-    if (open && offerLetterFile && initialAttachments.length === 0) {
-      setInitialAttachments([
-        {
-          file: offerLetterFile,
-          id: `offer-letter-${Date.now()}`,
-        },
-      ]);
+    if (open && invoiceId && initialAttachments.length === 0) {
+      const generateAndAttachPdf = async () => {
+        try {
+          // Generate PDF by calling the API
+          const res = await fetch(`/api/invoices/${invoiceId}/generate-pdf`, {
+            method: 'POST',
+          });
+
+          if (!res.ok) {
+            throw new Error('Failed to generate invoice PDF');
+          }
+
+          const blob = await res.blob();
+          const file = new File([blob], `invoice-${invoiceId}.pdf`, {
+            type: 'application/pdf',
+          });
+
+          setInitialAttachments([
+            {
+              file,
+              id: `invoice-${invoiceId}-${Date.now()}`,
+            },
+          ]);
+        } catch (error) {
+          console.error('Failed to generate invoice PDF:', error);
+          toast.error('Failed to generate invoice PDF');
+        }
+      };
+
+      generateAndAttachPdf();
     }
-  }, [open, offerLetterFile, initialAttachments.length]);
+  }, [open, invoiceId, initialAttachments.length]);
 
   // Reset state when dialog closes
   React.useEffect(() => {
@@ -114,29 +131,17 @@ export function SendOfferComposeDialog({
       attachments: emailData.attachments,
     });
 
-    // Update application status to OFFER_SENT after successful email send
-    try {
-      await updateApplicationMutation.mutateAsync({
-        id: applicationId,
-        status: 'OFFER_SENT',
-      });
-    } catch (error) {
-      // Log error but don't fail the entire operation since email was sent successfully
-      console.error('Failed to update application status:', error);
-      toast.error('Email sent but failed to update application status');
-    }
-
+    toast.success('Invoice sent successfully');
     onOpenChange(false);
   };
 
-  const isLoading = isLoadingApplication || isLoadingOfferLetter;
-  const error = applicationError || offerLetterError;
+  const isLoading = isLoadingApplication;
 
   return (
     <ComposeEmailDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Send Offer Letter"
+      title="Send Invoice"
       recipientMode="select"
       recipientOptions={recipientOptions}
       selectedRecipient={selectedRecipient}
@@ -144,14 +149,12 @@ export function SendOfferComposeDialog({
       initialAttachments={initialAttachments}
       onSend={handleSend}
       isLoading={isLoading}
-      error={error}
-      loadingMessage="Loading offer letter..."
+      error={applicationError}
+      loadingMessage="Loading invoice..."
       errorMessage={
         applicationError
           ? `Failed to load application: ${applicationError.message}`
-          : offerLetterError
-            ? `Failed to load offer letter: ${offerLetterError.message}`
-            : undefined
+          : undefined
       }
     />
   );

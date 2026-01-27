@@ -54,6 +54,7 @@ import {
   Search,
   Archive,
   ArchiveRestore,
+  DollarSign,
 } from 'lucide-react';
 // removed unused date-fns import
 import { Tables } from '@/database.types';
@@ -64,6 +65,7 @@ import { useDeleteApplication } from '@/src/hooks/useDeleteApplication';
 import { useUpdateApplication } from '@/src/hooks/useUpdateApplication';
 import { useRecreateDraftApplication } from '@/src/hooks/useRecreateDraftApplication';
 import { SendOfferComposeDialog } from '@/components/emails/SendOfferComposeDialog';
+import { ManageDepositsDialog } from '@/components/deposits/ManageDepositsDialog';
 import { useApproveApplication } from '@/src/hooks/useApproveApplication';
 import { useGenerateOfferLetter } from '@/src/hooks/useGenerateOfferLetter';
 import { useCheckGroupCapacity } from '@/src/hooks/useCheckGroupCapacity';
@@ -229,6 +231,10 @@ export const ApplicationsDataTable = forwardRef<
   const updateMutation = useUpdateApplication();
   const checkCapacityMutation = useCheckGroupCapacity();
   const [sendOfferDialog, setSendOfferDialog] = useState<{
+    open: boolean;
+    applicationId: string | null;
+  }>({ open: false, applicationId: null });
+  const [manageDepositsDialog, setManageDepositsDialog] = useState<{
     open: boolean;
     applicationId: string | null;
   }>({ open: false, applicationId: null });
@@ -658,13 +664,27 @@ export const ApplicationsDataTable = forwardRef<
     const isRowGenerating =
       generateOfferMutation.isPending && offerGeneratingId === app.id;
 
-    // For OFFER_SENT status, show Accept/Reject button group
+    // For OFFER_SENT status, show Accept/Reject button group and Manage Deposits button
     if (app.status === 'OFFER_SENT') {
       return (
-        <AcceptRejectButtonGroup
-          onAccept={() => handleAccept(app.id)}
-          onReject={() => handleReject(app.id)}
-        />
+        <div className="flex w-full min-w-0 flex-col gap-2">
+          <AcceptRejectButtonGroup
+            onAccept={() => handleAccept(app.id)}
+            onReject={() => handleReject(app.id)}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() =>
+              setManageDepositsDialog({ open: true, applicationId: app.id })
+            }
+            aria-label="Manage Deposits"
+          >
+            <DollarSign className="mr-2 h-4 w-4" />
+            Manage Deposits
+          </Button>
+        </div>
       );
     }
 
@@ -772,23 +792,36 @@ export const ApplicationsDataTable = forwardRef<
       );
     }
 
-    // For OFFER_GENERATED status, show Send Offer button and Archive button
+    // For OFFER_GENERATED status, show Send Offer button, Manage Deposits button, and Archive button
     if (app.status === 'OFFER_GENERATED') {
       return (
-        <div className="flex w-full min-w-0 items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="min-w-0 flex-1 shrink overflow-hidden"
-            onClick={() =>
-              setSendOfferDialog({ open: true, applicationId: app.id })
-            }
-            aria-label="Send Offer"
-          >
-            <span className="truncate">Send Offer</span>
-          </Button>
-          <div className="shrink-0">
-            <ArchiveButton onArchive={() => handleArchive(app.id)} />
+        <div className="flex w-full min-w-0 flex-col gap-2">
+          <div className="flex w-full min-w-0 items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-w-0 flex-1 shrink overflow-hidden"
+              onClick={() =>
+                setSendOfferDialog({ open: true, applicationId: app.id })
+              }
+              aria-label="Send Offer"
+            >
+              <span className="truncate">Send Offer</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              onClick={() =>
+                setManageDepositsDialog({ open: true, applicationId: app.id })
+              }
+              aria-label="Manage Deposits"
+            >
+              <DollarSign className="h-4 w-4" />
+            </Button>
+            <div className="shrink-0">
+              <ArchiveButton onArchive={() => handleArchive(app.id)} />
+            </div>
           </div>
         </div>
       );
@@ -1121,6 +1154,19 @@ export const ApplicationsDataTable = forwardRef<
             setSendOfferDialog({
               open,
               applicationId: open ? sendOfferDialog.applicationId : null,
+            })
+          }
+        />
+      )}
+
+      {manageDepositsDialog.applicationId && (
+        <ManageDepositsDialog
+          applicationId={manageDepositsDialog.applicationId}
+          open={manageDepositsDialog.open}
+          onOpenChange={(open) =>
+            setManageDepositsDialog({
+              open,
+              applicationId: open ? manageDepositsDialog.applicationId : null,
             })
           }
         />
