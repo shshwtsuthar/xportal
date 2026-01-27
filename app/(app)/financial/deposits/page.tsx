@@ -68,8 +68,8 @@ export default function DepositsPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-full p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Deposits</h1>
           <p className="text-muted-foreground text-sm">
@@ -78,7 +78,7 @@ export default function DepositsPage() {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-8">
         {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
@@ -103,7 +103,7 @@ export default function DepositsPage() {
           <CardTitle className="text-xl font-semibold tracking-tight">
             All Deposits
           </CardTitle>
-          <div className="mt-4 flex items-center justify-between gap-2">
+          <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <ButtonGroup className="flex-wrap">
               <Button
                 variant={quickStatus === 'ALL' ? 'default' : 'outline'}
@@ -152,7 +152,7 @@ export default function DepositsPage() {
                 Paid
               </Button>
             </ButtonGroup>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 md:justify-end">
               <DepositsFilter
                 filters={filters}
                 onApply={updateFilters}
@@ -172,7 +172,9 @@ export default function DepositsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <DepositsDataTable ref={tableRef} filters={effectiveFilters} />
+          <div className="w-full overflow-x-auto">
+            <DepositsDataTable ref={tableRef} filters={effectiveFilters} />
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -19,6 +19,7 @@ export type ColumnDef = {
   id: string;
   label: string;
   width?: number;
+  minWidth?: number;
   sortable?: boolean;
   sortAccessor?: (row: RowType) => string | number;
   render: (row: RowType) => React.ReactNode;
@@ -65,6 +66,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'invoice_number',
       label: 'Invoice #',
       width: 140,
+      minWidth: 80,
       sortable: true,
       sortAccessor: (r) => r.invoice_number,
       render: (r) => r.invoice_number,
@@ -74,6 +76,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'student_name',
       label: 'Student Name',
       width: 220,
+      minWidth: 120,
       sortable: true,
       sortAccessor: (r) => fullName(r),
       render: (r) => fullName(r),
@@ -83,6 +86,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'student_id_display',
       label: 'Student ID',
       width: 140,
+      minWidth: 90,
       sortable: true,
       sortAccessor: (r) => r.applications?.student_id_display || '',
       render: (r) => r.applications?.student_id_display || '—',
@@ -92,6 +96,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'program',
       label: 'Program',
       width: 220,
+      minWidth: 140,
       sortable: true,
       sortAccessor: (r) => r.applications?.programs?.name || '',
       render: (r) => r.applications?.programs?.name || '—',
@@ -101,6 +106,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'issue_date',
       label: 'Issue Date',
       width: 140,
+      minWidth: 90,
       sortable: true,
       sortAccessor: (r) =>
         r.issue_date ? new Date(r.issue_date).getTime() : 0,
@@ -111,6 +117,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'due_date',
       label: 'Due Date',
       width: 140,
+      minWidth: 90,
       sortable: true,
       sortAccessor: (r) => (r.due_date ? new Date(r.due_date).getTime() : 0),
       render: (r) => fmtDate(r.due_date),
@@ -120,6 +127,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'status',
       label: 'Status',
       width: 140,
+      minWidth: 90,
       sortable: true,
       sortAccessor: (r) => (r.status as unknown as string) || '',
       render: (r) => statusBadge(String(r.status || '')),
@@ -129,6 +137,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'internal_payment_status',
       label: 'Payment Status',
       width: 180,
+      minWidth: 120,
       sortable: true,
       sortAccessor: (r) =>
         (r.internal_payment_status as unknown as string) || '',
@@ -140,6 +149,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'amount_due_cents',
       label: 'Amount Due',
       width: 140,
+      minWidth: 90,
       sortable: true,
       sortAccessor: (r) => r.amount_due_cents ?? 0,
       render: (r) => fmtCurrency(r.amount_due_cents),
@@ -149,6 +159,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'amount_paid_cents',
       label: 'Amount Paid',
       width: 140,
+      minWidth: 90,
       sortable: true,
       sortAccessor: (r) => r.amount_paid_cents ?? 0,
       render: (r) => fmtCurrency(r.amount_paid_cents),
@@ -158,6 +169,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'balance_cents',
       label: 'Balance',
       width: 140,
+      minWidth: 90,
       sortable: true,
       sortAccessor: (r) =>
         (r.amount_due_cents ?? 0) - (r.amount_paid_cents ?? 0),
@@ -169,6 +181,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'last_email_sent_at',
       label: 'Last Emailed',
       width: 160,
+      minWidth: 110,
       sortable: true,
       sortAccessor: (r) =>
         r.last_email_sent_at ? new Date(r.last_email_sent_at).getTime() : 0,
@@ -179,6 +192,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'pdf_path',
       label: 'PDF',
       width: 120,
+      minWidth: 80,
       sortable: true,
       sortAccessor: (r) => (r.pdf_path ? 1 : 0),
       render: (r) => (r.pdf_path ? 'Available' : '—'),
@@ -189,6 +203,7 @@ export const getDepositsColumns = (): ColumnDef[] => {
       id: 'id',
       label: 'ID',
       width: 260,
+      minWidth: 160,
       sortable: true,
       sortAccessor: (r) => r.id,
       render: (r) => r.id,
