@@ -453,17 +453,17 @@ export async function POST(req: NextRequest) {
                     issueDate = today;
                   }
 
-                  // Generate invoice number
+                  // Generate invoice number (using unified INV format)
                   const seed = cryptoRandomUUID();
                   const { data: invoiceNumber, error: invNumErr } =
-                    await admin.rpc('generate_application_invoice_number', {
+                    await admin.rpc('generate_invoice_number', {
                       p_created: issueDate.toISOString().slice(0, 10),
                       p_uuid: seed,
                     });
 
                   if (invNumErr || !invoiceNumber) {
                     console.error(
-                      '[Send Offer Letter] Failed to generate application invoice number:',
+                      '[Send Offer Letter] Failed to generate invoice number:',
                       invNumErr
                     );
                     continue;
