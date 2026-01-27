@@ -2350,10 +2350,14 @@ export type Database = {
           external_ref: string | null
           id: string
           invoice_id: string
-          method: string | null
+          method: Database["public"]["Enums"]["payment_method_enum"]
           payment_date: string
           reconciliation_notes: string | null
+          recorded_by: string | null
           rto_id: string
+          updated_at: string
+          updated_by: string | null
+          created_at: string
           xero_payment_id: string | null
           xero_sync_error: string | null
           xero_sync_status: string | null
@@ -2364,10 +2368,14 @@ export type Database = {
           external_ref?: string | null
           id?: string
           invoice_id: string
-          method?: string | null
+          method?: Database["public"]["Enums"]["payment_method_enum"]
           payment_date: string
           reconciliation_notes?: string | null
+          recorded_by?: string | null
           rto_id: string
+          updated_at?: string
+          updated_by?: string | null
+          created_at?: string
           xero_payment_id?: string | null
           xero_sync_error?: string | null
           xero_sync_status?: string | null
@@ -2378,10 +2386,14 @@ export type Database = {
           external_ref?: string | null
           id?: string
           invoice_id?: string
-          method?: string | null
+          method?: Database["public"]["Enums"]["payment_method_enum"]
           payment_date?: string
           reconciliation_notes?: string | null
+          recorded_by?: string | null
           rto_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          created_at?: string
           xero_payment_id?: string | null
           xero_sync_error?: string | null
           xero_sync_status?: string | null
@@ -4353,6 +4365,13 @@ export type Database = {
         | "VOID"
         | "OVERDUE"
         | "SCHEDULED"
+      payment_method_enum:
+        | "CASH"
+        | "CARD"
+        | "BANK_TRANSFER"
+        | "DIRECT_DEBIT"
+        | "CHEQUE"
+        | "OTHER"
       payment_plan_anchor_type:
         | "COMMENCEMENT_DATE"
         | "OFFER_DATE"

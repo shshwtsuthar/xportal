@@ -12,7 +12,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useRecordPayment } from '@/src/hooks/useRecordPayment';
+import {
+  useRecordPayment,
+  type PaymentMethod,
+} from '@/src/hooks/useRecordPayment';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
@@ -26,6 +36,7 @@ type FormValues = {
   paymentDate: string;
   amountDollars: string;
   notes: string;
+  method: PaymentMethod;
 };
 
 export function RecordPaymentDialog({
@@ -39,6 +50,7 @@ export function RecordPaymentDialog({
       paymentDate: new Date().toISOString().slice(0, 10),
       amountDollars: '',
       notes: '',
+      method: 'OTHER',
     },
   });
 
@@ -48,6 +60,7 @@ export function RecordPaymentDialog({
         paymentDate: new Date().toISOString().slice(0, 10),
         amountDollars: '',
         notes: '',
+        method: 'OTHER',
       });
     }
   }, [invoiceId, form]);
@@ -65,6 +78,7 @@ export function RecordPaymentDialog({
         invoiceType,
         paymentDate: values.paymentDate,
         amountCents,
+        method: values.method,
         notes: values.notes || undefined,
       });
 
@@ -129,6 +143,32 @@ export function RecordPaymentDialog({
               placeholder="500.00"
               {...form.register('amountDollars', { required: true })}
             />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="method">Payment Method</Label>
+            <Select
+              value={form.watch('method')}
+              onValueChange={(value: PaymentMethod) =>
+                form.setValue('method', value, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                })
+              }
+            >
+              <SelectTrigger id="method" className="w-full">
+                <SelectValue placeholder="Select payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CASH">Cash</SelectItem>
+                <SelectItem value="CARD">Card</SelectItem>
+                <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
+                <SelectItem value="DIRECT_DEBIT">Direct Debit</SelectItem>
+                <SelectItem value="CHEQUE">Cheque</SelectItem>
+                <SelectItem value="OTHER">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid gap-2">

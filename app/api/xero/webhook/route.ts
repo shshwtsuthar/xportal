@@ -252,6 +252,8 @@ async function handlePaymentEvent(
           p_notes: xeroPayment.Reference
             ? `Xero Payment: ${xeroPayment.Reference}`
             : undefined,
+          // Payments originating from Xero are externally created; treat method as OTHER by default.
+          p_method: 'OTHER',
         }
       );
 

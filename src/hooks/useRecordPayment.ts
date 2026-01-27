@@ -1,11 +1,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 
+export type PaymentMethod =
+  | 'CASH'
+  | 'CARD'
+  | 'BANK_TRANSFER'
+  | 'DIRECT_DEBIT'
+  | 'CHEQUE'
+  | 'OTHER';
+
 type Params = {
   invoiceId: string;
   invoiceType: 'APPLICATION' | 'ENROLLMENT';
   paymentDate: string; // yyyy-mm-dd
   amountCents: number;
+  method: PaymentMethod;
   notes?: string;
 };
 
@@ -21,6 +30,7 @@ export const useRecordPayment = () => {
       invoiceType,
       paymentDate,
       amountCents,
+      method,
       notes,
     }: Params): Promise<string> => {
       const supabase = createClient();
@@ -30,6 +40,7 @@ export const useRecordPayment = () => {
         p_payment_date: paymentDate,
         p_amount_cents: amountCents,
         p_notes: notes ?? undefined,
+        p_method: method,
       });
       if (error) throw new Error(error.message);
       if (!paymentId)

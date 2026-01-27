@@ -2642,14 +2642,18 @@ export type Database = {
       payments: {
         Row: {
           amount_cents: number
+          created_at: string
           external_ref: string | null
           id: string
           invoice_id: string
           invoice_type: Database["public"]["Enums"]["invoice_type_enum"]
-          method: string | null
+          method: Database["public"]["Enums"]["payment_method_enum"]
           payment_date: string
           reconciliation_notes: string | null
+          recorded_by: string | null
           rto_id: string
+          updated_at: string
+          updated_by: string | null
           xero_payment_id: string | null
           xero_sync_error: string | null
           xero_sync_status: string | null
@@ -2657,14 +2661,18 @@ export type Database = {
         }
         Insert: {
           amount_cents: number
+          created_at?: string
           external_ref?: string | null
           id?: string
           invoice_id: string
           invoice_type?: Database["public"]["Enums"]["invoice_type_enum"]
-          method?: string | null
+          method?: Database["public"]["Enums"]["payment_method_enum"]
           payment_date: string
           reconciliation_notes?: string | null
+          recorded_by?: string | null
           rto_id: string
+          updated_at?: string
+          updated_by?: string | null
           xero_payment_id?: string | null
           xero_sync_error?: string | null
           xero_sync_status?: string | null
@@ -2672,14 +2680,18 @@ export type Database = {
         }
         Update: {
           amount_cents?: number
+          created_at?: string
           external_ref?: string | null
           id?: string
           invoice_id?: string
           invoice_type?: Database["public"]["Enums"]["invoice_type_enum"]
-          method?: string | null
+          method?: Database["public"]["Enums"]["payment_method_enum"]
           payment_date?: string
           reconciliation_notes?: string | null
+          recorded_by?: string | null
           rto_id?: string
+          updated_at?: string
+          updated_by?: string | null
           xero_payment_id?: string | null
           xero_sync_error?: string | null
           xero_sync_status?: string | null
@@ -2687,10 +2699,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "payments_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "payments_rto_id_fkey"
             columns: ["rto_id"]
             isOneToOne: false
             referencedRelation: "rtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4578,6 +4604,7 @@ export type Database = {
           p_amount_cents: number
           p_invoice_id: string
           p_invoice_type: Database["public"]["Enums"]["invoice_type_enum"]
+          p_method?: Database["public"]["Enums"]["payment_method_enum"]
           p_notes?: string
           p_payment_date: string
         }
@@ -4678,6 +4705,13 @@ export type Database = {
         | "OVERDUE"
         | "SCHEDULED"
       invoice_type_enum: "APPLICATION" | "ENROLLMENT"
+      payment_method_enum:
+        | "CASH"
+        | "CARD"
+        | "BANK_TRANSFER"
+        | "DIRECT_DEBIT"
+        | "CHEQUE"
+        | "OTHER"
       payment_plan_anchor_type:
         | "COMMENCEMENT_DATE"
         | "OFFER_DATE"
@@ -4896,6 +4930,14 @@ export const Constants = {
       invoice_pdf_generation_status: ["pending", "succeeded", "failed"],
       invoice_status: ["DRAFT", "SENT", "PAID", "VOID", "OVERDUE", "SCHEDULED"],
       invoice_type_enum: ["APPLICATION", "ENROLLMENT"],
+      payment_method_enum: [
+        "CASH",
+        "CARD",
+        "BANK_TRANSFER",
+        "DIRECT_DEBIT",
+        "CHEQUE",
+        "OTHER",
+      ],
       payment_plan_anchor_type: [
         "COMMENCEMENT_DATE",
         "OFFER_DATE",
