@@ -50,6 +50,7 @@
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.87.1",
     "@tanstack/react-query": "^5.90.12",
+    "@tanstack/react-table": "^8.20.5",
     "@tiptap/core": "^3.13.0",
     "@tiptap/extension-blockquote": "^3.13.0",
     "@tiptap/extension-bold": "^3.13.0",

@@ -1820,6 +1820,7 @@ export type Database = {
         Row: {
           amount_due_cents: number
           amount_paid_cents: number | null
+          created_at: string
           due_date: string
           enrollment_id: string
           first_overdue_at: string | null
@@ -1837,6 +1838,7 @@ export type Database = {
           pdf_path: string | null
           rto_id: string
           status: Database["public"]["Enums"]["invoice_status"]
+          updated_at: string
           xero_invoice_id: string | null
           xero_sync_error: string | null
           xero_sync_status: string | null
@@ -1845,6 +1847,7 @@ export type Database = {
         Insert: {
           amount_due_cents: number
           amount_paid_cents?: number | null
+          created_at?: string
           due_date: string
           enrollment_id: string
           first_overdue_at?: string | null
@@ -1862,6 +1865,7 @@ export type Database = {
           pdf_path?: string | null
           rto_id: string
           status?: Database["public"]["Enums"]["invoice_status"]
+          updated_at?: string
           xero_invoice_id?: string | null
           xero_sync_error?: string | null
           xero_sync_status?: string | null
@@ -1870,6 +1874,7 @@ export type Database = {
         Update: {
           amount_due_cents?: number
           amount_paid_cents?: number | null
+          created_at?: string
           due_date?: string
           enrollment_id?: string
           first_overdue_at?: string | null
@@ -1887,6 +1892,7 @@ export type Database = {
           pdf_path?: string | null
           rto_id?: string
           status?: Database["public"]["Enums"]["invoice_status"]
+          updated_at?: string
           xero_invoice_id?: string | null
           xero_sync_error?: string | null
           xero_sync_status?: string | null
