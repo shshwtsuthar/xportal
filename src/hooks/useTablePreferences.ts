@@ -5,6 +5,7 @@ import { Tables } from '@/database.types';
 export type TablePreferences = {
   visible_columns: string[];
   column_widths: Record<string, number>;
+  column_order?: string[];
 };
 
 const TABLE_KEY_APPLICATIONS = 'applications.datatable';
@@ -35,7 +36,7 @@ export const useGetTablePreferences = (tableKey: string) => {
       // rto_id is enforced by RLS; we only need table_key and current user
       const { data, error } = await supabase
         .from('user_table_preferences')
-        .select('visible_columns, column_widths')
+        .select('visible_columns, column_widths, column_order')
         .eq('table_key', tableKey)
         .maybeSingle();
 
@@ -47,6 +48,7 @@ export const useGetTablePreferences = (tableKey: string) => {
       return {
         visible_columns: data?.visible_columns ?? [],
         column_widths: (data?.column_widths as Record<string, number>) ?? {},
+        column_order: data?.column_order ?? undefined,
       };
     },
   });
@@ -56,6 +58,7 @@ type UpsertPayload = {
   tableKey: string;
   visible_columns?: string[];
   column_widths?: Record<string, number>;
+  column_order?: string[];
 };
 
 export const useUpsertTablePreferences = () => {
@@ -65,6 +68,7 @@ export const useUpsertTablePreferences = () => {
       tableKey,
       visible_columns,
       column_widths,
+      column_order,
     }: UpsertPayload) => {
       const supabase = createClient();
 
@@ -87,7 +91,7 @@ export const useUpsertTablePreferences = () => {
       // Fetch current to preserve other fields in a single upsert
       const { data: existing, error: readErr } = await supabase
         .from('user_table_preferences')
-        .select('visible_columns, column_widths')
+        .select('visible_columns, column_widths, column_order')
         .eq('table_key', tableKey)
         .maybeSingle();
       if (readErr && readErr.code !== 'PGRST116') {
@@ -99,6 +103,7 @@ export const useUpsertTablePreferences = () => {
         column_widths ??
         (existing?.column_widths as Record<string, number>) ??
         {};
+      const nextOrder = column_order ?? existing?.column_order ?? undefined;
 
       // Insert with defaults; RLS requires rto_id and user_id to match session.
       // rto_id is derived from JWT via server defaults in some tables; here we include it explicitly if required later.
@@ -108,6 +113,7 @@ export const useUpsertTablePreferences = () => {
           visible_columns: nextVisible,
           column_widths:
             nextWidths as unknown as Tables<'user_table_preferences'>['column_widths'],
+          column_order: nextOrder,
           rto_id: rtoId,
           user_id: user.id,
         },

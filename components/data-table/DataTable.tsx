@@ -26,6 +26,7 @@ import { useDataTable } from './hooks/useDataTable';
 import { useColumnPreferences } from './hooks/useColumnPreferences';
 import { useRowSelection } from './hooks/useRowSelection';
 import { useRowReordering } from './hooks/useRowReordering';
+import { useColumnReordering } from './hooks/useColumnReordering';
 import { useExport } from './hooks/useExport';
 import { DataTableHeader } from './DataTableHeader';
 import { DataTablePagination } from './DataTablePagination';
@@ -75,8 +76,10 @@ function DataTableInner<T>(
   const {
     visibleColumns,
     columnWidths,
+    columnOrder,
     toggleColumnVisibility,
     setColumnWidth,
+    setColumnOrder: setColumnOrderFn,
     resetToDefaults,
   } = useColumnPreferences({
     tableKey,
@@ -151,17 +154,32 @@ function DataTableInner<T>(
   // Row reordering
   const {
     isManualOrderActive,
-    draggingId,
-    dragOverId,
-    handleDragStart,
-    handleDragEnter,
-    handleDragEnd,
+    draggingId: rowDraggingId,
+    dragOverId: rowDragOverId,
+    handleDragStart: handleRowDragStart,
+    handleDragEnter: handleRowDragEnter,
+    handleDragEnd: handleRowDragEnd,
     resetManualOrder,
     getOrderedRows,
   } = useRowReordering({
     rows: table.getRowModel().rows,
     onReorder: (reorderedRows) => {
       // Handle reordered rows if needed
+    },
+  });
+
+  // Column reordering
+  const {
+    draggingId: columnDraggingId,
+    dragOverId: columnDragOverId,
+    handleDragStart: handleColumnDragStart,
+    handleDragEnter: handleColumnDragEnter,
+    handleDragEnd: handleColumnDragEnd,
+  } = useColumnReordering({
+    columns,
+    columnOrder,
+    onReorder: (reorderedColumns) => {
+      setColumnOrderFn(reorderedColumns);
     },
   });
 
@@ -219,8 +237,24 @@ function DataTableInner<T>(
 
   // Get visible columns in order
   const visibleColumnsInOrder = useMemo(() => {
-    return columns.filter((col) => visibleColumns.includes(col.id));
-  }, [columns, visibleColumns]);
+    const visible = columns.filter((col) => visibleColumns.includes(col.id));
+
+    // If column order is defined, sort by it
+    if (columnOrder && columnOrder.length > 0) {
+      const orderMap = new Map<string, number>();
+      columnOrder.forEach((id, index) => {
+        orderMap.set(id, index);
+      });
+
+      return [...visible].sort((a, b) => {
+        const aIndex = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+        const bIndex = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+        return aIndex - bIndex;
+      });
+    }
+
+    return visible;
+  }, [columns, visibleColumns, columnOrder]);
 
   // Loading state
   if (isLoading) {
@@ -258,8 +292,15 @@ function DataTableInner<T>(
                       isLastColumn && 'border-r-0'
                     )}
                   >
-                    <div className="flex w-full items-center gap-2 px-4">
-                      <Skeleton className="h-4 w-24" />
+                    <div className="flex w-full items-center gap-2">
+                      {enableColumnReordering && (
+                        <div className="px-1">
+                          <Skeleton className="h-4 w-4" />
+                        </div>
+                      )}
+                      <div className="flex-1 px-4">
+                        <Skeleton className="h-4 w-24" />
+                      </div>
                     </div>
                   </TableHead>
                 );
@@ -426,110 +467,150 @@ function DataTableInner<T>(
                   ? 'asc'
                   : null;
 
+              const isColumnDragging = columnDraggingId === column.id;
+              const isColumnDragOver = columnDragOverId === column.id;
+
               return (
                 <TableHead
                   key={column.id}
                   style={{ width, ...(minWidth && { minWidth }) }}
                   className={cn(
                     'text-muted-foreground group relative h-12 px-0 text-left align-middle font-medium',
-                    isLastColumn && 'border-r-0'
+                    isLastColumn && 'border-r-0',
+                    isColumnDragging && 'opacity-50',
+                    isColumnDragOver && 'bg-muted'
                   )}
+                  onDragEnter={() => {
+                    if (enableColumnReordering) {
+                      handleColumnDragEnter(column.id);
+                    }
+                  }}
+                  onDragOver={(e) => {
+                    if (enableColumnReordering) {
+                      e.preventDefault();
+                    }
+                  }}
                 >
-                  <button
-                    type="button"
-                    className={cn(
-                      'flex w-full items-center gap-2 px-4',
-                      column.enableSorting !== false &&
-                        enableSorting &&
-                        !isManualOrderActive
-                        ? 'hover:text-foreground cursor-pointer'
-                        : 'cursor-default',
-                      isManualOrderActive && 'cursor-not-allowed opacity-50'
+                  <div className="flex w-full items-center gap-2">
+                    {/* Column drag handle */}
+                    {enableColumnReordering && (
+                      <div
+                        className="text-muted-foreground cursor-grab px-1 active:cursor-grabbing"
+                        draggable={true}
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          handleColumnDragStart(column.id);
+                        }}
+                        onDragEnd={handleColumnDragEnd}
+                        aria-label={`Drag to reorder ${typeof column.header === 'string' ? column.header : column.id} column`}
+                      >
+                        <GripVertical className="h-4 w-4" />
+                      </div>
                     )}
-                    onClick={() => {
-                      if (
-                        !column.enableSorting ||
-                        !enableSorting ||
-                        isManualOrderActive
-                      )
-                        return;
+                    <div className="flex-1">
+                      <button
+                        type="button"
+                        className={cn(
+                          'flex flex-1 items-center gap-2 px-4',
+                          column.enableSorting !== false &&
+                            enableSorting &&
+                            !isManualOrderActive
+                            ? 'hover:text-foreground cursor-pointer'
+                            : 'cursor-default',
+                          isManualOrderActive && 'cursor-not-allowed opacity-50'
+                        )}
+                        onClick={() => {
+                          if (
+                            !column.enableSorting ||
+                            !enableSorting ||
+                            isManualOrderActive
+                          )
+                            return;
 
-                      setSorting((prev) => {
-                        const existing = prev.find((s) => s.id === column.id);
-                        if (existing) {
-                          if (existing.desc) {
-                            // Remove sort
-                            return prev.filter((s) => s.id !== column.id);
-                          } else {
-                            // Toggle to desc
-                            return prev.map((s) =>
-                              s.id === column.id ? { ...s, desc: true } : s
-                            );
-                          }
-                        } else {
-                          // Add asc sort
-                          return [{ id: column.id, desc: false }];
-                        }
-                      });
-                    }}
-                    aria-label={`Sort by ${typeof column.header === 'string' ? column.header : column.id}`}
-                    aria-sort={
-                      sortDirection === 'asc'
-                        ? 'ascending'
-                        : sortDirection === 'desc'
-                          ? 'descending'
-                          : 'none'
-                    }
-                    disabled={
-                      !column.enableSorting ||
-                      !enableSorting ||
-                      isManualOrderActive
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        if (
-                          column.enableSorting &&
-                          enableSorting &&
-                          !isManualOrderActive
-                        ) {
                           setSorting((prev) => {
                             const existing = prev.find(
                               (s) => s.id === column.id
                             );
                             if (existing) {
                               if (existing.desc) {
+                                // Remove sort
                                 return prev.filter((s) => s.id !== column.id);
                               } else {
+                                // Toggle to desc
                                 return prev.map((s) =>
                                   s.id === column.id ? { ...s, desc: true } : s
                                 );
                               }
                             } else {
+                              // Add asc sort
                               return [{ id: column.id, desc: false }];
                             }
                           });
+                        }}
+                        aria-label={`Sort by ${typeof column.header === 'string' ? column.header : column.id}`}
+                        aria-sort={
+                          sortDirection === 'asc'
+                            ? 'ascending'
+                            : sortDirection === 'desc'
+                              ? 'descending'
+                              : 'none'
                         }
-                      }
-                    }}
-                  >
-                    <span className="truncate">
-                      {typeof column.header === 'string'
-                        ? column.header
-                        : column.id}
-                    </span>
-                    {column.enableSorting !== false &&
-                      enableSorting &&
-                      !isManualOrderActive && (
-                        <span className="text-muted-foreground ml-1 text-[10px]">
-                          {sortDirection === 'asc' ? (
-                            <ArrowUp className="h-3 w-3" />
-                          ) : sortDirection === 'desc' ? (
-                            <ArrowDown className="h-3 w-3" />
-                          ) : null}
+                        disabled={
+                          !column.enableSorting ||
+                          !enableSorting ||
+                          isManualOrderActive
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            if (
+                              column.enableSorting &&
+                              enableSorting &&
+                              !isManualOrderActive
+                            ) {
+                              setSorting((prev) => {
+                                const existing = prev.find(
+                                  (s) => s.id === column.id
+                                );
+                                if (existing) {
+                                  if (existing.desc) {
+                                    return prev.filter(
+                                      (s) => s.id !== column.id
+                                    );
+                                  } else {
+                                    return prev.map((s) =>
+                                      s.id === column.id
+                                        ? { ...s, desc: true }
+                                        : s
+                                    );
+                                  }
+                                } else {
+                                  return [{ id: column.id, desc: false }];
+                                }
+                              });
+                            }
+                          }
+                        }}
+                      >
+                        <span className="truncate">
+                          {typeof column.header === 'string'
+                            ? column.header
+                            : column.id}
                         </span>
-                      )}
-                  </button>
+                        {column.enableSorting !== false &&
+                          enableSorting &&
+                          !isManualOrderActive && (
+                            <span className="text-muted-foreground ml-1 text-[10px]">
+                              {sortDirection === 'asc' ? (
+                                <ArrowUp className="h-3 w-3" />
+                              ) : sortDirection === 'desc' ? (
+                                <ArrowDown className="h-3 w-3" />
+                              ) : null}
+                            </span>
+                          )}
+                      </button>
+                    </div>
+                  </div>
 
                   {/* Column resize handle */}
                   {enableColumnResizing && (
@@ -576,8 +657,8 @@ function DataTableInner<T>(
         <TableBody className="divide-y">
           {rows.map((row) => {
             const isSelected = tableRowSelection[row.id] || false;
-            const isDragging = draggingId === row.id;
-            const isDragOver = dragOverId === row.id;
+            const isDragging = rowDraggingId === row.id;
+            const isDragOver = rowDragOverId === row.id;
 
             return (
               <TableRow
@@ -593,9 +674,9 @@ function DataTableInner<T>(
                   onRowClick && 'cursor-pointer'
                 )}
                 draggable={enableRowReordering}
-                onDragStart={() => handleDragStart(row.id)}
-                onDragEnter={() => handleDragEnter(row.id)}
-                onDragEnd={handleDragEnd}
+                onDragStart={() => handleRowDragStart(row.id)}
+                onDragEnter={() => handleRowDragEnter(row.id)}
+                onDragEnd={handleRowDragEnd}
                 onClick={() => onRowClick?.(row)}
                 onKeyDown={(e) => {
                   if ((e.key === 'Enter' || e.key === ' ') && onRowClick) {

@@ -4148,6 +4148,7 @@ export type Database = {
       }
       user_table_preferences: {
         Row: {
+          column_order: string[] | null
           column_widths: Json
           created_at: string
           id: string
@@ -4158,6 +4159,7 @@ export type Database = {
           visible_columns: string[]
         }
         Insert: {
+          column_order?: string[] | null
           column_widths?: Json
           created_at?: string
           id?: string
@@ -4168,6 +4170,7 @@ export type Database = {
           visible_columns?: string[]
         }
         Update: {
+          column_order?: string[] | null
           column_widths?: Json
           created_at?: string
           id?: string

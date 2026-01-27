@@ -566,6 +566,7 @@ export const ApplicationsDataTable = forwardRef<
         enableSorting
         enableFiltering
         enableColumnResizing
+        enableColumnReordering
         enableRowReordering
         enablePagination
         enableGlobalSearch
