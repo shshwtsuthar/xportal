@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { PageContainer } from '@/components/page-container';
 
 const StatusBadge = ({ status }: { status: string }) => {
   if (status === 'SENT') {
@@ -47,16 +48,10 @@ export default function AnnouncementsPage() {
   const { data: announcements = [], isLoading } = useGetAnnouncements();
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Announcements
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Create and manage announcements for students and applications
-          </p>
-        </div>
+    <PageContainer
+      title="Announcements"
+      description="Create and manage announcements for students and applications"
+      actions={
         <Button
           type="button"
           onClick={() => setIsDialogOpen(true)}
@@ -64,8 +59,8 @@ export default function AnnouncementsPage() {
         >
           New Announcement +
         </Button>
-      </div>
-
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -146,6 +141,6 @@ export default function AnnouncementsPage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
       />
-    </div>
+    </PageContainer>
   );
 }

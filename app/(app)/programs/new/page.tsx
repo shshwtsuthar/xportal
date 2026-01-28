@@ -19,6 +19,7 @@ import {
 import { ProgramForm } from '../_components/ProgramForm';
 import { useCreateProgram } from '@/src/hooks/useCreateProgram';
 import { useRouter } from 'next/navigation';
+import { PageContainer } from '@/components/page-container';
 
 export default function NewProgramPage() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export default function NewProgramPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <PageContainer title="New Program">
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -77,6 +78,6 @@ export default function NewProgramPage() {
           </CardFooter>
         </Form>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

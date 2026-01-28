@@ -21,6 +21,7 @@ import {
 import { SubjectForm } from '../../_components/SubjectForm';
 import { createClient } from '@/lib/supabase/client';
 import { useUpdateSubject } from '@/src/hooks/useUpdateSubject';
+import { PageContainer } from '@/components/page-container';
 
 export default function EditSubjectPage() {
   const params = useParams();
@@ -74,7 +75,7 @@ export default function EditSubjectPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <PageContainer title="Edit Subject">
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -98,6 +99,6 @@ export default function EditSubjectPage() {
           </CardFooter>
         </Form>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

@@ -24,6 +24,7 @@ import {
 import { MoreHorizontal, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMemo } from 'react';
+import { PageContainer } from '@/components/page-container';
 
 export default function ProgramPlansPage() {
   const router = useRouter();
@@ -41,21 +42,15 @@ export default function ProgramPlansPage() {
   const isLoading = plansLoading || programsLoading;
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Program Plans
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Reusable academic schedules per program
-          </p>
-        </div>
+    <PageContainer
+      title="Program Plans"
+      description="Reusable academic schedules per program"
+      actions={
         <Button onClick={() => router.push('/program-plans/new')}>
           <Plus className="mr-2 h-4 w-4" /> Create New Program Plan
         </Button>
-      </div>
-
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -159,6 +154,6 @@ export default function ProgramPlansPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

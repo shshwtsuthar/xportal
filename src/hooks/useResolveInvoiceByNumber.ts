@@ -11,6 +11,7 @@ export type ResolvedInvoiceByNumber = {
   due_date: string | null;
   amount_due_cents: number | null;
   amount_paid_cents: number | null;
+  client_name?: string | null;
 };
 
 export const useResolveInvoiceByNumber = (
@@ -29,12 +30,19 @@ export const useResolveInvoiceByNumber = (
         const { data, error } = await supabase
           .from('application_invoices')
           .select(
-            'id, invoice_number, status, issue_date, due_date, amount_due_cents, amount_paid_cents'
+            'id, invoice_number, status, issue_date, due_date, amount_due_cents, amount_paid_cents, applications:application_id(first_name, last_name)'
           )
           .eq('invoice_number', invoiceNumber)
           .maybeSingle();
         if (error) throw new Error(error.message);
         if (!data) return null;
+        const app = data.applications as {
+          first_name: string | null;
+          last_name: string | null;
+        } | null;
+        const client_name = app
+          ? [app.first_name, app.last_name].filter(Boolean).join(' ') || null
+          : null;
         return {
           id: data.id,
           invoice_number: data.invoice_number,
@@ -44,6 +52,7 @@ export const useResolveInvoiceByNumber = (
           due_date: data.due_date,
           amount_due_cents: data.amount_due_cents,
           amount_paid_cents: data.amount_paid_cents,
+          client_name,
         };
       };
 
@@ -51,12 +60,25 @@ export const useResolveInvoiceByNumber = (
         const { data, error } = await supabase
           .from('enrollment_invoices')
           .select(
-            'id, invoice_number, status, issue_date, due_date, amount_due_cents, amount_paid_cents'
+            'id, invoice_number, status, issue_date, due_date, amount_due_cents, amount_paid_cents, enrollments:enrollment_id(students:student_id(first_name, last_name))'
           )
           .eq('invoice_number', invoiceNumber)
           .maybeSingle();
         if (error) throw new Error(error.message);
         if (!data) return null;
+        const enrollments = data.enrollments as {
+          students?: {
+            first_name: string | null;
+            last_name: string | null;
+          } | null;
+        } | null;
+        const students = enrollments?.students;
+        const client_name =
+          students && (students.first_name || students.last_name)
+            ? [students.first_name, students.last_name]
+                .filter(Boolean)
+                .join(' ') || null
+            : null;
         return {
           id: data.id,
           invoice_number: data.invoice_number,
@@ -66,6 +88,7 @@ export const useResolveInvoiceByNumber = (
           due_date: data.due_date,
           amount_due_cents: data.amount_due_cents,
           amount_paid_cents: data.amount_paid_cents,
+          client_name,
         };
       };
 

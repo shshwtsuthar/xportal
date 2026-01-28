@@ -41,6 +41,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { useMemo, use } from 'react';
 import { Tables } from '@/database.types';
+import { PageContainer } from '@/components/page-container';
 
 type TimetableDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -101,22 +102,22 @@ export default function TimetableDetailPage({
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <PageContainer title="Loading...">
         <p className="text-muted-foreground text-sm">Loading timetable...</p>
-      </div>
+      </PageContainer>
     );
   }
 
   if (!timetable) {
     return (
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <PageContainer title="Timetable not found">
         <p className="text-muted-foreground text-sm">Timetable not found</p>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <PageContainer>
       <div className="mb-6 flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/timetables">
@@ -390,6 +391,6 @@ export default function TimetableDetailPage({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }

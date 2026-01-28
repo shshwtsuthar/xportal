@@ -37,6 +37,7 @@ import {
 import { useGetRto } from '@/src/hooks/useGetRto';
 import { useUpdateRto } from '@/src/hooks/useUpdateRto';
 import { RtoProfileImageSection } from '@/app/(app)/rto/_components/RtoProfileImageSection';
+import { PageContainer } from '@/components/page-container';
 
 type SettingsSection = {
   id: string;
@@ -152,14 +153,10 @@ export default function GlobalSettingsPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground text-sm">
-          Configure application settings and preferences
-        </p>
-      </div>
-
+    <PageContainer
+      title="Settings"
+      description="Configure application settings and preferences"
+    >
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Mobile Section Selector */}
         <div className="md:hidden">
@@ -780,6 +777,6 @@ export default function GlobalSettingsPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

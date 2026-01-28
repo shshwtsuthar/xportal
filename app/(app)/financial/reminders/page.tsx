@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Settings } from 'lucide-react';
 import { RemindersDataTable } from './_components/RemindersDataTable';
 import { SetIssueDateDialog } from './_components/SetIssueDateDialog';
@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { PageContainer } from '@/components/page-container';
 
 export default function RemindersPage() {
   const { data: reminders, isLoading } = useGetPaymentPlanReminders();
@@ -59,28 +60,26 @@ export default function RemindersPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <PageContainer
+      title="Payment Reminders"
+      description="Configure when reminders are sent for payment plans"
+      actions={
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsIssueDateDialogOpen(true)}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Set Issue Date
+          </Button>
+          <Button onClick={() => setIsNewReminderDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Reminder
+          </Button>
+        </div>
+      }
+    >
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-semibold tracking-tight">
-              Payment Reminders
-            </CardTitle>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsIssueDateDialogOpen(true)}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Set Issue Date
-              </Button>
-              <Button onClick={() => setIsNewReminderDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Reminder
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="text-muted-foreground py-8 text-center">
@@ -133,6 +132,6 @@ export default function RemindersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   );
 }

@@ -46,6 +46,7 @@ import {
   type MailTemplatesFilters,
   type MailTemplateListItem,
 } from '@/src/hooks/useGetMailTemplates';
+import { PageContainer } from '@/components/page-container';
 
 const StatusBadge = ({ status }: { status: string }) => {
   // Use semantic Badge variants per ui.md guidelines
@@ -241,14 +242,10 @@ export default function MailPage() {
   );
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Mail</h1>
-          <p className="text-muted-foreground text-sm">
-            View and manage outbound emails
-          </p>
-        </div>
+    <PageContainer
+      title="Mail"
+      description="View and manage outbound emails"
+      actions={
         <Button
           type="button"
           onClick={beginTemplateFlow}
@@ -256,8 +253,8 @@ export default function MailPage() {
         >
           New Mail Template +
         </Button>
-      </div>
-
+      }
+    >
       {/* Stats */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
@@ -864,6 +861,6 @@ export default function MailPage() {
         initialSubject={editingTemplate?.subject}
         initialHtml={editingTemplate?.html_body}
       />
-    </div>
+    </PageContainer>
   );
 }

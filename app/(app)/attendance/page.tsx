@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/command';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { PageContainer } from '@/components/page-container';
 
 // TODO: Wire real hooks once migration/types are applied
 // Placeholder data hooks (to be implemented):
@@ -93,11 +94,7 @@ export default function AttendancePage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Attendance</h1>
-      </div>
-
+    <PageContainer title="Attendance">
       <Card>
         <CardHeader>
           <CardTitle>Manage Attendance</CardTitle>
@@ -523,6 +520,6 @@ export default function AttendancePage() {
           </Tabs>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

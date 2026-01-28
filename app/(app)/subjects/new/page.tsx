@@ -19,6 +19,7 @@ import {
 import { SubjectForm } from '../_components/SubjectForm';
 import { useCreateSubject } from '@/src/hooks/useCreateSubject';
 import { useRouter } from 'next/navigation';
+import { PageContainer } from '@/components/page-container';
 
 export default function NewSubjectPage() {
   const router = useRouter();
@@ -49,7 +50,7 @@ export default function NewSubjectPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <PageContainer title="New Subject">
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -73,6 +74,6 @@ export default function NewSubjectPage() {
           </CardFooter>
         </Form>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

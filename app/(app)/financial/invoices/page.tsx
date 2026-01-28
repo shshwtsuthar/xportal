@@ -14,6 +14,7 @@ import { ExportDialogInvoices } from './_components/ExportDialogInvoices';
 import { InvoiceStats } from './_components/InvoiceStats';
 import { useInvoicesFilters } from '@/src/hooks/useInvoicesFilters';
 import { useGetInvoices } from '@/src/hooks/useGetInvoices';
+import { PageContainer } from '@/components/page-container';
 
 export default function InvoicesPage() {
   const tableRef = useRef<InvoicesDataTableRef>(null);
@@ -43,14 +44,10 @@ export default function InvoicesPage() {
   const getRowsForExport = () => tableRef.current?.getRows() ?? [];
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Invoices</h1>
-        <p className="text-muted-foreground text-sm">
-          View and manage student invoices and payments
-        </p>
-      </div>
-
+    <PageContainer
+      title="Invoices"
+      description="View and manage student invoices and payments"
+    >
       {/* Invoice Statistics Cards */}
       <div className="mb-6">
         {isLoading ? (
@@ -123,6 +120,6 @@ export default function InvoicesPage() {
         getRows={getRowsForExport}
         filters={effectiveFilters}
       />
-    </div>
+    </PageContainer>
   );
 }

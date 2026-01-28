@@ -17,6 +17,7 @@ import { useGetStudentStats } from '@/src/hooks/useGetStudentStats';
 import { useComposeEmail } from '@/components/providers/compose-email';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageContainer } from '@/components/page-container';
 import type { Database } from '@/database.types';
 
 type StudentStatus = Database['public']['Enums']['student_status'];
@@ -71,16 +72,7 @@ export default function StudentsPage() {
     : filters;
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Students</h1>
-          <p className="text-muted-foreground text-sm">
-            View and manage students
-          </p>
-        </div>
-      </div>
-
+    <PageContainer title="Students" description="View and manage students">
       {/* Student Statistics Cards */}
       <div className="mb-6">
         {statsLoading ? (
@@ -183,6 +175,6 @@ export default function StudentsPage() {
         getRows={getRowsForExport}
         filters={effectiveFilters}
       />
-    </div>
+    </PageContainer>
   );
 }

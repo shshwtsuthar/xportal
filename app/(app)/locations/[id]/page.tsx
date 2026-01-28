@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Edit } from 'lucide-react';
 import { useGetLocation } from '@/src/hooks/useGetLocation';
 import { ClassroomsDataTable } from '../_components/ClassroomsDataTable';
+import { PageContainer } from '@/components/page-container';
 
 const stateMap: Record<string, string> = {
   VIC: 'Victoria',
@@ -29,31 +30,21 @@ export default function LocationDetailPage() {
   const { data: location, isLoading, isError } = useGetLocation(id);
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Loading...</h1>
-        </div>
-      </div>
-    );
+    return <PageContainer title="Loading..." />;
   }
 
   if (isError || !location) {
     return (
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Location Not Found
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            The requested location could not be found.
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => router.push('/locations')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Locations
-        </Button>
-      </div>
+      <PageContainer
+        title="Location Not Found"
+        description="The requested location could not be found."
+        actions={
+          <Button variant="outline" onClick={() => router.push('/locations')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Locations
+          </Button>
+        }
+      />
     );
   }
 
@@ -142,14 +133,10 @@ export default function LocationDetailPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {location.name}
-          </h1>
-          <p className="text-muted-foreground text-sm">Location Details</p>
-        </div>
+    <PageContainer
+      title={location.name}
+      description="Location Details"
+      actions={
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => router.push('/locations')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -162,8 +149,8 @@ export default function LocationDetailPage() {
             </Link>
           </Button>
         </div>
-      </div>
-
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -189,6 +176,6 @@ export default function LocationDetailPage() {
         </CardHeader>
         <CardContent>{renderTabContent()}</CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

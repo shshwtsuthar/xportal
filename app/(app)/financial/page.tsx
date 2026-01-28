@@ -2,17 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PageContainer } from '@/components/page-container';
 
 export default function FinanceDashboardPage() {
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Finance</h1>
-        <p className="text-muted-foreground text-sm">
-          KPIs and daily workflow overview
-        </p>
-      </div>
-
+    <PageContainer
+      title="Finance"
+      description="KPIs and daily workflow overview"
+    >
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
@@ -42,6 +39,6 @@ export default function FinanceDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   );
 }

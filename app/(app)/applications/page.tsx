@@ -18,6 +18,7 @@ import { Archive, Download, Mail } from 'lucide-react';
 import { useGetApplications } from '@/src/hooks/useGetApplications';
 import { useApplicationsFilters } from '@/src/hooks/useApplicationsFilters';
 import Link from 'next/link';
+import { PageContainer } from '@/components/page-container';
 import { PlusIcon, type PlusIconHandle } from '@/components/ui/plus';
 import { useComposeEmail } from '@/components/providers/compose-email';
 import { toast } from 'sonner';
@@ -77,16 +78,10 @@ export default function ApplicationsPage() {
     : filters;
 
   return (
-    <div className="mx-auto w-full max-w-full p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Applications
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            View and manage student applications
-          </p>
-        </div>
+    <PageContainer
+      title="Applications"
+      description="View and manage student applications"
+      actions={
         <Button asChild>
           <Link
             href="/applications/new"
@@ -97,8 +92,8 @@ export default function ApplicationsPage() {
             New Application
           </Link>
         </Button>
-      </div>
-
+      }
+    >
       {/* Application Statistics Cards */}
       <div className="mb-6">
         {isLoading ? (
@@ -234,6 +229,6 @@ export default function ApplicationsPage() {
         getRows={getRowsForExport}
         filters={effectiveFilters}
       />
-    </div>
+    </PageContainer>
   );
 }

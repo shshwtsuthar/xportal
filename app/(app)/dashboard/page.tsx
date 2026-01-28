@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { PageContainer } from '@/components/page-container';
 import SpotlightCard from '@/components/ui/spotlight-card';
 import { CumulativeMetricsChart } from './_components/CumulativeMetricsChart';
 
@@ -87,14 +88,10 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Welcome to your Dashboard
-        </h1>
-        <p className="text-muted-foreground">Welcome back, {firstName}!</p>
-      </div>
-
+    <PageContainer
+      title="Welcome to your Dashboard"
+      description={`Welcome back, ${firstName}!`}
+    >
       <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => (
           <SpotlightCard
@@ -109,6 +106,6 @@ export default async function DashboardPage() {
       <section className="mt-8">
         <CumulativeMetricsChart />
       </section>
-    </div>
+    </PageContainer>
   );
 }

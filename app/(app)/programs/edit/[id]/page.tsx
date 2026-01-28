@@ -21,6 +21,7 @@ import {
 import { ProgramForm } from '../../_components/ProgramForm';
 import { createClient } from '@/lib/supabase/client';
 import { useUpdateProgram } from '@/src/hooks/useUpdateProgram';
+import { PageContainer } from '@/components/page-container';
 
 export default function EditProgramPage() {
   const params = useParams();
@@ -82,7 +83,7 @@ export default function EditProgramPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <PageContainer title="Edit Program">
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -106,6 +107,6 @@ export default function EditProgramPage() {
           </CardFooter>
         </Form>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

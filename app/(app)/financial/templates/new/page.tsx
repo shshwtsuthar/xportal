@@ -19,6 +19,7 @@ import { useUpsertTemplateInstallmentLines } from '@/src/hooks/useUpsertTemplate
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
+import { PageContainer } from '@/components/page-container';
 
 const templateSchema = z.object({
   name: z.string().min(1, 'Template name is required'),
@@ -181,7 +182,7 @@ export default function NewPaymentPlanTemplatePage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <PageContainer title="New Payment Plan Template">
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -216,6 +217,6 @@ export default function NewPaymentPlanTemplatePage() {
           </CardFooter>
         </Form>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

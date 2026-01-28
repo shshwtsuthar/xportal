@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageContainer } from '@/components/page-container';
 
 export default function BankInformationPage() {
   const { data: bankInfo, isLoading, error } = useGetBankInfo();
@@ -82,20 +83,23 @@ export default function BankInformationPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <PageContainer title="Bank Information">
         <Card>
           <CardContent className="py-8">
             <Skeleton className="mb-4 h-8 w-48" />
             <Skeleton className="h-64 w-full" />
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <PageContainer
+        title="Bank Information"
+        description="Failed to load bank information"
+      >
         <Card>
           <CardContent className="py-8">
             <p className="text-destructive text-center text-sm">
@@ -103,23 +107,15 @@ export default function BankInformationPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Bank Information
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Manage bank account details for invoice payments
-          </p>
-        </div>
-      </div>
-
+    <PageContainer
+      title="Bank Information"
+      description="Manage bank account details for invoice payments"
+    >
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -137,6 +133,6 @@ export default function BankInformationPage() {
           </CardFooter>
         </Form>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

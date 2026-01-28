@@ -15,6 +15,7 @@ import { DepositStats } from './_components/DepositStats';
 import { ExportDialog } from './_components/ExportDialog';
 import { useDepositsFilters } from '@/src/hooks/useDepositsFilters';
 import { useGetApplicationInvoices } from '@/src/hooks/useGetApplicationInvoices';
+import { PageContainer } from '@/components/page-container';
 import { Download } from 'lucide-react';
 
 export default function DepositsPage() {
@@ -65,16 +66,10 @@ export default function DepositsPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Deposits</h1>
-          <p className="text-muted-foreground text-sm">
-            View and manage application deposit invoices and payments
-          </p>
-        </div>
-      </div>
-
+    <PageContainer
+      title="Deposits"
+      description="View and manage application deposit invoices and payments"
+    >
       <div className="mb-8">
         {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -181,6 +176,6 @@ export default function DepositsPage() {
         getRows={getRowsForExport}
         filters={effectiveFilters}
       />
-    </div>
+    </PageContainer>
   );
 }

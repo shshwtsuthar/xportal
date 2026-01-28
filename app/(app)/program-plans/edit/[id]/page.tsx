@@ -5,6 +5,7 @@ import { ProgramPlanWizard } from '../../_components/ProgramPlanWizard';
 import { useGetProgramPlans } from '@/src/hooks/useGetProgramPlans';
 import { Tables } from '@/database.types';
 import { useMemo } from 'react';
+import { PageContainer } from '@/components/page-container';
 
 export default function EditProgramPlanPage() {
   const params = useParams();
@@ -21,27 +22,15 @@ export default function EditProgramPlanPage() {
   }, [id, plans]);
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Loading...</h1>
-        </div>
-      </div>
-    );
+    return <PageContainer title="Loading..." />;
   }
 
   if (!plan) {
     return (
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Program Plan Not Found
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            The requested program plan could not be found.
-          </p>
-        </div>
-      </div>
+      <PageContainer
+        title="Program Plan Not Found"
+        description="The requested program plan could not be found."
+      />
     );
   }
 

@@ -8,6 +8,7 @@ import {
   type CommissionsDataTableRef,
 } from './_components/CommissionsDataTable';
 import type { CommissionInvoiceFilters } from '@/src/hooks/useGetCommissionInvoices';
+import { PageContainer } from '@/components/page-container';
 
 export default function CommissionsPage() {
   const tableRef = useRef<CommissionsDataTableRef>(null);
@@ -27,14 +28,10 @@ export default function CommissionsPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Commissions</h1>
-        <p className="text-muted-foreground text-sm">
-          View and manage agent commission invoices
-        </p>
-      </div>
-
+    <PageContainer
+      title="Commissions"
+      description="View and manage agent commission invoices"
+    >
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -74,6 +71,6 @@ export default function CommissionsPage() {
           <CommissionsDataTable ref={tableRef} filters={effectiveFilters} />
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

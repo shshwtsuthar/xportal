@@ -22,6 +22,7 @@ import { useGetPaymentPlanTemplate } from '@/src/hooks/useGetPaymentPlanTemplate
 import { useGetTemplateInstallments } from '@/src/hooks/useGetTemplateInstallments';
 import { createClient } from '@/lib/supabase/client';
 import { z } from 'zod';
+import { PageContainer } from '@/components/page-container';
 
 const templateSchema = z.object({
   name: z.string().min(1, 'Template name is required'),
@@ -339,7 +340,7 @@ export default function EditPaymentPlanTemplatePage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <PageContainer title="Edit Payment Plan Template">
         <Card>
           <CardContent className="py-8">
             <p className="text-muted-foreground text-center text-sm">
@@ -347,13 +348,13 @@ export default function EditPaymentPlanTemplatePage() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     );
   }
 
   if (!template) {
     return (
-      <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <PageContainer title="Template not found">
         <Card>
           <CardContent className="py-8">
             <p className="text-muted-foreground text-center text-sm">
@@ -361,12 +362,12 @@ export default function EditPaymentPlanTemplatePage() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <PageContainer title="Edit Payment Plan Template">
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -461,6 +462,6 @@ export default function EditPaymentPlanTemplatePage() {
           </CardFooter>
         </Form>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

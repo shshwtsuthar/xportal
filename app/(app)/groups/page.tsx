@@ -52,6 +52,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { PageContainer } from '@/components/page-container';
 
 export default function GroupsPage() {
   const { data: groups = [], isLoading: groupsLoading } = useGetGroups();
@@ -184,14 +185,10 @@ export default function GroupsPage() {
     parseInt(formData.max_capacity, 10) > maxClassroomCapacity;
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Groups</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage student groups with capacity constraints
-          </p>
-        </div>
+    <PageContainer
+      title="Groups"
+      description="Manage student groups with capacity constraints"
+      actions={
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleOpenCreateDialog}>
@@ -350,8 +347,8 @@ export default function GroupsPage() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
-
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -458,6 +455,6 @@ export default function GroupsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

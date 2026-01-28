@@ -21,6 +21,7 @@ import { useGetProgramPlans } from '@/src/hooks/useGetProgramPlans';
 import { useAddProgramPlansToTimetable } from '@/src/hooks/useAddProgramPlansToTimetable';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PageContainer } from '@/components/page-container';
 
 export default function NewTimetablePage() {
   const router = useRouter();
@@ -79,24 +80,18 @@ export default function NewTimetablePage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center gap-4">
+    <PageContainer
+      title="New Timetable"
+      description="Create a new academic schedule template"
+      actions={
         <Button variant="ghost" size="sm" asChild>
           <Link href="/timetables">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Timetables
           </Link>
         </Button>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            New Timetable
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Create a new academic schedule template
-          </p>
-        </div>
-      </div>
-
+      }
+    >
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle>Create Timetable</CardTitle>
@@ -210,6 +205,6 @@ export default function NewTimetablePage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

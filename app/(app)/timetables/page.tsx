@@ -23,6 +23,7 @@ import { useGetTimetables } from '@/src/hooks/useGetTimetables';
 import { useGetPrograms } from '@/src/hooks/useGetPrograms';
 import { useDeleteTimetable } from '@/src/hooks/useDeleteTimetable';
 import { useMemo } from 'react';
+import { PageContainer } from '@/components/page-container';
 
 export default function TimetablesPage() {
   const { data: timetables = [], isLoading: timetablesLoading } =
@@ -39,22 +40,18 @@ export default function TimetablesPage() {
   const isLoading = timetablesLoading || programsLoading;
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Timetables</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage academic schedules and program plan cycles
-          </p>
-        </div>
+    <PageContainer
+      title="Timetables"
+      description="Manage academic schedules and program plan cycles"
+      actions={
         <Button asChild>
           <Link href="/timetables/new">
             <Plus className="mr-2 h-4 w-4" />
             New Timetable
           </Link>
         </Button>
-      </div>
-
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -144,6 +141,6 @@ export default function TimetablesPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

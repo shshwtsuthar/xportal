@@ -17,7 +17,7 @@ export default function AppLayout({
         <SidebarInset>
           <AppTopbar />
           <QueryProvider>
-            <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
+            <div className="flex flex-1 flex-col gap-6">{children}</div>
           </QueryProvider>
         </SidebarInset>
       </SidebarProvider>

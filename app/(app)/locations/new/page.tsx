@@ -19,6 +19,7 @@ import {
 import { LocationForm } from '../_components/LocationForm';
 import { useCreateLocation } from '@/src/hooks/useCreateLocation';
 import { useRouter } from 'next/navigation';
+import { PageContainer } from '@/components/page-container';
 
 export default function NewLocationPage() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export default function NewLocationPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <PageContainer title="New Location">
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">
@@ -77,6 +78,6 @@ export default function NewLocationPage() {
           </CardFooter>
         </Form>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

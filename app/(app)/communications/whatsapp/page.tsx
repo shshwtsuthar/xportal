@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { buildUrlWithParams } from '@/lib/utils/url';
+import { PageContainer } from '@/components/page-container';
 import SenderTabs from '@/components/whatsapp/SenderTabs';
 import ThreadList from '@/components/whatsapp/ThreadList';
 import MessagePane from '@/components/whatsapp/MessagePane';
@@ -19,13 +20,8 @@ export default function WhatsAppPage() {
   const senderId = senderParam === 'auto' ? '' : senderParam;
   const threadId = qp.get('thread') || '';
 
-  // Default tab is handled by local fallback; no effect needed
-
   return (
-    <div className="space-y-6 p-4 md:p-6 lg:p-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">WhatsApp</h1>
-      </div>
+    <PageContainer title="WhatsApp" className="space-y-6">
       <Tabs
         value={tab}
         onValueChange={(v) => {
@@ -69,6 +65,6 @@ export default function WhatsAppPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageContainer>
   );
 }
