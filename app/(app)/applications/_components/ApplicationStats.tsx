@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatCard } from '@/components/ui/stat-card';
 import { FileText, Calendar, CheckCircle2, TrendingUp } from 'lucide-react';
 import { Tables } from '@/database.types';
 import { startOfDay, startOfWeek, isAfter, isSameDay } from 'date-fns';
@@ -41,61 +41,26 @@ export function ApplicationStats({ applications }: Props) {
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Total Applications
-          </CardTitle>
-          <FileText className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.totalApplications}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Created Today
-          </CardTitle>
-          <Calendar className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.applicationsToday}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            This Week
-          </CardTitle>
-          <TrendingUp className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.applicationsThisWeek}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Approved
-          </CardTitle>
-          <CheckCircle2 className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.approvedApplications}
-          </div>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Total Applications"
+        value={String(stats.totalApplications)}
+        icon={FileText}
+      />
+      <StatCard
+        title="Created Today"
+        value={String(stats.applicationsToday)}
+        icon={Calendar}
+      />
+      <StatCard
+        title="This Week"
+        value={String(stats.applicationsThisWeek)}
+        icon={TrendingUp}
+      />
+      <StatCard
+        title="Approved"
+        value={String(stats.approvedApplications)}
+        icon={CheckCircle2}
+      />
     </div>
   );
 }

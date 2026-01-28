@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatCard } from '@/components/ui/stat-card';
 import { FileText, AlertCircle, DollarSign, TrendingUp } from 'lucide-react';
 import { startOfWeek, isAfter } from 'date-fns';
 import type { Tables } from '@/database.types';
@@ -69,61 +69,26 @@ export function InvoiceStats({ invoices }: Props) {
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Total Invoices
-          </CardTitle>
-          <FileText className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.totalInvoices}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Overdue Invoices
-          </CardTitle>
-          <AlertCircle className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.overdueInvoices}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Total Amount Due
-          </CardTitle>
-          <DollarSign className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {formatCurrency(stats.totalAmountDueDollars)}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Issued This Week
-          </CardTitle>
-          <TrendingUp className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.issuedThisWeek}
-          </div>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Total Invoices"
+        value={String(stats.totalInvoices)}
+        icon={FileText}
+      />
+      <StatCard
+        title="Overdue Invoices"
+        value={String(stats.overdueInvoices)}
+        icon={AlertCircle}
+      />
+      <StatCard
+        title="Total Amount Due"
+        value={formatCurrency(stats.totalAmountDueDollars)}
+        icon={DollarSign}
+      />
+      <StatCard
+        title="Issued This Week"
+        value={String(stats.issuedThisWeek)}
+        icon={TrendingUp}
+      />
     </div>
   );
 }

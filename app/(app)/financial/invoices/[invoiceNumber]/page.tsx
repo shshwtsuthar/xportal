@@ -16,7 +16,7 @@ import {
 import { toast } from 'sonner';
 import { InvoiceHeader } from '@/components/invoice/invoice-header';
 import { InvoiceDetails } from '@/components/invoice/invoice-details';
-import { StatCard } from '@/components/invoice/stat-card';
+import { StatCard } from '@/components/ui/stat-card';
 import {
   InvoicePaymentsDataTable,
   type InvoicePaymentsDataTableRef,

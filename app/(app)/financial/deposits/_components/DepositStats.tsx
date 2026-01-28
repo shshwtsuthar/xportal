@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatCard } from '@/components/ui/stat-card';
 import { FileText, DollarSign, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { startOfWeek, isAfter } from 'date-fns';
 import type { Tables } from '@/database.types';
@@ -86,61 +86,26 @@ export function DepositStats({ deposits }: Props) {
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Total Deposits
-          </CardTitle>
-          <FileText className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.totalDeposits}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Unpaid Deposits
-          </CardTitle>
-          <DollarSign className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.unpaidDeposits}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Total Amount Due
-          </CardTitle>
-          <DollarSign className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {formatCurrency(stats.totalAmountDueDollars)}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium">
-            Issued This Week
-          </CardTitle>
-          <TrendingUp className="text-muted-foreground h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.issuedThisWeek}
-          </div>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Total Deposits"
+        value={String(stats.totalDeposits)}
+        icon={FileText}
+      />
+      <StatCard
+        title="Unpaid Deposits"
+        value={String(stats.unpaidDeposits)}
+        icon={DollarSign}
+      />
+      <StatCard
+        title="Total Amount Due"
+        value={formatCurrency(stats.totalAmountDueDollars)}
+        icon={DollarSign}
+      />
+      <StatCard
+        title="Issued This Week"
+        value={String(stats.issuedThisWeek)}
+        icon={TrendingUp}
+      />
     </div>
   );
 }
