@@ -3,6 +3,8 @@ import {
   type ApplicationFormValues,
   isAustralianAddress,
   deriveIsInternational,
+  OVERSEAS_POSTCODE,
+  OVERSEAS_STATE_CODE,
 } from './application.ts';
 
 // Use master schema for submission validation - ensures consistency
@@ -41,6 +43,11 @@ function normalizeIncomingValues(values: unknown): unknown {
     withUndef.is_international = deriveIsInternational(
       withUndef.citizenship_status_code
     );
+  }
+  // International students: street address must use OVS/OSPC (AVETMISS)
+  if (withUndef.is_international === true) {
+    withUndef.state = OVERSEAS_STATE_CODE;
+    withUndef.postcode = OVERSEAS_POSTCODE;
   }
   // Normalize boolean-like flags to AVETMISS enums expected by schema
   // Ensure flags are never undefined - default to '@' if missing

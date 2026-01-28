@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import {
   FormControl,
@@ -21,7 +21,11 @@ import {
 } from '@/components/ui/select';
 import { CountrySelect } from '@/components/ui/country-select';
 import { StateSelect } from '@/components/ui/state-select';
-import { ApplicationFormValues } from '@/src/lib/applicationSchema';
+import {
+  ApplicationFormValues,
+  OVERSEAS_POSTCODE,
+  OVERSEAS_STATE_CODE,
+} from '@/src/lib/applicationSchema';
 import { useGetAgents } from '@/src/hooks/useGetAgents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AddressSearchCommand } from '@/app/(app)/applications/_components/wizard/AddressSearchCommand';
@@ -91,6 +95,20 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
     },
     [form]
   );
+
+  // Pre-fill street address state/postcode for international students (AVETMISS OVS/OSPC)
+  // Note: Only applies to street address, not postal address
+  useEffect(() => {
+    if (isInternational !== true) return;
+    form.setValue('state', OVERSEAS_STATE_CODE, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    form.setValue('postcode', OVERSEAS_POSTCODE, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+  }, [isInternational, form]);
 
   const handleStreetSearchSelect = useCallback(
     (suggestion: AddressSuggestion) => {
@@ -403,6 +421,7 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
                     value={field.value}
                     onValueChange={field.onChange}
                     countryCode={streetCountry}
+                    allowOverseas={isInternational === true}
                     placeholder="VIC"
                   />
                 </FormControl>
@@ -417,7 +436,13 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
               <FormItem>
                 <FormLabel>Postcode *</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="3000" />
+                  <Input
+                    {...field}
+                    placeholder={isInternational ? 'OSPC' : '3000'}
+                    readOnly={isInternational === true}
+                    aria-readonly={isInternational === true}
+                    className={isInternational ? 'bg-muted' : undefined}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

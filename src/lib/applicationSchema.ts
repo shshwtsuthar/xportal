@@ -38,6 +38,12 @@ export const deriveIsInternational = (citizenship?: string | null) => {
   return citizenship.trim().toUpperCase() === 'INTL';
 };
 
+/** State code for overseas/international student street address (AVETMISS). */
+export const OVERSEAS_STATE_CODE = 'OVS' as const;
+
+/** Postcode for overseas/international student street address (AVETMISS). */
+export const OVERSEAS_POSTCODE = 'OSPC' as const;
+
 /**
  * Validates Australian phone number formats.
  * Accepts common formats:
@@ -304,13 +310,7 @@ export const applicationSchema = z
     address_line_1: z.string().optional().or(z.literal('')),
     suburb: z.string().min(1, 'Suburb is required'),
     state: z.string().min(1, 'State is required'),
-    postcode: z
-      .string()
-      .min(1, 'Postcode is required')
-      .refine(
-        (val) => isValidPostcode(val),
-        'Enter a valid postcode (4 digits)'
-      ),
+    postcode: z.string().min(1, 'Postcode is required'),
 
     // Structured Street Address
     street_building_name: z.string().optional(),
@@ -637,6 +637,36 @@ export const applicationSchema = z
     {
       message: 'International status is derived from the citizenship selection',
       path: ['is_international'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.is_international !== true) return true;
+      return data.state === OVERSEAS_STATE_CODE;
+    },
+    {
+      message: 'International students must use state OVS (Overseas)',
+      path: ['state'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.is_international !== true) return true;
+      return data.postcode === OVERSEAS_POSTCODE;
+    },
+    {
+      message: 'International students must use postcode OSPC (Overseas)',
+      path: ['postcode'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.is_international === true) return true;
+      return isValidPostcode(data.postcode);
+    },
+    {
+      message: 'Enter a valid postcode (4 digits)',
+      path: ['postcode'],
     }
   )
   .refine(

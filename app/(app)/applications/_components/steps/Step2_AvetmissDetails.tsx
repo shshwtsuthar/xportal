@@ -24,6 +24,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ApplicationFormValues,
   deriveIsInternational,
+  OVERSEAS_POSTCODE,
+  OVERSEAS_STATE_CODE,
 } from '@/src/lib/applicationSchema';
 
 // AVETMISS Language Codes (NAT00080: Language Identifier)
@@ -331,10 +333,19 @@ export const Step2_AvetmissDetails = () => {
                     value={field.value}
                     onValueChange={(value) => {
                       field.onChange(value);
-                      form.setValue(
-                        'is_international',
-                        deriveIsInternational(value)
-                      );
+                      const isIntl = deriveIsInternational(value);
+                      form.setValue('is_international', isIntl);
+                      if (isIntl) {
+                        // Only set street address to OVS/OSPC, not postal address
+                        form.setValue('state', OVERSEAS_STATE_CODE, {
+                          shouldDirty: true,
+                          shouldValidate: false,
+                        });
+                        form.setValue('postcode', OVERSEAS_POSTCODE, {
+                          shouldDirty: true,
+                          shouldValidate: false,
+                        });
+                      }
                     }}
                   >
                     <SelectTrigger className="w-full">

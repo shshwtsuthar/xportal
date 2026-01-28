@@ -1,4 +1,8 @@
-import type { ApplicationFormValues } from '@/src/lib/applicationSchema';
+import {
+  OVERSEAS_POSTCODE,
+  OVERSEAS_STATE_CODE,
+  type ApplicationFormValues,
+} from '@/src/lib/applicationSchema';
 import type { Tables } from '@/database.types';
 
 /**
@@ -29,8 +33,12 @@ export function mapApplicationToFormValues(
     alternative_email: application.alternative_email ?? '',
     address_line_1: application.address_line_1 ?? '',
     suburb: application.suburb ?? '',
-    state: application.state ?? '',
-    postcode: application.postcode ?? '',
+    state: application.is_international
+      ? OVERSEAS_STATE_CODE
+      : (application.state ?? ''),
+    postcode: application.is_international
+      ? OVERSEAS_POSTCODE
+      : (application.postcode ?? ''),
     street_building_name: application.street_building_name ?? '',
     street_unit_details: application.street_unit_details ?? '',
     street_number_name: application.street_number_name ?? '',

@@ -20,7 +20,14 @@ const AU_STATE_OPTIONS = [
   { value: 'WA', label: 'Western Australia' },
 ] as const;
 
+/** Overseas state code for international student addresses (AVETMISS). */
+const OVERSEAS_STATE_OPTION = {
+  value: 'OVS' as const,
+  label: 'OVS (Overseas)',
+};
+
 type AustralianStateCode = (typeof AU_STATE_OPTIONS)[number]['value'];
+export type StateSelectValue = AustralianStateCode | 'OVS';
 
 const AU_STATE_CODES = new Set<AustralianStateCode>(
   AU_STATE_OPTIONS.map((option) => option.value)
@@ -28,8 +35,10 @@ const AU_STATE_CODES = new Set<AustralianStateCode>(
 
 type StateSelectProps = {
   value?: string | null;
-  onValueChange?: (value: AustralianStateCode) => void;
+  onValueChange?: (value: StateSelectValue) => void;
   countryCode?: string | null;
+  /** When true, includes and allows "OVS (Overseas)" for international student addresses. */
+  allowOverseas?: boolean;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -55,13 +64,19 @@ const isAustralianState = (
   return AU_STATE_CODES.has(code as AustralianStateCode);
 };
 
+const isOverseasState = (code?: string | null): code is 'OVS' => {
+  return code?.trim().toUpperCase() === 'OVS';
+};
+
 /**
  * State selector that restricts values to Australian state enums.
+ * When allowOverseas is true (e.g. international students), includes "OVS (Overseas)".
  */
 export const StateSelect = ({
   value,
   onValueChange,
   countryCode,
+  allowOverseas = false,
   placeholder = 'State / Province',
   disabled = false,
   className = 'w-full',
@@ -70,10 +85,15 @@ export const StateSelect = ({
 
   const ensureValidState = (next?: string | null) => {
     if (!onValueChange) return;
+    if (allowOverseas && isOverseasState(next)) {
+      if (next !== value) onValueChange('OVS');
+      return;
+    }
     if (isAustralianState(next)) {
-      if (next !== value) {
-        onValueChange(next);
-      }
+      if (next !== value) onValueChange(next);
+      return;
+    }
+    if (allowOverseas && isOverseasState(value)) {
       return;
     }
     if (value !== 'VIC') {
@@ -83,9 +103,14 @@ export const StateSelect = ({
 
   useEffect(() => {
     ensureValidState(value);
-  }, [normalizedCountry, value, onValueChange]);
+  }, [normalizedCountry, value, onValueChange, allowOverseas]);
 
-  const selectValue = isAustralianState(value) ? value : 'VIC';
+  const selectValue: string =
+    allowOverseas && isOverseasState(value)
+      ? 'OVS'
+      : isAustralianState(value)
+        ? value
+        : 'VIC';
 
   return (
     <Select
@@ -102,6 +127,11 @@ export const StateSelect = ({
             {option.label}
           </SelectItem>
         ))}
+        {allowOverseas && (
+          <SelectItem value={OVERSEAS_STATE_OPTION.value}>
+            {OVERSEAS_STATE_OPTION.label}
+          </SelectItem>
+        )}
       </SelectContent>
     </Select>
   );
