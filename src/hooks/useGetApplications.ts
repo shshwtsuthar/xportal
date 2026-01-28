@@ -16,7 +16,7 @@ type ApplicationWithAgent = Tables<'applications'> & {
   programs?: Pick<Tables<'programs'>, 'name'> | null;
   created_by_profile?: Pick<
     Tables<'profiles'>,
-    'first_name' | 'last_name'
+    'first_name' | 'last_name' | 'profile_image_path'
   > | null;
 };
 
@@ -35,7 +35,7 @@ export const useGetApplications = (
       let query = supabase
         .from('applications')
         .select(
-          '*, agents(name), programs(name), created_by_profile:profiles!applications_created_by_fkey(first_name, last_name)'
+          '*, agents(name), programs(name), created_by_profile:profiles!applications_created_by_fkey(first_name, last_name, profile_image_path)'
         )
         .order('updated_at', { ascending: false });
 

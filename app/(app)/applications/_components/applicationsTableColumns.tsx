@@ -2,18 +2,43 @@
 
 import { Badge } from '@/components/ui/badge';
 import { CopyToClipboardBadge } from '@/components/ui/copy-to-clipboard-badge';
+import { UserAvatar } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { Tables } from '@/database.types';
 import { getCountryName } from '@/lib/utils/country';
+import { useProfileImageUrl } from '@/src/hooks/useProfileImage';
 
 export type RowType = Tables<'applications'> & {
   agents?: Pick<Tables<'agents'>, 'name'> | null;
   programs?: Pick<Tables<'programs'>, 'name'> | null;
   created_by_profile?: Pick<
     Tables<'profiles'>,
-    'first_name' | 'last_name'
+    'first_name' | 'last_name' | 'profile_image_path'
   > | null;
 };
+
+function CreatorAvatarCell({
+  profile,
+}: {
+  profile: RowType['created_by_profile'];
+}) {
+  const { data: profileImageUrl } = useProfileImageUrl(
+    profile?.profile_image_path ?? null
+  );
+
+  if (!profile) return <>—</>;
+
+  return (
+    <UserAvatar
+      src={profileImageUrl ?? undefined}
+      alt="Creator"
+      firstName={profile.first_name ?? undefined}
+      lastName={profile.last_name ?? undefined}
+      size="sm"
+      variant="default"
+    />
+  );
+}
 
 export type ColumnDef = {
   id: string;
@@ -170,19 +195,16 @@ export const getApplicationsColumns = (): ColumnDef[] => {
     {
       id: 'created_by',
       label: 'Created By',
-      width: 180,
+      width: 56,
+      minWidth: 48,
       sortable: true,
       sortAccessor: (r) =>
         [r.created_by_profile?.first_name, r.created_by_profile?.last_name]
           .filter(Boolean)
           .join(' ') || '',
-      render: (r) =>
-        r.created_by_profile
-          ? [r.created_by_profile.first_name, r.created_by_profile.last_name]
-              .filter(Boolean)
-              .join(' ') || '—'
-          : '—',
+      render: (r) => <CreatorAvatarCell profile={r.created_by_profile} />,
       group: 'Identity',
+      noTruncate: true,
     },
     {
       id: 'first_name',

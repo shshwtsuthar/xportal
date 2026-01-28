@@ -4,6 +4,11 @@ import * as React from 'react';
 import * as AvatarPrimitive from '@radix-ui/react-avatar';
 
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 const AVATAR_SIZES = {
@@ -74,6 +79,24 @@ function getInitials(options: GetInitialsOptions): string {
   }
 
   return 'U';
+}
+
+function getDisplayName(options: GetInitialsOptions): string | undefined {
+  const { name, firstName, lastName, email } = options;
+
+  if (name?.trim()) return name.trim();
+
+  if (firstName !== undefined || lastName !== undefined) {
+    const combined = [firstName ?? '', lastName ?? '']
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(' ');
+    if (combined) return combined;
+  }
+
+  if (email?.trim()) return email.trim();
+
+  return undefined;
 }
 
 function Avatar({
@@ -163,8 +186,9 @@ function UserAvatar({
 
   const fallbackContent =
     fallback ?? getInitials({ name, firstName, lastName, email });
+  const displayName = getDisplayName({ name, firstName, lastName, email });
 
-  return (
+  const avatarElement = (
     <Avatar
       className={cn(sizeClass, variantStyles.root, roundedClass, className)}
     >
@@ -174,6 +198,21 @@ function UserAvatar({
       </AvatarFallback>
     </Avatar>
   );
+
+  if (displayName) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex shrink-0" aria-label={displayName}>
+            {avatarElement}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent sideOffset={4}>{displayName}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return avatarElement;
 }
 
 export { Avatar, AvatarImage, AvatarFallback, UserAvatar, getInitials };
