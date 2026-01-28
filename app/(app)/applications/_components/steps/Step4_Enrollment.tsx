@@ -23,6 +23,7 @@ import { useGetLocations } from '@/src/hooks/useGetLocations';
 import { useGetGroupsByLocation } from '@/src/hooks/useGetGroupsByLocation';
 import { EnrollmentPreview } from '../EnrollmentPreview';
 import { OngoingSubjectPreview } from '../OngoingSubjectPreview';
+import { useCalculateEnrollmentProgression } from '@/src/hooks/useCalculateEnrollmentProgression';
 import {
   Card,
   CardContent,
@@ -47,7 +48,7 @@ import {
 import { CalendarIcon, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { formatDateToLocal } from '@/lib/utils/date';
 import {
   isGroupFull,
@@ -118,8 +119,43 @@ export function EnrollmentStep({ form }: Props) {
     : undefined;
   const [isDateOpen, setIsDateOpen] = useState(false);
 
+  // Get all subjects for the selected timetable to calculate max valid date
+  const { allSubjects } = useCalculateEnrollmentProgression(
+    selectedTimetableId,
+    undefined // No commencement date needed for date validation
+  );
+
+  // Calculate the maximum valid end date from all subjects
+  const maxValidDate = useMemo(() => {
+    if (!allSubjects || allSubjects.length === 0) {
+      return undefined;
+    }
+
+    const endDates = allSubjects
+      .map((subject) => {
+        const endDate = new Date(subject.end_date);
+        return isNaN(endDate.getTime()) ? null : endDate;
+      })
+      .filter((date): date is Date => date !== null);
+
+    if (endDates.length === 0) {
+      return undefined;
+    }
+
+    return new Date(Math.max(...endDates.map((d) => d.getTime())));
+  }, [allSubjects]);
+
   const disableDate = (date: Date) => {
-    // Enable all dates - no restrictions
+    // Disable dates after the maximum valid end date
+    if (maxValidDate) {
+      // Compare dates at midnight to avoid timezone issues
+      const dateAtMidnight = new Date(date);
+      dateAtMidnight.setHours(0, 0, 0, 0);
+      const maxDateAtMidnight = new Date(maxValidDate);
+      maxDateAtMidnight.setHours(0, 0, 0, 0);
+      return dateAtMidnight > maxDateAtMidnight;
+    }
+    // If no max date available, allow all dates
     return false;
   };
 
@@ -463,10 +499,6 @@ export function EnrollmentStep({ form }: Props) {
                       />
                     </PopoverContent>
                   </Popover>
-                  <p className="text-muted-foreground text-sm">
-                    Only valid dates are selectable based on the selected plan
-                    and median cut-off rule.
-                  </p>
                 </div>
               </CardContent>
             </Card>
