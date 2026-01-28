@@ -6,6 +6,10 @@ import type { ApplicationFilters } from '@/src/hooks/useApplicationsFilters';
 type RowType = Tables<'applications'> & {
   agents?: Pick<Tables<'agents'>, 'name'> | null;
   programs?: Pick<Tables<'programs'>, 'name'> | null;
+  created_by_profile?: Pick<
+    Tables<'profiles'>,
+    'first_name' | 'last_name'
+  > | null;
 };
 
 const toYesNo = (v: unknown): string => (v ? 'Yes' : 'No');
@@ -57,6 +61,12 @@ const getValueByColumnId = (row: RowType, id: string): string | number => {
     return fmtDate(row.proposed_commencement_date as string | null);
   if (id === 'updated_at') return fmtDate(row.updated_at as unknown as string);
   if (id === 'created_at') return fmtDate(row.created_at as unknown as string);
+  if (id === 'created_by')
+    return row.created_by_profile
+      ? [row.created_by_profile.first_name, row.created_by_profile.last_name]
+          .filter(Boolean)
+          .join(' ') || '—'
+      : '—';
   if (id === 'date_of_birth')
     return fmtDate(row.date_of_birth as string | null);
   if (id === 'payment_anchor_date')

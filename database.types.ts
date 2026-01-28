@@ -815,6 +815,7 @@ export type Database = {
           country_of_birth_id: string | null
           country_of_citizenship: string | null
           created_at: string
+          created_by: string | null
           date_of_birth: string | null
           disability_flag: string | null
           ec_name: string | null
@@ -922,6 +923,7 @@ export type Database = {
           country_of_birth_id?: string | null
           country_of_citizenship?: string | null
           created_at?: string
+          created_by?: string | null
           date_of_birth?: string | null
           disability_flag?: string | null
           ec_name?: string | null
@@ -1029,6 +1031,7 @@ export type Database = {
           country_of_birth_id?: string | null
           country_of_citizenship?: string | null
           created_at?: string
+          created_by?: string | null
           date_of_birth?: string | null
           disability_flag?: string | null
           ec_name?: string | null
@@ -1134,6 +1137,13 @@ export type Database = {
           {
             foreignKeyName: "applications_assigned_to_fkey"
             columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

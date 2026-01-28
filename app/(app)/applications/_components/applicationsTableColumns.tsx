@@ -9,6 +9,10 @@ import { getCountryName } from '@/lib/utils/country';
 export type RowType = Tables<'applications'> & {
   agents?: Pick<Tables<'agents'>, 'name'> | null;
   programs?: Pick<Tables<'programs'>, 'name'> | null;
+  created_by_profile?: Pick<
+    Tables<'profiles'>,
+    'first_name' | 'last_name'
+  > | null;
 };
 
 export type ColumnDef = {
@@ -161,6 +165,23 @@ export const getApplicationsColumns = (): ColumnDef[] => {
           ? new Date(r.created_at as unknown as string).getTime()
           : 0,
       render: (r) => FMT_DATE(r.created_at as unknown as string),
+      group: 'Identity',
+    },
+    {
+      id: 'created_by',
+      label: 'Created By',
+      width: 180,
+      sortable: true,
+      sortAccessor: (r) =>
+        [r.created_by_profile?.first_name, r.created_by_profile?.last_name]
+          .filter(Boolean)
+          .join(' ') || '',
+      render: (r) =>
+        r.created_by_profile
+          ? [r.created_by_profile.first_name, r.created_by_profile.last_name]
+              .filter(Boolean)
+              .join(' ') || '—'
+          : '—',
       group: 'Identity',
     },
     {

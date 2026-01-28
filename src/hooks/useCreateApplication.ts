@@ -69,6 +69,7 @@ export const useCreateApplication = () => {
       const applicationData: ApplicationInsert = {
         status: 'DRAFT' as const,
         rto_id: rtoId,
+        created_by: session.user.id,
         ...initialDataWithoutDisplayId, // Include any initial form data (excluding application_id_display)
       };
 

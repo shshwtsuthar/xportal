@@ -14,6 +14,10 @@ import { serializeFilters } from './useApplicationsFilters';
 type ApplicationWithAgent = Tables<'applications'> & {
   agents?: Pick<Tables<'agents'>, 'name'> | null;
   programs?: Pick<Tables<'programs'>, 'name'> | null;
+  created_by_profile?: Pick<
+    Tables<'profiles'>,
+    'first_name' | 'last_name'
+  > | null;
 };
 
 type UseGetApplicationsOptions = {
@@ -30,7 +34,9 @@ export const useGetApplications = (
       const supabase = createClient();
       let query = supabase
         .from('applications')
-        .select('*, agents(name), programs(name)')
+        .select(
+          '*, agents(name), programs(name), created_by_profile:profiles!applications_created_by_fkey(first_name, last_name)'
+        )
         .order('updated_at', { ascending: false });
 
       const includeArchived = options?.includeArchived ?? true;
