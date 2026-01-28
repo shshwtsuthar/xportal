@@ -1,13 +1,12 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import type { KeyboardEvent } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 import { UploadCloud, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
+import { UserAvatar } from '@/components/ui/avatar';
 import {
   useDeleteRtoProfileImage,
   useRtoProfileImageUrl,
@@ -94,26 +93,15 @@ export function RtoProfileImageSection({ profileImagePath }: Props) {
     [open]
   );
 
-  const preview = useMemo(() => {
-    if (isLoadingImage) {
-      return <Skeleton className="size-20 rounded-full" />;
-    }
-
-    if (imageUrl) {
-      return (
-        <Avatar className="size-20">
-          <AvatarImage src={imageUrl} alt="RTO profile image" />
-          <AvatarFallback>RTO</AvatarFallback>
-        </Avatar>
-      );
-    }
-
-    return (
-      <Avatar className="size-20">
-        <AvatarFallback>RTO</AvatarFallback>
-      </Avatar>
-    );
-  }, [imageUrl, isLoadingImage]);
+  const preview = (
+    <UserAvatar
+      src={imageUrl ?? undefined}
+      alt="RTO profile image"
+      fallback="RTO"
+      size="xl"
+      isLoading={isLoadingImage}
+    />
+  );
 
   const handleRemove = useCallback(async () => {
     if (!profileImagePath) return;

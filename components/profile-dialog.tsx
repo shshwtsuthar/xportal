@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGetCurrentUser } from '@/src/hooks/useGetCurrentUser';
 import {
@@ -126,36 +126,17 @@ export function ProfileDialog({ open, onOpenChange }: Props) {
     [openFileDialog]
   );
 
-  const preview = useMemo(() => {
-    if (isLoadingImage || isLoadingUser) {
-      return <Skeleton className="size-20 rounded-full" />;
-    }
-
-    if (imageUrl) {
-      const initials =
-        user?.first_name?.[0]?.toUpperCase() ||
-        user?.last_name?.[0]?.toUpperCase() ||
-        user?.email[0]?.toUpperCase() ||
-        'U';
-      return (
-        <Avatar className="size-20">
-          <AvatarImage src={imageUrl} alt="Profile image" />
-          <AvatarFallback>{initials}</AvatarFallback>
-        </Avatar>
-      );
-    }
-
-    const initials =
-      user?.first_name?.[0]?.toUpperCase() ||
-      user?.last_name?.[0]?.toUpperCase() ||
-      user?.email[0]?.toUpperCase() ||
-      'U';
-    return (
-      <Avatar className="size-20">
-        <AvatarFallback>{initials}</AvatarFallback>
-      </Avatar>
-    );
-  }, [imageUrl, isLoadingImage, isLoadingUser, user]);
+  const preview = (
+    <UserAvatar
+      src={imageUrl ?? undefined}
+      alt="Profile image"
+      firstName={user?.first_name ?? undefined}
+      lastName={user?.last_name ?? undefined}
+      email={user?.email}
+      size="xl"
+      isLoading={isLoadingImage ?? isLoadingUser}
+    />
+  );
 
   const handleSave = async () => {
     if (!user) return;

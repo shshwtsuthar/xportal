@@ -31,8 +31,7 @@ import {
   SidebarRail,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
+import { UserAvatar } from '@/components/ui/avatar';
 import { useGetRto } from '@/src/hooks/useGetRto';
 import { useRtoProfileImageUrl } from '@/src/hooks/useRtoProfileImage';
 import { AccountSwitcher } from '@/components/account-switcher';
@@ -157,22 +156,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip="XPortal">
               <Link href="/dashboard" aria-label="XPortal Home">
-                {isProfileImageLoading ? (
-                  <Skeleton className="size-8 rounded-lg" />
-                ) : (
-                  <Avatar className="border-border size-8 rounded-lg border">
-                    {profileImageUrl ? (
-                      <AvatarImage
-                        src={profileImageUrl}
-                        alt="RTO profile image"
-                      />
-                    ) : (
-                      <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
-                        <GalleryVerticalEnd className="size-4" />
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                )}
+                <UserAvatar
+                  src={profileImageUrl ?? undefined}
+                  alt="RTO profile image"
+                  fallback={<GalleryVerticalEnd className="size-4" />}
+                  size="sm"
+                  variant="sidebar"
+                  isLoading={isProfileImageLoading}
+                />
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-medium">XPortal</span>
                   <span className="text-muted-foreground text-xs">

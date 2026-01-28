@@ -29,7 +29,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGetCurrentUser } from '@/src/hooks/useGetCurrentUser';
 import { useProfileImageUrl } from '@/src/hooks/useProfileImage';
@@ -53,13 +53,6 @@ export function AccountSwitcher() {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/login');
-  };
-
-  const getUserInitials = () => {
-    if (!user) return 'U';
-    const first = user.first_name?.[0]?.toUpperCase() || '';
-    const last = user.last_name?.[0]?.toUpperCase() || '';
-    return first + last || user.email[0]?.toUpperCase() || 'U';
   };
 
   const getUserDisplayName = () => {
@@ -99,14 +92,15 @@ export function AccountSwitcher() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="border-border size-8 rounded-lg border">
-                {profileImageUrl ? (
-                  <AvatarImage src={profileImageUrl} alt="Profile image" />
-                ) : null}
-                <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
-                  {getUserInitials()}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                src={profileImageUrl ?? undefined}
+                alt="Profile image"
+                firstName={user.first_name ?? undefined}
+                lastName={user.last_name ?? undefined}
+                email={user.email}
+                size="sm"
+                variant="sidebar"
+              />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
                   {getUserDisplayName()}
@@ -125,14 +119,15 @@ export function AccountSwitcher() {
             sideOffset={4}
           >
             <div className="flex items-center gap-3 px-2 py-1.5">
-              <Avatar className="size-8 rounded-lg border">
-                {profileImageUrl ? (
-                  <AvatarImage src={profileImageUrl} alt="Profile image" />
-                ) : null}
-                <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
-                  {getUserInitials()}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                src={profileImageUrl ?? undefined}
+                alt="Profile image"
+                firstName={user.first_name ?? undefined}
+                lastName={user.last_name ?? undefined}
+                email={user.email}
+                size="sm"
+                variant="sidebar"
+              />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
                   {getUserDisplayName()}
