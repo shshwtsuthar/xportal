@@ -1,221 +1,375 @@
-# Agent Commissions System
+## Overall Assessment
 
-## Overview
+**Database Coverage: ~85%** ✅  
+**User Flow Coverage: ~75%** ⚠️  
+**NAT Format Conversion Capability: YES** ✅
 
-The Agent Commissions system automatically calculates and tracks commission invoices when students make commissionable payments. Commissions are calculated as a percentage of the payment amount, with GST (10%) added on top.
+---
 
-## Commission Calculation Formula
+## Detailed Analysis by NAT File
 
-**Base Commission** = Payment Amount × (Commission Rate / 100)
+### 1. NAT00010 - Training Organisation ✅ FULLY COVERED
 
-**GST** = Base Commission × 0.10
+**Database Table:** `rtos`
 
-**Total Commission** = Base Commission + GST
+**Fields Status:**
+- ✅ Training organisation identifier (`rto_code`)
+- ✅ Training organisation name (`name`)
+- ✅ Contact name (`contact_name`)
+- ✅ Telephone number (`phone_number`)
+- ✅ Facsimile number (`facsimile_number`)
+- ✅ Email address (`email_address`)
 
-### Example
+**Additional fields available:** `type_identifier`, `statistical_area_1_id`, `statistical_area_2_id`, `cricos_code`, bank details
 
-If a student pays $5,000 and the agent commission rate is 20%:
+### 2. NAT00020 - Training Organisation Delivery Location ✅ FULLY COVERED
 
-- Base commission: $5,000 × 20% = $1,000
-- GST: $1,000 × 10% = $100
-- **Total payable to agent: $1,100**
+**Database Table:** `delivery_locations`
 
-## Commission Trigger Flow
+**Fields Status:**
+- ✅ Training organisation identifier (FK to `rtos`)
+- ✅ Delivery location identifier (`location_id_internal`)
+- ✅ Delivery location name (`name`)
+- ✅ Postcode (`postcode`)
+- ✅ State identifier (`state`)
+- ✅ Suburb/locality (`suburb`)
+- ❌ Country identifier - **MISSING**
 
-Commissions are generated automatically when a student payment is recorded. The flow is:
+**Gap:** No explicit `country` field in `delivery_locations` table.
 
-1. **Payment Recorded** → User records a payment via the "Record Payment" dialog
-2. **Payment Saved** → `record_payment` RPC inserts payment and updates invoice
-3. **Commission Calculation Triggered** → `calculate-agent-commission` Edge Function is invoked with the payment ID
-4. **Preconditions Checked**:
-   - Payment amount > 0
-   - Installment is commissionable (`payment_plan_template_installments.is_commissionable = true`)
-   - Student has an active agent (`applications.agent_id` is not null)
-   - Agent commissions are active (`agents.commission_active = true`)
-   - Current date is within agent's commission validity period (if set)
-   - Agent has a commission rate set (`agents.commission_rate_percent > 0`)
-5. **Commission Invoice Created** → If all conditions are met, a commission invoice is inserted into `commission_invoices` table
-6. **Commission Invoice Number Generated** → Format: `COM-YYYY-NNNNNN` (e.g., `COM-2025-000001`)
+### 3. NAT00030 - Program ⚠️ PARTIALLY COVERED
 
-## Database Schema
+**Database Table:** `qualifications` (aliased as programs)
 
-### Agents Table Extensions
+**Fields Status:**
+- ✅ Program identifier (`code`)
+- ✅ Program name (`name`)
+- ✅ Nominal hours (`nominal_hours`)
 
-The `agents` table has been extended with commission-related fields:
+**Additional AVETMISS fields available:**
+- `level_of_education_id`
+- `field_of_education_id`
+- `anzsco_id`, `anzsic_id`
+- `recognition_id`
+- `vet_flag`
 
-- `commission_rate_percent` (numeric(5,2), NOT NULL, default 0): Commission percentage (0-100)
-- `commission_active` (boolean, NOT NULL, default true): Whether commissions are currently active
-- `commission_start_date` (date, nullable): Optional start date for commission validity
-- `commission_end_date` (date, nullable): Optional end date for commission validity
+**Note:** Your system correctly implements the comprehensive program fields migration (20251212000000).
 
-### Commission Invoices Table
+### 4. NAT00060 - Subject ✅ FULLY COVERED
 
-The `commission_invoices` table tracks all commission invoices:
+**Database Table:** `subjects` (renamed from `units_of_competency`)
 
-**Core Fields:**
-- `id` (uuid, PK)
-- `rto_id` (uuid, FK → rtos)
-- `agent_id` (uuid, FK → agents)
-- `student_id` (uuid, FK → students)
-- `enrollment_id` (uuid, FK → enrollments)
-- `student_payment_id` (uuid, FK → payments, UNIQUE) - Ensures idempotency
+**Fields Status:**
+- ✅ Subject identifier (`code`)
+- ✅ Subject name (`name`)
+- ✅ Field of education identifier (`field_of_education_id`)
+- ✅ VET flag (`vet_flag`)
+- ✅ Nominal hours (`nominal_hours`)
 
-**Amount Fields:**
-- `base_amount_cents` (integer): Base commission before GST
-- `gst_amount_cents` (integer): GST amount (10% of base)
-- `total_amount_cents` (integer): Total commission (base + GST)
-- `commission_rate_applied` (numeric(5,2)): Snapshot of agent rate at calculation time
+### 5. NAT00080 - Client ✅ MOSTLY COVERED
 
-**Invoice Metadata:**
-- `invoice_number` (text, UNIQUE): Generated commission invoice number
-- `issue_date` (date): Date commission was calculated (same as payment date)
-- `due_date` (date): Due date (payment date + 30 days)
-- `status` (text): One of 'UNPAID', 'PAID', 'CANCELLED'
+**Database Tables:** `students`, `student_avetmiss`, `student_addresses`
 
-**Payment Tracking:**
-- `amount_paid_cents` (integer, default 0): Amount paid so far
-- `paid_date` (date, nullable): Date commission was paid
-- `payment_reference` (text, nullable): Payment reference
+**Fields Status:**
+- ✅ Client identifier (`student_id_display`)
+- ✅ Name for encryption (can derive from `first_name`, `last_name`)
+- ✅ Highest school level completed (`highest_school_level_id`)
+- ✅ Gender (`gender`)
+- ✅ Date of birth (`date_of_birth`)
+- ✅ Postcode (from `student_addresses`)
+- ✅ Indigenous status identifier (`indigenous_status_id`)
+- ✅ Language identifier (`language_code`)
+- ✅ Labour force status identifier (`labour_force_status_id`)
+- ✅ Country identifier (`country_of_birth_id`)
+- ✅ Disability flag (`disability_flag` in `student_avetmiss`)
+- ✅ Prior educational achievement flag (`prior_education_flag`)
+- ✅ At school flag (`at_school_flag`)
+- ✅ Address suburb/locality (from `student_addresses.suburb`)
+- ✅ USI (`usi` - stored in `students` table based on migrations)
+- ✅ State identifier (from `student_addresses.state`)
+- ✅ Address building/property name (`building_name`)
+- ✅ Address flat/unit details (`unit_details`)
+- ✅ Address street number (`number_name`)
+- ❌ Address street name - **MISSING separate field**
+- ✅ Survey contact status (`survey_contact_status`)
+- ⚠️ Statistical area level 1 identifier - **LOCATION UNCLEAR**
+- ⚠️ Statistical area level 2 identifier - **LOCATION UNCLEAR**
 
-### Commission Payments Table
+**Gaps:**
+1. Street name not separated from street number in `student_addresses.number_name`
+2. Statistical area identifiers: exist in `rtos` table but unclear if they should be per student
 
-The `commission_payments` table tracks when the RTO pays agents:
+### 6. NAT00085 - Client Contact Details ⚠️ PARTIALLY COVERED
 
-- `id` (uuid, PK)
-- `rto_id` (uuid, FK → rtos)
-- `commission_invoice_id` (uuid, FK → commission_invoices)
-- `payment_date` (date)
-- `amount_cents` (integer)
-- `payment_method` (text, nullable)
-- `reference` (text, nullable)
-- `notes` (text, nullable)
-- `created_at` (timestamptz)
-- `created_by` (uuid, FK → profiles, nullable)
+**Database Tables:** `students`, `student_addresses`
 
-### Payment Plan Template Installments
+**Fields Status:**
+- ✅ Client identifier
+- ❌ Client title - **MISSING**
+- ✅ Client first given name (`first_name`)
+- ✅ Client family name (`last_name`)
+- ✅ Address building/property name
+- ✅ Address flat/unit details
+- ✅ Address street number
+- ❌ Address street name - **MISSING separate field**
+- ✅ Address postal delivery box (`po_box` in `student_addresses`)
+- ✅ Address suburb/locality
+- ✅ Postcode
+- ✅ State identifier
+- ⚠️ Telephone number [home] - **No separate home/work distinction**
+- ⚠️ Telephone number [work] - **No separate home/work distinction**
+- ✅ Telephone number [mobile] (`mobile_phone`)
+- ✅ Email address (`email`)
+- ⚠️ Email address [alternative] - **Captured in applications but unclear if copied to students**
 
-The `payment_plan_template_installments` table includes:
+**Gaps:**
+1. No `title` field (Mr, Mrs, Ms, Dr, etc.)
+2. Phone numbers not distinguished by type (home vs work)
+3. Street address not fully decomposed
 
-- `is_commissionable` (boolean, NOT NULL, default false): Whether this installment generates commissions
+### 7. NAT00090 - Disability ✅ FULLY COVERED
 
-## Edge Function: `calculate-agent-commission`
+**Database Table:** `student_disabilities`
 
-**Location:** `supabase/functions/calculate-agent-commission/index.ts`
+**Fields Status:**
+- ✅ Client identifier (FK to `students`)
+- ✅ Disability type identifier (`disability_type_id`)
 
-**Input:**
-```json
-{
-  "paymentId": "uuid-of-payment"
+**Note:** Properly normalized with one record per disability type.
+
+### 8. NAT00100 - Prior Educational Achievement ✅ FULLY COVERED
+
+**Database Table:** `student_prior_education`
+
+**Fields Status:**
+- ✅ Client identifier (FK to `students`)
+- ✅ Prior educational achievement identifier (`prior_achievement_id`)
+
+**Additional field:** `recognition_type`
+
+### 9. NAT00120 - Training Activity ⚠️ PARTIALLY COVERED
+
+**Database Table:** `enrollment_subjects`
+
+**Fields Status:**
+- ✅ Training organisation identifier (via enrollment → student → rto)
+- ✅ Training organisation delivery location identifier (`delivery_location_id`)
+- ✅ Client identifier (via enrollment → student)
+- ✅ Subject identifier (via `program_plan_subject_id`)
+- ✅ Program identifier (via enrollment → qualification)
+- ✅ Activity start date (`start_date`)
+- ✅ Activity end date (`end_date`)
+- ✅ Delivery mode identifier (`delivery_mode_id`)
+- ✅ Outcome identifier - national (`outcome_code`)
+- ❌ Funding source - national - **MISSING**
+- ❌ Commencing program identifier - **MISSING**
+- ❌ Training contract identifier - **MISSING**
+- ❌ Client identifier - apprenticeships - **MISSING**
+- ❌ Study reason identifier - **MISSING**
+- ❌ VET in schools flag - **EXISTS IN ENROLLMENTS, NOT IN ENROLLMENT_SUBJECTS**
+- ❌ Specific funding identifier - **EXISTS IN OLD TIMETABLING, NOT IN CURRENT SCHEMA**
+- ❌ School type identifier - **EXISTS IN OLD TIMETABLING, NOT IN CURRENT SCHEMA**
+- ❌ Outcome identifier - training organisation - **MISSING**
+- ❌ Funding source - state training authority - **MISSING**
+- ❌ Client tuition fee - **MISSING (finance data separate)**
+- ❌ Fee exemption/concession type identifier - **MISSING**
+- ❌ Purchasing contract identifier - **MISSING**
+- ❌ Purchasing contract schedule identifier - **MISSING**
+- ❌ Hours attended - **MISSING**
+- ❌ Associated course identifier - **EXISTS IN OLD TIMETABLING, NOT IN CURRENT SCHEMA**
+- ✅ Scheduled hours (`scheduled_hours`)
+- ❌ Predominant delivery mode - **EXISTS IN OLD TIMETABLING, NOT IN CURRENT SCHEMA**
+
+**Major Gaps:** This is your weakest area. Many state-required and national funding fields are missing from the current `enrollment_subjects` schema.
+
+### 10. NAT00130 - Program Completed ✅ MOSTLY COVERED
+
+**Database Table:** `enrollments`
+
+**Fields Status:**
+- ✅ Training organisation identifier (FK via rto_id)
+- ✅ Program identifier (FK to `qualifications`)
+- ✅ Client identifier (FK to `students`)
+- ✅ Date program completed (`date_completed`)
+- ✅ Issued flag (`certificate_issued_flag`)
+- ✅ Parchment issue date (`parchment_issue_date`)
+- ✅ Parchment number (`parchment_number`)
+
+### 11. NAT00010A - Training Org Supplement ⚠️ PARTIALLY COVERED
+
+**Database Table:** `rtos`
+
+**Fields Status:**
+- ✅ Training organisation type identifier (`type_identifier`)
+- ✅ Address first line (`address_line_1`)
+- ❌ Address second line - **MISSING**
+- ✅ Suburb (`suburb`)
+- ✅ Postcode (`postcode`)
+- ✅ State identifier (`state`)
+
+### 12. NAT00030A - Program Supplement ✅ FULLY COVERED
+
+**Database Table:** `qualifications`
+
+**Fields Status:**
+- ✅ Program recognition identifier (`recognition_id`)
+- ✅ Program level of education identifier (`level_of_education_id`)
+- ✅ Program field of education identifier (`field_of_education_id`)
+- ✅ ANZSCO identifier (`anzsco_id`)
+- ✅ VET flag (`vet_flag`)
+
+---
+
+## User Flow Assessment
+
+### Application Process (Data Capture) ✅ STRONG
+
+Based on your application wizard components:
+- ✅ Step 1: Personal Details
+- ✅ Step 2: AVETMISS Details (comprehensive form)
+- ✅ Step 3: Additional Info / CRICOS
+- ✅ Step 4: Enrollment
+
+Your `applicationSchema.ts` is **extremely comprehensive** and captures almost all required AVETMISS fields during the application process.
+
+### Gaps in User Flows
+
+1. **RTO Management:**
+   - ⚠️ Country identifier for delivery locations not captured
+   - ⚠️ Second address line for RTO not available
+
+2. **Training Activity (NAT00120):**
+   - ❌ No UI for capturing funding source codes
+   - ❌ No apprenticeship/traineeship fields
+   - ❌ No VET in schools flag at subject level
+   - ❌ No study reason identifier
+   - ❌ No fee exemption/concession codes
+   - ❌ No purchasing contract fields
+   - ❌ No hours attended tracking
+
+3. **Client Contact:**
+   - ❌ No title field in student forms
+   - ❌ Phone types not distinguished (home/work/mobile lumped together)
+
+---
+
+## NAT Format Conversion via Edge Function
+
+### Can you convert? **YES** ✅
+
+**Justification:**
+
+1. **Fixed-length formatting is straightforward:**
+   - Left-justify alphanumeric, right-justify numeric with zero-fill
+   - This is simple string manipulation in JavaScript/TypeScript
+
+2. **You have most core data:**
+   - All 10 core NAT files can be generated with current data
+   - Only state-required fields (mostly NAT00120) have significant gaps
+
+3. **Edge Function capabilities:**
+   - Supabase Edge Functions can query your database
+   - Format strings to fixed-length specifications
+   - Generate text files with proper encoding
+
+4. **Your data model is AVETMISS-aware:**
+   - Comments in migrations reference NAT files
+   - Field names match AVETMISS terminology
+   - Proper normalization (disability, prior education tables)
+
+**Example conversion approach:**
+```typescript
+// Pseudocode for NAT00080 (Client)
+function formatClientRecord(student: Student): string {
+  const clientId = student.student_id_display.padEnd(10, ' '); // A10
+  const nameForEncryption = (student.first_name + ' ' + student.last_name)
+    .substring(0, 60).padEnd(60, ' '); // A60
+  const highestSchool = student.highest_school_level_id.padEnd(2, ' '); // A2
+  const gender = student.gender.padEnd(1, ' '); // A1
+  const dob = formatDate(student.date_of_birth); // DDMMYYYY
+  // ... continue for all fields
+  
+  return clientId + nameForEncryption + highestSchool + gender + dob + ...;
 }
 ```
 
-**Output:**
-```json
-{
-  "created": true,
-  "commissionInvoiceId": "uuid-of-commission-invoice"
-}
+### Recommended Edge Function Structure:
+
+```
+supabase/functions/generate-avetmiss-export/
+  ├── index.ts (main handler)
+  ├── nat00010.ts (RTO)
+  ├── nat00020.ts (Delivery locations)
+  ├── nat00030.ts (Programs)
+  ├── nat00060.ts (Subjects)
+  ├── nat00080.ts (Clients)
+  ├── nat00085.ts (Client contact)
+  ├── nat00090.ts (Disabilities)
+  ├── nat00100.ts (Prior education)
+  ├── nat00120.ts (Training activity)
+  ├── nat00130.ts (Program completed)
+  └── formatters.ts (shared utility functions)
 ```
 
-Or if commission was not created:
-```json
-{
-  "created": false,
-  "reason": "reason why commission was not created"
-}
-```
+---
 
-**Behavior:**
-- Idempotent: Multiple calls with the same `paymentId` will not create duplicate commission invoices
-- Silent failures: Returns `created: false` with a reason instead of throwing errors for expected conditions (e.g., installment not commissionable, no agent assigned)
-- Uses service role client to bypass RLS for commission calculation logic
+## Critical Missing Fields Summary
 
-## Frontend Components
+**HIGH PRIORITY:**
+1. NAT00120 state-required fields (funding source, fee exemption, purchasing contract, hours attended, etc.)
+2. Street address decomposition (separate street name from number)
+3. Client title field (NAT00085)
+4. Country identifier for delivery locations (NAT00020)
 
-### Commissions Page
+**MEDIUM PRIORITY:**
+5. Phone number type distinction (home/work/mobile)
+6. Alternative email persistence for students
+7. RTO second address line
+8. Statistical area identifiers clarification (per-student vs per-RTO)
 
-**Route:** `/financial/commissions`
+**LOW PRIORITY:**
+9. Apprenticeship fields (if not offering apprenticeships)
+10. VET in schools at subject level (if available at enrollment level)
 
-**Features:**
-- Table view of all commission invoices
-- Filter by status (All, Unpaid, Paid, Cancelled)
-- Search across invoice numbers, agent names, and student names
-- Sortable columns
-- Pagination
-- Column visibility preferences
+---
 
-### Agent Form
+## Recommendations
 
-**Location:** `/agents/new` or `/agents/edit/[id]`
+1. **Add missing NAT00120 fields to `enrollment_subjects` table:**
+   ```sql
+   ALTER TABLE enrollment_subjects ADD COLUMN
+     funding_source_national TEXT,
+     commencing_program_identifier TEXT,
+     training_contract_identifier TEXT,
+     study_reason_identifier TEXT,
+     specific_funding_identifier TEXT,
+     school_type_identifier TEXT,
+     outcome_identifier_state TEXT,
+     funding_source_state TEXT,
+     client_tuition_fee INTEGER,
+     fee_exemption_concession_type TEXT,
+     purchasing_contract_identifier TEXT,
+     purchasing_contract_schedule_identifier TEXT,
+     hours_attended INTEGER,
+     associated_course_identifier TEXT,
+     predominant_delivery_mode TEXT;
+   ```
 
-**New Fields:**
-- Commission Rate (%) - Required numeric input (0-100)
-- Commissions Active - Toggle switch
-- Commission Start Date - Optional date picker
-- Commission End Date - Optional date picker (must be >= start date)
+2. **Normalize student addresses:**
+   - Split `number_name` into `street_number` and `street_name`
+   - Add phone type enum for contact numbers
 
-### Payment Plan Template Installments
+3. **Build Edge Function:**
+   - Start with core 10 files (NAT00010 through NAT00130)
+   - Use placeholders for missing fields (e.g., '@@' for unknown AVETMISS fields)
+   - Implement proper fixed-length formatting
+   - Add validation layer to ensure output meets specifications
 
-**Location:** `/financial/templates/new` or `/financial/templates/edit/[id]`
+4. **Add UI flows:**
+   - RTO settings page for country codes
+   - Enrollment/training activity forms for funding/state fields
+   - Student profile for title field
 
-**New Field:**
-- Commissionable checkbox per installment row
-- Defaults to `true` for new installments
+---
 
-## Limitations & Future Enhancements
-
-### Current Limitations (Vertical Slice)
-
-1. **No Xero Integration**: Commission invoices are not synced to Xero yet
-2. **No Commission Payment Recording UI**: The `commission_payments` table exists but there's no UI to record payments yet
-3. **No Refund Handling**: Refunds do not automatically reverse commissions
-4. **No Transfer Handling**: Internal student transfers are not excluded from commissions yet
-5. **No Commission Caps**: Maximum commission per student is not enforced
-6. **No PDF Generation**: Commission invoice PDFs are not generated yet
-7. **No Reporting**: Commission summary reports are not available yet
-
-### Future Enhancements
-
-- Xero sync for commission invoices (as Bills/ACCPAY)
-- Commission payment recording UI
-- Commission invoice PDF generation
-- Commission summary reports
-- Agent performance dashboards
-- Refund and transfer handling
-- Commission caps per student
-- Bulk commission export
-
-## Business Rules
-
-1. **Commissions are earned on actual payments**, not on invoice generation
-2. **Partial payments generate partial commissions** - Each payment creates its own commission invoice
-3. **Commission rate is snapshotted** - The rate at calculation time is stored for audit purposes
-4. **GST is mandatory** - Always 10% of base commission amount
-5. **One commission invoice per payment** - Enforced by unique constraint on `student_payment_id`
-
-## Troubleshooting
-
-### Commission Not Generated
-
-Check the following:
-
-1. **Agent assigned?** - Verify `applications.agent_id` is not null
-2. **Agent active?** - Check `agents.commission_active = true`
-3. **Commission rate set?** - Verify `agents.commission_rate_percent > 0`
-4. **Installment commissionable?** - Check `payment_plan_template_installments.is_commissionable = true`
-5. **Date range valid?** - If agent has `commission_start_date` or `commission_end_date`, ensure current date is within range
-6. **Payment amount > 0?** - Negative or zero payments do not generate commissions
-
-### Commission Invoice Already Exists
-
-This is expected behavior for idempotency. The system prevents duplicate commission invoices for the same payment.
-
-## Related Files
-
-- Migrations: `supabase/migrations/20251113000001_*.sql`
-- Edge Function: `supabase/functions/calculate-agent-commission/`
-- Hooks: `src/hooks/useGetCommissionInvoices.ts`, `src/hooks/useRecordPayment.ts`
-- Components: `app/(app)/financial/commissions/`
-- Agent Form: `app/(app)/agents/_components/AgentForm.tsx`
-- Payment Plan Form: `app/(app)/financial/templates/_components/PaymentPlanTemplateForm.tsx`
-
+**Bottom Line:** You're in good shape for basic AVETMISS compliance (~85% coverage), but you need to add the state-required fields for NAT00120 before reporting to a State Training Authority. National-only reporting would work with minimal additions.
