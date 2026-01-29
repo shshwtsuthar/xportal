@@ -55,6 +55,23 @@ function successResponse(data: Record<string, unknown>, status = 200) {
 }
 
 /**
+ * Maps known SQL exception messages to appropriate HTTP statuses.
+ * Keep this conservative: unknown errors remain 500.
+ */
+function mapApprovalErrorStatus(message: string): number {
+  if (message.includes('Application not found')) return 404;
+  if (message.includes('Archived applications cannot be approved')) return 409;
+  if (message.includes('Application must be ACCEPTED')) return 409;
+  if (message.includes('payment_plan_template_id is required')) return 400;
+  if (message.includes('payment_anchor_date is required')) return 400;
+  if (message.includes('program_id is required')) return 400;
+  if (message.includes('Payment plan template not found')) return 400;
+  if (message.includes('Application status changed during approval process'))
+    return 409;
+  return 500;
+}
+
+/**
  * Recursively lists all files in a storage bucket folder
  */
 async function listFilesRecursively(
@@ -383,12 +400,17 @@ serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    return errorResponse('Missing Authorization header', 401);
+  }
+
   const supabase = createClient<Db>(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     {
       global: {
-        headers: { Authorization: req.headers.get('Authorization')! },
+        headers: { Authorization: authHeader },
       },
     }
   );
@@ -421,9 +443,10 @@ serve(async (req: Request) => {
 
     if (approvalErr) {
       console.error('Atomic approval failed:', approvalErr);
+      const status = mapApprovalErrorStatus(approvalErr.message);
       return errorResponse(
         'Failed to approve application',
-        500,
+        status,
         approvalErr.message
       );
     }
