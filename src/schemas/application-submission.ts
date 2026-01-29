@@ -194,6 +194,11 @@ export function getSubmissionMissingFields(values: SubmissionValues): string[] {
     missing.push('mobile_phone');
   }
 
+  // Home phone: required for all students on submission (schema constraint)
+  if (!values.home_phone || values.home_phone.trim() === '') {
+    missing.push('home_phone');
+  }
+
   // Year highest school level completed:
   // - If highest_school_level_id === '02' -> must be '@@@@'
   // - Else -> must be 2-digit year or '@@'

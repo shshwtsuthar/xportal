@@ -30,6 +30,7 @@ export function mapApplicationToFormValues(
     email: application.email ?? '',
     work_phone: application.work_phone ?? '',
     mobile_phone: application.mobile_phone ?? '',
+    home_phone: application.home_phone ?? '',
     alternative_email: application.alternative_email ?? '',
     address_line_1: application.address_line_1 ?? '',
     suburb: application.suburb ?? '',

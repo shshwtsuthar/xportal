@@ -115,15 +115,15 @@
 - ✅ Address suburb/locality
 - ✅ Postcode
 - ✅ State identifier
-- ⚠️ Telephone number [home] - **No separate home/work distinction**
-- ⚠️ Telephone number [work] - **No separate home/work distinction**
+- ✅ Telephone number [home] (`home_phone`)
+- ⚠️ Telephone number [work] (`work_phone`)
 - ✅ Telephone number [mobile] (`mobile_phone`)
 - ✅ Email address (`email`)
 - ⚠️ Email address [alternative] - **Captured in applications but unclear if copied to students**
 
 **Gaps:**
 1. No `title` field (Mr, Mrs, Ms, Dr, etc.)
-2. Phone numbers not distinguished by type (home vs work)
+2. Work phone number is available but optional.
 
 ### 7. NAT00090 - Disability ✅ FULLY COVERED
 
@@ -247,7 +247,7 @@ Your `applicationSchema.ts` is **extremely comprehensive** and captures almost a
 
 3. **Client Contact:**
    - ❌ No title field in student forms
-   - ❌ Phone types not distinguished (home/work/mobile lumped together)
+   - ⚠️ Work phone number optional, Home phone mandatory.
 
 ---
 
@@ -320,15 +320,13 @@ supabase/functions/generate-avetmiss-export/
 4. Country identifier for delivery locations (NAT00020)
 
 **MEDIUM PRIORITY:**
-5. Phone number type distinction (home/work/mobile)
-6. Alternative email persistence for students
-7. RTO second address line
-8. Statistical area identifiers clarification (per-student vs per-RTO)
+5. Alternative email persistence for students
+6. RTO second address line
+7. Statistical area identifiers clarification (per-student vs per-RTO)
 
 **LOW PRIORITY:**
-9. Apprenticeship fields (if not offering apprenticeships)
-10. VET in schools at subject level (if available at enrollment level)
-
+8. Apprenticeship fields (if not offering apprenticeships)
+9. VET in schools at subject level (if available at enrollment level)
 ---
 
 ## Recommendations

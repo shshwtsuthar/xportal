@@ -103,6 +103,7 @@ export const useSaveApplicationDraft = () => {
           at_school_flag: cleanEmptyString(values.at_school_flag),
           work_phone: cleanEmptyString(values.work_phone),
           mobile_phone: cleanEmptyString(values.mobile_phone),
+          home_phone: cleanEmptyString(values.home_phone),
           address_line_1: cleanEmptyString(values.address_line_1),
           suburb: cleanEmptyString(values.suburb),
           state: cleanEmptyString(values.state),

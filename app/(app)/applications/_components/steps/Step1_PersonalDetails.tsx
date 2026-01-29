@@ -305,6 +305,19 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
           />
           <FormField
             control={form.control}
+            name="home_phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Home phone *</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="(03) 9999 9999" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="mobile_phone"
             render={({ field }) => (
               <FormItem>

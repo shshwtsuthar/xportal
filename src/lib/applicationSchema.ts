@@ -300,6 +300,11 @@ export const applicationSchema = z
       .string()
       .optional()
       .refine((val) => isValidPhoneNumber(val), 'Enter a valid phone number'),
+    // Home phone is now MANDATORY
+    home_phone: z
+      .string()
+      .optional()
+      .refine((val) => isValidPhoneNumber(val), 'Enter a valid phone number'),
     alternative_email: z
       .string()
       .email('Enter a valid email address')
@@ -698,6 +703,16 @@ export const applicationSchema = z
     {
       message: 'Mobile phone is required',
       path: ['mobile_phone'],
+    }
+  )
+  .refine(
+    (data) => {
+      // Home phone is MANDATORY for all students
+      return !!data.home_phone && data.home_phone.trim().length > 0;
+    },
+    {
+      message: 'Home phone is required',
+      path: ['home_phone'],
     }
   )
   .refine(

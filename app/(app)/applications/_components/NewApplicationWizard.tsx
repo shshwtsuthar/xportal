@@ -196,6 +196,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       email: '',
       work_phone: '',
       mobile_phone: '',
+      home_phone: '',
       alternative_email: '',
       address_line_1: '',
       suburb: '',

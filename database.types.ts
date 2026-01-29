@@ -837,6 +837,7 @@ export type Database = {
           has_release_letter: boolean | null
           highest_school_level_id: string | null
           holds_visa: boolean | null
+          home_phone: string | null
           id: string
           ielts_score: string | null
           indigenous_status_id: string | null
@@ -947,6 +948,7 @@ export type Database = {
           has_release_letter?: boolean | null
           highest_school_level_id?: string | null
           holds_visa?: boolean | null
+          home_phone?: string | null
           id?: string
           ielts_score?: string | null
           indigenous_status_id?: string | null
@@ -1057,6 +1059,7 @@ export type Database = {
           has_release_letter?: boolean | null
           highest_school_level_id?: string | null
           holds_visa?: boolean | null
+          home_phone?: string | null
           id?: string
           ielts_score?: string | null
           indigenous_status_id?: string | null
@@ -3826,6 +3829,7 @@ export type Database = {
           date_of_birth: string
           email: string
           first_name: string
+          home_phone: string | null
           id: string
           last_name: string
           middle_name: string | null
@@ -3847,6 +3851,7 @@ export type Database = {
           date_of_birth: string
           email: string
           first_name: string
+          home_phone?: string | null
           id?: string
           last_name: string
           middle_name?: string | null
@@ -3868,6 +3873,7 @@ export type Database = {
           date_of_birth?: string
           email?: string
           first_name?: string
+          home_phone?: string | null
           id?: string
           last_name?: string
           middle_name?: string | null
