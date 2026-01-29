@@ -37,7 +37,8 @@ type RawMappifyAddress = {
 export type AddressFormFields = {
   street_building_name: string;
   street_unit_details: string;
-  street_number_name: string;
+  street_number: string;
+  street_name: string;
   street_po_box: string;
   suburb: string;
   state: string;
@@ -98,24 +99,29 @@ const buildId = (address: RawMappifyAddress, index: number) => {
   );
 };
 
-const buildStreetNumberName = (address: RawMappifyAddress) => {
+// Helper: build street number (handles ranges like 10-12)
+const buildStreetNumber = (address: RawMappifyAddress) => {
   const hasRange =
     address.numberFirst &&
     address.numberLast &&
     address.numberLast !== address.numberFirst;
-  const numberPart = hasRange
+  return hasRange
     ? `${address.numberFirst}-${address.numberLast}`
     : (address.numberFirst?.toString() ?? '');
-  const streetParts = [
-    address.streetName,
-    address.streetType,
-    address.streetSuffixCode,
-  ]
+};
+
+// Helper: build street name (e.g., "George St")
+const buildStreetName = (address: RawMappifyAddress) => {
+  return [address.streetName, address.streetType, address.streetSuffixCode]
     .map((part) => formatTitleCase(part))
     .filter(Boolean)
     .join(' ')
     .trim();
+};
 
+const buildStreetNumberName = (address: RawMappifyAddress) => {
+  const numberPart = buildStreetNumber(address);
+  const streetParts = buildStreetName(address);
   return [numberPart, streetParts].filter(Boolean).join(' ').trim();
 };
 
@@ -156,7 +162,8 @@ const toSuggestion = (
   const fields: AddressFormFields = {
     street_building_name: address.buildingName ?? '',
     street_unit_details: buildUnitDetails(address),
-    street_number_name: buildStreetNumberName(address),
+    street_number: buildStreetNumber(address),
+    street_name: buildStreetName(address),
     street_po_box: '',
     suburb: formatTitleCase(address.suburb),
     state: address.state ?? '',

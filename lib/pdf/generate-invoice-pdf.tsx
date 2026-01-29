@@ -39,7 +39,8 @@ type ApplicationInvoiceWithRelations = Tables<'application_invoices'> & {
     preferred_name: string | null;
     street_building_name: string | null;
     street_unit_details: string | null;
-    street_number_name: string | null;
+    street_number: string | null;
+    street_name: string | null;
     suburb: string | null;
     state: string | null;
     postcode: string | null;
@@ -130,7 +131,8 @@ export async function generateInvoicePdf({
           preferred_name,
           street_building_name,
           street_unit_details,
-          street_number_name,
+          street_number,
+          street_name,
           suburb,
           state,
           postcode
@@ -162,13 +164,20 @@ export async function generateInvoicePdf({
       };
 
       // Build address from application fields
-      if (application.suburb || application.state || application.postcode) {
+      if (
+        application.suburb ||
+        application.state ||
+        application.postcode ||
+        application.street_number ||
+        application.street_name
+      ) {
         studentAddresses = [
           {
             id: '',
             building_name: application.street_building_name,
             unit_details: application.street_unit_details,
-            number_name: application.street_number_name,
+            number: application.street_number,
+            street: application.street_name,
             suburb: application.suburb,
             state: application.state,
             postcode: application.postcode,

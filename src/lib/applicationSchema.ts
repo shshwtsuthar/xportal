@@ -315,7 +315,8 @@ export const applicationSchema = z
     // Structured Street Address
     street_building_name: z.string().optional(),
     street_unit_details: z.string().optional(),
-    street_number_name: z.string().optional(),
+    street_number: z.string().min(1, 'Street number is required'),
+    street_name: z.string().min(1, 'Street name is required'),
     street_po_box: z.string().optional(),
     street_country: z.string().optional(),
 
@@ -323,7 +324,8 @@ export const applicationSchema = z
     postal_is_same_as_street: z.boolean().default(false),
     postal_building_name: z.string().optional(),
     postal_unit_details: z.string().optional(),
-    postal_number_name: z.string().optional(),
+    postal_street_number: z.string().optional(),
+    postal_street_name: z.string().optional(),
     postal_po_box: z.string().optional(),
     postal_suburb: z.string().optional(),
     postal_state: z.string().optional(),

@@ -53,7 +53,9 @@ export function buildInvoiceData(input: {
     ? [
         primaryAddress.building_name,
         primaryAddress.unit_details,
-        primaryAddress.number_name,
+        [primaryAddress.number, primaryAddress.street]
+          .filter(Boolean)
+          .join(' '),
         primaryAddress.suburb,
         primaryAddress.state,
         primaryAddress.postcode,

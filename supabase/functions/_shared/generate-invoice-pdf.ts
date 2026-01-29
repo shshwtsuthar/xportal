@@ -138,7 +138,8 @@ export async function generateInvoicePdf({
           preferred_name,
           street_building_name,
           street_unit_details,
-          street_number_name,
+          street_number,
+          street_name,
           suburb,
           state,
           postcode
@@ -173,7 +174,9 @@ export async function generateInvoicePdf({
       const addressParts = [
         application.street_building_name,
         application.street_unit_details,
-        application.street_number_name,
+        [application.street_number, application.street_name]
+          .filter(Boolean)
+          .join(' '),
         application.suburb,
         application.state,
         application.postcode,
@@ -185,7 +188,8 @@ export async function generateInvoicePdf({
             id: '',
             building_name: application.street_building_name,
             unit_details: application.street_unit_details,
-            number_name: application.street_number_name,
+            number: application.street_number,
+            street: application.street_name,
             suburb: application.suburb,
             state: application.state,
             postcode: application.postcode,
@@ -266,7 +270,9 @@ function buildInvoicePdfData({
     ? [
         primaryAddress.building_name,
         primaryAddress.unit_details,
-        primaryAddress.number_name,
+        [primaryAddress.number, primaryAddress.street]
+          .filter(Boolean)
+          .join(' '),
         primaryAddress.suburb,
         primaryAddress.state,
         primaryAddress.postcode,

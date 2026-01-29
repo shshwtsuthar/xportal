@@ -115,7 +115,8 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
       const { fields } = suggestion;
       setFieldValue('street_building_name', fields.street_building_name);
       setFieldValue('street_unit_details', fields.street_unit_details);
-      setFieldValue('street_number_name', fields.street_number_name);
+      setFieldValue('street_number', fields.street_number);
+      setFieldValue('street_name', fields.street_name);
       setFieldValue('street_po_box', fields.street_po_box);
       setFieldValue('suburb', fields.suburb);
       setFieldValue('state', fields.state);
@@ -125,7 +126,8 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
       if (form.getValues('postal_is_same_as_street')) {
         setFieldValue('postal_building_name', fields.street_building_name);
         setFieldValue('postal_unit_details', fields.street_unit_details);
-        setFieldValue('postal_number_name', fields.street_number_name);
+        setFieldValue('postal_street_number', fields.street_number);
+        setFieldValue('postal_street_name', fields.street_name);
         setFieldValue('postal_po_box', fields.street_po_box);
         setFieldValue('postal_suburb', fields.suburb);
         setFieldValue('postal_state', fields.state);
@@ -146,7 +148,8 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
       });
       setFieldValue('postal_building_name', fields.street_building_name);
       setFieldValue('postal_unit_details', fields.street_unit_details);
-      setFieldValue('postal_number_name', fields.street_number_name);
+      setFieldValue('postal_street_number', fields.street_number);
+      setFieldValue('postal_street_name', fields.street_name);
       setFieldValue('postal_po_box', fields.street_po_box);
       setFieldValue('postal_suburb', fields.suburb);
       setFieldValue('postal_state', fields.state);
@@ -373,12 +376,25 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
           />
           <FormField
             control={form.control}
-            name="street_number_name"
+            name="street_number"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Street number and name</FormLabel>
+                <FormLabel>Street number *</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="123 Example St" />
+                  <Input {...field} placeholder="123" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="street_name"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Street name *</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Example St" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -533,12 +549,25 @@ export const Step1_PersonalDetails = ({ hideAgent = false }: Props) => {
               />
               <FormField
                 control={form.control}
-                name="postal_number_name"
+                name="postal_street_number"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-3">
-                    <FormLabel>Postal street number/name</FormLabel>
+                  <FormItem>
+                    <FormLabel>Postal street number *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="123 Example St" />
+                      <Input {...field} placeholder="123" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="postal_street_name"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Postal street name *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Example St" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

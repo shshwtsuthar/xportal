@@ -862,10 +862,11 @@ export type Database = {
           postal_building_name: string | null
           postal_country: string | null
           postal_is_same_as_street: boolean | null
-          postal_number_name: string | null
           postal_po_box: string | null
           postal_postcode: string | null
           postal_state: string | null
+          postal_street_name: string | null
+          postal_street_number: string | null
           postal_suburb: string | null
           postal_unit_details: string | null
           postcode: string | null
@@ -885,7 +886,8 @@ export type Database = {
           status: Database["public"]["Enums"]["application_status"]
           street_building_name: string | null
           street_country: string | null
-          street_number_name: string | null
+          street_name: string | null
+          street_number: string | null
           street_po_box: string | null
           street_unit_details: string | null
           student_id_display: string | null
@@ -970,10 +972,11 @@ export type Database = {
           postal_building_name?: string | null
           postal_country?: string | null
           postal_is_same_as_street?: boolean | null
-          postal_number_name?: string | null
           postal_po_box?: string | null
           postal_postcode?: string | null
           postal_state?: string | null
+          postal_street_name?: string | null
+          postal_street_number?: string | null
           postal_suburb?: string | null
           postal_unit_details?: string | null
           postcode?: string | null
@@ -993,7 +996,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["application_status"]
           street_building_name?: string | null
           street_country?: string | null
-          street_number_name?: string | null
+          street_name?: string | null
+          street_number?: string | null
           street_po_box?: string | null
           street_unit_details?: string | null
           student_id_display?: string | null
@@ -1078,10 +1082,11 @@ export type Database = {
           postal_building_name?: string | null
           postal_country?: string | null
           postal_is_same_as_street?: boolean | null
-          postal_number_name?: string | null
           postal_po_box?: string | null
           postal_postcode?: string | null
           postal_state?: string | null
+          postal_street_name?: string | null
+          postal_street_number?: string | null
           postal_suburb?: string | null
           postal_unit_details?: string | null
           postcode?: string | null
@@ -1101,7 +1106,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["application_status"]
           street_building_name?: string | null
           street_country?: string | null
-          street_number_name?: string | null
+          street_name?: string | null
+          street_number?: string | null
           street_po_box?: string | null
           street_unit_details?: string | null
           student_id_display?: string | null
@@ -3184,11 +3190,12 @@ export type Database = {
           country: string | null
           id: string
           is_primary: boolean
-          number_name: string | null
+          number: string | null
           po_box: string | null
           postcode: string | null
           rto_id: string
           state: string | null
+          street: string | null
           student_id: string
           suburb: string | null
           type: Database["public"]["Enums"]["student_address_type"]
@@ -3199,11 +3206,12 @@ export type Database = {
           country?: string | null
           id?: string
           is_primary?: boolean
-          number_name?: string | null
+          number?: string | null
           po_box?: string | null
           postcode?: string | null
           rto_id: string
           state?: string | null
+          street?: string | null
           student_id: string
           suburb?: string | null
           type: Database["public"]["Enums"]["student_address_type"]
@@ -3214,11 +3222,12 @@ export type Database = {
           country?: string | null
           id?: string
           is_primary?: boolean
-          number_name?: string | null
+          number?: string | null
           po_box?: string | null
           postcode?: string | null
           rto_id?: string
           state?: string | null
+          street?: string | null
           student_id?: string
           suburb?: string | null
           type?: Database["public"]["Enums"]["student_address_type"]

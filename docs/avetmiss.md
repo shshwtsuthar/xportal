@@ -89,15 +89,14 @@
 - ✅ State identifier (from `student_addresses.state`)
 - ✅ Address building/property name (`building_name`)
 - ✅ Address flat/unit details (`unit_details`)
-- ✅ Address street number (`number_name`)
-- ❌ Address street name - **MISSING separate field**
+- ✅ Address street number (`number`)
+- ✅ Address street name (`street`)
 - ✅ Survey contact status (`survey_contact_status`)
 - ⚠️ Statistical area level 1 identifier - **LOCATION UNCLEAR**
 - ⚠️ Statistical area level 2 identifier - **LOCATION UNCLEAR**
 
 **Gaps:**
-1. Street name not separated from street number in `student_addresses.number_name`
-2. Statistical area identifiers: exist in `rtos` table but unclear if they should be per student
+1. Statistical area identifiers: exist in `rtos` table but unclear if they should be per student
 
 ### 6. NAT00085 - Client Contact Details ⚠️ PARTIALLY COVERED
 
@@ -110,8 +109,8 @@
 - ✅ Client family name (`last_name`)
 - ✅ Address building/property name
 - ✅ Address flat/unit details
-- ✅ Address street number
-- ❌ Address street name - **MISSING separate field**
+- ✅ Address street number (`number`)
+- ✅ Address street name (`street`)
 - ✅ Address postal delivery box (`po_box` in `student_addresses`)
 - ✅ Address suburb/locality
 - ✅ Postcode
@@ -125,7 +124,6 @@
 **Gaps:**
 1. No `title` field (Mr, Mrs, Ms, Dr, etc.)
 2. Phone numbers not distinguished by type (home vs work)
-3. Street address not fully decomposed
 
 ### 7. NAT00090 - Disability ✅ FULLY COVERED
 

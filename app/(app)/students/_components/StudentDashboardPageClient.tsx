@@ -573,7 +573,8 @@ export function StudentDashboardPageClient({
                         const addressParts = [
                           streetAddress.building_name,
                           streetAddress.unit_details,
-                          streetAddress.number_name,
+                          streetAddress.number,
+                          streetAddress.street,
                           streetAddress.po_box,
                           streetAddress.suburb,
                           streetAddress.state,
@@ -607,7 +608,8 @@ export function StudentDashboardPageClient({
                           const addressParts = [
                             streetAddress.building_name,
                             streetAddress.unit_details,
-                            streetAddress.number_name,
+                            streetAddress.number,
+                            streetAddress.street,
                             streetAddress.po_box,
                             streetAddress.suburb,
                             streetAddress.state,
@@ -629,7 +631,8 @@ export function StudentDashboardPageClient({
                         const addressParts = [
                           postalAddress.building_name,
                           postalAddress.unit_details,
-                          postalAddress.number_name,
+                          postalAddress.number,
+                          postalAddress.street,
                           postalAddress.po_box,
                           postalAddress.suburb,
                           postalAddress.state,

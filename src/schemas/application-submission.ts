@@ -175,6 +175,8 @@ export function getSubmissionMissingFields(values: SubmissionValues): string[] {
     'citizenship_status_code',
     'at_school_flag',
     'email',
+    'street_number',
+    'street_name',
   ];
   for (const key of requiredBasics) {
     const v = values[key];
@@ -269,6 +271,28 @@ export function getSubmissionMissingFields(values: SubmissionValues): string[] {
   }
   if (!values.payment_anchor_date || values.payment_anchor_date.trim() === '') {
     missing.push('payment_anchor_date');
+  }
+
+  // Postal Address: if not same as street, required fields
+  if (values.postal_is_same_as_street === false) {
+    if (
+      !values.postal_street_number ||
+      values.postal_street_number.trim() === ''
+    ) {
+      missing.push('postal_street_number');
+    }
+    if (!values.postal_street_name || values.postal_street_name.trim() === '') {
+      missing.push('postal_street_name');
+    }
+    if (!values.postal_suburb || values.postal_suburb.trim() === '') {
+      missing.push('postal_suburb');
+    }
+    if (!values.postal_state || values.postal_state.trim() === '') {
+      missing.push('postal_state');
+    }
+    if (!values.postal_postcode || values.postal_postcode.trim() === '') {
+      missing.push('postal_postcode');
+    }
   }
 
   // CRICOS: if international

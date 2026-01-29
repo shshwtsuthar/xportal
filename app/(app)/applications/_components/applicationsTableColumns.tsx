@@ -393,8 +393,10 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       label: 'Street Number/Name',
       width: 220,
       sortable: true,
-      sortAccessor: (r) => r.street_number_name || '',
-      render: (r) => r.street_number_name || '—',
+      sortAccessor: (r) =>
+        [r.street_number, r.street_name].filter(Boolean).join(' ') || '',
+      render: (r) =>
+        [r.street_number, r.street_name].filter(Boolean).join(' ') || '—',
       group: 'Contact',
     },
     {
@@ -447,8 +449,14 @@ export const getApplicationsColumns = (): ColumnDef[] => {
       label: 'Postal Number/Name',
       width: 220,
       sortable: true,
-      sortAccessor: (r) => r.postal_number_name || '',
-      render: (r) => r.postal_number_name || '—',
+      sortAccessor: (r) =>
+        [r.postal_street_number, r.postal_street_name]
+          .filter(Boolean)
+          .join(' ') || '',
+      render: (r) =>
+        [r.postal_street_number, r.postal_street_name]
+          .filter(Boolean)
+          .join(' ') || '—',
       group: 'Contact',
     },
     {
