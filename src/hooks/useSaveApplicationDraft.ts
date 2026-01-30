@@ -95,6 +95,7 @@ export const useSaveApplicationDraft = () => {
           labour_force_status_id: cleanEmptyString(
             values.labour_force_status_id
           ),
+          study_reason_id: cleanEmptyString(values.study_reason_id),
           country_of_birth_id: cleanEmptyString(values.country_of_birth_id),
           language_code: cleanEmptyString(values.language_code),
           citizenship_status_code: cleanEmptyString(

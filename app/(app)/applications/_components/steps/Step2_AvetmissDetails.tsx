@@ -474,7 +474,7 @@ export const Step2_AvetmissDetails = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-medium">
-            Employment Status
+            Employment Status & Study Reason
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
@@ -502,6 +502,56 @@ export const Step2_AvetmissDetails = () => {
                       <SelectItem value="06">
                         Not employed, not seeking
                       </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* NAT00080: Study Reason */}
+          <FormField
+            control={form.control}
+            name="study_reason_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Study reason *</FormLabel>
+                <FormControl>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="01">To get a job</SelectItem>
+                      <SelectItem value="02">
+                        To develop my existing business
+                      </SelectItem>
+                      <SelectItem value="03">
+                        To start my own business
+                      </SelectItem>
+                      <SelectItem value="04">
+                        To try for a different career
+                      </SelectItem>
+                      <SelectItem value="05">
+                        To get a better job or promotion
+                      </SelectItem>
+                      <SelectItem value="06">
+                        It was a requirement of my job
+                      </SelectItem>
+                      <SelectItem value="07">
+                        I wanted extra skills for my job
+                      </SelectItem>
+                      <SelectItem value="08">
+                        To get into another course of study
+                      </SelectItem>
+                      <SelectItem value="12">
+                        For personal interest or self-development
+                      </SelectItem>
+                      <SelectItem value="13">
+                        To get skills for community/voluntary work
+                      </SelectItem>
+                      <SelectItem value="11">Other reasons</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>

@@ -366,8 +366,32 @@ export const applicationSchema = z
     labour_force_status_id: z
       .string()
       .min(1, 'Labour force status is required'),
+    // NAT00080: Study Reason
+    study_reason_id: z
+      .string()
+      .min(1, 'Study reason is required')
+      .refine(
+        (val) =>
+          [
+            '01',
+            '02',
+            '03',
+            '04',
+            '05',
+            '06',
+            '07',
+            '08',
+            '11',
+            '12',
+            '13',
+          ].includes(val),
+        {
+          message: 'Please select a valid study reason',
+        }
+      ),
     country_of_birth_id: z.string().min(1, 'Country of birth is required'),
-    language_code: z.string().min(1, 'Language is required'),
+    // NAT00080: Language identifier (Main language at home)
+    language_code: z.string().min(1, 'Main language at home is required'),
     citizenship_status_code: z
       .string()
       .min(1, 'Citizenship status is required'),

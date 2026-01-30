@@ -892,6 +892,7 @@ export type Database = {
           street_po_box: string | null
           street_unit_details: string | null
           student_id_display: string | null
+          study_reason_id: string | null
           suburb: string | null
           survey_contact_status: string
           timetable_id: string | null
@@ -1003,6 +1004,7 @@ export type Database = {
           street_po_box?: string | null
           street_unit_details?: string | null
           student_id_display?: string | null
+          study_reason_id?: string | null
           suburb?: string | null
           survey_contact_status?: string
           timetable_id?: string | null
@@ -1114,6 +1116,7 @@ export type Database = {
           street_po_box?: string | null
           street_unit_details?: string | null
           student_id_display?: string | null
+          study_reason_id?: string | null
           suburb?: string | null
           survey_contact_status?: string
           timetable_id?: string | null
@@ -3371,6 +3374,7 @@ export type Database = {
           prior_education_flag: string | null
           rto_id: string
           student_id: string
+          study_reason_id: string | null
           survey_contact_status: string
           usi: string | null
           usi_exemption_code: string | null
@@ -3394,6 +3398,7 @@ export type Database = {
           prior_education_flag?: string | null
           rto_id: string
           student_id: string
+          study_reason_id?: string | null
           survey_contact_status?: string
           usi?: string | null
           usi_exemption_code?: string | null
@@ -3417,6 +3422,7 @@ export type Database = {
           prior_education_flag?: string | null
           rto_id?: string
           student_id?: string
+          study_reason_id?: string | null
           survey_contact_status?: string
           usi?: string | null
           usi_exemption_code?: string | null

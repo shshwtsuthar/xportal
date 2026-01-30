@@ -226,6 +226,7 @@ export function NewApplicationWizard({ applicationId }: Props) {
       language_code: '',
       citizenship_status_code: '',
       at_school_flag: '',
+      study_reason_id: '',
       disability_flag: '@' as const,
       prior_education_flag: '@' as const,
       disabilities: [],

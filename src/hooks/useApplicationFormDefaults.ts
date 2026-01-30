@@ -60,6 +60,23 @@ export function mapApplicationToFormValues(
     highest_school_level_id: application.highest_school_level_id ?? '',
     indigenous_status_id: application.indigenous_status_id ?? '',
     labour_force_status_id: application.labour_force_status_id ?? '',
+    study_reason_id:
+      application.study_reason_id &&
+      [
+        '01',
+        '02',
+        '03',
+        '04',
+        '05',
+        '06',
+        '07',
+        '08',
+        '11',
+        '12',
+        '13',
+      ].includes(application.study_reason_id)
+        ? application.study_reason_id
+        : '',
     country_of_birth_id: application.country_of_birth_id ?? 'AU',
     language_code: application.language_code ?? '',
     citizenship_status_code: application.citizenship_status_code ?? '',
