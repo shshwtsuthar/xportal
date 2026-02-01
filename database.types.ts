@@ -568,6 +568,7 @@ export type Database = {
         Row: {
           application_id: string
           created_at: string
+          funding_source_national: string | null
           id: string
           is_catch_up: boolean
           is_prerequisite: boolean
@@ -580,6 +581,7 @@ export type Database = {
         Insert: {
           application_id: string
           created_at?: string
+          funding_source_national?: string | null
           id?: string
           is_catch_up?: boolean
           is_prerequisite?: boolean
@@ -592,6 +594,7 @@ export type Database = {
         Update: {
           application_id?: string
           created_at?: string
+          funding_source_national?: string | null
           id?: string
           is_catch_up?: boolean
           is_prerequisite?: boolean
@@ -2077,6 +2080,7 @@ export type Database = {
           delivery_mode_id: string | null
           end_date: string | null
           enrollment_id: string
+          funding_source_national: string | null
           id: string
           is_catch_up: boolean | null
           outcome_code: string | null
@@ -2089,6 +2093,7 @@ export type Database = {
           delivery_mode_id?: string | null
           end_date?: string | null
           enrollment_id: string
+          funding_source_national?: string | null
           id?: string
           is_catch_up?: boolean | null
           outcome_code?: string | null
@@ -2101,6 +2106,7 @@ export type Database = {
           delivery_mode_id?: string | null
           end_date?: string | null
           enrollment_id?: string
+          funding_source_national?: string | null
           id?: string
           is_catch_up?: boolean | null
           outcome_code?: string | null
@@ -2895,6 +2901,7 @@ export type Database = {
       program_plan_subjects: {
         Row: {
           end_date: string
+          funding_source_national: string | null
           id: string
           is_prerequisite: boolean
           median_date: string
@@ -2905,6 +2912,7 @@ export type Database = {
         }
         Insert: {
           end_date: string
+          funding_source_national?: string | null
           id?: string
           is_prerequisite?: boolean
           median_date: string
@@ -2915,6 +2923,7 @@ export type Database = {
         }
         Update: {
           end_date?: string
+          funding_source_national?: string | null
           id?: string
           is_prerequisite?: boolean
           median_date?: string

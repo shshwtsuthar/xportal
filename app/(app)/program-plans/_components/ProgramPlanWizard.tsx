@@ -43,6 +43,7 @@ import {
   Trash,
   ChevronDown,
   ChevronRight,
+  DollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays, addYears } from 'date-fns';
@@ -54,7 +55,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { FUNDING_SOURCE_NATIONAL_OPTIONS } from '@/src/constants/fundingSourceNational';
 
 type PlanRow = {
   id?: string;
@@ -63,6 +72,7 @@ type PlanRow = {
   end_date?: Date;
   sequence_order?: number;
   is_prerequisite?: boolean;
+  funding_source_national?: string;
 };
 
 export function ProgramPlanWizard({
@@ -105,18 +115,24 @@ export function ProgramPlanWizard({
     useState(false);
   const [showDateDisplacementDialog, setShowDateDisplacementDialog] =
     useState(false);
+  const [showApplyFundingDialog, setShowApplyFundingDialog] = useState(false);
+  const [applyFundingValue, setApplyFundingValue] = useState<string>('');
 
   // Load existing subjects into rows when editing
   useEffect(() => {
     if (plan && existingSubjects.length > 0) {
-      const loadedRows: PlanRow[] = existingSubjects.map((subj) => ({
-        id: subj.id as string,
-        subject_id: subj.subject_id as string,
-        start_date: new Date(subj.start_date as string),
-        end_date: new Date(subj.end_date as string),
-        sequence_order: subj.sequence_order ?? undefined,
-        is_prerequisite: subj.is_prerequisite ?? false,
-      }));
+      const loadedRows: PlanRow[] = existingSubjects.map((subj) => {
+        const row = subj as typeof subj & { funding_source_national?: string };
+        return {
+          id: subj.id as string,
+          subject_id: subj.subject_id as string,
+          start_date: new Date(subj.start_date as string),
+          end_date: new Date(subj.end_date as string),
+          sequence_order: subj.sequence_order ?? undefined,
+          is_prerequisite: subj.is_prerequisite ?? false,
+          funding_source_national: row.funding_source_national ?? undefined,
+        };
+      });
       setRows(loadedRows);
     }
   }, [plan, existingSubjects]);
@@ -184,6 +200,77 @@ export function ProgramPlanWizard({
     });
   };
 
+  const handleApplyFundingToAll = async () => {
+    const value = applyFundingValue;
+    if (!value) {
+      toast.error('Select a funding source');
+      return;
+    }
+    const rowsWithId = rows.filter((r) => r.id);
+    if (rowsWithId.length === 0) {
+      setRows((r) =>
+        r.map((row) => ({ ...row, funding_source_national: value }))
+      );
+      toast.success('Funding source will be applied when you save the plan');
+      setShowApplyFundingDialog(false);
+      return;
+    }
+    try {
+      for (const row of rowsWithId) {
+        if (!row.subject_id || !row.start_date || !row.end_date) continue;
+        await upsertPlanSubject.mutateAsync({
+          id: row.id,
+          program_plan_id: plan?.id as string,
+          subject_id: row.subject_id,
+          start_date: format(row.start_date!, 'yyyy-MM-dd'),
+          end_date: format(row.end_date!, 'yyyy-MM-dd'),
+          sequence_order: row.sequence_order ?? null,
+          is_prerequisite: Boolean(row.is_prerequisite),
+          funding_source_national: value,
+        });
+      }
+      setRows((r) =>
+        r.map((row) => ({ ...row, funding_source_national: value }))
+      );
+      toast.success(
+        `Funding source applied to all ${rowsWithId.length} subjects`
+      );
+      setShowApplyFundingDialog(false);
+    } catch (e) {
+      toast.error(String((e as Error).message || e));
+    }
+  };
+
+  const handleFundingSourceChange = async (
+    idx: number,
+    value: string,
+    row: PlanRow
+  ) => {
+    updateRow(idx, 'funding_source_national', value);
+    if (
+      row?.id &&
+      row.subject_id &&
+      row.start_date &&
+      row.end_date &&
+      plan?.id
+    ) {
+      try {
+        await upsertPlanSubject.mutateAsync({
+          id: row.id,
+          program_plan_id: plan.id as string,
+          subject_id: row.subject_id,
+          start_date: format(row.start_date, 'yyyy-MM-dd'),
+          end_date: format(row.end_date, 'yyyy-MM-dd'),
+          sequence_order: row.sequence_order ?? null,
+          is_prerequisite: Boolean(row.is_prerequisite),
+          funding_source_national: value || null,
+        });
+      } catch (e) {
+        toast.error(String((e as Error).message || e));
+      }
+    }
+  };
+
   const handleSave = async () => {
     try {
       const values = form.getValues();
@@ -210,6 +297,7 @@ export function ProgramPlanWizard({
           end_date: format(row.end_date, 'yyyy-MM-dd'),
           sequence_order: row.sequence_order ?? (null as unknown as number),
           is_prerequisite: Boolean(row.is_prerequisite),
+          funding_source_national: row.funding_source_national ?? null,
         });
       }
 
@@ -267,6 +355,16 @@ export function ProgramPlanWizard({
               </p>
             </div>
             <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowApplyFundingDialog(true)}
+                disabled={rows.length === 0}
+                aria-label="Apply funding source to all subjects"
+              >
+                <DollarSign className="mr-2 h-4 w-4" />
+                Apply Funding to All Subjects
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -488,6 +586,46 @@ export function ProgramPlanWizard({
                         <tr>
                           <td colSpan={7} className="p-0">
                             <div className="bg-muted/30 border-t px-4 py-2">
+                              <div className="mb-4">
+                                <h4 className="mb-2 text-sm font-medium">
+                                  Subject details
+                                </h4>
+                                <div className="flex max-w-xs items-center gap-2">
+                                  <Label
+                                    htmlFor={`funding-${idx}`}
+                                    className="text-muted-foreground shrink-0 text-sm"
+                                  >
+                                    Funding source (national)
+                                  </Label>
+                                  <Select
+                                    value={row.funding_source_national ?? ''}
+                                    onValueChange={(v) =>
+                                      handleFundingSourceChange(idx, v, row)
+                                    }
+                                  >
+                                    <SelectTrigger
+                                      id={`funding-${idx}`}
+                                      className="w-full"
+                                      onClick={(e) => e.stopPropagation()}
+                                      aria-label="Funding source national for this subject"
+                                    >
+                                      <SelectValue placeholder="Select funding source" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {FUNDING_SOURCE_NATIONAL_OPTIONS.map(
+                                        (opt) => (
+                                          <SelectItem
+                                            key={opt.value}
+                                            value={opt.value}
+                                          >
+                                            {opt.label}
+                                          </SelectItem>
+                                        )
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
                               {row.id && row.start_date && row.end_date ? (
                                 <ClassesManager
                                   programPlanSubjectId={row.id}
@@ -528,6 +666,8 @@ export function ProgramPlanWizard({
     removeRow,
     plan?.id,
     showProgramPlanRecurringDialog,
+    showApplyFundingDialog,
+    handleFundingSourceChange,
   ]);
 
   return (
@@ -612,6 +752,67 @@ export function ProgramPlanWizard({
         onDisplace={handleDateDisplacement}
         totalSubjects={rows.length}
       />
+
+      {/* Apply Funding to All Subjects Dialog */}
+      <Dialog
+        open={showApplyFundingDialog}
+        onOpenChange={setShowApplyFundingDialog}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          aria-describedby="apply-funding-description"
+        >
+          <DialogHeader>
+            <DialogTitle>Apply Funding Source to All Subjects</DialogTitle>
+          </DialogHeader>
+          <p
+            id="apply-funding-description"
+            className="text-muted-foreground text-sm"
+          >
+            Set the same funding source (national) for every subject in this
+            plan.
+          </p>
+          <div className="grid gap-2">
+            <Label htmlFor="apply-funding-select">
+              Funding source (national)
+            </Label>
+            <Select
+              value={applyFundingValue}
+              onValueChange={setApplyFundingValue}
+            >
+              <SelectTrigger
+                id="apply-funding-select"
+                aria-label="Funding source national"
+              >
+                <SelectValue placeholder="Select funding source" />
+              </SelectTrigger>
+              <SelectContent>
+                {FUNDING_SOURCE_NATIONAL_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowApplyFundingDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleApplyFundingToAll}
+              disabled={!applyFundingValue || upsertPlanSubject.isPending}
+            >
+              {upsertPlanSubject.isPending ? 'Applying…' : 'Apply to All'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
